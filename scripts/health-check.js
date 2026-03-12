@@ -1,0 +1,213 @@
+#!/usr/bin/env node
+/**
+ * 🦉 NightOwl - Health Check Script
+ * Tests all API connections and configurations
+ */
+
+require('dotenv').config();
+
+const chalk = require('chalk');
+
+// Helper for colored output
+const log = {
+  success: (msg) => console.log(chalk.green('✅'), msg),
+  error: (msg) => console.log(chalk.red('❌'), msg),
+  warning: (msg) => console.log(chalk.yellow('⚠️'), msg),
+  info: (msg) => console.log(chalk.blue('ℹ️'), msg),
+  section: (msg) => console.log(chalk.bold.cyan('\n' + msg)),
+};
+
+async function checkTelegram() {
+  log.section('Telegram Bot');
+  try {
+    const TelegramBot = require('node-telegram-bot-api');
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    
+    if (!token) {
+      log.error('TELEGRAM_BOT_TOKEN not set');
+      return false;
+    }
+
+    const bot = new TelegramBot(token, { polling: false });
+    const me = await bot.getMe();
+    
+    log.success(`Bot connected: @${me.username}`);
+    log.info(`Bot name: ${me.first_name}`);
+    
+    if (process.env.TELEGRAM_CHAT_ID) {
+      log.success(`Chat ID configured: ${process.env.TELEGRAM_CHAT_ID}`);
+    } else {
+      log.error('TELEGRAM_CHAT_ID not set');
+    }
+    
+    return true;
+  } catch (error) {
+    log.error(`Telegram connection failed: ${error.message}`);
+    return false;
+  }
+}
+
+async function checkClaude() {
+  log.section('Claude API (Anthropic)');
+  try {
+    const { Anthropic } = require('@anthropic-ai/sdk');
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    
+    if (!apiKey) {
+      log.error('ANTHROPIC_API_KEY not set');
+      return false;
+    }
+
+    const anthropic = new Anthropic({ apiKey });
+    
+    // Test with a simple completion
+    const response = await anthropic.messages.create({
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 50,
+      messages: [{ role: 'user', content: 'Say "NightOwl is ready"' }],
+    });
+
+    log.success('Claude API connected');
+    log.info(`Response: "${response.content[0].text.substring(0, 50)}..."`);
+    return true;
+  } catch (error) {
+    log.error(`Claude API failed: ${error.message}`);
+    return false;
+  }
+}
+
+async function checkOpenAI() {
+  log.section('OpenAI API (Whisper)');
+  try {
+    const { OpenAI } = require('openai');
+    const apiKey = process.env.OPENAI_API_KEY;
+    
+    if (!apiKey) {
+      log.error('OPENAI_API_KEY not set');
+      return false;
+    }
+
+    const openai = new OpenAI({ apiKey });
+    
+    // Test by listing models
+    const models = await openai.models.list();
+    const whisperModel = models.data.find(m => m.id.includes('whisper'));
+    
+    if (whisperModel) {
+      log.success('OpenAI API connected');
+      log.info(`Whisper model available: ${whisperModel.id}`);
+    } else {
+      log.warning('OpenAI connected but Whisper model not found in list');
+    }
+    
+    return true;
+  } catch (error) {
+    log.error(`OpenAI API failed: ${error.message}`);
+    return false;
+  }
+}
+
+async function checkGitLab() {
+  log.section('GitLab API');
+  try {
+    const gitlab = require('../src/tools/gitlab');
+    const result = await gitlab.testConnection();
+    
+    if (result.success) {
+      log.success(`GitLab connected: @${result.user}`);
+      log.info(`Name: ${result.name}`);
+      
+      if (process.env.GITLAB_NAMESPACE) {
+        log.success(`Namespace: ${process.env.GITLAB_NAMESPACE}`);
+      } else {
+        log.error('GITLAB_NAMESPACE not set');
+      }
+      
+      return true;
+    } else {
+      log.error(`GitLab connection failed: ${result.error}`);
+      return false;
+    }
+  } catch (error) {
+    log.error(`GitLab check failed: ${error.message}`);
+    return false;
+  }
+}
+
+async function checkOpenHands() {
+  log.section('OpenHands');
+  try {
+    const openhands = require('../src/tools/openhands');
+    const result = await openhands.healthCheck();
+    
+    if (result.available) {
+      log.success('OpenHands is available');
+      return true;
+    } else {
+      log.warning(`OpenHands not available: ${result.error}`);
+      log.info('OpenHands is optional and runs on EC2');
+      return true; // Not a failure
+    }
+  } catch (error) {
+    log.warning(`OpenHands check failed: ${error.message}`);
+    log.info('OpenHands is optional and runs on EC2');
+    return true;
+  }
+}
+
+async function checkConfig() {
+  log.section('Configuration Files');
+  
+  const fs = require('fs');
+  const path = require('path');
+  
+  const files = [
+    'config/agents.json',
+    'config/projects.json',
+    '.env',
+  ];
+  
+  let allExist = true;
+  files.forEach(file => {
+    const fullPath = path.join(process.cwd(), file);
+    if (fs.existsSync(fullPath)) {
+      log.success(`${file} exists`);
+    } else {
+      log.error(`${file} not found`);
+      allExist = false;
+    }
+  });
+  
+  return allExist;
+}
+
+async function main() {
+  console.log(chalk.bold.magenta('\n🦉 NightOwl Health Check\n'));
+  
+  const results = {
+    telegram: await checkTelegram(),
+    claude: await checkClaude(),
+    openai: await checkOpenAI(),
+    gitlab: await checkGitLab(),
+    openhands: await checkOpenHands(),
+    config: await checkConfig(),
+  };
+
+  log.section('Summary');
+  
+  const passed = Object.values(results).filter(r => r).length;
+  const total = Object.keys(results).length;
+  
+  if (passed === total) {
+    console.log(chalk.green(`\n✅ All checks passed! NightOwl is ready to fly.\n`));
+    process.exit(0);
+  } else {
+    console.log(chalk.yellow(`\n⚠️  ${passed}/${total} checks passed. Some features may not work.\n`));
+    process.exit(1);
+  }
+}
+
+main().catch(error => {
+  console.error(chalk.red('Health check failed:'), error);
+  process.exit(1);
+});

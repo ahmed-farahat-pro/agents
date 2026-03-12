@@ -1,0 +1,440 @@
+{
+  "servers": {
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/workspace"],
+      "enabled": true,
+      "description": "File system operations - read, write, search files"
+    },
+    "git": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-git"],
+      "enabled": true,
+      "description": "Git operations - commit, branch, diff, status"
+    },
+    "gitlab": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-gitlab"],
+      "enabled": true,
+      "env": {
+        "GITLAB_TOKEN": "${GITLAB_TOKEN}",
+        "GITLAB_URL": "${GITLAB_URL}"
+      },
+      "description": "GitLab API - repos, MRs, issues"
+    },
+    "postgresql": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "${DATABASE_URL}"],
+      "enabled": true,
+      "env": {
+        "DATABASE_URL": "postgresql://user:pass@localhost:5432/nightowl"
+      },
+      "description": "PostgreSQL database queries and schema"
+    },
+    "sqlite": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sqlite", "/workspace/data/nightowl.db"],
+      "enabled": true,
+      "description": "SQLite database for local task storage"
+    },
+    "fetch": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"],
+      "enabled": true,
+      "description": "HTTP requests - fetch web content, APIs"
+    },
+    "puppeteer": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"],
+      "enabled": true,
+      "description": "Browser automation - screenshots, navigation"
+    },
+    "brave-search": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "enabled": true,
+      "env": {
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+      },
+      "description": "Web search via Brave Search API"
+    },
+    "memory": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "enabled": true,
+      "description": "Persistent memory across conversations"
+    },
+    "sequential-thinking": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "enabled": true,
+      "description": "Advanced reasoning and problem-solving"
+    },
+    "redis": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-redis"],
+      "enabled": true,
+      "env": {
+        "REDIS_URL": "redis://localhost:6379"
+      },
+      "description": "Redis cache and pub/sub"
+    },
+    "sentry": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sentry"],
+      "enabled": false,
+      "env": {
+        "SENTRY_AUTH_TOKEN": "${SENTRY_AUTH_TOKEN}"
+      },
+      "description": "Sentry error tracking"
+    },
+    "stripe": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-stripe"],
+      "enabled": false,
+      "env": {
+        "STRIPE_SECRET_KEY": "${STRIPE_SECRET_KEY}"
+      },
+      "description": "Stripe payments API"
+    },
+    "docker": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-docker"],
+      "enabled": true,
+      "description": "Docker container management"
+    },
+    "kubernetes": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-kubernetes"],
+      "enabled": false,
+      "description": "Kubernetes cluster management"
+    },
+    "aws": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-aws"],
+      "enabled": false,
+      "env": {
+        "AWS_ACCESS_KEY_ID": "${AWS_ACCESS_KEY_ID}",
+        "AWS_SECRET_ACCESS_KEY": "${AWS_SECRET_ACCESS_KEY}",
+        "AWS_REGION": "${AWS_REGION}"
+      },
+      "description": "AWS services integration"
+    },
+    "slack": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-slack"],
+      "enabled": false,
+      "env": {
+        "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
+        "SLACK_TEAM_ID": "${SLACK_TEAM_ID}"
+      },
+      "description": "Slack integration - messages, channels"
+    },
+    "discord": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-discord"],
+      "enabled": false,
+      "env": {
+        "DISCORD_BOT_TOKEN": "${DISCORD_BOT_TOKEN}"
+      },
+      "description": "Discord integration"
+    },
+    "notion": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-notion"],
+      "enabled": false,
+      "env": {
+        "NOTION_TOKEN": "${NOTION_TOKEN}"
+      },
+      "description": "Notion pages and databases"
+    },
+    "jira": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-jira"],
+      "enabled": false,
+      "env": {
+        "JIRA_API_TOKEN": "${JIRA_API_TOKEN}",
+        "JIRA_URL": "${JIRA_URL}"
+      },
+      "description": "Jira issues and projects"
+    },
+    "confluence": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-confluence"],
+      "enabled": false,
+      "env": {
+        "CONFLUENCE_API_TOKEN": "${CONFLUENCE_API_TOKEN}",
+        "CONFLUENCE_URL": "${CONFLUENCE_URL}"
+      },
+      "description": "Confluence pages"
+    },
+    "google-calendar": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-gcalendar"],
+      "enabled": false,
+      "description": "Google Calendar events"
+    },
+    "google-drive": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-gdrive"],
+      "enabled": false,
+      "description": "Google Drive files"
+    },
+    "figma": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-figma"],
+      "enabled": false,
+      "env": {
+        "FIGMA_ACCESS_TOKEN": "${FIGMA_ACCESS_TOKEN}"
+      },
+      "description": "Figma designs and comments"
+    },
+    "miro": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-miro"],
+      "enabled": false,
+      "env": {
+        "MIRO_ACCESS_TOKEN": "${MIRO_ACCESS_TOKEN}"
+      },
+      "description": "Miro boards"
+    },
+    "obsidian": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-obsidian", "/workspace/notes"],
+      "enabled": true,
+      "description": "Obsidian notes and knowledge base"
+    },
+    "pdf": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-pdf"],
+      "enabled": true,
+      "description": "PDF reading and extraction"
+    },
+    "csv": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-csv"],
+      "enabled": true,
+      "description": "CSV file operations"
+    },
+    "excel": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-excel"],
+      "enabled": true,
+      "description": "Excel file operations"
+    },
+    "openapi": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-openapi"],
+      "enabled": true,
+      "description": "OpenAPI/Swagger API specs"
+    },
+    "terraform": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-terraform"],
+      "enabled": true,
+      "description": "Terraform infrastructure"
+    },
+    "ansible": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-ansible"],
+      "enabled": false,
+      "description": "Ansible playbooks"
+    },
+    "prometheus": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-prometheus"],
+      "enabled": false,
+      "env": {
+        "PROMETHEUS_URL": "http://localhost:9090"
+      },
+      "description": "Prometheus metrics"
+    },
+    "grafana": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-grafana"],
+      "enabled": false,
+      "env": {
+        "GRAFANA_URL": "http://localhost:3000",
+        "GRAFANA_API_KEY": "${GRAFANA_API_KEY}"
+      },
+      "description": "Grafana dashboards"
+    },
+    "elasticsearch": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-elasticsearch"],
+      "enabled": false,
+      "env": {
+        "ELASTICSEARCH_URL": "http://localhost:9200"
+      },
+      "description": "Elasticsearch search and analytics"
+    },
+    "mongodb": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-mongodb", "${MONGODB_URI}"],
+      "enabled": false,
+      "env": {
+        "MONGODB_URI": "mongodb://localhost:27017/nightowl"
+      },
+      "description": "MongoDB database"
+    },
+    "neo4j": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-neo4j"],
+      "enabled": false,
+      "env": {
+        "NEO4J_URI": "bolt://localhost:7687",
+        "NEO4J_USER": "neo4j",
+        "NEO4J_PASSWORD": "${NEO4J_PASSWORD}"
+      },
+      "description": "Neo4j graph database"
+    },
+    "kafka": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-kafka"],
+      "enabled": false,
+      "env": {
+        "KAFKA_BOOTSTRAP_SERVERS": "localhost:9092"
+      },
+      "description": "Apache Kafka messaging"
+    },
+    "rabbitmq": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-rabbitmq"],
+      "enabled": false,
+      "env": {
+        "RABBITMQ_URL": "amqp://localhost:5672"
+      },
+      "description": "RabbitMQ messaging"
+    },
+    "mqtt": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-mqtt"],
+      "enabled": false,
+      "env": {
+        "MQTT_BROKER_URL": "mqtt://localhost:1883"
+      },
+      "description": "MQTT messaging (for IoT)"
+    },
+    "nats": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-nats"],
+      "enabled": false,
+      "env": {
+        "NATS_URL": "nats://localhost:4222"
+      },
+      "description": "NATS messaging"
+    },
+    "minio": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-minio"],
+      "enabled": false,
+      "env": {
+        "MINIO_ENDPOINT": "localhost:9000",
+        "MINIO_ACCESS_KEY": "${MINIO_ACCESS_KEY}",
+        "MINIO_SECRET_KEY": "${MINIO_SECRET_KEY}"
+      },
+      "description": "MinIO S3-compatible storage"
+    },
+    "cloudflare": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-cloudflare"],
+      "enabled": false,
+      "env": {
+        "CLOUDFLARE_API_TOKEN": "${CLOUDFLARE_API_TOKEN}"
+      },
+      "description": "Cloudflare DNS and Workers"
+    },
+    "vercel": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-vercel"],
+      "enabled": false,
+      "env": {
+        "VERCEL_TOKEN": "${VERCEL_TOKEN}"
+      },
+      "description": "Vercel deployments"
+    },
+    "netlify": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-netlify"],
+      "enabled": false,
+      "env": {
+        "NETLIFY_AUTH_TOKEN": "${NETLIFY_AUTH_TOKEN}"
+      },
+      "description": "Netlify deployments"
+    },
+    "heroku": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-heroku"],
+      "enabled": false,
+      "env": {
+        "HEROKU_API_KEY": "${HEROKU_API_KEY}"
+      },
+      "description": "Heroku deployments"
+    },
+    "github": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "enabled": true,
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      },
+      "description": "GitHub API - for editing GitHub repos (agents can edit both GitLab and GitHub)"
+    }
+  },
+  "agentTools": {
+    "orchestrator": ["memory", "sequential-thinking", "fetch", "gitlab", "obsidian", "redis"],
+    "planner": ["filesystem", "git", "gitlab", "fetch", "sequential-thinking", "brave-search", "obsidian", "openapi"],
+    "backend-dev": ["filesystem", "git", "gitlab", "postgresql", "sqlite", "redis", "mongodb", "fetch", "docker", "terraform", "ansible", "openapi", "kafka", "rabbitmq", "mqtt", "nats"],
+    "frontend-dev": ["filesystem", "git", "gitlab", "fetch", "puppeteer", "figma", "miro", "vercel", "netlify", "cloudflare"],
+    "qa-tester": ["filesystem", "git", "gitlab", "postgresql", "sqlite", "puppeteer", "fetch", "docker", "prometheus", "grafana", "selenium"],
+    "code-reviewer": ["filesystem", "git", "gitlab", "github", "sequential-thinking", "obsidian", "openapi"],
+    "reporter": ["slack", "discord", "filesystem", "fetch", "notion", "jira", "confluence", "google-calendar"]
+  }
+}
