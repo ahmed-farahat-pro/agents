@@ -1,0 +1,44 @@
+{
+  "projects": [
+    {
+      "id": "bonyad",
+      "name": "Bonyad",
+      "description": "Bonyad platform - Spring Boot backend with HyperPay, Nafath, MQTT integrations",
+      "gitlabRepo": "bonyad/backend",
+      "stack": {
+        "backend": "Spring Boot",
+        "database": "PostgreSQL",
+        "integrations": ["HyperPay", "Nafath", "MQTT", "Wathq"]
+      },
+      "defaultBranch": "main",
+      "active": true
+    },
+    {
+      "id": "problem-x",
+      "name": "Problem-X",
+      "description": "Problem-X platform - React Native mobile app with Arabic RTL support",
+      "gitlabRepo": "problem-x/mobile",
+      "stack": {
+        "frontend": "React Native",
+        "backend": "Node.js",
+        "features": ["RTL", "Dark Mode", "Offline Support"]
+      },
+      "defaultBranch": "main",
+      "active": true
+    },
+    {
+      "id": "ai-agents-platform",
+      "name": "AI Agents Platform",
+      "description": "AI Agents orchestration platform with LiteLLM gateway",
+      "gitlabRepo": "ai-agents/platform",
+      "stack": {
+        "backend": "Python/FastAPI",
+        "frontend": "React",
+        "ai": ["LiteLLM", "Claude", "OpenAI"]
+      },
+      "defaultBranch": "main",
+      "active": true
+    }
+  ],
+  "defaultProject": "bonyad"
+}

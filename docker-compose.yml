@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  nightowl:
+    build: .
+    container_name: nightowl
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GITLAB_TOKEN=${GITLAB_TOKEN}
+      - GITLAB_NAMESPACE=${GITLAB_NAMESPACE}
+      - GITLAB_URL=${GITLAB_URL:-https://gitlab.com}
+      - OPENHANDS_URL=http://openhands:3000
+      - ENABLE_VOICE=${ENABLE_VOICE:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./tmp:/app/tmp
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - openhands
+    networks:
+      - nightowl-network
+
+  openhands:
+    image: ghcr.io/opendevin/opendevin:latest
+    container_name: nightowl-openhands
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - SANDBOX_TYPE=exec
+      - LLM_MODEL=claude-3-sonnet-20240229
+      - LLM_API_KEY=${ANTHROPIC_API_KEY}
+      - LLM_BASE_URL=https://api.anthropic.com
+    volumes:
+      - ./workspace:/workspace
+    networks:
+      - nightowl-network
+
+networks:
+  nightowl-network:
+    driver: bridge
+
+volumes:
+  nightowl-data:
+  nightowl-logs:

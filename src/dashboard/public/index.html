@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NightOwl - AI Development Team</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --bg-code: #0d0d12;
+            --text-primary: #e8e8ec;
+            --text-secondary: #8a8a95;
+            --accent-purple: #7c3aed;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-yellow: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-cyan: #06b6d4;
+            --border: #252532;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            height: 50px;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .header-title::before {
+            content: '';
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .connection-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Main Layout */
+        .container {
+            display: grid;
+            grid-template-columns: 300px 1fr 400px;
+            gap: 1px;
+            padding-top: 50px;
+            height: 100vh;
+            background: var(--border);
+        }
+
+        .panel {
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        /* Agent List */
+        .agent-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .agent-card {
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            padding: 12px;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .agent-card:hover {
+            background: #222230;
+        }
+
+        .agent-card.active {
+            border-left-color: var(--accent-purple);
+            background: rgba(124, 58, 237, 0.1);
+        }
+
+        .agent-card.working {
+            border-left-color: var(--accent-yellow);
+        }
+
+        .agent-card.error {
+            border-left-color: var(--accent-red);
+        }
+
+        .agent-card.done {
+            border-left-color: var(--accent-green);
+        }
+
+        .agent-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .agent-name {
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .agent-status {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: var(--bg-secondary);
+            text-transform: uppercase;
+        }
+
+        .agent-status.idle { color: var(--text-secondary); }
+        .agent-status.working { color: var(--accent-yellow); }
+        .agent-status.done { color: var(--accent-green); }
+        .agent-status.error { color: var(--accent-red); }
+
+        .agent-activity {
+            font-size: 11px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .agent-activity.typing::after {
+            content: '|';
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card {
+            background: var(--bg-tertiary);
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent-purple);
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        /* Activity Feed */
+        .activity-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .activity-item {
+            background: var(--bg-tertiary);
+            padding: 10px 12px;
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            border-left: 2px solid transparent;
+        }
+
+        .activity-item:hover {
+            background: #222230;
+        }
+
+        .activity-item.system {
+            border-left-color: var(--accent-cyan);
+        }
+
+        .activity-item.agent-message {
+            border-left-color: var(--accent-purple);
+        }
+
+        .activity-item.code-edit {
+            border-left-color: var(--accent-green);
+        }
+
+        .activity-time {
+            color: var(--text-secondary);
+            font-size: 11px;
+            white-space: nowrap;
+            min-width: 50px;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-agent {
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+
+        .activity-message {
+            color: var(--text-primary);
+            margin-top: 2px;
+        }
+
+        .activity-message.typing {
+            color: var(--accent-yellow);
+        }
+
+        .activity-message.typing::after {
+            content: '...';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        /* Code Edit Display */
+        .code-edit-panel {
+            background: var(--bg-code);
+            border-radius: 6px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .code-edit-header {
+            background: var(--bg-tertiary);
+            padding: 8px 12px;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .code-edit-file {
+            color: var(--accent-cyan);
+        }
+
+        .code-edit-action {
+            color: var(--text-secondary);
+            font-size: 10px;
+        }
+
+        .code-content {
+            padding: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            line-height: 1.6;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .code-line {
+            display: flex;
+            gap: 12px;
+        }
+
+        .code-line-number {
+            color: var(--text-secondary);
+            min-width: 30px;
+            text-align: right;
+            user-select: none;
+        }
+
+        .code-line-content {
+            color: var(--text-primary);
+        }
+
+        .code-line.added {
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .code-line.added .code-line-content {
+            color: var(--accent-green);
+        }
+
+        .code-line.removed {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .code-line.removed .code-line-content {
+            color: var(--accent-red);
+        }
+
+        .code-line.added::before {
+            content: '+';
+            color: var(--accent-green);
+            margin-right: 8px;
+        }
+
+        .code-line.removed::before {
+            content: '-';
+            color: var(--accent-red);
+            margin-right: 8px;
+        }
+
+        /* Agent Chat/Communication */
+        .agent-communication {
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .comm-header {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .comm-message {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            padding: 8px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+        }
+
+        .comm-from {
+            color: var(--accent-purple);
+            font-weight: 600;
+            min-width: 80px;
+        }
+
+        .comm-arrow {
+            color: var(--text-secondary);
+        }
+
+        .comm-to {
+            color: var(--accent-blue);
+            font-weight: 600;
+            min-width: 80px;
+        }
+
+        .comm-content {
+            flex: 1;
+            color: var(--text-primary);
+        }
+
+        /* Task Queue */
+        .task-queue {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .task-item {
+            background: var(--bg-tertiary);
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 3px solid var(--accent-purple);
+        }
+
+        .task-item.running { border-left-color: var(--accent-yellow); }
+        .task-item.completed { border-left-color: var(--accent-green); }
+        .task-item.failed { border-left-color: var(--accent-red); }
+
+        .task-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .task-meta {
+            font-size: 11px;
+            color: var(--text-secondary);
+            display: flex;
+            gap: 12px;
+        }
+
+        .task-progress {
+            margin-top: 8px;
+            height: 4px;
+            background: var(--bg-secondary);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .task-progress-bar {
+            height: 100%;
+            background: var(--accent-purple);
+            transition: width 0.3s;
+        }
+
+        /* Live Code Stream */
+        .code-stream {
+            background: var(--bg-code);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            line-height: 1.6;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 12px;
+        }
+
+        .code-stream-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .code-stream-agent {
+            color: var(--accent-purple);
+            font-weight: 600;
+        }
+
+        .code-stream-file {
+            color: var(--accent-cyan);
+        }
+
+        .code-stream-content {
+            color: var(--text-primary);
+        }
+
+        .typing-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 15px;
+            background: var(--accent-purple);
+            animation: blink 1s infinite;
+            vertical-align: middle;
+            margin-left: 2px;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #333344;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-title">
+            NightOwl AI Development Team
+        </div>
+        <div class="connection-status">
+            <span class="connection-dot"></span>
+            <span id="connection-text">Connected</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Left Panel: Agents -->
+        <div class="panel">
+            <div class="panel-header">
+                <span>Agents</span>
+                <span id="agent-count">7</span>
+            </div>
+            <div class="panel-content">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="active-tasks">0</div>
+                        <div class="stat-label">Active</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="completed-tasks">0</div>
+                        <div class="stat-label">Done</div>
+                    </div>
+                </div>
+                <div class="agent-list" id="agent-list">
+                    <!-- Agents populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Panel: Live Activity & Code Stream -->
+        <div class="panel">
+            <div class="panel-header">
+                <span>Live Activity</span>
+                <span id="activity-count">0</span>
+            </div>
+            <div class="panel-content">
+                <div class="activity-feed" id="activity-feed">
+                    <!-- Activities populated here -->
+                </div>
+                
+                <!-- Live Code Stream -->
+                <div class="code-stream" id="code-stream" style="display: none;">
+                    <div class="code-stream-header">
+                        <span class="code-stream-agent" id="stream-agent"></span>
+                        <span class="code-stream-file" id="stream-file"></span>
+                    </div>
+                    <div class="code-stream-content" id="stream-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Agent Communication & Tasks -->
+        <div class="panel">
+            <div class="panel-header">
+                <span>Agent Communication</span>
+            </div>
+            <div class="panel-content">
+                <div id="agent-communication">
+                    <!-- Agent-to-agent messages -->
+                </div>
+                
+                <div class="panel-header" style="margin-top: 16px;">
+                    <span>Task Queue</span>
+                </div>
+                <div class="task-queue" id="task-queue">
+                    <!-- Tasks populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const agents = new Map();
+        const activities = [];
+        let currentCodeStream = null;
+        let typingInterval = null;
+
+        // Agent display names
+        const agentNames = {
+            'orchestrator': 'Orchestrator',
+            'planner': 'Planner',
+            'backend-dev': 'Backend Dev',
+            'frontend-dev': 'Frontend Dev',
+            'qa-tester': 'QA Tester',
+            'code-reviewer': 'Reviewer',
+            'reporter': 'Reporter'
+        };
+
+        // Initialize
+        socket.on('connect', () => {
+            document.getElementById('connection-text').textContent = 'Connected';
+            document.querySelector('.connection-dot').style.background = 'var(--accent-green)';
+        });
+
+        socket.on('disconnect', () => {
+            document.getElementById('connection-text').textContent = 'Disconnected';
+            document.querySelector('.connection-dot').style.background = 'var(--accent-red)';
+        });
+
+        // Agent updates
+        socket.on('agentStatus', (data) => {
+            agents.set(data.name, data);
+            renderAgents();
+        });
+
+        // Activity updates
+        socket.on('activity', (data) => {
+            addActivity(data);
+        });
+
+        // Code edit streaming
+        socket.on('codeEdit', (data) => {
+            showCodeEdit(data);
+        });
+
+        // Agent communication
+        socket.on('agentCommunication', (data) => {
+            addAgentCommunication(data);
+        });
+
+        // Task updates
+        socket.on('task', (data) => {
+            updateTask(data);
+        });
+
+        // Stream text character by character
+        function streamText(element, text, speed = 30) {
+            element.textContent = '';
+            let i = 0;
+            
+            return new Promise(resolve => {
+                const interval = setInterval(() => {
+                    element.textContent += text[i];
+                    i++;
+                    
+                    if (i >= text.length) {
+                        clearInterval(interval);
+                        resolve();
+                    }
+                }, speed);
+            });
+        }
+
+        // Render agents
+        function renderAgents() {
+            const container = document.getElementById('agent-list');
+            container.innerHTML = '';
+
+            agents.forEach((agent, name) => {
+                const card = document.createElement('div');
+                card.className = `agent-card ${agent.status}`;
+                
+                const activityClass = agent.status === 'working' ? 'typing' : '';
+                
+                card.innerHTML = `
+                    <div class="agent-header">
+                        <span class="agent-name">${agentNames[name] || name}</span>
+                        <span class="agent-status ${agent.status}">${agent.status}</span>
+                    </div>
+                    <div class="agent-activity ${activityClass}">${agent.activity || 'Idle'}</div>
+                `;
+                
+                container.appendChild(card);
+            });
+
+            // Update counts
+            const active = Array.from(agents.values()).filter(a => a.status === 'working').length;
+            document.getElementById('active-tasks').textContent = active;
+        }
+
+        // Add activity with typing effect
+        function addActivity(data) {
+            const container = document.getElementById('activity-feed');
+            
+            const item = document.createElement('div');
+            item.className = `activity-item ${data.type || ''}`;
+            
+            const time = new Date(data.timestamp).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            
+            item.innerHTML = `
+                <div class="activity-time">${time}</div>
+                <div class="activity-content">
+                    <span class="activity-agent">${agentNames[data.agent] || data.agent}</span>
+                    <div class="activity-message typing" id="msg-${Date.now()}"></div>
+                </div>
+            `;
+            
+            container.insertBefore(item, container.firstChild);
+            
+            // Stream the message text
+            const msgElement = item.querySelector('.activity-message');
+            streamText(msgElement, data.message, 20).then(() => {
+                msgElement.classList.remove('typing');
+            });
+            
+            // Keep only last 50
+            while (container.children.length > 50) {
+                container.removeChild(container.lastChild);
+            }
+            
+            document.getElementById('activity-count').textContent = container.children.length;
+        }
+
+        // Show code edit with streaming
+        function showCodeEdit(data) {
+            const streamPanel = document.getElementById('code-stream');
+            const agentEl = document.getElementById('stream-agent');
+            const fileEl = document.getElementById('stream-file');
+            const contentEl = document.getElementById('stream-content');
+            
+            streamPanel.style.display = 'block';
+            agentEl.textContent = agentNames[data.agent] || data.agent;
+            fileEl.textContent = data.file;
+            
+            // Stream code content
+            if (data.code) {
+                const lines = data.code.split('\n');
+                contentEl.innerHTML = '';
+                
+                lines.forEach((line, i) => {
+                    const lineDiv = document.createElement('div');
+                    lineDiv.className = 'code-line';
+                    
+                    if (line.startsWith('+')) lineDiv.classList.add('added');
+                    if (line.startsWith('-')) lineDiv.classList.add('removed');
+                    
+                    lineDiv.innerHTML = `
+                        <span class="code-line-number">${i + 1}</span>
+                        <span class="code-line-content"></span>
+                    `;
+                    
+                    contentEl.appendChild(lineDiv);
+                    
+                    // Stream each line
+                    setTimeout(() => {
+                        lineDiv.querySelector('.code-line-content').textContent = line;
+                    }, i * 50);
+                });
+            }
+            
+            // Auto-hide after delay
+            setTimeout(() => {
+                streamPanel.style.display = 'none';
+            }, 30000);
+        }
+
+        // Add agent communication
+        function addAgentCommunication(data) {
+            const container = document.getElementById('agent-communication');
+            
+            const div = document.createElement('div');
+            div.className = 'agent-communication';
+            div.innerHTML = `
+                <div class="comm-header">Message</div>
+                <div class="comm-message">
+                    <span class="comm-from">${agentNames[data.from] || data.from}</span>
+                    <span class="comm-arrow">-></span>
+                    <span class="comm-to">${agentNames[data.to] || data.to}</span>
+                    <span class="comm-content">${data.message}</span>
+                </div>
+            `;
+            
+            container.insertBefore(div, container.firstChild);
+            
+            // Keep only last 10
+            while (container.children.length > 10) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        // Update task
+        function updateTask(data) {
+            const container = document.getElementById('task-queue');
+            let taskEl = document.getElementById(`task-${data.id}`);
+            
+            if (!taskEl) {
+                taskEl = document.createElement('div');
+                taskEl.id = `task-${data.id}`;
+                taskEl.className = 'task-item';
+                container.appendChild(taskEl);
+            }
+            
+            taskEl.className = `task-item ${data.status}`;
+            taskEl.innerHTML = `
+                <div class="task-title">${data.title}</div>
+                <div class="task-meta">
+                    <span>Status: ${data.status}</span>
+                    <span>${data.progress || 0}%</span>
+                </div>
+                <div class="task-progress">
+                    <div class="task-progress-bar" style="width: ${data.progress || 0}%"></div>
+                </div>
+            `;
+            
+            // Update completed count
+            const completed = Array.from(container.children).filter(el => 
+                el.classList.contains('completed')
+            ).length;
+            document.getElementById('completed-tasks').textContent = completed;
+        }
+
+        // Request initial data
+        socket.emit('requestStatus');
+    </script>
+</body>
+</html>
