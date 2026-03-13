@@ -9,6 +9,8 @@ const TelegramBot = require('node-telegram-bot-api');
 const logger = require('./utils/logger');
 const voice = require('./tools/voice');
 const gitlab = require('./tools/gitlab');
+const path = require('path');
+const fs = require('fs');
 
 // Import agents
 const {
@@ -54,8 +56,6 @@ const botState = {
 // Helper: Get active project from config
 function getActiveProject() {
   try {
-    const fs = require('fs');
-    const path = require('path');
     const projectsPath = path.join(__dirname, '..', 'config', 'projects.json');
     const projectsConfig = JSON.parse(fs.readFileSync(projectsPath, 'utf8'));
     
@@ -277,7 +277,6 @@ bot.onText(/\/projects/, async (msg) => {
 
   try {
     const projectsPath = path.join(__dirname, '..', 'config', 'projects.json');
-    const fs = require('fs');
     const projectsConfig = JSON.parse(fs.readFileSync(projectsPath, 'utf8'));
     
     const activeProject = projectsConfig.defaultProject;
@@ -311,7 +310,6 @@ bot.onText(/\/project (.+)/, async (msg, match) => {
   
   try {
     const projectsPath = path.join(__dirname, '..', 'config', 'projects.json');
-    const fs = require('fs');
     const projectsConfig = JSON.parse(fs.readFileSync(projectsPath, 'utf8'));
     
     const project = projectsConfig.projects.find(p => p.id === projectId);
