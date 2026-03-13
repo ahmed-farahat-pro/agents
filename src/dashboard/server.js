@@ -244,7 +244,13 @@ app.get('/api/gitlab/repos', async (req, res) => {
     const namespace = process.env.GITLAB_NAMESPACE;
     const baseUrl = process.env.GITLAB_URL || 'https://gitlab.com';
     
+    logger.info('[Dashboard] Fetching GitLab repos...');
+    logger.info(`[Dashboard] Namespace: ${namespace}`);
+    logger.info(`[Dashboard] Token exists: ${!!token}`);
+    logger.info(`[Dashboard] Base URL: ${baseUrl}`);
+    
     if (!token) {
+      logger.error('[Dashboard] GITLAB_TOKEN not configured');
       return res.status(400).json({ 
         success: false, 
         error: 'GITLAB_TOKEN not configured',
@@ -253,6 +259,7 @@ app.get('/api/gitlab/repos', async (req, res) => {
     }
     
     if (!namespace) {
+      logger.error('[Dashboard] GITLAB_NAMESPACE not configured');
       return res.status(400).json({ 
         success: false, 
         error: 'GITLAB_NAMESPACE not configured',
@@ -261,6 +268,7 @@ app.get('/api/gitlab/repos', async (req, res) => {
     }
     
     // Fetch projects from GitLab API
+    logger.info('[Dashboard] Calling GitLab API...');
     const response = await axios.get(
       `${baseUrl}/api/v4/projects`,
       {
@@ -275,6 +283,8 @@ app.get('/api/gitlab/repos', async (req, res) => {
         },
       }
     );
+    
+    logger.info(`[Dashboard] GitLab API returned ${response.data.length} projects`);
     
     // Filter and format repos
     const repos = response.data.map(project => ({
@@ -291,6 +301,8 @@ app.get('/api/gitlab/repos', async (req, res) => {
       visibility: project.visibility,
     }));
     
+    logger.info(`[Dashboard] Returning ${repos.length} repos`);
+    
     res.json({
       success: true,
       count: repos.length,
@@ -299,6 +311,7 @@ app.get('/api/gitlab/repos', async (req, res) => {
     
   } catch (error) {
     logger.error('[Dashboard] Failed to fetch GitLab repos:', error.message);
+    logger.error('[Dashboard] Error details:', error.response?.data || error);
     
     if (error.response?.status === 401) {
       return res.status(401).json({
