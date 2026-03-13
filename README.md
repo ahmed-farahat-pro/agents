@@ -789,6 +789,340 @@ You push to main branch
 
 ---
 
+## 💻 Local Development Guide (Test Before EC2)
+
+Run NightOwl locally to test everything before deploying to EC2.
+
+### Prerequisites for Local Development
+
+```bash
+# Required software:
+# - Node.js 20+ 
+# - Python 3.10+
+# - Git
+# - FFmpeg (for voice processing)
+# - Docker (optional, for OpenHands)
+
+# Check versions
+node --version    # v20.x.x
+npm --version     # 10.x.x
+python3 --version # 3.10+
+git --version
+
+# macOS: Install dependencies
+brew install node python git ffmpeg
+
+# Ubuntu/Debian:
+sudo apt-get update
+sudo apt-get install -y nodejs python3 python3-pip git ffmpeg
+```
+
+### Step 1: Clone Repository Locally
+
+```bash
+# Clone to your local machine
+git clone https://github.com/ahmed-farahat-pro/agents.git nightowl-local
+cd nightowl-local
+
+# Or if you already have it:
+cd /Users/ahmedfarahat/Desktop/ai-agent-poc/nightowl
+```
+
+### Step 2: Create Local Environment File
+
+```bash
+# Copy example environment file
+cp .env.example .env
+
+# Edit with your local settings
+nano .env  # or use your editor
+```
+
+**Minimal `.env` for local testing:**
+```bash
+# Telegram (from @BotFather)
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+TELEGRAM_CHAT_ID=your_chat_id_here
+
+# AI APIs
+ANTHROPIC_API_KEY=your_anthropic_key
+OPENAI_API_KEY=your_openai_key
+
+# GitLab (for testing integrations)
+GITLAB_TOKEN=your_gitlab_token
+GITLAB_NAMESPACE=your_gitlab_username
+GITLAB_URL=https://gitlab.com
+
+# Local settings
+PORT=4000
+NODE_ENV=development
+DASHBOARD_PORT=4000
+DASHBOARD_PASSWORD=local_test_password
+
+# Disable EC2-specific features
+# EC2_HOST=localhost
+# EC2_USER=ubuntu
+
+# Feature flags
+ENABLE_VOICE=true
+ENABLE_OPENHANDS=false  # Set true if you have Docker locally
+ENABLE_DASHBOARD=true
+LOG_LEVEL=debug
+LOG_DIR=./logs
+```
+
+### Step 3: Install Dependencies
+
+```bash
+# Install main app dependencies
+npm install
+
+# Verify installation
+ls node_modules | head -10
+```
+
+### Step 4: Build Custom MCP Servers (Local)
+
+```bash
+# Build all MCP servers locally
+
+echo "🔨 Building Arabic RTL Auditor..."
+cd mcp-servers/arabic-rtl-auditor
+npm install
+npm run build
+cd ../..
+
+echo "🔨 Building Task Splitter..."
+cd mcp-servers/task-splitter
+npm install
+npm run build
+cd ../..
+
+echo "🔨 Building Smart Code Search..."
+cd mcp-servers/smart-code-search
+npm install
+npm run build
+cd ../..
+
+echo "✅ All MCP servers built!"
+```
+
+**Verify builds:**
+```bash
+ls mcp-servers/*/dist/index.js
+# Should show all 3 compiled servers
+```
+
+### Step 5: Run Health Check
+
+```bash
+# Test configuration and connections
+node scripts/health-check.js
+
+# Expected output:
+# ✅ Environment variables loaded
+# ✅ Telegram bot token valid
+# ✅ Anthropic API key valid
+# ✅ MCP servers configured
+```
+
+### Step 6: Start the Dashboard (Local)
+
+```bash
+# Terminal 1: Start dashboard
+npm run dashboard
+
+# Or directly:
+node src/dashboard/server.js
+
+# Expected output:
+# 🦉 NightOwl Dashboard running on port 4000
+# Dashboard URL: http://localhost:4000
+```
+
+**Access dashboard:**
+- Open browser: `http://localhost:4000`
+- You should see the NightOwl dashboard with agent status
+
+### Step 7: Start the Telegram Bot (Local)
+
+```bash
+# Terminal 2: Start bot (in new terminal)
+npm run dev
+
+# Or directly:
+node src/bot.js
+
+# Expected output:
+# 🦉 NightOwl Bot starting...
+# 🦉 NightOwl Bot is running!
+```
+
+### Step 8: Test Locally
+
+#### Test 1: Dashboard
+```bash
+# Check dashboard is running
+curl http://localhost:4000/api/status
+
+# Expected JSON response with agent status
+```
+
+#### Test 2: Telegram Bot
+```bash
+# In Telegram app:
+# 1. Find your bot
+# 2. Send: /start
+# 3. Should receive welcome message
+
+# Test planning:
+# Send: /plan Create a simple login API endpoint
+```
+
+#### Test 3: MCP Servers
+```bash
+# Test Arabic RTL Auditor
+curl -X POST http://localhost:4000/api/test-mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "server": "arabic-rtl-auditor",
+    "tool": "check_rtl_compliance",
+    "args": {
+      "code": ".button { margin-left: 10px; }",
+      "language": "css"
+    }
+  }'
+```
+
+### Step 9: Run Tests (if available)
+
+```bash
+# Run unit tests
+npm test
+
+# Run linting
+npm run lint
+
+# Fix linting issues
+npm run lint:fix
+```
+
+### Step 10: Local Development Workflow
+
+```bash
+# Terminal 1: Dashboard (keep running)
+npm run dashboard
+
+# Terminal 2: Bot with auto-reload (keep running)
+npm run dev
+
+# Terminal 3: Make changes and test
+# Edit files in src/
+# Bot will auto-reload on changes
+
+# Terminal 4: MCP development
+cd mcp-servers/arabic-rtl-auditor
+npm run dev  # Watch mode for TypeScript
+```
+
+### Common Local Issues & Fixes
+
+#### Issue: Port 4000 already in use
+```bash
+# Find what's using port 4000
+lsof -i :4000
+
+# Kill the process
+kill -9 <PID>
+
+# Or use different port
+PORT=4001 npm run dashboard
+```
+
+#### Issue: MCP servers not found
+```bash
+# Check paths in config/mcp-servers.json
+cat config/mcp-servers.json | grep arabic-rtl-auditor
+
+# Rebuild MCP servers
+cd mcp-servers/arabic-rtl-auditor && npm run build
+cd mcp-servers/task-splitter && npm run build
+cd mcp-servers/smart-code-search && npm run build
+```
+
+#### Issue: Environment variables not loading
+```bash
+# Check .env file exists
+ls -la .env
+
+# Debug environment
+node -e "console.log(require('dotenv').config())"
+
+# Load manually
+export $(cat .env | xargs)
+```
+
+#### Issue: Voice processing not working
+```bash
+# Check FFmpeg
+ffmpeg -version
+
+# Test voice module
+node -e "require('./src/tools/voice').speechToText('test.wav').then(console.log)"
+```
+
+#### Issue: Cannot connect to Telegram
+```bash
+# Test internet connection
+ping api.telegram.org
+
+# Check bot token
+curl "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe"
+```
+
+### Local Testing Checklist
+
+Before pushing to EC2, verify locally:
+
+- [ ] `npm install` completes without errors
+- [ ] All MCP servers build successfully (`npm run build` in each)
+- [ ] Dashboard starts and accessible at `http://localhost:4000`
+- [ ] Telegram bot responds to `/start`
+- [ ] `/plan` command creates implementation plan
+- [ ] MCP tools work (check RTL auditor, task splitter)
+- [ ] No errors in console logs
+- [ ] Dashboard shows agent status correctly
+- [ ] Environment variables loaded correctly
+
+### Transition from Local to EC2
+
+Once local testing passes:
+
+```bash
+# 1. Commit changes
+git add -A
+git commit -m "feat: your feature description"
+
+# 2. Push to GitHub (creates PR due to branch protection)
+git push origin feature/your-branch
+
+# 3. Create PR and merge on GitHub
+# Go to: https://github.com/ahmed-farahat-pro/agents/pulls
+
+# 4. Deploy to EC2 (after merge)
+ssh -i ~/Downloads/nightowl.pem ubuntu@YOUR_EC2_IP
+cd /home/ubuntu/nightowl
+git pull origin main
+npm install
+# Build MCP servers on EC2
+cd mcp-servers/arabic-rtl-auditor && npm install && npm run build && cd ../..
+cd mcp-servers/task-splitter && npm install && npm run build && cd ../..
+cd mcp-servers/smart-code-search && npm install && npm run build && cd ../..
+pm2 restart all
+```
+
+---
+
 ## 🚀 Complete EC2 Deployment Guide (Step-by-Step)
 
 This guide walks you through setting up NightOwl on AWS EC2 from scratch, including building custom MCP servers and running the agent dashboard.
