@@ -11,6 +11,7 @@ const { Server } = require('socket.io');
 const path = require('path');
 const logger = require('../utils/logger');
 const axios = require('axios');
+const aiClient = require('../utils/ai-client');
 
 const app = express();
 const server = http.createServer(app);
@@ -61,6 +62,14 @@ app.get('/dashboard', (req, res) => {
 
 app.get('/dashboard.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+
+app.get('/logs', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'logs.html'));
+});
+
+app.get('/logs.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'logs.html'));
 });
 
 app.get('/api/status', (req, res) => {
@@ -389,6 +398,195 @@ app.get('/api/gitlab/repos/:projectPath', async (req, res) => {
       success: false,
       error: 'Failed to fetch project',
       message: error.message,
+    });
+  }
+});
+
+// ============================================================================
+// AI Provider Routes
+// ============================================================================
+
+// Get available AI providers
+app.get('/api/ai/providers', (req, res) => {
+  try {
+    const providers = aiClient.getAvailableProviders();
+    res.json({
+      success: true,
+      defaultProvider: aiClient.defaultProvider,
+      providers,
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to get AI providers:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Test AI provider
+app.post('/api/ai/test', async (req, res) => {
+  try {
+    const { provider, message } = req.body;
+    const testMessage = message || 'Hello, this is a test message. Please respond with "Test successful".';
+    
+    logger.info(`[Dashboard] Testing AI provider: ${provider}`);
+    
+    const result = await aiClient.call(testMessage, {
+      provider,
+      systemMessage: 'You are a helpful assistant.',
+      maxTokens: 100,
+    });
+
+    res.json({
+      success: true,
+      provider: result.provider,
+      model: result.model,
+      response: result.content,
+      duration: result.duration,
+      usage: result.usage,
+    });
+  } catch (error) {
+    logger.error('[Dashboard] AI test failed:', error);
+    res.status(500).json({
+      success: false,
+      provider: req.body.provider,
+      error: error.message,
+    });
+  }
+});
+
+// Get AI request logs
+app.get('/api/ai/logs', (req, res) => {
+  try {
+    const { limit = 100, provider } = req.query;
+    const logs = aiClient.getLogs(parseInt(limit), provider);
+    res.json({
+      success: true,
+      count: logs.length,
+      logs,
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to get AI logs:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// ============================================================================
+// System Logs API
+// ============================================================================
+
+// Get recent logs from log file
+app.get('/api/logs', async (req, res) => {
+  try {
+    const fs = require('fs').promises;
+    const path = require('path');
+    const logDir = process.env.LOG_DIR || './logs';
+    const logFile = path.join(logDir, 'nightowl.log');
+    
+    const { lines = 100, level } = req.query;
+    const maxLines = Math.min(parseInt(lines), 1000);
+    
+    let content;
+    try {
+      content = await fs.readFile(logFile, 'utf8');
+    } catch (err) {
+      // If file doesn't exist, return empty
+      return res.json({
+        success: true,
+        source: 'memory',
+        logs: [],
+      });
+    }
+    
+    const allLogs = content.trim().split('\n').filter(Boolean);
+    
+    // Parse JSON logs
+    let parsedLogs = allLogs.map(line => {
+      try {
+        return JSON.parse(line);
+      } catch {
+        return { raw: line, timestamp: new Date().toISOString() };
+      }
+    });
+    
+    // Filter by level if specified
+    if (level) {
+      parsedLogs = parsedLogs.filter(log => log.level === level);
+    }
+    
+    // Get last N lines
+    const recentLogs = parsedLogs.slice(-maxLines);
+    
+    res.json({
+      success: true,
+      source: 'file',
+      count: recentLogs.length,
+      total: allLogs.length,
+      logs: recentLogs,
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to get logs:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Get logs from PM2
+app.get('/api/logs/pm2', async (req, res) => {
+  try {
+    const { exec } = require('child_process');
+    const util = require('util');
+    const execAsync = util.promisify(exec);
+    
+    const { lines = 100, process: processName } = req.query;
+    const maxLines = Math.min(parseInt(lines), 1000);
+    
+    const processFilter = processName || 'all';
+    const command = `pm2 logs ${processFilter} --lines ${maxLines} --nostream`;
+    
+    const { stdout } = await execAsync(command);
+    
+    res.json({
+      success: true,
+      process: processFilter,
+      logs: stdout.split('\n').filter(Boolean),
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to get PM2 logs:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      note: 'Make sure PM2 is installed and running',
+    });
+  }
+});
+
+// Stream logs via Socket.IO
+app.post('/api/logs/stream', (req, res) => {
+  const { enabled } = req.body;
+  
+  if (enabled) {
+    // Set up log streaming
+    const logStream = setInterval(() => {
+      const recentLogs = aiClient.getLogs(10);
+      io.emit('ai-logs', recentLogs);
+    }, 5000);
+    
+    res.json({
+      success: true,
+      message: 'Log streaming enabled',
+      interval: 5000,
+    });
+  } else {
+    res.json({
+      success: true,
+      message: 'Log streaming disabled',
     });
   }
 });

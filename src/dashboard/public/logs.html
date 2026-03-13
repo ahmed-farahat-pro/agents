@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nigents - Logs Viewer</title>
+    <script>
+        // Check authentication
+        if (localStorage.getItem('nigents_auth') !== 'true') {
+            window.location.href = '/login.html';
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+            background: #0a0a0f;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .header h1::before {
+            content: '📋';
+            margin-right: 8px;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        .container {
+            padding: 24px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 12px;
+        }
+        
+        .tab {
+            padding: 8px 16px;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .tab:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .tab.active {
+            color: #fff;
+            background: rgba(102, 126, 234, 0.2);
+        }
+        
+        .filters {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-select {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        .filter-select option {
+            background: #1a1a25;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px;
+        }
+        
+        .stat-card h4 {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .logs-container {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .logs-header {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px 16px;
+            display: grid;
+            grid-template-columns: 80px 160px 100px 1fr 80px;
+            gap: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .logs-content {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            display: grid;
+            grid-template-columns: 80px 160px 100px 1fr 80px;
+            gap: 12px;
+            font-size: 13px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            align-items: start;
+        }
+        
+        .log-entry:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        
+        .log-time {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 11px;
+        }
+        
+        .log-provider {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .provider-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .provider-badge.anthropic { background: rgba(212, 165, 116, 0.2); color: #d4a574; }
+        .provider-badge.zhipu { background: rgba(53, 132, 228, 0.2); color: #3584e4; }
+        .provider-badge.moonshot { background: rgba(255, 107, 107, 0.2); color: #ff6b6b; }
+        .provider-badge.deepseek { background: rgba(52, 73, 94, 0.5); color: #bdc3c7; }
+        
+        .log-model {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 11px;
+        }
+        
+        .log-message {
+            color: #e0e0e0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .log-status {
+            text-align: right;
+        }
+        
+        .status-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .status-badge.success { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .status-badge.error { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .status-badge.pending { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        
+        .log-details {
+            grid-column: 1 / -1;
+            margin-top: 8px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .log-entry.expanded .log-details {
+            display: block;
+        }
+        
+        .log-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .log-meta-item {
+            font-size: 12px;
+        }
+        
+        .log-meta-item span {
+            color: rgba(255, 255, 255, 0.5);
+            display: block;
+            margin-bottom: 2px;
+        }
+        
+        .log-prompt, .log-response {
+            margin-top: 12px;
+        }
+        
+        .log-prompt h5, .log-response h5 {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+        
+        .code-block {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 13px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .toggle-switch.active {
+            background: #667eea;
+        }
+        
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        
+        .toggle-switch.active::after {
+            transform: translateX(20px);
+        }
+        
+        .back-link {
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 14px;
+            margin-right: 16px;
+        }
+        
+        .back-link:hover {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div style="display: flex; align-items: center;">
+            <a href="/dashboard.html" class="back-link">← Back to Dashboard</a>
+            <h1>System Logs & AI Requests</h1>
+        </div>
+        <div class="header-actions">
+            <label class="auto-refresh">
+                <div class="toggle-switch" id="auto-refresh-toggle"></div>
+                Auto-refresh
+            </label>
+            <button class="btn btn-primary" onclick="refreshLogs()">🔄 Refresh</button>
+            <button class="btn btn-secondary" onclick="logout()">🚪 Logout</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="tabs">
+            <button class="tab active" data-tab="ai" onclick="switchTab('ai')">AI Requests</button>
+            <button class="tab" data-tab="system" onclick="switchTab('system')">System Logs</button>
+            <button class="tab" data-tab="pm2" onclick="switchTab('pm2')">PM2 Logs</button>
+        </div>
+        
+        <div class="filters">
+            <select class="filter-select" id="provider-filter" onchange="filterLogs()">
+                <option value="">All Providers</option>
+                <option value="anthropic">Anthropic</option>
+                <option value="zhipu">Zhipu</option>
+                <option value="moonshot">Moonshot</option>
+                <option value="deepseek">DeepSeek</option>
+            </select>
+            <select class="filter-select" id="status-filter" onchange="filterLogs()">
+                <option value="">All Status</option>
+                <option value="success">Success</option>
+                <option value="error">Error</option>
+            </select>
+            <select class="filter-select" id="limit-filter" onchange="refreshLogs()">
+                <option value="50">50 entries</option>
+                <option value="100" selected>100 entries</option>
+                <option value="500">500 entries</option>
+            </select>
+        </div>
+        
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <h4>Total Requests</h4>
+                <div class="value" id="total-requests">-</div>
+            </div>
+            <div class="stat-card">
+                <h4>Success Rate</h4>
+                <div class="value" id="success-rate">-</div>
+            </div>
+            <div class="stat-card">
+                <h4>Avg Response Time</h4>
+                <div class="value" id="avg-duration">-</div>
+            </div>
+            <div class="stat-card">
+                <h4>Total Tokens</h4>
+                <div class="value" id="total-tokens">-</div>
+            </div>
+        </div>
+        
+        <div class="logs-container" id="logs-container">
+            <div class="loading">Loading logs...</div>
+        </div>
+    </div>
+    
+    <script>
+        let currentTab = 'ai';
+        let autoRefresh = false;
+        let refreshInterval = null;
+        let allLogs = [];
+        
+        function logout() {
+            localStorage.removeItem('nigents_auth');
+            window.location.href = '/login.html';
+        }
+        
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+            refreshLogs();
+        }
+        
+        async function refreshLogs() {
+            const container = document.getElementById('logs-container');
+            container.innerHTML = '<div class="loading">Loading logs...</div>';
+            
+            try {
+                if (currentTab === 'ai') {
+                    await loadAILogs();
+                } else if (currentTab === 'system') {
+                    await loadSystemLogs();
+                } else if (currentTab === 'pm2') {
+                    await loadPM2Logs();
+                }
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <p>Error loading logs: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function loadAILogs() {
+            const limit = document.getElementById('limit-filter').value;
+            const provider = document.getElementById('provider-filter').value;
+            
+            let url = `/api/ai/logs?limit=${limit}`;
+            if (provider) url += `&provider=${provider}`;
+            
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.error);
+            }
+            
+            allLogs = data.logs;
+            filterAndRenderLogs();
+            updateStats(data.logs);
+        }
+        
+        async function loadSystemLogs() {
+            const limit = document.getElementById('limit-filter').value;
+            const response = await fetch(`/api/logs?lines=${limit}`);
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.error);
+            }
+            
+            renderSystemLogs(data.logs);
+            document.getElementById('stats').style.display = 'none';
+        }
+        
+        async function loadPM2Logs() {
+            const limit = document.getElementById('limit-filter').value;
+            const response = await fetch(`/api/logs/pm2?lines=${limit}`);
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.error);
+            }
+            
+            renderPM2Logs(data.logs);
+            document.getElementById('stats').style.display = 'none';
+        }
+        
+        function filterLogs() {
+            filterAndRenderLogs();
+        }
+        
+        function filterAndRenderLogs() {
+            const statusFilter = document.getElementById('status-filter').value;
+            
+            let filtered = allLogs;
+            if (statusFilter) {
+                filtered = filtered.filter(l => l.status === statusFilter);
+            }
+            
+            renderAILogs(filtered);
+        }
+        
+        function renderAILogs(logs) {
+            const container = document.getElementById('logs-container');
+            document.getElementById('stats').style.display = 'grid';
+            
+            if (logs.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <p>No logs found</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const html = `
+                <div class="logs-header">
+                    <div>Time</div>
+                    <div>Provider</div>
+                    <div>Model</div>
+                    <div>Operation</div>
+                    <div>Status</div>
+                </div>
+                <div class="logs-content">
+                    ${logs.map(log => `
+                        <div class="log-entry" onclick="toggleDetails(this)">
+                            <div class="log-time">${new Date(log.timestamp).toLocaleTimeString()}</div>
+                            <div class="log-provider">
+                                <span class="provider-badge ${log.provider}">${log.provider}</span>
+                            </div>
+                            <div class="log-model">${log.model || '-'}</div>
+                            <div class="log-message" title="${log.operation}">${log.operation}</div>
+                            <div class="log-status">
+                                <span class="status-badge ${log.status}">${log.status}</span>
+                            </div>
+                            <div class="log-details">
+                                <div class="log-meta">
+                                    <div class="log-meta-item">
+                                        <span>Duration</span>
+                                        ${log.duration}ms
+                                    </div>
+                                    <div class="log-meta-item">
+                                        <span>Prompt Tokens</span>
+                                        ${log.promptTokens || '-'}
+                                    </div>
+                                    <div class="log-meta-item">
+                                        <span>Completion Tokens</span>
+                                        ${log.completionTokens || '-'}
+                                    </div>
+                                    <div class="log-meta-item">
+                                        <span>Total Tokens</span>
+                                        ${log.totalTokens || '-'}
+                                    </div>
+                                    <div class="log-meta-item">
+                                        <span>Prompt Length</span>
+                                        ${log.promptLength} chars
+                                    </div>
+                                    <div class="log-meta-item">
+                                        <span>Response Length</span>
+                                        ${log.responseLength || '-'} chars
+                                    </div>
+                                </div>
+                                ${log.error ? `
+                                    <div style="margin-top: 12px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; color: #ef4444;">
+                                        <strong>Error:</strong> ${log.error}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
+        function renderSystemLogs(logs) {
+            const container = document.getElementById('logs-container');
+            
+            if (logs.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <p>No system logs found</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const html = `
+                <div class="logs-content">
+                    ${logs.map(log => `
+                        <div class="log-entry" style="grid-template-columns: 160px 80px 1fr; font-family: monospace;">
+                            <div class="log-time">${log.timestamp || '-'}</div>
+                            <div class="log-status">
+                                <span class="status-badge ${log.level}">${log.level}</span>
+                            </div>
+                            <div class="log-message">${log.message || log.raw || JSON.stringify(log)}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
+        function renderPM2Logs(logs) {
+            const container = document.getElementById('logs-container');
+            
+            if (logs.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <p>No PM2 logs found</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const html = `
+                <div class="logs-content">
+                    ${logs.map(log => `
+                        <div class="log-entry" style="font-family: monospace; white-space: pre-wrap;">
+                            ${log}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
+        function updateStats(logs) {
+            const total = logs.length;
+            const success = logs.filter(l => l.status === 'success').length;
+            const successRate = total > 0 ? Math.round((success / total) * 100) : 0;
+            const avgDuration = total > 0 
+                ? Math.round(logs.reduce((a, b) => a + (b.duration || 0), 0) / total) 
+                : 0;
+            const totalTokens = logs.reduce((a, b) => a + (b.totalTokens || 0), 0);
+            
+            document.getElementById('total-requests').textContent = total;
+            document.getElementById('success-rate').textContent = successRate + '%';
+            document.getElementById('avg-duration').textContent = avgDuration + 'ms';
+            document.getElementById('total-tokens').textContent = totalTokens.toLocaleString();
+        }
+        
+        function toggleDetails(element) {
+            element.classList.toggle('expanded');
+        }
+        
+        // Auto-refresh toggle
+        document.getElementById('auto-refresh-toggle').addEventListener('click', function() {
+            autoRefresh = !autoRefresh;
+            this.classList.toggle('active');
+            
+            if (autoRefresh) {
+                refreshInterval = setInterval(refreshLogs, 5000);
+            } else {
+                clearInterval(refreshInterval);
+            }
+        });
+        
+        // Initial load
+        refreshLogs();
+    </script>
+</body>
+</html>
