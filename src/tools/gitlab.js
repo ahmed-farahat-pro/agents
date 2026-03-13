@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - GitLab API Tool
+ * 🦉 Nigents - GitLab API Tool
  * Interacts with GitLab for repo access and MR creation
  */
 

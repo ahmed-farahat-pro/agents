@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - Telegram Bot
+ * 🦉 Nigents - Telegram Bot
  * Main entry point for the AI agent team
  */
 
@@ -51,7 +51,7 @@ const botState = {
   activeChats: new Map(), // userId -> agentName for direct chat
 };
 
-logger.info('🦉 NightOwl Bot starting...');
+logger.info('🦉 Nigents Bot starting...');
 
 // ============================================================================
 // COMMAND HANDLERS
@@ -62,7 +62,7 @@ bot.onText(/\/start/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
   const welcomeMessage = `
-🦉 **Welcome to NightOwl!**
+🦉 **Welcome to Nigents!**
 
 Your personal AI development team. Send a task before you sleep, wake up to a finished Merge Request.
 
@@ -100,7 +100,7 @@ Sleep well! 🌙
   await bot.sendMessage(msg.chat.id, welcomeMessage, { parse_mode: 'Markdown' });
   
   // Send voice welcome
-  await reporter.sendVoice('Welcome to NightOwl! I am your AI development team. How can I help you today?', 'en');
+  await reporter.sendVoice('Welcome to Nigents! I am your AI development team. How can I help you today?', 'en');
 });
 
 // /plan command
@@ -362,18 +362,18 @@ bot.on('error', (error) => {
 
 // Graceful shutdown
 process.on('SIGINT', () => {
-  logger.info('Shutting down NightOwl...');
+  logger.info('Shutting down Nigents...');
   bot.stopPolling();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-  logger.info('Shutting down NightOwl...');
+  logger.info('Shutting down Nigents...');
   bot.stopPolling();
   process.exit(0);
 });
 
-logger.info('🦉 NightOwl Bot is running!');
+logger.info('🦉 Nigents Bot is running!');
 
 // Export for testing
 module.exports = { bot, orchestrator, reporter };

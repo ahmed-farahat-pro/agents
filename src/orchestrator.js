@@ -1,12 +1,12 @@
 /**
- * 🦉 NightOwl - Orchestrator Agent
+ * 🦉 Nigents - Orchestrator Agent
  * Team Lead & Router - Coordinates all other agents using AutoGen
  */
 
 const BaseAgent = require('./agents/base-agent');
 const logger = require('./utils/logger');
 const { v4: uuidv4 } = require('uuid');
-const { NightOwlGroupChat } = require('./autogen');
+const { NigentsGroupChat } = require('./autogen');
 
 class OrchestratorAgent extends BaseAgent {
   constructor() {
@@ -19,7 +19,7 @@ class OrchestratorAgent extends BaseAgent {
     this.completedTasks = [];
     
     // Initialize AutoGen group chat
-    this.groupChat = new NightOwlGroupChat();
+    this.groupChat = new NigentsGroupChat();
     this.setupGroupChatListeners();
   }
 

@@ -439,7 +439,7 @@
       "command": "node",
       "args": ["/workspace/mcp-servers/task-splitter/dist/index.js"],
       "enabled": true,
-      "description": "Intelligent task splitting across NightOwl agent team"
+      "description": "Intelligent task splitting across Nigents agent team"
     },
     "smart-code-search": {
       "type": "stdio",

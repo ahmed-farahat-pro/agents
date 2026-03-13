@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 🦉 NightOwl - Health Check Script
+ * 🦉 Nigents - Health Check Script
  * Tests all API connections and configurations
  */
 
@@ -64,7 +64,7 @@ async function checkClaude() {
     const response = await anthropic.messages.create({
       model: 'claude-3-haiku-20240307',
       max_tokens: 50,
-      messages: [{ role: 'user', content: 'Say "NightOwl is ready"' }],
+      messages: [{ role: 'user', content: 'Say "Nigents is ready"' }],
     });
 
     log.success('Claude API connected');
@@ -182,7 +182,7 @@ async function checkConfig() {
 }
 
 async function main() {
-  console.log(chalk.bold.magenta('\n🦉 NightOwl Health Check\n'));
+  console.log(chalk.bold.magenta('\n🦉 Nigents Health Check\n'));
   
   const results = {
     telegram: await checkTelegram(),
@@ -199,7 +199,7 @@ async function main() {
   const total = Object.keys(results).length;
   
   if (passed === total) {
-    console.log(chalk.green(`\n✅ All checks passed! NightOwl is ready to fly.\n`));
+    console.log(chalk.green(`\n✅ All checks passed! Nigents is ready to fly.\n`));
     process.exit(0);
   } else {
     console.log(chalk.yellow(`\n⚠️  ${passed}/${total} checks passed. Some features may not work.\n`));

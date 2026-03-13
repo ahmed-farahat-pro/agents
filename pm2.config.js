@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - PM2 Configuration
+ * 🦉 Nigents - PM2 Configuration
  * Process manager configuration for 24/7 operation
  */
 

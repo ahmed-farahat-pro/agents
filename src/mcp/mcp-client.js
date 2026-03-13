@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - MCP (Model Context Protocol) Client
+ * 🦉 Nigents - MCP (Model Context Protocol) Client
  * Integrates MCP servers with AI agents for enhanced capabilities
  */
 

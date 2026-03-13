@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - Frontend Developer Agent
+ * 🦉 Nigents - Frontend Developer Agent
  * Writes React/React Native code with RTL support
  */
 
