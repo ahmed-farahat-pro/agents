@@ -1,5 +1,5 @@
 /**
- * 🦉 Nigents - Telegram Bot
+ * Nigents - Telegram Bot
  * Main entry point for the AI agent team
  */
 
@@ -71,7 +71,7 @@ function getActiveProject() {
   }
 }
 
-logger.info('🦉 Nigents Bot starting...');
+logger.info('Nigents Bot starting...');
 
 // ============================================================================
 // COMMAND HANDLERS
@@ -82,11 +82,11 @@ bot.onText(/\/start/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
   const welcomeMessage = `
-🦉 **Welcome to Nigents!**
+**Welcome to Nigents!**
 
 Your AI development team. Send tasks via voice or text, and I'll handle the rest.
 
-**🎙️ Just Talk To Me!**
+**Just Talk To Me!**
 Send voice notes or text naturally:
 • "Add login feature with JWT"
 • "Switch to the frontend project"  
@@ -94,7 +94,7 @@ Send voice notes or text naturally:
 • "What's the status?"
 • "I want to talk to the backend developer"
 
-**📋 Quick Commands:**
+**Quick Commands:**
 • /plan <task> — Create implementation plan
 • /approve — Approve plan
 • /projects — List projects
@@ -104,16 +104,16 @@ Send voice notes or text naturally:
 • /status — Check status
 • /ask <question> — Ask about code
 
-**👥 Agent Chat:**
+**Agent Chat:**
 • /meet <agent> — Chat with specific agent
   (planner, backend, frontend, qa, reviewer)
 
-**⚙️ Management:**
+**Management:**
 • /run — Start implementation now
 • /queue — List queued tasks
 • /cancel <id> — Cancel task
 
-I understand Arabic and English voice messages! 🌙
+I understand Arabic and English voice messages!
 `;
 
   await bot.sendMessage(msg.chat.id, welcomeMessage, { parse_mode: 'Markdown' });
@@ -131,7 +131,7 @@ bot.onText(/\/plan (.+)/, async (msg, match) => {
   
   await bot.sendChatAction(msg.chat.id, 'typing');
 
-  const statusMsg = await bot.sendMessage(msg.chat.id, '📋 Planner is analyzing your request...');
+  const statusMsg = await bot.sendMessage(msg.chat.id, 'Planner is analyzing your request...');
 
   const result = await orchestrator.processCommand(`/plan ${task}`, {
     userId: msg.from.id,
@@ -149,7 +149,7 @@ bot.onText(/\/plan (.+)/, async (msg, match) => {
     const voiceText = `I've created a plan for: ${task}. It has ${result.plan.complexity} complexity and will take about ${result.plan.estimatedHours} hours. Reply with approve to start implementation.`;
     await reporter.sendVoice(voiceText, 'en');
   } else {
-    await bot.sendMessage(msg.chat.id, `❌ Error: ${result.message}`);
+    await bot.sendMessage(msg.chat.id, `Error: ${result.message}`);
   }
 });
 
@@ -168,7 +168,7 @@ bot.onText(/\/ask (.+)/, async (msg, match) => {
   if (result.success) {
     await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
   } else {
-    await bot.sendMessage(msg.chat.id, `❌ Error: ${result.message}`);
+    await bot.sendMessage(msg.chat.id, `Error: ${result.message}`);
   }
 });
 
@@ -188,7 +188,7 @@ bot.onText(/\/approve/, async (msg) => {
 bot.onText(/\/run/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
-  await bot.sendMessage(msg.chat.id, '🚀 Starting implementation...');
+  await bot.sendMessage(msg.chat.id, 'Starting implementation...');
 
   const result = await orchestrator.processCommand('/run', {
     userId: msg.from.id,
@@ -243,12 +243,12 @@ bot.onText(/\/repos/, async (msg) => {
   try {
     const connection = await gitlab.testConnection();
     if (connection.success) {
-      await bot.sendMessage(msg.chat.id, `✅ Connected to GitLab as ${connection.name} (@${connection.user})`);
+      await bot.sendMessage(msg.chat.id, `Connected to GitLab as ${connection.name} (@${connection.user})`);
     } else {
-      await bot.sendMessage(msg.chat.id, `❌ GitLab connection failed: ${connection.error}`);
+      await bot.sendMessage(msg.chat.id, `GitLab connection failed: ${connection.error}`);
     }
   } catch (error) {
-    await bot.sendMessage(msg.chat.id, `❌ Error: ${error.message}`);
+    await bot.sendMessage(msg.chat.id, `Error: ${error.message}`);
   }
 });
 
@@ -278,7 +278,7 @@ bot.onText(/\/projects/, async (msg) => {
     
     const activeProject = projectsConfig.defaultProject;
     
-    let message = '📁 **Available Projects**\n\n';
+    let message = '**Available Projects**\n\n';
     
     projectsConfig.projects.forEach(project => {
       const isActive = project.id === activeProject ? ' ✅' : '';
@@ -295,7 +295,7 @@ bot.onText(/\/projects/, async (msg) => {
     await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
   } catch (error) {
     logger.error('Failed to load projects:', error);
-    await bot.sendMessage(msg.chat.id, '❌ Error loading projects list');
+    await bot.sendMessage(msg.chat.id, 'Error loading projects list');
   }
 });
 
@@ -312,7 +312,7 @@ bot.onText(/\/project (.+)/, async (msg, match) => {
     const project = projectsConfig.projects.find(p => p.id === projectId);
     
     if (!project) {
-      await bot.sendMessage(msg.chat.id, `❌ Project "${projectId}" not found. Use /projects to see available projects.`);
+      await bot.sendMessage(msg.chat.id, `Project "${projectId}" not found. Use /projects to see available projects.`);
       return;
     }
     
@@ -324,7 +324,7 @@ bot.onText(/\/project (.+)/, async (msg, match) => {
     orchestrator.activeProject = projectId;
     
     await bot.sendMessage(msg.chat.id, 
-      `✅ **Switched to project: ${project.name}**\n\n` +
+      `**Switched to project: ${project.name}**\n\n` +
       `Repository: \`${project.gitlabRepo}\`\n` +
       `Stack: ${Object.keys(project.stack).join(', ')}\n\n` +
       `All future tasks will target this project.`,
@@ -332,7 +332,7 @@ bot.onText(/\/project (.+)/, async (msg, match) => {
     );
   } catch (error) {
     logger.error('Failed to switch project:', error);
-    await bot.sendMessage(msg.chat.id, '❌ Error switching project');
+    await bot.sendMessage(msg.chat.id, 'Error switching project');
   }
 });
 
@@ -349,11 +349,11 @@ bot.onText(/\/models/, async (msg) => {
     const providers = aiClient.getAvailableProviders();
     const currentProvider = aiClient.defaultProvider;
     
-    let message = '🤖 **Available AI Models**\n\n';
+    let message = '**Available AI Models**\n\n';
     
     Object.entries(providers).forEach(([key, provider]) => {
       const isActive = key === currentProvider ? ' ✅' : '';
-      const status = provider.enabled ? '🟢' : '🔴';
+      const status = provider.enabled ? 'Active' : 'Inactive';
       
       message += `${status} **${provider.name}**${isActive}\n`;
       message += `  ID: \`${key}\`\n`;
@@ -373,7 +373,7 @@ bot.onText(/\/models/, async (msg) => {
     await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
   } catch (error) {
     logger.error('Failed to get AI models:', error);
-    await bot.sendMessage(msg.chat.id, '❌ Error loading AI models');
+    await bot.sendMessage(msg.chat.id, 'Error loading AI models');
   }
 });
 
@@ -391,14 +391,14 @@ bot.onText(/\/model (.+)/, async (msg, match) => {
     
     if (!provider) {
       await bot.sendMessage(msg.chat.id, 
-        `❌ Provider "${providerId}" not found.\n\nUse /models to see available providers.`
+        `Provider "${providerId}" not found.\n\nUse /models to see available providers.`
       );
       return;
     }
     
     if (!provider.enabled) {
       await bot.sendMessage(msg.chat.id, 
-        `❌ Provider "${provider.name}" is not configured.\n\n` +
+        `Provider "${provider.name}" is not configured.\n\n` +
         `Please add the API key to your .env file:\n` +
         `${providerId.toUpperCase()}_API_KEY=your_key_here`
       );
@@ -412,7 +412,7 @@ bot.onText(/\/model (.+)/, async (msg, match) => {
     orchestrator.provider = providerId;
     
     await bot.sendMessage(msg.chat.id, 
-      `✅ **Switched to AI Provider: ${provider.name}**\n\n` +
+      `**Switched to AI Provider: ${provider.name}**\n\n` +
       `Default model: \`${provider.defaultModel}\`\n` +
       `Available models: ${provider.models.length}\n\n` +
       `All future tasks will use this provider.`,
@@ -427,7 +427,7 @@ bot.onText(/\/model (.+)/, async (msg, match) => {
     
   } catch (error) {
     logger.error('Failed to switch AI provider:', error);
-    await bot.sendMessage(msg.chat.id, '❌ Error switching AI provider');
+    await bot.sendMessage(msg.chat.id, 'Error switching AI provider');
   }
 });
 
@@ -445,7 +445,7 @@ bot.on('voice', async (msg) => {
     const voiceFile = await voice.downloadVoiceFile(bot, msg.voice.file_id);
     
     // Transcribe
-    await bot.sendMessage(msg.chat.id, '🎙️ Transcribing voice message...');
+    await bot.sendMessage(msg.chat.id, 'Transcribing voice message...');
     
     const transcription = await voice.speechToText(voiceFile);
     
@@ -453,12 +453,12 @@ bot.on('voice', async (msg) => {
     voice.cleanup(voiceFile);
 
     if (!transcription.success) {
-      await bot.sendMessage(msg.chat.id, '❌ Failed to transcribe voice message');
+      await bot.sendMessage(msg.chat.id, 'Failed to transcribe voice message');
       return;
     }
 
     // Show transcription
-    await bot.sendMessage(msg.chat.id, `📝 Transcribed: "${transcription.text}"`);
+    await bot.sendMessage(msg.chat.id, `Transcribed: "${transcription.text}"`);
 
     // Use intent router to understand what user wants
     await bot.sendChatAction(msg.chat.id, 'typing');
@@ -468,7 +468,7 @@ bot.on('voice', async (msg) => {
     });
 
     if (!intentResult.success) {
-      await bot.sendMessage(msg.chat.id, '❌ Sorry, I had trouble understanding. Please try again or use commands like /plan, /projects, etc.');
+      await bot.sendMessage(msg.chat.id, 'Sorry, I had trouble understanding. Please try again or use commands like /plan, /projects, etc.');
       return;
     }
 
@@ -486,7 +486,7 @@ bot.on('voice', async (msg) => {
 
   } catch (error) {
     logger.error('Voice processing error:', error);
-    await bot.sendMessage(msg.chat.id, '❌ Error processing voice message');
+    await bot.sendMessage(msg.chat.id, 'Error processing voice message');
   }
 });
 
@@ -538,7 +538,7 @@ bot.on('message', async (msg) => {
 
   } catch (error) {
     logger.error('Message processing error:', error);
-    await bot.sendMessage(msg.chat.id, '❌ Error processing your message');
+    await bot.sendMessage(msg.chat.id, 'Error processing your message');
   }
 });
 
@@ -581,15 +581,15 @@ async function executeIntent(msg, intent, response, context = {}) {
           orchestrator.activeProject = matchedProject.id;
           
           await bot.sendMessage(msg.chat.id, 
-            `✅ Switched to project: ${matchedProject.name}\nRepository: ${matchedProject.gitlabRepo}`
+            `Switched to project: ${matchedProject.name}\nRepository: ${matchedProject.gitlabRepo}`
           );
         } else {
           await bot.sendMessage(msg.chat.id, 
-            `❌ Project "${intent.extracted_project}" not found. Use /projects to see available projects.`
+            `Project "${intent.extracted_project}" not found. Use /projects to see available projects.`
           );
         }
       } catch (error) {
-        await bot.sendMessage(msg.chat.id, '❌ Error switching project');
+        await bot.sendMessage(msg.chat.id, 'Error switching project');
       }
       break;
 
@@ -610,11 +610,11 @@ async function executeIntent(msg, intent, response, context = {}) {
         aiClient.defaultProvider = matchedProvider[0];
         orchestrator.provider = matchedProvider[0];
         await bot.sendMessage(msg.chat.id, 
-          `✅ Switched to ${matchedProvider[1].name}`
+          `Switched to ${matchedProvider[1].name}`
         );
       } else {
         await bot.sendMessage(msg.chat.id, 
-          `❌ Model "${intent.extracted_model}" not found or not configured. Use /models to see available models.`
+          `Model "${intent.extracted_model}" not found or not configured. Use /models to see available models.`
         );
       }
       break;
@@ -663,11 +663,11 @@ async function executeIntent(msg, intent, response, context = {}) {
         if (agentName) {
           botState.activeChats.set(msg.from.id, agentName);
           await bot.sendMessage(msg.chat.id, 
-            `💬 Now chatting with ${agentName} agent. Send your message or /exit to stop.`
+            `Now chatting with ${agentName} agent. Send your message or /exit to stop.`
           );
         } else {
           await bot.sendMessage(msg.chat.id, 
-            `❌ Agent "${intent.extracted_agent}" not found. Available: planner, backend, frontend, qa, reviewer`
+            `Agent "${intent.extracted_agent}" not found. Available: planner, backend, frontend, qa, reviewer`
           );
         }
       }
@@ -702,11 +702,11 @@ orchestrator.on('taskCompleted', (data) => {
 });
 
 orchestrator.on('planApproved', (data) => {
-  reporter.sendMessage(`✅ Plan approved: ${data.plan.title}`);
+  reporter.sendMessage(`Plan approved: ${data.plan.title}`);
 });
 
 orchestrator.on('implementationStarted', (data) => {
-  reporter.sendMessage('🚀 Starting overnight implementation. Sleep well! 🌙');
+  reporter.sendMessage('Starting overnight implementation. Sleep well!');
 });
 
 orchestrator.on('implementationCompleted', (data) => {
@@ -747,7 +747,7 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
-logger.info('🦉 Nigents Bot is running!');
+logger.info('Nigents Bot is running!');
 
 // Export for testing
 module.exports = { bot, orchestrator, reporter };
