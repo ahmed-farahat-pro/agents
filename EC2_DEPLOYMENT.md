@@ -761,3 +761,66 @@ sudo systemctl status nginx
 ---
 
 **🎉 Deployment Complete!** Your AI agent team is ready at https://nigents.com
+
+---
+
+## 🔧 Troubleshooting: PM2 "Script already launched" Error
+
+If you see this error:
+```
+[PM2][ERROR] Script already launched, add -f option to force re-execution
+```
+
+### Option 1: Restart Existing Processes (Recommended)
+
+```bash
+# Instead of starting new ones, restart existing
+pm2 restart all
+
+# Or restart individually
+pm2 restart nigents-bot
+pm2 restart nigents-dashboard
+
+# Save config
+pm2 save
+
+# Then setup startup
+pm2 startup systemd
+# Run the command it outputs
+```
+
+### Option 2: Delete and Recreate
+
+```bash
+# Delete existing processes
+pm2 delete all
+
+# Or delete specific ones
+pm2 delete nigents-bot
+pm2 delete nigents-dashboard
+
+# Then start fresh
+pm2 start src/bot.js --name nigents-bot
+pm2 start src/dashboard/server.js --name nigents-dashboard
+pm2 save
+pm2 startup systemd
+```
+
+### Option 3: Force Recreate
+
+```bash
+# Use -f to force
+pm2 start src/bot.js --name nigents-bot -f
+pm2 start src/dashboard/server.js --name nigents-dashboard -f
+pm2 save
+```
+
+### Verify Status
+
+```bash
+# Check if running
+pm2 status
+
+# Should show both processes as "online"
+```
+
