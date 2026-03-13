@@ -8,37 +8,37 @@ stages:
 
 variables:
   SSH_USER: ubuntu
-  DEPLOY_DIR: /home/ubuntu/nigents
+  DEPLOY_DIR: /home/ubuntu/nightowl
   GIT_DEPTH: 10
   GIT_STRATEGY: clone
 
-# Cache node_modules between jobs and pipelines
 cache:
   key: ${CI_COMMIT_REF_SLUG}
   paths:
     - node_modules/
     - mcp-servers/*/node_modules/
 
-# Default before_script for all jobs
 default:
   before_script:
     - echo "=== DEBUG Environment Variables ==="
     - echo "EC2_HOST=${EC2_HOST}"
     - echo "SSH_USER=${SSH_USER}"
     - echo "SSH_PRIVATE_KEY is set=$(if [ -n "${SSH_PRIVATE_KEY}" ]; then echo 'YES'; else echo 'NO'; fi)"
+
     - |
       if [ -z "${EC2_HOST}" ]; then
         echo "ERROR: EC2_HOST is not set!"
-        echo "Please add EC2_HOST to GitLab CI/CD Variables"
         exit 1
       fi
+
     - |
       if [ -z "${SSH_PRIVATE_KEY}" ]; then
         echo "ERROR: SSH_PRIVATE_KEY is not set!"
-        echo "Please add EC2_SSH_KEY to GitLab CI/CD Variables"
         exit 1
       fi
+
     - echo "=== Setting up SSH ==="
+    - apk update
     - apk add --no-cache openssh-client bash
     - eval $(ssh-agent -s)
     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
@@ -48,9 +48,9 @@ default:
     - chmod 644 ~/.ssh/known_hosts
     - echo "=== SSH Setup Complete ==="
 
-# =============================================================================
+# ============================================================
 # STAGE 1: TEST
-# =============================================================================
+# ============================================================
 
 lint:
   stage: test
@@ -60,10 +60,8 @@ lint:
     - npm run lint || echo "No lint script"
     - node --check src/bot.js
     - node --check src/dashboard/server.js
-  only:
-    - main
-    - feature/*
-    - develop
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^main|develop|feature\/.*$/'
 
 test-mcp-builds:
   stage: test
@@ -71,14 +69,13 @@ test-mcp-builds:
   script:
     - cd mcp-servers/arabic-rtl-auditor && npm ci && npm run build && cd ../..
     - cd mcp-servers/task-splitter && npm ci && npm run build && cd ../..
-    - cd mcp-servers/smart-code-search && npm ci && npm run build
-  only:
-    - main
-    - feature/*
+    - cd mcp-servers/smart-code-search && npm ci && npm run build && cd ../..
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^main|feature\/.*$/'
 
-# =============================================================================
+# ============================================================
 # STAGE 2: BUILD
-# =============================================================================
+# ============================================================
 
 build-mcps:
   stage: build
@@ -92,13 +89,12 @@ build-mcps:
     paths:
       - mcp-dist.tar.gz
     expire_in: 1 hour
-  only:
-    - main
-    - develop
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"'
 
-# =============================================================================
+# ============================================================
 # STAGE 3: DEPLOY
-# =============================================================================
+# ============================================================
 
 deploy-to-ec2:
   stage: deploy
@@ -110,39 +106,48 @@ deploy-to-ec2:
     - echo "=== Starting deployment to EC2 ==="
     - echo "EC2_HOST=${EC2_HOST}"
     - echo "SSH_USER=${SSH_USER}"
+
     - |
       cat > deploy.sh << 'EOF'
       #!/bin/bash
       set -e
+
       echo "Navigating to project directory..."
-      cd /home/ubuntu/nigents
+      cd /home/ubuntu/nightowl
+
       echo "Pulling latest changes..."
       git fetch origin
       git reset --hard origin/main
+
       echo "Installing dependencies..."
       npm ci --production
+
       echo "Rebuilding MCP servers..."
       cd mcp-servers/arabic-rtl-auditor && npm ci && npm run build && cd ../..
       cd mcp-servers/task-splitter && npm ci && npm run build && cd ../..
       cd mcp-servers/smart-code-search && npm ci && npm run build && cd ../..
+
       echo "Restarting services..."
       pm2 reload nigents-bot --update-env || pm2 start src/bot.js --name nigents-bot
       pm2 reload nigents-dashboard --update-env || pm2 start src/dashboard/server.js --name nigents-dashboard
+
       pm2 save
       echo "Deployment complete!"
       pm2 status
       EOF
+
     - scp -o StrictHostKeyChecking=no deploy.sh "${SSH_USER}@${EC2_HOST}:/tmp/deploy.sh"
     - ssh -o StrictHostKeyChecking=no "${SSH_USER}@${EC2_HOST}" "chmod +x /tmp/deploy.sh && /tmp/deploy.sh"
     - ssh -o StrictHostKeyChecking=no "${SSH_USER}@${EC2_HOST}" "rm /tmp/deploy.sh"
     - echo "=== Deployment successful! ==="
-  only:
-    - main
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
   when: on_success
 
-# =============================================================================
-# UTILITY JOBS
-# =============================================================================
+# ============================================================
+# TELEGRAM NOTIFICATION
+# ============================================================
 
 notify-telegram:
   stage: deploy
@@ -150,16 +155,19 @@ notify-telegram:
   script:
     - apk add --no-cache curl
     - |
+      MESSAGE="🚀 Nigents Deployment
+      Status: ✅ SUCCESS
+      Branch: ${CI_COMMIT_REF_NAME}
+      Commit: ${CI_COMMIT_SHORT_SHA}
+      Author: ${GITLAB_USER_NAME}
+      Dashboard: https://nigents.com"
+
       curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
         -d "chat_id=${TELEGRAM_CHAT_ID}" \
-        -d "text=🚀 Nigents Deployment
-Status: ✅ SUCCESS
-Branch: ${CI_COMMIT_REF_NAME}
-Commit: ${CI_COMMIT_SHORT_SHA}
-Author: ${GITLAB_USER_NAME}
-Dashboard: https://nigents.com" \
+        --data-urlencode "text=${MESSAGE}" \
         -d "parse_mode=Markdown" || echo "Telegram notification failed"
-  only:
-    - main
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
   when: on_success
   allow_failure: true
