@@ -51,6 +51,25 @@ const botState = {
   activeChats: new Map(), // userId -> agentName for direct chat
 };
 
+// Helper: Get active project from config
+function getActiveProject() {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const projectsPath = path.join(__dirname, '..', 'config', 'projects.json');
+    const projectsConfig = JSON.parse(fs.readFileSync(projectsPath, 'utf8'));
+    
+    const activeProject = projectsConfig.projects.find(
+      p => p.id === projectsConfig.defaultProject
+    );
+    
+    return activeProject || null;
+  } catch (error) {
+    logger.error('Failed to get active project:', error);
+    return null;
+  }
+}
+
 logger.info('🦉 Nigents Bot starting...');
 
 // ============================================================================
@@ -73,6 +92,10 @@ Your personal AI development team. Send a task before you sleep, wake up to a fi
 • /approve — Approve plan for implementation
 • /run — Start implementing queued tasks
 
+📁 **Projects**
+• /projects — List available projects
+• /project <id> — Switch active project
+
 💬 **Questions**
 • /ask <question> — Ask about your code
 
@@ -87,9 +110,8 @@ Your personal AI development team. Send a task before you sleep, wake up to a fi
   (planner, backend, frontend, qa, reviewer)
 
 ⚙️ **Management**
-• /repos — List your GitLab repositories
+• /repos — Check GitLab connection
 • /cancel <id> — Cancel a task
-• /logs <agent> — View agent logs
 
 🎙️ **Voice Support**
 Send voice notes in Arabic or English!
@@ -108,6 +130,8 @@ bot.onText(/\/plan (.+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
 
   const task = match[1];
+  const activeProject = getActiveProject();
+  
   await bot.sendChatAction(msg.chat.id, 'typing');
 
   const statusMsg = await bot.sendMessage(msg.chat.id, '📋 Planner is analyzing your request...');
@@ -115,6 +139,8 @@ bot.onText(/\/plan (.+)/, async (msg, match) => {
   const result = await orchestrator.processCommand(`/plan ${task}`, {
     userId: msg.from.id,
     chatId: msg.chat.id,
+    project: activeProject?.gitlabRepo,
+    projectInfo: activeProject,
   });
 
   await bot.deleteMessage(msg.chat.id, statusMsg.message_id);
@@ -245,6 +271,76 @@ bot.onText(/\/cancel (.+)/, async (msg, match) => {
   await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
 });
 
+// /projects command - List available projects
+bot.onText(/\/projects/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  try {
+    const projectsPath = path.join(__dirname, '..', 'config', 'projects.json');
+    const fs = require('fs');
+    const projectsConfig = JSON.parse(fs.readFileSync(projectsPath, 'utf8'));
+    
+    const activeProject = projectsConfig.defaultProject;
+    
+    let message = '📁 **Available Projects**\n\n';
+    
+    projectsConfig.projects.forEach(project => {
+      const isActive = project.id === activeProject ? ' ✅' : '';
+      message += `**${project.name}**${isActive}\n`;
+      message += `  ID: \`${project.id}\`\n`;
+      message += `  Repo: \`${project.gitlabRepo}\`\n`;
+      message += `  Stack: ${Object.values(project.stack).flat().slice(0, 3).join(', ')}\n\n`;
+    });
+    
+    message += `Active project: **${activeProject}**\n\n`;
+    message += `To switch project, use:\n`;
+    message += '`/project <project-id>`';
+    
+    await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+  } catch (error) {
+    logger.error('Failed to load projects:', error);
+    await bot.sendMessage(msg.chat.id, '❌ Error loading projects list');
+  }
+});
+
+// /project command - Switch active project
+bot.onText(/\/project (.+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const projectId = match[1].trim();
+  
+  try {
+    const projectsPath = path.join(__dirname, '..', 'config', 'projects.json');
+    const fs = require('fs');
+    const projectsConfig = JSON.parse(fs.readFileSync(projectsPath, 'utf8'));
+    
+    const project = projectsConfig.projects.find(p => p.id === projectId);
+    
+    if (!project) {
+      await bot.sendMessage(msg.chat.id, `❌ Project "${projectId}" not found. Use /projects to see available projects.`);
+      return;
+    }
+    
+    // Update default project
+    projectsConfig.defaultProject = projectId;
+    fs.writeFileSync(projectsPath, JSON.stringify(projectsConfig, null, 2));
+    
+    // Update orchestrator context
+    orchestrator.activeProject = projectId;
+    
+    await bot.sendMessage(msg.chat.id, 
+      `✅ **Switched to project: ${project.name}**\n\n` +
+      `Repository: \`${project.gitlabRepo}\`\n` +
+      `Stack: ${Object.keys(project.stack).join(', ')}\n\n` +
+      `All future tasks will target this project.`,
+      { parse_mode: 'Markdown' }
+    );
+  } catch (error) {
+    logger.error('Failed to switch project:', error);
+    await bot.sendMessage(msg.chat.id, '❌ Error switching project');
+  }
+});
+
 // ============================================================================
 // VOICE MESSAGE HANDLER
 // ============================================================================
@@ -274,12 +370,17 @@ bot.on('voice', async (msg) => {
     // Show transcription
     await bot.sendMessage(msg.chat.id, `📝 Transcribed: "${transcription.text}"`);
 
+    // Get active project for context
+    const activeProject = getActiveProject();
+
     // Process as command
     const result = await orchestrator.processCommand(transcription.text, {
       userId: msg.from.id,
       chatId: msg.chat.id,
       isVoice: true,
       detectedLanguage: transcription.language,
+      project: activeProject?.gitlabRepo,
+      projectInfo: activeProject,
     });
 
     if (result.message) {
