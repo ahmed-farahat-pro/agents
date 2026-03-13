@@ -9,17 +9,18 @@ Your personal AI development company running on AWS EC2. 7 specialized agents co
 ## Table of Contents
 
 1. [What is Nigents?](#what-is-nigents)
-2. [The 7-Agent Team](#the-7-agent-team)
-3. [App Flow & Workflow](#app-flow--workflow)
-4. [MCP Servers](#mcp-servers)
-5. [Custom MCP Servers We Built](#custom-mcp-servers-we-built)
-6. [Telegram Integration](#telegram-integration)
-7. [Dashboard Features](#dashboard-features)
-8. [Tech Stack](#tech-stack)
-9. [Quick Start (Local)](#quick-start-local)
-10. [Deploy on AWS EC2](#deploy-on-aws-ec2)
-11. [Configuration](#configuration)
-12. [Troubleshooting](#troubleshooting)
+2. [What is OpenHands?](#what-is-openhands)
+3. [The 7-Agent Team](#the-7-agent-team)
+4. [App Flow & Workflow](#app-flow--workflow)
+5. [MCP Servers](#mcp-servers)
+6. [Custom MCP Servers We Built](#custom-mcp-servers-we-built)
+7. [Telegram Integration](#telegram-integration)
+8. [Dashboard Features](#dashboard-features)
+9. [Tech Stack](#tech-stack)
+10. [Quick Start (Local)](#quick-start-local)
+11. [Deploy on AWS EC2](#deploy-on-aws-ec2)
+12. [Configuration](#configuration)
+13. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -38,6 +39,81 @@ Nigents (Night Agents) is a self-hosted AI agent team that runs 24/7 on your AWS
 | 🌙 **24/7 Operation** | Runs on EC2 with PM2 process manager, never sleeps |
 | 🔀 **GitLab Integration** | Automatic MR creation with proper branching |
 | 🐳 **Code Sandbox** | OpenHands Docker container for safe code execution |
+
+## What is OpenHands?
+
+**OpenHands** is a code sandbox that runs inside a Docker container. It provides a safe, isolated environment where agents can:
+
+| Function | Description |
+|----------|-------------|
+| 📝 **Write Code** | Create and edit files in a controlled workspace |
+| 🔧 **Run Commands** | Execute shell commands, npm, git, etc. |
+| 🧪 **Run Tests** | Execute test suites safely |
+| 🔒 **Stay Isolated** | Cannot break your main server or system |
+
+**Why OpenHands is Needed:**
+
+```
+Without OpenHands (Dangerous):
+┌─────────────────────────────────────┐
+│  Agent writes code directly to      │
+│  /home/ubuntu/nightowl/src/        │
+│                                     │
+│  Risk: Could accidentally delete    │
+│  critical files or break the app   │
+└─────────────────────────────────────┘
+
+With OpenHands (Safe):
+┌─────────────────────────────────────┐
+│  Agent writes code to:              │
+│  Docker Container → /workspace      │
+│                                     │
+│  Safe: If something breaks, only    │
+│  the container is affected          │
+│  Main server stays protected        │
+└─────────────────────────────────────┘
+```
+
+**How OpenHands Fits in the Workflow:**
+
+```
+1. Backend Dev Agent receives task
+         ↓
+2. Needs to create new API endpoint
+         ↓
+3. Calls OpenHands MCP tool:
+   "Create file /workspace/PaymentController.java"
+         ↓
+4. OpenHands writes file in container
+         ↓
+5. Agent tests the code in container
+         ↓
+6. If tests pass → Git commit from container
+         ↓
+7. Changes pushed to GitLab
+```
+
+**OpenHands Runs On:**
+- **Port 3000** inside EC2
+- **Docker container** with isolated filesystem
+- **Mounted volume** `/home/ubuntu/workspace` for persistence
+- **Separate from main app** - crash won't affect Nigents
+
+**Example Usage in Code:**
+```javascript
+// Backend Dev agent uses OpenHands via MCP
+await openhands.execute({
+  action: 'write_file',
+  path: '/workspace/src/PaymentController.java',
+  content: 'public class PaymentController { ... }'
+});
+
+// Run tests safely
+await openhands.execute({
+  action: 'run_command',
+  command: 'mvn test'
+});
+```
 
 ### How It Works (High Level)
 
