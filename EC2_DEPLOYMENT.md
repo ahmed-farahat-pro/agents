@@ -625,21 +625,25 @@ pm2 restart all
 
 ## Step 10: Configure GitLab Integration
 
-### 10.1 Create GitLab Token
+### 10.1 Create GitLab Personal Access Token
+
+⚠️ **Important:** Use a **Personal Access Token** (not Project Access Token) so Nigents can access multiple repositories.
 
 1. Go to https://gitlab.com
-2. Click avatar → **Edit Profile** → **Access Tokens**
-3. Click **"Add new token"**
-4. Fill in:
-   - **Name:** Nigents
-   - **Expiration:** 1 year
-   - **Scopes:** Check ALL:
-     - [x] `api`
+2. Click your **avatar** (top right) → **Edit Profile**
+3. Left sidebar → **Access Tokens**
+4. Click **"Add new token"**
+5. Fill in:
+   - **Token name:** Nigents
+   - **Expiration date:** 1 year from now
+   - **Scopes:** Check ALL of these:
+     - [x] `api` (Full API access)
      - [x] `read_repository`
      - [x] `write_repository`
      - [x] `read_user`
-5. Click **"Create personal access token"**
-6. **COPY TOKEN IMMEDIATELY!**
+6. Click **"Create personal access token"**
+7. **COPY TOKEN IMMEDIATELY!** (You cannot see it again)
+   - Format: `glpat-xxxxxxxxxxxxxxxxxxxx`
 
 ### 10.2 Update .env & Restart
 
