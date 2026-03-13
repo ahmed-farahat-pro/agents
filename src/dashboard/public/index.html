@@ -3013,10 +3013,15 @@
 
         async function refreshRepos() {
             showNotification('Fetching repositories from GitLab...');
+            console.log('[GitLab] Starting repo fetch...');
             
             try {
+                console.log('[GitLab] Calling /api/gitlab/repos...');
                 const response = await fetch('/api/gitlab/repos');
+                console.log('[GitLab] Response status:', response.status);
+                
                 const data = await response.json();
+                console.log('[GitLab] Response data:', data);
                 
                 if (data.success) {
                     gitlabRepos = data.repos.map(repo => ({
@@ -3038,11 +3043,12 @@
                     updateRepoSelects();
                     showNotification(`Loaded ${data.count} repositories from GitLab`, 'success');
                 } else {
-                    showNotification(data.message || 'Failed to fetch repositories', 'error');
+                    console.error('[GitLab] API error:', data);
+                    showNotification(data.message || data.error || 'Failed to fetch repositories', 'error');
                 }
             } catch (error) {
-                console.error('Failed to fetch repos:', error);
-                showNotification('Failed to connect to GitLab API', 'error');
+                console.error('[GitLab] Fetch error:', error);
+                showNotification('Failed to connect to GitLab API: ' + error.message, 'error');
             }
         }
 
