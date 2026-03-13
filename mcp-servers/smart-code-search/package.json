@@ -1,0 +1,30 @@
+{
+  "name": "@nightowl/smart-code-search-mcp",
+  "version": "1.0.0",
+  "description": "MCP Server for semantic code search using vector embeddings",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "lint": "eslint src/",
+    "test": "jest"
+  },
+  "keywords": [
+    "mcp",
+    "semantic-search",
+    "vector-search",
+    "code-intelligence"
+  ],
+  "author": "NightOwl Team",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.4.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  }
+}
