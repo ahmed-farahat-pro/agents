@@ -8,7 +8,7 @@ stages:
 
 variables:
   SSH_USER: ubuntu
-  DEPLOY_DIR: /home/ubuntu/nightowl
+  DEPLOY_DIR: /home/ubuntu/nigents
   GIT_DEPTH: 10
   GIT_STRATEGY: clone
 
@@ -115,7 +115,7 @@ deploy-to-ec2:
       #!/bin/bash
       set -e
       echo "Navigating to project directory..."
-      cd /home/ubuntu/nightowl
+      cd /home/ubuntu/nigents
       echo "Pulling latest changes..."
       git fetch origin
       git reset --hard origin/main
