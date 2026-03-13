@@ -5,91 +5,131 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NightOwl Dashboard</title>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Minimal, hand-coded aesthetic */
-        :root {
-            --bg: #0d0d0d;
-            --bg-panel: #141414;
-            --bg-hover: #1a1a1a;
-            --border: #2a2a2a;
-            --text: #e0e0e0;
-            --text-dim: #888;
-            --accent: #7c4dff;
-            --accent-dim: #5c3bc4;
-            --green: #4caf50;
-            --yellow: #ffc107;
-            --red: #f44336;
-        }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        :root {
+            --bg: #0a0a0f;
+            --bg-elevated: #12121a;
+            --bg-card: #1a1a25;
+            --bg-hover: #252532;
+            --border: #2a2a3a;
+            --border-light: #3a3a4a;
+            --text: #f0f0f5;
+            --text-muted: #8a8a95;
+            --text-dim: #5a5a65;
+            --accent: #6366f1;
+            --accent-light: #818cf8;
+            --accent-dark: #4f46e5;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --info: #3b82f6;
+            --gradient-1: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --gradient-2: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+            --gradient-3: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: var(--bg);
             color: var(--text);
-            font-size: 13px;
+            font-size: 14px;
             line-height: 1.5;
+            min-height: 100vh;
         }
 
         /* Layout */
         .app {
-            display: flex;
-            height: 100vh;
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            min-height: 100vh;
         }
 
         /* Sidebar */
         .sidebar {
-            width: 200px;
-            background: var(--bg-panel);
+            background: var(--bg-elevated);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            width: 260px;
+            z-index: 100;
         }
 
         .sidebar-header {
-            padding: 16px;
+            padding: 24px;
             border-bottom: 1px solid var(--border);
         }
 
-        .logo {
-            font-size: 16px;
-            font-weight: 600;
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        .logo span {
-            color: var(--accent);
+        .brand-mark {
+            width: 40px;
+            height: 40px;
+            background: var(--gradient-1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .brand-text h1 {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-text span {
+            font-size: 12px;
+            color: var(--text-muted);
         }
 
         .nav {
-            padding: 8px;
+            padding: 16px 12px;
             flex: 1;
+            overflow-y: auto;
         }
 
         .nav-section {
-            margin-bottom: 16px;
+            margin-bottom: 24px;
         }
 
-        .nav-label {
-            font-size: 10px;
+        .nav-title {
+            font-size: 11px;
+            font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 1px;
             color: var(--text-dim);
-            padding: 8px 12px;
-            letter-spacing: 0.5px;
+            padding: 8px 16px;
+            margin-bottom: 4px;
         }
 
         .nav-item {
-            padding: 8px 12px;
-            margin: 2px 0;
-            border-radius: 4px;
-            cursor: pointer;
-            color: var(--text-dim);
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
+            padding: 10px 16px;
+            margin: 2px 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.2s;
+            position: relative;
         }
 
         .nav-item:hover {
@@ -98,92 +138,139 @@
         }
 
         .nav-item.active {
-            background: var(--accent);
+            background: var(--accent-dark);
             color: white;
         }
 
-        .nav-item::before {
-            content: '>';
-            font-family: monospace;
-            opacity: 0.5;
-        }
-
         .nav-item.active::before {
-            opacity: 1;
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 20px;
+            background: var(--accent-light);
+            border-radius: 0 3px 3px 0;
         }
 
-        .status-bar {
-            padding: 12px;
-            border-top: 1px solid var(--border);
+        .nav-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-dim);
+        }
+
+        .nav-item.active .nav-indicator {
+            background: var(--accent-light);
+            box-shadow: 0 0 8px var(--accent-light);
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: var(--accent);
+            color: white;
             font-size: 11px;
-            color: var(--text-dim);
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .sidebar-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--text-muted);
         }
 
         .status-dot {
-            display: inline-block;
-            width: 6px;
-            height: 6px;
-            background: var(--green);
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            margin-right: 6px;
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 2s infinite;
         }
 
-        /* Main content */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Main Content */
         .main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            margin-left: 260px;
+            min-height: 100vh;
         }
 
         .header {
-            height: 50px;
-            background: var(--bg-panel);
+            height: 70px;
+            background: var(--bg-elevated);
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 20px;
+            padding: 0 32px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
         }
 
-        .header h1 {
-            font-size: 16px;
-            font-weight: 500;
+        .header-title h2 {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
         }
 
         .header-actions {
             display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
             gap: 8px;
-        }
-
-        button {
-            padding: 6px 12px;
-            background: var(--bg-hover);
-            border: 1px solid var(--border);
-            color: var(--text);
-            border-radius: 4px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
         }
 
-        button:hover {
-            background: var(--border);
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text);
+            border: 1px solid var(--border);
         }
 
-        button.primary {
-            background: var(--accent);
-            border-color: var(--accent);
+        .btn-secondary:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-light);
         }
 
-        button.primary:hover {
-            background: var(--accent-dim);
+        .btn-primary {
+            background: var(--gradient-1);
+            color: white;
+            box-shadow: var(--shadow);
         }
 
-        /* Content */
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Content Area */
         .content {
-            flex: 1;
-            overflow: auto;
-            padding: 20px;
+            padding: 32px;
         }
 
         .view {
@@ -192,260 +279,493 @@
 
         .view.active {
             display: block;
+            animation: fadeIn 0.3s ease;
         }
 
-        /* Stats */
-        .stats {
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Stats Grid */
+        .stats-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            border-color: var(--border-light);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .stat-card.primary::before { background: var(--gradient-1); }
+        .stat-card.success::before { background: var(--gradient-2); }
+        .stat-card.warning::before { background: var(--gradient-3); }
+        .stat-card.info::before { background: var(--info); }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .stat-card.primary .stat-icon {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--accent-light);
+        }
+
+        .stat-card.success .stat-icon {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .stat-card.warning .stat-icon {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .stat-card.info .stat-icon {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--info);
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+        }
+
+        .stat-change {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .stat-change.positive {
+            color: var(--success);
+        }
+
+        /* Charts Section */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .chart-period {
+            display: flex;
+            gap: 8px;
+        }
+
+        .period-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .period-btn:hover,
+        .period-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        /* Model Stats */
+        .model-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .model-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .model-header {
+            display: flex;
+            align-items: center;
             gap: 16px;
             margin-bottom: 20px;
         }
 
-        .stat-box {
-            background: var(--bg-panel);
-            border: 1px solid var(--border);
-            padding: 16px;
-            border-radius: 4px;
+        .model-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
         }
 
-        .stat-label {
-            font-size: 11px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            margin-bottom: 8px;
+        .model-logo.claude {
+            background: linear-gradient(135deg, #d4a574 0%, #c9a86c 100%);
+            color: #1a1a1a;
         }
 
-        .stat-value {
-            font-size: 28px;
+        .model-logo.glm {
+            background: linear-gradient(135deg, #1e88e5 0%, #0d47a1 100%);
+            color: white;
+        }
+
+        .model-logo.kimi {
+            background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
+            color: white;
+        }
+
+        .model-info h3 {
+            font-size: 18px;
             font-weight: 600;
+            margin-bottom: 4px;
         }
 
-        /* Cards */
-        .card {
-            background: var(--bg-panel);
-            border: 1px solid var(--border);
+        .model-info span {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .model-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .metric {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Progress Bars */
+        .progress-bar {
+            height: 8px;
+            background: var(--bg-hover);
             border-radius: 4px;
-            margin-bottom: 20px;
+            overflow: hidden;
+            margin-top: 8px;
         }
 
-        .card-header {
-            padding: 12px 16px;
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.primary { background: var(--accent); }
+        .progress-fill.success { background: var(--success); }
+        .progress-fill.warning { background: var(--warning); }
+
+        /* Activity Feed */
+        .activity-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+        }
+
+        .activity-header {
+            padding: 20px 24px;
             border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .card-title {
-            font-size: 14px;
-            font-weight: 500;
+        .activity-title {
+            font-size: 16px;
+            font-weight: 600;
         }
 
-        .card-body {
-            padding: 16px;
+        .activity-list {
+            max-height: 400px;
+            overflow-y: auto;
         }
 
-        /* Agent grid */
-        .agent-grid {
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+
+        .activity-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .activity-time {
+            font-size: 12px;
+            color: var(--text-dim);
+            font-family: monospace;
+            min-width: 60px;
+        }
+
+        .activity-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 6px;
+            flex-shrink: 0;
+        }
+
+        .activity-dot.success { background: var(--success); box-shadow: 0 0 8px var(--success); }
+        .activity-dot.warning { background: var(--warning); box-shadow: 0 0 8px var(--warning); }
+        .activity-dot.info { background: var(--info); box-shadow: 0 0 8px var(--info); }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-agent {
+            font-weight: 600;
+            color: var(--accent-light);
+            margin-bottom: 4px;
+        }
+
+        .activity-message {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* Agent Grid */
+        .agents-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
         }
 
         .agent-card {
-            background: var(--bg-panel);
+            background: var(--bg-card);
             border: 1px solid var(--border);
-            padding: 16px;
+            border-radius: 16px;
+            padding: 20px;
             cursor: pointer;
-            border-radius: 4px;
+            transition: all 0.3s;
         }
 
         .agent-card:hover {
             border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
         }
 
         .agent-header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 12px;
+            align-items: flex-start;
+            margin-bottom: 16px;
         }
 
-        .agent-name {
-            font-weight: 500;
-            font-size: 14px;
+        .agent-info h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
         }
 
         .agent-role {
-            font-size: 11px;
-            color: var(--text-dim);
-            margin-top: 2px;
+            font-size: 13px;
+            color: var(--text-muted);
         }
 
         .agent-status {
-            font-size: 10px;
-            padding: 2px 8px;
-            border-radius: 10px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
             text-transform: uppercase;
         }
 
         .agent-status.idle {
-            background: #333;
-            color: var(--text-dim);
+            background: rgba(90, 90, 101, 0.3);
+            color: var(--text-muted);
         }
 
-        .agent-status.working {
-            background: rgba(255, 193, 7, 0.2);
-            color: var(--yellow);
+        .agent-status.active {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
         }
 
-        .agent-status.done {
-            background: rgba(76, 175, 80, 0.2);
-            color: var(--green);
+        .agent-status.busy {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
         }
 
-        .agent-meta {
+        .agent-stats-row {
             display: flex;
-            gap: 16px;
-            font-size: 11px;
-            color: var(--text-dim);
-            padding-top: 12px;
+            gap: 24px;
+            margin-top: 16px;
+            padding-top: 16px;
             border-top: 1px solid var(--border);
         }
 
-        /* Forms */
-        .form-group {
-            margin-bottom: 16px;
+        .agent-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
 
-        label {
-            display: block;
+        .agent-stat-value {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .agent-stat-label {
             font-size: 11px;
-            color: var(--text-dim);
-            margin-bottom: 6px;
+            color: var(--text-muted);
             text-transform: uppercase;
         }
 
-        input, select, textarea {
+        /* Configuration Form */
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .config-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .config-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
             width: 100%;
-            padding: 8px 12px;
+            padding: 12px 16px;
             background: var(--bg);
             border: 1px solid var(--border);
+            border-radius: 10px;
             color: var(--text);
-            border-radius: 4px;
-            font-size: 13px;
-            font-family: inherit;
+            font-size: 14px;
+            transition: all 0.2s;
         }
 
-        input:focus, select:focus, textarea:focus {
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
             outline: none;
             border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
 
-        textarea {
-            min-height: 100px;
+        .form-textarea {
+            min-height: 120px;
             resize: vertical;
         }
 
-        /* Two column layout */
-        .two-col {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        /* MCP list */
-        .mcp-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 8px;
-        }
-
-        .mcp-item {
-            background: var(--bg);
-            border: 1px solid var(--border);
-            padding: 12px;
-            border-radius: 4px;
-        }
-
-        .mcp-name {
-            font-weight: 500;
-            margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .mcp-name::before {
-            content: '';
-            width: 6px;
-            height: 6px;
-            background: var(--green);
-            border-radius: 50%;
-        }
-
-        .mcp-desc {
-            font-size: 11px;
-            color: var(--text-dim);
-        }
-
-        /* Activity list */
-        .activity-list {
-            font-family: monospace;
-            font-size: 12px;
-        }
-
-        .activity-item {
-            padding: 8px 0;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            gap: 12px;
-        }
-
-        .activity-time {
-            color: var(--text-dim);
-            min-width: 70px;
-        }
-
-        .activity-agent {
-            color: var(--accent);
-            min-width: 100px;
-        }
-
-        .activity-msg {
-            color: var(--text-dim);
-        }
-
-        /* Tabs */
-        .tabs {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 16px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .tab {
-            padding: 8px 16px;
-            cursor: pointer;
-            color: var(--text-dim);
-            border-bottom: 2px solid transparent;
-        }
-
-        .tab:hover {
-            color: var(--text);
-        }
-
-        .tab.active {
-            color: var(--accent);
-            border-bottom-color: var(--accent);
-        }
-
-        /* Toggle */
-        .toggle-row {
+        /* Toggle Switch */
+        .toggle-wrapper {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 0;
+            padding: 16px 0;
             border-bottom: 1px solid var(--border);
         }
 
@@ -455,88 +775,135 @@
         }
 
         .toggle-info p {
-            font-size: 12px;
-            color: var(--text-dim);
+            font-size: 13px;
+            color: var(--text-muted);
         }
 
-        .toggle-switch {
-            width: 40px;
-            height: 20px;
-            background: var(--border);
-            border-radius: 10px;
+        .toggle {
+            width: 52px;
+            height: 28px;
+            background: var(--bg-hover);
+            border-radius: 14px;
             position: relative;
             cursor: pointer;
+            transition: background 0.3s;
         }
 
-        .toggle-switch::after {
-            content: '';
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            background: white;
-            border-radius: 50%;
-            top: 2px;
-            left: 2px;
-            transition: transform 0.2s;
-        }
-
-        .toggle-switch.active {
+        .toggle.active {
             background: var(--accent);
         }
 
-        .toggle-switch.active::after {
-            transform: translateX(20px);
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
-        /* Console */
-        .console {
-            background: #000;
+        .toggle.active::after {
+            transform: translateX(24px);
+        }
+
+        /* MCP Tools */
+        .mcp-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .mcp-card {
+            background: var(--bg);
             border: 1px solid var(--border);
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 12px;
-            padding: 12px;
-            max-height: 300px;
-            overflow: auto;
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.2s;
         }
 
-        .console-line {
-            margin-bottom: 4px;
+        .mcp-card:hover {
+            border-color: var(--accent);
         }
 
-        .console-time {
-            color: var(--text-dim);
-        }
-
-        /* Empty state */
-        .empty {
-            text-align: center;
-            padding: 40px;
-            color: var(--text-dim);
-        }
-
-        .empty h3 {
+        .mcp-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             margin-bottom: 8px;
-            color: var(--text);
+        }
+
+        .mcp-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        .mcp-indicator.offline {
+            background: var(--error);
+            box-shadow: 0 0 8px var(--error);
+        }
+
+        .mcp-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .mcp-desc {
+            font-size: 12px;
+            color: var(--text-muted);
         }
 
         /* Responsive */
-        @media (max-width: 900px) {
-            .stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            .two-col {
-                grid-template-columns: 1fr;
-            }
+        @media (max-width: 1200px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .charts-grid { grid-template-columns: 1fr; }
+            .model-stats { grid-template-columns: 1fr; }
         }
 
-        @media (max-width: 600px) {
-            .sidebar {
-                display: none;
-            }
-            .stats {
-                grid-template-columns: 1fr;
-            }
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main { margin-left: 0; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .config-grid { grid-template-columns: 1fr; }
+            .content { padding: 20px; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-light);
+        }
+
+        /* Empty State */
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: var(--text);
         }
     </style>
 </head>
@@ -545,317 +912,455 @@
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <div class="logo">Night<span>Owl</span></div>
+                <div class="brand">
+                    <div class="brand-mark">N</div>
+                    <div class="brand-text">
+                        <h1>NightOwl</h1>
+                        <span>AI Dev Team</span>
+                    </div>
+                </div>
             </div>
             <nav class="nav">
                 <div class="nav-section">
-                    <div class="nav-label">Overview</div>
-                    <div class="nav-item active" data-view="dashboard">Dashboard</div>
-                    <div class="nav-item" data-view="agents">Agents (7)</div>
-                    <div class="nav-item" data-view="tasks">Tasks</div>
-                    <div class="nav-item" data-view="activity">Activity</div>
+                    <div class="nav-title">Overview</div>
+                    <div class="nav-item active" data-view="dashboard">
+                        <div class="nav-indicator"></div>
+                        <span>Dashboard</span>
+                    </div>
+                    <div class="nav-item" data-view="agents">
+                        <div class="nav-indicator"></div>
+                        <span>Agents</span>
+                        <span class="nav-badge">7</span>
+                    </div>
+                    <div class="nav-item" data-view="tasks">
+                        <div class="nav-indicator"></div>
+                        <span>Tasks</span>
+                    </div>
+                    <div class="nav-item" data-view="activity">
+                        <div class="nav-indicator"></div>
+                        <span>Activity</span>
+                    </div>
                 </div>
                 <div class="nav-section">
-                    <div class="nav-label">Config</div>
-                    <div class="nav-item" data-view="mcp">MCP Tools</div>
-                    <div class="nav-item" data-view="settings">Settings</div>
-                    <div class="nav-item" data-view="logs">Logs</div>
+                    <div class="nav-title">System</div>
+                    <div class="nav-item" data-view="models">
+                        <div class="nav-indicator"></div>
+                        <span>Model Stats</span>
+                    </div>
+                    <div class="nav-item" data-view="mcp">
+                        <div class="nav-indicator"></div>
+                        <span>MCP Tools</span>
+                        <span class="nav-badge">38</span>
+                    </div>
+                    <div class="nav-item" data-view="settings">
+                        <div class="nav-indicator"></div>
+                        <span>Settings</span>
+                    </div>
+                    <div class="nav-item" data-view="logs">
+                        <div class="nav-indicator"></div>
+                        <span>Logs</span>
+                    </div>
                 </div>
             </nav>
-            <div class="status-bar">
-                <span class="status-dot"></span>
-                <span id="status-text">Connected</span>
+            <div class="sidebar-footer">
+                <div class="connection-status">
+                    <div class="status-dot"></div>
+                    <span id="status-text">Connected</span>
+                </div>
             </div>
         </aside>
 
-        <!-- Main -->
+        <!-- Main Content -->
         <main class="main">
             <header class="header">
-                <h1 id="page-title">Dashboard</h1>
+                <div class="header-title">
+                    <h2 id="page-title">Dashboard</h2>
+                </div>
                 <div class="header-actions">
-                    <button onclick="refreshData()">Refresh</button>
-                    <button class="primary" onclick="newTask()">+ Task</button>
+                    <button class="btn btn-secondary" onclick="refreshData()">Refresh</button>
+                    <button class="btn btn-primary" onclick="newTask()">+ New Task</button>
                 </div>
             </header>
 
             <div class="content">
-                <!-- Dashboard -->
+                <!-- Dashboard View -->
                 <div class="view active" id="view-dashboard">
-                    <div class="stats">
-                        <div class="stat-box">
-                            <div class="stat-label">Active Agents</div>
+                    <!-- Stats Cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card primary">
+                            <div class="stat-header">
+                                <span class="stat-label">Active Agents</span>
+                                <div class="stat-icon">A</div>
+                            </div>
                             <div class="stat-value" id="stat-active">0</div>
+                            <div class="stat-change">of 7 total agents</div>
                         </div>
-                        <div class="stat-box">
-                            <div class="stat-label">Tasks Done</div>
-                            <div class="stat-value" id="stat-done">0</div>
+                        <div class="stat-card success">
+                            <div class="stat-header">
+                                <span class="stat-label">Tasks Completed</span>
+                                <div class="stat-icon">T</div>
+                            </div>
+                            <div class="stat-value" id="stat-completed">0</div>
+                            <div class="stat-change positive">+0 today</div>
                         </div>
-                        <div class="stat-box">
-                            <div class="stat-label">In Progress</div>
+                        <div class="stat-card warning">
+                            <div class="stat-header">
+                                <span class="stat-label">In Progress</span>
+                                <div class="stat-icon">P</div>
+                            </div>
                             <div class="stat-value" id="stat-progress">0</div>
+                            <div class="stat-change">currently running</div>
                         </div>
-                        <div class="stat-box">
-                            <div class="stat-label">API Cost</div>
-                            <div class="stat-value" id="stat-cost">$0</div>
+                        <div class="stat-card info">
+                            <div class="stat-header">
+                                <span class="stat-label">API Cost</span>
+                                <div class="stat-icon">$</div>
+                            </div>
+                            <div class="stat-value" id="stat-cost">$0.00</div>
+                            <div class="stat-change">this session</div>
                         </div>
                     </div>
 
-                    <div class="card">
-                        <div class="card-header">
-                            <span class="card-title">Activity Log</span>
-                            <button>Export</button>
-                        </div>
-                        <div class="card-body">
-                            <div class="activity-list" id="activity-list">
-                                <div class="empty">
-                                    <h3>No activity yet</h3>
-                                    <p>Start a task to see agent activity</p>
+                    <!-- Charts -->
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <span class="chart-title">Task Completion Over Time</span>
+                                <div class="chart-period">
+                                    <button class="period-btn active">24h</button>
+                                    <button class="period-btn">7d</button>
+                                    <button class="period-btn">30d</button>
                                 </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="tasksChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <span class="chart-title">Agent Distribution</span>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="agentChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Model Performance -->
+                    <div class="model-stats">
+                        <div class="model-card">
+                            <div class="model-header">
+                                <div class="model-logo claude">C</div>
+                                <div class="model-info">
+                                    <h3>Anthropic Claude</h3>
+                                    <span>US-Based Models</span>
+                                </div>
+                            </div>
+                            <div class="model-metrics">
+                                <div class="metric">
+                                    <div class="metric-value" id="claude-tasks">0</div>
+                                    <div class="metric-label">Tasks</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value" id="claude-cost">$0</div>
+                                    <div class="metric-label">Cost</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value" id="claude-avg">0s</div>
+                                    <div class="metric-label">Avg Time</div>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill primary" style="width: 65%"></div>
+                            </div>
+                        </div>
+                        <div class="model-card">
+                            <div class="model-header">
+                                <div class="model-logo glm">Z</div>
+                                <div class="model-info">
+                                    <h3>Zhipu AI GLM</h3>
+                                    <span>Chinese Models</span>
+                                </div>
+                            </div>
+                            <div class="model-metrics">
+                                <div class="metric">
+                                    <div class="metric-value" id="glm-tasks">0</div>
+                                    <div class="metric-label">Tasks</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value" id="glm-cost">¥0</div>
+                                    <div class="metric-label">Cost</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value" id="glm-avg">0s</div>
+                                    <div class="metric-label">Avg Time</div>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill success" style="width: 25%"></div>
+                            </div>
+                        </div>
+                        <div class="model-card">
+                            <div class="model-header">
+                                <div class="model-logo kimi">M</div>
+                                <div class="model-info">
+                                    <h3>Moonshot AI Kimi</h3>
+                                    <span>Long Context Models</span>
+                                </div>
+                            </div>
+                            <div class="model-metrics">
+                                <div class="metric">
+                                    <div class="metric-value" id="kimi-tasks">0</div>
+                                    <div class="metric-label">Tasks</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value" id="kimi-cost">¥0</div>
+                                    <div class="metric-label">Cost</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value" id="kimi-avg">0s</div>
+                                    <div class="metric-label">Avg Time</div>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill warning" style="width: 10%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Activity Feed -->
+                    <div class="activity-card">
+                        <div class="activity-header">
+                            <span class="activity-title">Recent Activity</span>
+                            <button class="btn btn-secondary">View All</button>
+                        </div>
+                        <div class="activity-list" id="activity-list">
+                            <div class="empty">
+                                <h3>No activity yet</h3>
+                                <p>Start a task to see agent activity here</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Agents -->
+                <!-- Agents View -->
                 <div class="view" id="view-agents">
-                    <div class="tabs">
-                        <div class="tab active">All</div>
-                        <div class="tab">Active</div>
-                        <div class="tab">Idle</div>
-                    </div>
-                    <div class="agent-grid" id="agent-grid"></div>
+                    <div class="agents-grid" id="agents-grid"></div>
                 </div>
 
-                <!-- Agent Detail -->
+                <!-- Agent Detail View -->
                 <div class="view" id="view-agent-detail">
-                    <button onclick="showView('agents')" style="margin-bottom: 16px;">← Back</button>
+                    <button class="btn btn-secondary" onclick="showView('agents')" style="margin-bottom: 24px;">← Back to Agents</button>
                     
-                    <div class="card" style="margin-bottom: 16px;">
-                        <div class="card-header">
-                            <div>
-                                <div class="agent-name" id="detail-name">Agent</div>
-                                <div class="agent-role" id="detail-role">Role</div>
+                    <div class="config-grid">
+                        <div class="config-card">
+                            <h3 class="config-title">Configuration</h3>
+                            <div class="form-group">
+                                <label class="form-label">AI Provider</label>
+                                <select class="form-select" id="cfg-provider" onchange="updateModels()">
+                                    <option value="anthropic">Anthropic (Claude)</option>
+                                    <option value="zhipu">Zhipu AI (GLM)</option>
+                                    <option value="moonshot">Moonshot AI (Kimi)</option>
+                                </select>
                             </div>
-                            <span class="agent-status idle" id="detail-status">idle</span>
-                        </div>
-                    </div>
-
-                    <div class="two-col">
-                        <div class="card">
-                            <div class="card-header">
-                                <span class="card-title">Configuration</span>
+                            <div class="form-group">
+                                <label class="form-label">Model</label>
+                                <select class="form-select" id="cfg-model">
+                                    <optgroup label="Anthropic" data-provider="anthropic">
+                                        <option value="claude-3-opus">claude-3-opus</option>
+                                        <option value="claude-3-sonnet">claude-3-sonnet</option>
+                                        <option value="claude-3-haiku">claude-3-haiku</option>
+                                    </optgroup>
+                                    <optgroup label="Zhipu AI" data-provider="zhipu">
+                                        <option value="glm-4">glm-4</option>
+                                        <option value="glm-4-plus">glm-4-plus</option>
+                                        <option value="glm-4v">glm-4v</option>
+                                        <option value="glm-5">glm-5</option>
+                                        <option value="glm-5-plus">glm-5-plus</option>
+                                    </optgroup>
+                                    <optgroup label="Moonshot AI" data-provider="moonshot">
+                                        <option value="kimi-k2">kimi-k2</option>
+                                        <option value="kimi-k2-plus">kimi-k2-plus</option>
+                                        <option value="kimi-2.5">kimi-2.5</option>
+                                        <option value="kimi-2.5-32k">kimi-2.5-32k</option>
+                                        <option value="kimi-2.5-128k">kimi-2.5-128k</option>
+                                    </optgroup>
+                                </select>
                             </div>
-                            <div class="card-body">
-                                <div class="form-group">
-                                    <label>Provider</label>
-                                    <select id="cfg-provider" onchange="updateModels()">
-                                        <option value="anthropic">Anthropic (Claude)</option>
-                                        <option value="zhipu">Zhipu AI (GLM)</option>
-                                        <option value="moonshot">Moonshot AI (Kimi)</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Model</label>
-                                    <select id="cfg-model">
-                                        <optgroup label="Anthropic" data-provider="anthropic">
-                                            <option value="claude-3-opus">claude-3-opus</option>
-                                            <option value="claude-3-sonnet">claude-3-sonnet</option>
-                                            <option value="claude-3-haiku">claude-3-haiku</option>
-                                        </optgroup>
-                                        <optgroup label="Zhipu AI" data-provider="zhipu">
-                                            <option value="glm-4">glm-4</option>
-                                            <option value="glm-4-plus">glm-4-plus</option>
-                                            <option value="glm-4v">glm-4v</option>
-                                            <option value="glm-5">glm-5</option>
-                                            <option value="glm-5-plus">glm-5-plus</option>
-                                        </optgroup>
-                                        <optgroup label="Moonshot AI" data-provider="moonshot">
-                                            <option value="kimi-k2">kimi-k2</option>
-                                            <option value="kimi-k2-plus">kimi-k2-plus</option>
-                                            <option value="kimi-2.5">kimi-2.5</option>
-                                            <option value="kimi-2.5-32k">kimi-2.5-32k</option>
-                                            <option value="kimi-2.5-128k">kimi-2.5-128k</option>
-                                        </optgroup>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Max Tokens</label>
-                                    <input type="number" id="cfg-tokens" value="4096">
-                                </div>
-                                <div class="form-group">
-                                    <label>Temperature</label>
-                                    <input type="range" id="cfg-temp" min="0" max="1" step="0.1" value="0.7">
-                                </div>
-                                <div class="form-group">
-                                    <label>System Prompt</label>
-                                    <textarea id="cfg-prompt" rows="6"></textarea>
-                                </div>
-                                <button class="primary">Save</button>
+                            <div class="form-group">
+                                <label class="form-label">Max Tokens</label>
+                                <input type="number" class="form-input" id="cfg-tokens" value="4096">
                             </div>
+                            <div class="form-group">
+                                <label class="form-label">Temperature</label>
+                                <input type="range" class="form-input" id="cfg-temp" min="0" max="1" step="0.1" value="0.7">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">System Prompt</label>
+                                <textarea class="form-textarea" id="cfg-prompt"></textarea>
+                            </div>
+                            <button class="btn btn-primary">Save Changes</button>
                         </div>
 
                         <div>
-                            <div class="card" style="margin-bottom: 16px;">
-                                <div class="card-header">
-                                    <span class="card-title">MCP Tools</span>
+                            <div class="config-card" style="margin-bottom: 24px;">
+                                <h3 class="config-title">Performance Stats</h3>
+                                <div class="form-group">
+                                    <label class="form-label">Tasks Completed</label>
+                                    <div class="metric-value" id="detail-tasks">0</div>
                                 </div>
-                                <div class="card-body">
-                                    <div class="mcp-list" id="agent-mcps"></div>
+                                <div class="form-group">
+                                    <label class="form-label">API Calls</label>
+                                    <div class="metric-value" id="detail-calls">0</div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Success Rate</label>
+                                    <div class="metric-value" style="color: var(--success);">100%</div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Avg Response Time</label>
+                                    <div class="metric-value">2.3s</div>
                                 </div>
                             </div>
 
-                            <div class="card">
-                                <div class="card-header">
-                                    <span class="card-title">Stats</span>
-                                </div>
-                                <div class="card-body">
-                                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border);">
-                                        <span>Tasks</span>
-                                        <strong id="detail-tasks">0</strong>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border);">
-                                        <span>API Calls</span>
-                                        <strong id="detail-calls">0</strong>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-                                        <span>Success Rate</span>
-                                        <strong>100%</strong>
-                                    </div>
-                                </div>
+                            <div class="config-card">
+                                <h3 class="config-title">MCP Tools</h3>
+                                <div class="mcp-grid" id="agent-mcps"></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tasks -->
-                <div class="view" id="view-tasks">
-                    <div class="tabs">
-                        <div class="tab active">All</div>
-                        <div class="tab">Pending</div>
-                        <div class="tab">Running</div>
-                        <div class="tab">Done</div>
-                    </div>
-                    <div class="card">
-                        <div class="card-header">
-                            <span class="card-title">Task Queue</span>
-                            <button>Clear</button>
+                <!-- Model Stats View -->
+                <div class="view" id="view-models">
+                    <div class="charts-grid" style="grid-template-columns: 1fr 1fr;">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <span class="chart-title">Cost by Provider</span>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="costChart"></canvas>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <div class="empty">
-                                <h3>No tasks</h3>
-                                <p>Create a new task to begin</p>
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <span class="chart-title">Token Usage</span>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="tokenChart"></canvas>
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Activity -->
-                <div class="view" id="view-activity">
-                    <div class="card">
-                        <div class="card-header">
-                            <span class="card-title">Full Activity Log</span>
-                            <button>Export</button>
+                    <div class="chart-card" style="margin-top: 24px;">
+                        <div class="chart-header">
+                            <span class="chart-title">Model Performance Comparison</span>
                         </div>
-                        <div class="card-body">
-                            <div class="activity-list" id="full-activity"></div>
+                        <div class="chart-container">
+                            <canvas id="performanceChart"></canvas>
                         </div>
                     </div>
                 </div>
 
-                <!-- MCP Tools -->
-                <div class="view" id="view-mcp">
-                    <div class="card">
-                        <div class="card-header">
-                            <span class="card-title">MCP Tools (38)</span>
-                            <button>Refresh</button>
-                        </div>
-                        <div class="card-body">
-                            <div class="mcp-list" id="mcp-grid"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Settings -->
+                <!-- Settings View -->
                 <div class="view" id="view-settings">
-                    <div class="card" style="margin-bottom: 16px;">
-                        <div class="card-header">
-                            <span class="card-title">Features</span>
-                        </div>
-                        <div class="card-body">
-                            <div class="toggle-row">
+                    <div class="config-grid">
+                        <div class="config-card">
+                            <h3 class="config-title">Features</h3>
+                            <div class="toggle-wrapper">
                                 <div class="toggle-info">
                                     <h4>Voice Processing</h4>
                                     <p>Enable voice commands via Telegram</p>
                                 </div>
-                                <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+                                <div class="toggle active" onclick="this.classList.toggle('active')"></div>
                             </div>
-                            <div class="toggle-row">
+                            <div class="toggle-wrapper">
                                 <div class="toggle-info">
-                                    <h4>Dashboard</h4>
-                                    <p>Run web dashboard</p>
+                                    <h4>Web Dashboard</h4>
+                                    <p>Run the web dashboard</p>
                                 </div>
-                                <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+                                <div class="toggle active" onclick="this.classList.toggle('active')"></div>
                             </div>
-                            <div class="toggle-row">
+                            <div class="toggle-wrapper">
                                 <div class="toggle-info">
-                                    <h4>OpenHands</h4>
-                                    <p>Use code sandbox</p>
+                                    <h4>OpenHands Sandbox</h4>
+                                    <p>Use code sandbox for safe execution</p>
                                 </div>
-                                <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+                                <div class="toggle active" onclick="this.classList.toggle('active')"></div>
                             </div>
-                            <div class="toggle-row">
+                            <div class="toggle-wrapper">
                                 <div class="toggle-info">
                                     <h4>Debug Mode</h4>
-                                    <p>Verbose logging</p>
+                                    <p>Enable verbose logging</p>
                                 </div>
-                                <div class="toggle-switch" onclick="this.classList.toggle('active')"></div>
+                                <div class="toggle" onclick="this.classList.toggle('active')"></div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="card">
-                        <div class="card-header">
-                            <span class="card-title">API Keys</span>
-                        </div>
-                        <div class="card-body">
+                        <div class="config-card">
+                            <h3 class="config-title">API Keys</h3>
                             <div class="form-group">
-                                <label>Telegram Bot Token</label>
-                                <input type="password" placeholder="from @BotFather">
+                                <label class="form-label">Telegram Bot Token</label>
+                                <input type="password" class="form-input" placeholder="from @BotFather">
                             </div>
                             <div class="form-group">
-                                <label>Anthropic API Key (Claude)</label>
-                                <input type="password" placeholder="sk-ant-...">
+                                <label class="form-label">Anthropic API Key</label>
+                                <input type="password" class="form-input" placeholder="sk-ant-...">
                             </div>
                             <div class="form-group">
-                                <label>OpenAI API Key (Whisper)</label>
-                                <input type="password" placeholder="sk-...">
+                                <label class="form-label">Zhipu AI API Key</label>
+                                <input type="password" class="form-input" placeholder="from open.bigmodel.cn">
                             </div>
                             <div class="form-group">
-                                <label>Zhipu AI API Key (GLM)</label>
-                                <input type="password" placeholder="from open.bigmodel.cn">
+                                <label class="form-label">Moonshot AI API Key</label>
+                                <input type="form-input" class="form-input" placeholder="from platform.moonshot.cn">
                             </div>
                             <div class="form-group">
-                                <label>Moonshot AI API Key (Kimi)</label>
-                                <input type="password" placeholder="from platform.moonshot.cn">
+                                <label class="form-label">OpenAI API Key (Whisper)</label>
+                                <input type="password" class="form-input" placeholder="sk-...">
                             </div>
                             <div class="form-group">
-                                <label>GitLab Token</label>
-                                <input type="password" placeholder="glpat-...">
+                                <label class="form-label">GitLab Token</label>
+                                <input type="password" class="form-input" placeholder="glpat-...">
                             </div>
-                            <button class="primary">Save</button>
+                            <button class="btn btn-primary">Save Settings</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Logs -->
-                <div class="view" id="view-logs">
-                    <div class="card">
-                        <div class="card-header">
-                            <span class="card-title">System Logs</span>
-                            <button>Clear</button>
+                <!-- Other Views -->
+                <div class="view" id="view-tasks">
+                    <div class="empty">
+                        <h3>No tasks yet</h3>
+                        <p>Create a new task to get started</p>
+                    </div>
+                </div>
+
+                <div class="view" id="view-activity">
+                    <div class="activity-card">
+                        <div class="activity-header">
+                            <span class="activity-title">Full Activity Log</span>
+                            <button class="btn btn-secondary">Export</button>
                         </div>
-                        <div class="card-body">
-                            <div class="console" id="console"></div>
+                        <div class="activity-list" id="full-activity"></div>
+                    </div>
+                </div>
+
+                <div class="view" id="view-mcp">
+                    <div class="mcp-grid" id="mcp-grid"></div>
+                </div>
+
+                <div class="view" id="view-logs">
+                    <div class="config-card">
+                        <h3 class="config-title">System Logs</h3>
+                        <div class="activity-list" id="logs-list" style="font-family: monospace; font-size: 12px;">
+                            <div class="activity-item">
+                                <span class="activity-time">04:44:34</span>
+                                <div class="activity-dot success"></div>
+                                <div class="activity-content">
+                                    <div class="activity-agent">System</div>
+                                    <div class="activity-message">Dashboard started on port 4000</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -866,30 +1371,33 @@
     <script>
         // Data
         const agents = [
-            { id: 'orchestrator', name: 'Orchestrator', role: 'Team Lead', status: 'idle', model: 'sonnet', tasks: 0, calls: 0 },
-            { id: 'planner', name: 'Planner', role: 'Architecture', status: 'idle', model: 'sonnet', tasks: 0, calls: 0 },
-            { id: 'backend', name: 'Backend Dev', role: 'Backend', status: 'idle', model: 'sonnet', tasks: 0, calls: 0 },
-            { id: 'frontend', name: 'Frontend Dev', role: 'Frontend', status: 'idle', model: 'haiku', tasks: 0, calls: 0 },
-            { id: 'qa', name: 'QA Tester', role: 'Testing', status: 'idle', model: 'haiku', tasks: 0, calls: 0 },
-            { id: 'reviewer', name: 'Reviewer', role: 'Code Review', status: 'idle', model: 'sonnet', tasks: 0, calls: 0 },
-            { id: 'reporter', name: 'Reporter', role: 'Reports', status: 'idle', model: 'haiku', tasks: 0, calls: 0 },
+            { id: 'orchestrator', name: 'Orchestrator', role: 'Team Lead & Router', status: 'idle', provider: 'anthropic', model: 'sonnet', tasks: 0, calls: 0 },
+            { id: 'planner', name: 'Planner', role: 'Architecture & Planning', status: 'idle', provider: 'anthropic', model: 'sonnet', tasks: 0, calls: 0 },
+            { id: 'backend', name: 'Backend Dev', role: 'Backend Developer', status: 'idle', provider: 'anthropic', model: 'sonnet', tasks: 0, calls: 0 },
+            { id: 'frontend', name: 'Frontend Dev', role: 'Frontend Developer', status: 'idle', provider: 'anthropic', model: 'haiku', tasks: 0, calls: 0 },
+            { id: 'qa', name: 'QA Tester', role: 'Quality Assurance', status: 'idle', provider: 'anthropic', model: 'haiku', tasks: 0, calls: 0 },
+            { id: 'reviewer', name: 'Reviewer', role: 'Code Reviewer', status: 'idle', provider: 'anthropic', model: 'sonnet', tasks: 0, calls: 0 },
+            { id: 'reporter', name: 'Reporter', role: 'Reporter & Communicator', status: 'idle', provider: 'anthropic', model: 'haiku', tasks: 0, calls: 0 },
         ];
 
         const mcps = [
-            { name: 'filesystem', desc: 'File operations' },
-            { name: 'git', desc: 'Git commands' },
-            { name: 'gitlab', desc: 'GitLab API' },
-            { name: 'postgresql', desc: 'Database' },
-            { name: 'arabic-rtl', desc: 'RTL audit' },
-            { name: 'task-splitter', desc: 'Task split' },
-            { name: 'code-search', desc: 'Code search' },
-            { name: 'brave-search', desc: 'Web search' },
-            { name: 'docker', desc: 'Containers' },
-            { name: 'puppeteer', desc: 'Browser' },
+            { name: 'filesystem', desc: 'File operations', status: 'online' },
+            { name: 'git', desc: 'Git commands', status: 'online' },
+            { name: 'gitlab', desc: 'GitLab API', status: 'online' },
+            { name: 'postgresql', desc: 'Database queries', status: 'online' },
+            { name: 'arabic-rtl', desc: 'RTL compliance', status: 'online' },
+            { name: 'task-splitter', desc: 'Task management', status: 'online' },
+            { name: 'code-search', desc: 'Semantic search', status: 'online' },
+            { name: 'brave-search', desc: 'Web search', status: 'online' },
+            { name: 'docker', desc: 'Container management', status: 'online' },
+            { name: 'puppeteer', desc: 'Browser automation', status: 'online' },
+            { name: 'memory', desc: 'Persistent memory', status: 'online' },
+            { name: 'sequential-thinking', desc: 'Complex reasoning', status: 'online' },
         ];
 
         let currentView = 'dashboard';
         let selectedAgent = null;
+        let charts = {};
 
         // Navigation
         document.querySelectorAll('.nav-item').forEach(item => {
@@ -908,9 +1416,10 @@
             const titles = {
                 dashboard: 'Dashboard',
                 agents: 'Agents',
-                'agent-detail': 'Agent Config',
+                'agent-detail': 'Agent Configuration',
                 tasks: 'Tasks',
                 activity: 'Activity',
+                models: 'Model Statistics',
                 mcp: 'MCP Tools',
                 settings: 'Settings',
                 logs: 'Logs'
@@ -919,25 +1428,190 @@
 
             if (view === 'agents') renderAgents();
             if (view === 'mcp') renderMCPs();
+            if (view === 'dashboard') initCharts();
+            if (view === 'models') initModelCharts();
             if (view === 'agent-detail' && selectedAgent) renderAgentDetail();
         }
 
-        // Render agents
+        // Initialize Charts
+        function initCharts() {
+            if (charts.tasks) return;
+
+            // Tasks Chart
+            const tasksCtx = document.getElementById('tasksChart').getContext('2d');
+            charts.tasks = new Chart(tasksCtx, {
+                type: 'line',
+                data: {
+                    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
+                    datasets: [{
+                        label: 'Tasks',
+                        data: [0, 0, 0, 0, 0, 0, 0],
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: '#2a2a3a' }, ticks: { color: '#8a8a95' } },
+                        x: { grid: { display: false }, ticks: { color: '#8a8a95' } }
+                    }
+                }
+            });
+
+            // Agent Distribution Chart
+            const agentCtx = document.getElementById('agentChart').getContext('2d');
+            charts.agent = new Chart(agentCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Idle', 'Active', 'Busy'],
+                    datasets: [{
+                        data: [7, 0, 0],
+                        backgroundColor: ['#5a5a65', '#10b981', '#f59e0b'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#8a8a95', padding: 20 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Model Charts
+        function initModelCharts() {
+            if (charts.cost) return;
+
+            // Cost Chart
+            const costCtx = document.getElementById('costChart').getContext('2d');
+            charts.cost = new Chart(costCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Claude', 'GLM', 'Kimi'],
+                    datasets: [{
+                        label: 'Cost ($)',
+                        data: [0, 0, 0],
+                        backgroundColor: ['#6366f1', '#10b981', '#f59e0b'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: '#2a2a3a' }, ticks: { color: '#8a8a95' } },
+                        x: { ticks: { color: '#8a8a95' } }
+                    }
+                }
+            });
+
+            // Token Usage Chart
+            const tokenCtx = document.getElementById('tokenChart').getContext('2d');
+            charts.token = new Chart(tokenCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Input', 'Output'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: ['#3b82f6', '#8b5cf6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#8a8a95' }
+                        }
+                    }
+                }
+            });
+
+            // Performance Chart
+            const perfCtx = document.getElementById('performanceChart').getContext('2d');
+            charts.performance = new Chart(perfCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['Speed', 'Accuracy', 'Cost', 'Reliability', 'Context'],
+                    datasets: [
+                        {
+                            label: 'Claude',
+                            data: [85, 95, 70, 90, 85],
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99, 102, 241, 0.2)'
+                        },
+                        {
+                            label: 'GLM',
+                            data: [80, 85, 90, 85, 80],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.2)'
+                        },
+                        {
+                            label: 'Kimi',
+                            data: [75, 88, 85, 88, 95],
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.2)'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            grid: { color: '#2a2a3a' },
+                            pointLabels: { color: '#8a8a95' },
+                            ticks: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#8a8a95' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Render Agents
         function renderAgents() {
-            const grid = document.getElementById('agent-grid');
+            const grid = document.getElementById('agents-grid');
             grid.innerHTML = agents.map(a => `
                 <div class="agent-card" onclick="selectAgent('${a.id}')">
                     <div class="agent-header">
-                        <div>
-                            <div class="agent-name">${a.name}</div>
+                        <div class="agent-info">
+                            <h3>${a.name}</h3>
                             <div class="agent-role">${a.role}</div>
                         </div>
                         <span class="agent-status ${a.status}">${a.status}</span>
                     </div>
-                    <div class="agent-meta">
-                        <span>model: ${a.model}</span>
-                        <span>tasks: ${a.tasks}</span>
-                        <span>calls: ${a.calls}</span>
+                    <div class="agent-stats-row">
+                        <div class="agent-stat">
+                            <div class="agent-stat-value">${a.provider}</div>
+                            <div class="agent-stat-label">Provider</div>
+                        </div>
+                        <div class="agent-stat">
+                            <div class="agent-stat-value">${a.model}</div>
+                            <div class="agent-stat-label">Model</div>
+                        </div>
+                        <div class="agent-stat">
+                            <div class="agent-stat-value">${a.tasks}</div>
+                            <div class="agent-stat-label">Tasks</div>
+                        </div>
                     </div>
                 </div>
             `).join('');
@@ -950,59 +1624,42 @@
 
         function renderAgentDetail() {
             if (!selectedAgent) return;
-            document.getElementById('detail-name').textContent = selectedAgent.name;
-            document.getElementById('detail-role').textContent = selectedAgent.role;
-            document.getElementById('detail-status').textContent = selectedAgent.status;
-            document.getElementById('detail-status').className = 'agent-status ' + selectedAgent.status;
             document.getElementById('detail-tasks').textContent = selectedAgent.tasks;
             document.getElementById('detail-calls').textContent = selectedAgent.calls;
-            
-            // MCP tools for this agent
+
             const agentMCPs = {
                 'orchestrator': ['memory', 'sequential-thinking', 'fetch', 'gitlab', 'task-splitter'],
                 'planner': ['filesystem', 'git', 'gitlab', 'brave-search', 'code-search'],
-                'backend': ['filesystem', 'git', 'gitlab', 'postgresql', 'docker', 'code-search'],
+                'backend': ['filesystem', 'git', 'gitlab', 'postgresql', 'docker'],
                 'frontend': ['filesystem', 'git', 'gitlab', 'puppeteer', 'arabic-rtl'],
-                'qa': ['filesystem', 'git', 'gitlab', 'puppeteer', 'arabic-rtl'],
-                'reviewer': ['filesystem', 'git', 'gitlab', 'sequential-thinking', 'arabic-rtl'],
+                'qa': ['filesystem', 'git', 'gitlab', 'puppeteer'],
+                'reviewer': ['filesystem', 'git', 'gitlab', 'sequential-thinking'],
                 'reporter': ['slack', 'discord', 'filesystem']
             };
-            
+
             document.getElementById('agent-mcps').innerHTML = (agentMCPs[selectedAgent.id] || []).map(m => `
-                <div class="mcp-item">
-                    <div class="mcp-name">${m}</div>
-                    <div class="mcp-desc">MCP tool</div>
+                <div class="mcp-card">
+                    <div class="mcp-header">
+                        <div class="mcp-indicator"></div>
+                        <span class="mcp-name">${m}</span>
+                    </div>
+                    <div class="mcp-desc">MCP Tool</div>
                 </div>
             `).join('');
         }
 
         function renderMCPs() {
             document.getElementById('mcp-grid').innerHTML = mcps.map(m => `
-                <div class="mcp-item">
-                    <div class="mcp-name">${m.name}</div>
+                <div class="mcp-card">
+                    <div class="mcp-header">
+                        <div class="mcp-indicator ${m.status}"></div>
+                        <span class="mcp-name">${m.name}</span>
+                    </div>
                     <div class="mcp-desc">${m.desc}</div>
                 </div>
             `).join('');
         }
 
-        function refreshData() {
-            console.log('Refreshing...');
-        }
-
-        function newTask() {
-            alert('Use Telegram bot: /plan <task>');
-        }
-
-        // Socket
-        const socket = io();
-        socket.on('connect', () => {
-            document.getElementById('status-text').textContent = 'Connected';
-        });
-        socket.on('disconnect', () => {
-            document.getElementById('status-text').textContent = 'Disconnected';
-        });
-
-        // Update models based on provider
         function updateModels() {
             const provider = document.getElementById('cfg-provider').value;
             const modelSelect = document.getElementById('cfg-model');
@@ -1012,15 +1669,31 @@
                 og.style.display = og.dataset.provider === provider ? 'block' : 'none';
             });
             
-            // Select first visible option
             const visibleOption = modelSelect.querySelector(`optgroup[data-provider="${provider}"] option`);
             if (visibleOption) visibleOption.selected = true;
         }
 
+        function refreshData() {
+            console.log('Refreshing data...');
+        }
+
+        function newTask() {
+            alert('Use Telegram bot to create tasks: /plan <description>');
+        }
+
+        // Socket
+        const socket = io();
+        socket.on('connect', () => {
+            document.getElementById('status-text').textContent = 'Connected';
+        });
+
+        socket.on('disconnect', () => {
+            document.getElementById('status-text').textContent = 'Disconnected';
+        });
+
         // Init
         renderAgents();
         renderMCPs();
-        updateModels();
     </script>
 </body>
 </html>
