@@ -1099,3 +1099,433 @@ pm2 monit
 
 **Nigents** — *Night Agents for GitLab*  
 Built with ❤️ for developers who sleep while their code ships.
+# Nigents Operations Guide
+
+> Daily operations, updates, and troubleshooting on EC2
+
+---
+
+## Table of Contents
+
+1. [Edit Environment Variables](#edit-environment-variables)
+2. [Pull Updates & Restart](#pull-updates--restart)
+3. [GitLab Connection Fix](#gitlab-connection-fix)
+4. [Common Commands](#common-commands)
+5. [Troubleshooting](#troubleshooting)
+
+---
+
+## Edit Environment Variables
+
+### Step 1: SSH into EC2
+
+```bash
+ssh -i ~/Downloads/openclaw.pem ubuntu@YOUR_EC2_IP
+```
+
+### Step 2: Edit .env File
+
+```bash
+cd /home/ubuntu/nightowl
+nano .env
+```
+
+### Step 3: Common .env Variables
+
+```bash
+# Required - Telegram
+TELEGRAM_BOT_TOKEN=your_bot_token_from_botfather
+TELEGRAM_CHAT_ID=your_chat_id
+
+# Required - AI Provider (pick at least one)
+ANTHROPIC_API_KEY=sk-ant-api03-your-key
+ZHIPU_API_KEY=your.zhipu.key
+MOONSHOT_API_KEY=sk-your-moonshot-key
+
+# Required - GitLab
+GITLAB_TOKEN=glpat-your_gitlab_token
+GITLAB_NAMESPACE=your_gitlab_username
+GITLAB_URL=https://gitlab.com
+
+# Required - OpenAI (for voice)
+OPENAI_API_KEY=sk-your-openai-key
+
+# Dashboard
+DASHBOARD_PORT=4000
+DASHBOARD_PASSWORD=your_secure_password
+
+# Feature Flags
+ENABLE_VOICE=true
+ENABLE_DASHBOARD=true
+ENABLE_OPENHANDS=true
+```
+
+### Step 4: Save & Restart
+
+```bash
+# Save file in nano: Ctrl+X, then Y, then Enter
+
+# Restart services
+pm2 restart all
+
+# Check logs
+pm2 logs
+```
+
+---
+
+## Pull Updates & Restart
+
+### Quick Update Script
+
+```bash
+# SSH into EC2
+ssh -i ~/Downloads/openclaw.pem ubuntu@YOUR_EC2_IP
+
+# Go to project
+cd /home/ubuntu/nightowl
+
+# Pull latest changes
+git pull origin feature/custom-mcp-servers
+
+# If you get merge conflicts:
+git stash          # Save local changes
+git pull origin feature/custom-mcp-servers
+git stash pop      # Restore local changes
+
+# Install new dependencies (if package.json changed)
+npm install
+
+# Rebuild MCP servers (if needed)
+cd mcp-servers/arabic-rtl-auditor && npm run build && cd ../..
+cd mcp-servers/task-splitter && npm run build && cd ../..
+cd mcp-servers/smart-code-search && npm run build && cd ../..
+
+# Restart all services
+pm2 restart all
+
+# Check status
+pm2 status
+pm2 logs --lines 20
+```
+
+### One-Command Update
+
+```bash
+ssh -i ~/Downloads/openclaw.pem ubuntu@YOUR_EC2_IP << 'EOF'
+cd /home/ubuntu/nightowl
+git pull origin feature/custom-mcp-servers
+npm install
+pm2 restart all
+echo "✅ Update complete!"
+EOF
+```
+
+---
+
+## GitLab Connection Fix
+
+### Problem: Repos Not Showing
+
+Even with SSH key set up, repos may not appear in dashboard. Here's the fix:
+
+### Step 1: Verify GitLab Token (Not SSH)
+
+**Nigents uses TOKEN-based API access, not just SSH!**
+
+```bash
+# Check if token is set
+grep GITLAB_TOKEN /home/ubuntu/nightowl/.env
+
+# Should show: GITLAB_TOKEN=glpat-xxxxxxxx
+```
+
+### Step 2: Generate GitLab Token
+
+1. Go to **GitLab.com** → Click your avatar → **Edit Profile**
+2. Left sidebar → **Access Tokens**
+3. Click **"Add new token"**
+4. Fill in:
+   - **Token name:** Nigents
+   - **Expiration:** 1 year from now
+   - **Scopes:** Check ALL these:
+     - [x] api (Full API access)
+     - [x] read_repository
+     - [x] write_repository
+     - [x] read_user
+5. Click **"Create personal access token"**
+6. **COPY THE TOKEN IMMEDIATELY** (you can't see it again!)
+
+### Step 3: Add Token to .env
+
+```bash
+# On EC2
+nano /home/ubuntu/nightowl/.env
+
+# Add or update:
+GITLAB_TOKEN=glpat-YOUR_TOKEN_HERE
+GITLAB_NAMESPACE=your_gitlab_username
+GITLAB_URL=https://gitlab.com
+
+# Save: Ctrl+X, Y, Enter
+```
+
+### Step 4: Configure Repositories
+
+**Option A: Via Dashboard (Easiest)**
+
+1. Open dashboard: `http://YOUR_EC2_IP:4000`
+2. Go to **Settings**
+3. Scroll to "GitLab Configuration"
+4. Enter:
+   - GitLab URL: `https://gitlab.com`
+   - GitLab Token: `glpat-xxxxxxxx`
+   - Namespace: `yourusername`
+5. Click "Save GitLab Settings"
+6. Go to **GitLab Repos** menu
+7. Click "Refresh" to fetch repos
+
+**Option B: Via Config File**
+
+```bash
+# Edit projects config
+nano /home/ubuntu/nightowl/config/projects.json
+```
+
+Add your repos:
+```json
+{
+  "projects": [
+    {
+      "id": "my-backend",
+      "name": "backend-api",
+      "gitlabRepo": "yourusername/backend-api",
+      "stack": {
+        "backend": "Node.js",
+        "database": "PostgreSQL"
+      },
+      "defaultBranch": "main"
+    },
+    {
+      "id": "my-frontend",
+      "name": "frontend-app",
+      "gitlabRepo": "yourusername/frontend-app",
+      "stack": {
+        "frontend": "React"
+      },
+      "defaultBranch": "main"
+    }
+  ],
+  "defaultProject": "my-backend"
+}
+```
+
+### Step 5: Test Connection
+
+```bash
+# On EC2, test API access
+curl --header "PRIVATE-TOKEN: glpat-YOUR_TOKEN" \
+  "https://gitlab.com/api/v4/user"
+
+# Should return your user info
+```
+
+### Step 6: Restart & Verify
+
+```bash
+# Restart services
+pm2 restart all
+
+# Check logs for GitLab connection
+pm2 logs nigents-bot --lines 50
+
+# Look for:
+# "GitLab connection successful"
+# "Loaded X repositories"
+```
+
+---
+
+## Common Commands
+
+### Daily Operations
+
+```bash
+# View all services
+pm2 status
+
+# View logs
+pm2 logs                    # All logs
+pm2 logs nigents-bot        # Bot only
+pm2 logs nigents-dashboard  # Dashboard only
+
+# Restart services
+pm2 restart all
+pm2 restart nigents-bot
+pm2 restart nigents-dashboard
+
+# Stop services
+pm2 stop all
+
+# Start services
+pm2 start all
+
+# Monitor in real-time
+pm2 monit
+```
+
+### File Operations
+
+```bash
+# Edit .env
+nano /home/ubuntu/nightowl/.env
+
+# Edit agent config
+nano /home/ubuntu/nightowl/config/agents.json
+
+# Edit projects
+nano /home/ubuntu/nightowl/config/projects.json
+
+# View logs file
+tail -f /home/ubuntu/nightowl/logs/app.log
+```
+
+### Git Operations
+
+```bash
+# Check status
+cd /home/ubuntu/nightowl
+git status
+
+# Pull updates
+git pull origin feature/custom-mcp-servers
+
+# Check branch
+git branch
+
+# View recent commits
+git log --oneline -5
+```
+
+---
+
+## Troubleshooting
+
+### Issue: Dashboard Not Accessible
+
+```bash
+# 1. Check if running
+pm2 status
+
+# 2. Check port
+sudo netstat -tlnp | grep 4000
+
+# 3. Check firewall
+sudo ufw status
+sudo ufw allow from YOUR_IP to any port 4000
+
+# 4. Check AWS Security Group
+# AWS Console → EC2 → Security Groups → Inbound rules
+# Must have: Custom TCP 4000 from YOUR_IP/32
+```
+
+### Issue: GitLab Repos Not Showing
+
+```bash
+# 1. Check token is set
+grep GITLAB_TOKEN .env
+
+# 2. Test API manually
+curl -H "PRIVATE-TOKEN: glpat-YOUR_TOKEN" \
+  https://gitlab.com/api/v4/projects
+
+# 3. Check logs for errors
+pm2 logs --lines 100 | grep -i gitlab
+
+# 4. Verify namespace
+grep GITLAB_NAMESPACE .env
+```
+
+### Issue: Bot Not Responding
+
+```bash
+# 1. Check bot is running
+pm2 status nigents-bot
+
+# 2. Check Telegram token
+grep TELEGRAM_BOT_TOKEN .env
+
+# 3. Test Telegram API
+curl "https://api.telegram.org/botYOUR_TOKEN/getMe"
+
+# 4. Check logs
+pm2 logs nigents-bot --lines 50
+```
+
+### Issue: After Pull, App Broken
+
+```bash
+# 1. Check for errors
+pm2 logs --lines 100
+
+# 2. Reinstall dependencies
+rm -rf node_modules
+npm install
+
+# 3. Rebuild MCPs
+cd mcp-servers/arabic-rtl-auditor && npm install && npm run build && cd ../..
+cd mcp-servers/task-splitter && npm install && npm run build && cd ../..
+cd mcp-servers/smart-code-search && npm install && npm run build && cd ../..
+
+# 4. Restart
+pm2 restart all
+```
+
+### Issue: Out of Disk Space
+
+```bash
+# Check disk usage
+df -h
+
+# Clean npm cache
+npm cache clean --force
+
+# Remove old logs
+pm2 flush
+
+# Check Docker images
+docker system prune -f
+```
+
+---
+
+## Quick Reference Card
+
+```bash
+# CONNECT
+ssh -i ~/Downloads/openclaw.pem ubuntu@YOUR_EC2_IP
+
+# UPDATE
+cd /home/ubuntu/nightowl
+git pull origin feature/custom-mcp-servers
+pm2 restart all
+
+# EDIT ENV
+nano /home/ubuntu/nightowl/.env
+pm2 restart all
+
+# CHECK LOGS
+pm2 logs --lines 50
+
+# RESTART
+pm2 restart all
+
+# GITLAB FIX
+# 1. Get token: GitLab → Profile → Access Tokens
+# 2. nano .env → Add GITLAB_TOKEN=glpat-xxx
+# 3. pm2 restart all
+```
+
+---
+
+**Need more help?** Check the main README.md or create an issue on GitHub.
