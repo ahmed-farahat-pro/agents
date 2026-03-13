@@ -868,6 +868,132 @@ echo "Dashboard: http://$EC2_IP:4000"
 
 ---
 
+## GitLab Repository Setup
+
+### How Agents Know Which Repo to Work On
+
+Nigents can work on **multiple GitLab repositories**. You configure which repos are available, and agents will use the selected one:
+
+```
+Dashboard → GitLab Repos → Select Repository
+         ↓
+   All tasks will target this repo
+         ↓
+   Agents create branches here
+         ↓
+   MRs are created in this repo
+```
+
+### Step 1: Add Repositories in Dashboard
+
+1. Open Dashboard → **GitLab Repos** (in sidebar)
+2. Click **Settings** (gear icon)
+3. Add your repositories:
+
+```javascript
+// In Dashboard Settings, add repos like:
+[
+  {
+    "id": "my-backend",
+    "name": "backend-api",
+    "namespace": "yourusername",
+    "url": "https://gitlab.com/yourusername/backend-api",
+    "defaultBranch": "main"
+  },
+  {
+    "id": "my-frontend", 
+    "name": "frontend-app",
+    "namespace": "yourusername",
+    "url": "https://gitlab.com/yourusername/frontend-app",
+    "defaultBranch": "main"
+  }
+]
+```
+
+### Step 2: Select Active Repository
+
+1. Go to **GitLab Repos** in dashboard
+2. Click on the repository you want to work on
+3. It will show "Selected" badge
+4. All new tasks will target this repo
+
+### Step 3: Configure GitLab Token
+
+**Get your token:**
+1. Go to GitLab.com → User Settings → Access Tokens
+2. Click "Add new token"
+3. Name: "Nigents"
+4. Scopes: `api`, `read_repository`, `write_repository`
+5. Copy the token
+
+**Add to dashboard:**
+1. Dashboard → Settings
+2. Paste token in "GitLab Token" field
+3. Set your GitLab username in "Default Namespace"
+4. Click Save
+
+### Step 4: Test Repository Access
+
+From your EC2 server:
+```bash
+# Test GitLab connection
+ssh -T git@gitlab.com
+
+# Should see: "Welcome to GitLab, @username!"
+```
+
+### How Task Creation Works
+
+**From Dashboard:**
+```
+1. Click "+ New Task"
+2. Select repository from dropdown
+3. Enter task description
+4. Choose priority
+5. Submit → Task queued
+```
+
+**From Telegram:**
+```
+Send: /plan Add login feature
+
+Bot replies:
+"Which repository? 
+1. backend-api
+2. frontend-app
+Reply with number..."
+
+You reply: 1
+Bot: "Working on backend-api..."
+```
+
+### Repository Branch Structure
+
+Agents create branches like:
+```
+main
+  └── nigents/task-1709901234567-add-login-feature
+       └── [code changes]
+              └── MR created → main
+```
+
+### Multiple Projects
+
+You can configure **multiple projects** and switch between them:
+
+| Project | Use Case |
+|---------|----------|
+| Backend API | Spring Boot, Node.js, Python APIs |
+| Frontend App | React, React Native, Vue |
+| Infrastructure | Terraform, Docker, K8s |
+| Mobile App | iOS, Android, Flutter |
+
+**Switch projects anytime:**
+- Dashboard: Click different repo
+- Telegram: Bot will ask which repo
+
+---
+
 ## Configuration
 
 ### Agent Configuration (`config/agents.json`)

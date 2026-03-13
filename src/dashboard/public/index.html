@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nigents Dashboard</title>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -11,6 +11,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         :root {
@@ -44,6 +45,7 @@
             font-size: 14px;
             line-height: 1.5;
             min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
         }
 
         /* Layout */
@@ -63,6 +65,8 @@
             width: 260px;
             z-index: 100;
             transition: transform 0.3s ease;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .sidebar.mobile-hidden {
@@ -76,8 +80,9 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.7);
             z-index: 99;
+            backdrop-filter: blur(2px);
         }
 
         .sidebar-overlay.active {
@@ -85,17 +90,21 @@
         }
 
         .sidebar-header {
-            padding: 20px;
+            padding: 16px;
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: space-between;
+            position: sticky;
+            top: 0;
+            background: var(--bg-elevated);
+            z-index: 10;
         }
 
         .brand {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .brand-mark {
@@ -108,6 +117,7 @@
             justify-content: center;
             font-weight: 700;
             font-size: 16px;
+            flex-shrink: 0;
         }
 
         .brand-text h1 {
@@ -126,15 +136,15 @@
             background: none;
             border: none;
             color: var(--text);
-            font-size: 24px;
+            font-size: 28px;
             cursor: pointer;
-            padding: 4px;
+            padding: 4px 8px;
+            line-height: 1;
         }
 
         .nav {
             padding: 12px 8px;
             flex: 1;
-            overflow-y: auto;
         }
 
         .nav-section {
@@ -155,13 +165,14 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 10px 14px;
+            padding: 12px 16px;
             margin: 2px 8px;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
             color: var(--text-muted);
             transition: all 0.2s;
             position: relative;
+            font-size: 14px;
         }
 
         .nav-item:hover {
@@ -181,7 +192,7 @@
             top: 50%;
             transform: translateY(-50%);
             width: 3px;
-            height: 18px;
+            height: 20px;
             background: var(--accent-light);
             border-radius: 0 3px 3px 0;
         }
@@ -191,6 +202,7 @@
             height: 8px;
             border-radius: 50%;
             background: var(--text-dim);
+            flex-shrink: 0;
         }
 
         .nav-item.active .nav-indicator {
@@ -211,6 +223,9 @@
         .sidebar-footer {
             padding: 16px;
             border-top: 1px solid var(--border);
+            position: sticky;
+            bottom: 0;
+            background: var(--bg-elevated);
         }
 
         .connection-status {
@@ -228,6 +243,7 @@
             background: var(--success);
             box-shadow: 0 0 8px var(--success);
             animation: pulse 2s infinite;
+            flex-shrink: 0;
         }
 
         @keyframes pulse {
@@ -251,7 +267,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 24px;
+            padding: 0 20px;
             position: sticky;
             top: 0;
             z-index: 50;
@@ -260,7 +276,7 @@
         .header-left {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
         }
 
         .menu-toggle {
@@ -270,7 +286,9 @@
             color: var(--text);
             font-size: 24px;
             cursor: pointer;
-            padding: 4px;
+            padding: 8px;
+            min-width: 44px;
+            min-height: 44px;
         }
 
         .header-title h2 {
@@ -287,15 +305,17 @@
         .btn {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 6px;
-            padding: 8px 16px;
-            border-radius: 8px;
+            padding: 10px 18px;
+            border-radius: 10px;
             border: none;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 500;
             transition: all 0.2s;
             white-space: nowrap;
+            min-height: 44px;
         }
 
         .btn-secondary {
@@ -330,14 +350,20 @@
             background: rgba(239, 68, 68, 0.3);
         }
 
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
         .btn-sm {
-            padding: 6px 12px;
-            font-size: 12px;
+            padding: 8px 14px;
+            font-size: 13px;
+            min-height: 40px;
         }
 
         /* Content Area */
         .content {
-            padding: 24px;
+            padding: 20px;
             flex: 1;
         }
 
@@ -360,7 +386,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 16px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .stat-card {
@@ -407,8 +433,8 @@
         }
 
         .stat-icon {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border-radius: 8px;
             display: flex;
             align-items: center;
@@ -458,7 +484,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 16px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .chart-card {
@@ -478,7 +504,7 @@
         }
 
         .chart-title {
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 600;
         }
 
@@ -488,14 +514,15 @@
         }
 
         .period-btn {
-            padding: 4px 10px;
+            padding: 6px 12px;
             border-radius: 6px;
             border: 1px solid var(--border);
             background: transparent;
             color: var(--text-muted);
-            font-size: 11px;
+            font-size: 12px;
             cursor: pointer;
             transition: all 0.2s;
+            min-height: 36px;
         }
 
         .period-btn:hover,
@@ -515,7 +542,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 16px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .model-card {
@@ -533,14 +560,15 @@
         }
 
         .model-logo {
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 700;
+            flex-shrink: 0;
         }
 
         .model-logo.claude {
@@ -564,7 +592,7 @@
         }
 
         .model-info h3 {
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 600;
             margin-bottom: 2px;
         }
@@ -585,14 +613,14 @@
         }
 
         .metric-value {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 700;
             color: var(--text);
             margin-bottom: 2px;
         }
 
         .metric-label {
-            font-size: 10px;
+            font-size: 11px;
             color: var(--text-muted);
             text-transform: uppercase;
         }
@@ -632,12 +660,12 @@
         }
 
         .activity-title {
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 600;
         }
 
         .activity-list {
-            max-height: 350px;
+            max-height: 400px;
             overflow-y: auto;
         }
 
@@ -659,6 +687,7 @@
             color: var(--text-dim);
             font-family: monospace;
             min-width: 50px;
+            flex-shrink: 0;
         }
 
         .activity-dot {
@@ -732,9 +761,9 @@
         }
 
         .agent-status {
-            padding: 3px 10px;
+            padding: 4px 12px;
             border-radius: 20px;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
         }
@@ -794,7 +823,7 @@
         }
 
         .config-title {
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 600;
             margin-bottom: 20px;
         }
@@ -805,25 +834,26 @@
 
         .form-label {
             display: block;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 500;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
 
         .form-input,
         .form-select,
         .form-textarea {
             width: 100%;
-            padding: 10px 14px;
+            padding: 12px 16px;
             background: var(--bg);
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 10px;
             color: var(--text);
-            font-size: 13px;
+            font-size: 15px;
             transition: all 0.2s;
+            min-height: 48px;
         }
 
         .form-input:focus,
@@ -835,8 +865,9 @@
         }
 
         .form-textarea {
-            min-height: 100px;
+            min-height: 120px;
             resize: vertical;
+            font-family: inherit;
         }
 
         /* Toggle Switch */
@@ -844,26 +875,26 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 14px 0;
+            padding: 16px 0;
             border-bottom: 1px solid var(--border);
         }
 
         .toggle-info h4 {
             font-weight: 500;
-            margin-bottom: 2px;
-            font-size: 14px;
+            margin-bottom: 4px;
+            font-size: 15px;
         }
 
         .toggle-info p {
-            font-size: 12px;
+            font-size: 13px;
             color: var(--text-muted);
         }
 
         .toggle {
-            width: 48px;
-            height: 26px;
+            width: 52px;
+            height: 28px;
             background: var(--bg-hover);
-            border-radius: 13px;
+            border-radius: 14px;
             position: relative;
             cursor: pointer;
             transition: background 0.3s;
@@ -877,8 +908,8 @@
         .toggle::after {
             content: '';
             position: absolute;
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             background: white;
             border-radius: 50%;
             top: 3px;
@@ -888,7 +919,7 @@
         }
 
         .toggle.active::after {
-            transform: translateX(22px);
+            transform: translateX(24px);
         }
 
         /* MCP Tools */
@@ -902,7 +933,7 @@
             background: var(--bg);
             border: 1px solid var(--border);
             border-radius: 10px;
-            padding: 14px;
+            padding: 16px;
             transition: all 0.2s;
         }
 
@@ -923,6 +954,7 @@
             border-radius: 50%;
             background: var(--success);
             box-shadow: 0 0 6px var(--success);
+            flex-shrink: 0;
         }
 
         .mcp-indicator.offline {
@@ -936,7 +968,7 @@
         }
 
         .mcp-desc {
-            font-size: 11px;
+            font-size: 12px;
             color: var(--text-muted);
         }
 
@@ -960,13 +992,13 @@
         }
 
         .provider-info h4 {
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 600;
             margin-bottom: 4px;
         }
 
         .provider-info p {
-            font-size: 12px;
+            font-size: 13px;
             color: var(--text-muted);
             margin-bottom: 8px;
         }
@@ -979,7 +1011,7 @@
 
         .model-tag {
             background: var(--bg-hover);
-            padding: 3px 10px;
+            padding: 4px 10px;
             border-radius: 20px;
             font-size: 11px;
             color: var(--text-muted);
@@ -988,6 +1020,7 @@
         .provider-actions {
             display: flex;
             gap: 8px;
+            flex-shrink: 0;
         }
 
         /* Modal */
@@ -998,11 +1031,11 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.8);
             z-index: 200;
-            align-items: center;
+            align-items: flex-end;
             justify-content: center;
-            padding: 20px;
+            padding: 0;
         }
 
         .modal-overlay.active {
@@ -1012,11 +1045,17 @@
         .modal {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 16px;
+            border-radius: 20px 20px 0 0;
             width: 100%;
-            max-width: 500px;
+            max-width: 600px;
             max-height: 90vh;
             overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
         }
 
         .modal-header {
@@ -1025,10 +1064,14 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: sticky;
+            top: 0;
+            background: var(--bg-card);
+            z-index: 10;
         }
 
         .modal-title {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 600;
         }
 
@@ -1036,8 +1079,14 @@
             background: none;
             border: none;
             color: var(--text-muted);
-            font-size: 24px;
+            font-size: 28px;
             cursor: pointer;
+            padding: 4px;
+            min-width: 44px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .modal-close:hover {
@@ -1054,6 +1103,9 @@
             display: flex;
             justify-content: flex-end;
             gap: 12px;
+            position: sticky;
+            bottom: 0;
+            background: var(--bg-card);
         }
 
         /* Model Tags Input */
@@ -1061,11 +1113,12 @@
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            padding: 8px;
+            padding: 10px;
             background: var(--bg);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            min-height: 44px;
+            border-radius: 10px;
+            min-height: 52px;
+            align-items: center;
         }
 
         .tags-input:focus-within {
@@ -1076,9 +1129,9 @@
         .tag {
             background: var(--accent-dark);
             color: white;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
             display: flex;
             align-items: center;
             gap: 6px;
@@ -1089,8 +1142,11 @@
             border: none;
             color: white;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 16px;
             line-height: 1;
+            padding: 0;
+            min-width: 20px;
+            min-height: 20px;
         }
 
         .tag-input {
@@ -1098,114 +1154,246 @@
             border: none;
             color: var(--text);
             flex: 1;
-            min-width: 80px;
-            font-size: 13px;
+            min-width: 100px;
+            font-size: 15px;
+            min-height: 32px;
         }
 
         .tag-input:focus {
             outline: none;
         }
 
-        /* Responsive */
-        @media (max-width: 1024px) {
-            .charts-grid {
-                grid-template-columns: 1fr;
-            }
+        /* Task Creation Styles */
+        .task-priority-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-
-            .sidebar.mobile-visible {
-                transform: translateX(0);
-            }
-
-            .mobile-close {
-                display: block;
-            }
-
-            .main {
-                margin-left: 0;
-            }
-
-            .menu-toggle {
-                display: block;
-            }
-
-            .header {
-                padding: 0 16px;
-            }
-
-            .header-title h2 {
-                font-size: 16px;
-            }
-
-            .header-actions {
-                gap: 6px;
-            }
-
-            .btn {
-                padding: 6px 12px;
-                font-size: 12px;
-            }
-
-            .btn-hide-mobile {
-                display: none;
-            }
-
-            .content {
-                padding: 16px;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 12px;
-            }
-
-            .stat-value {
-                font-size: 22px;
-            }
-
-            .model-stats {
-                grid-template-columns: 1fr;
-            }
-
-            .config-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .agents-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .mcp-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
+        .priority-btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            min-height: 44px;
         }
 
-        @media (max-width: 480px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
+        .priority-btn:hover {
+            border-color: var(--accent);
+        }
 
-            .mcp-grid {
-                grid-template-columns: 1fr;
-            }
+        .priority-btn.active.low {
+            background: var(--info);
+            border-color: var(--info);
+            color: white;
+        }
 
-            .chart-container {
-                height: 200px;
-            }
+        .priority-btn.active.medium {
+            background: var(--warning);
+            border-color: var(--warning);
+            color: white;
+        }
 
-            .provider-item {
-                flex-direction: column;
-            }
+        .priority-btn.active.high {
+            background: var(--error);
+            border-color: var(--error);
+            color: white;
+        }
 
-            .provider-actions {
-                width: 100%;
-                justify-content: flex-end;
-            }
+        /* GitLab Repos */
+        .repo-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .repo-item {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .repo-item:hover {
+            border-color: var(--accent);
+            background: var(--bg-hover);
+        }
+
+        .repo-item.selected {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .repo-info h4 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .repo-info p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .repo-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        .repo-badge {
+            background: var(--bg-hover);
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .repo-check {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--success);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+
+        /* Task List */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .task-item {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            gap: 12px;
+            transition: all 0.2s;
+        }
+
+        .task-item:hover {
+            border-color: var(--accent);
+        }
+
+        .task-priority {
+            width: 4px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        .task-priority.low { background: var(--info); }
+        .task-priority.medium { background: var(--warning); }
+        .task-priority.high { background: var(--error); }
+
+        .task-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .task-title {
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .task-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .task-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-dim);
+            flex-wrap: wrap;
+        }
+
+        .task-status {
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .task-status.pending {
+            background: rgba(90, 90, 101, 0.3);
+            color: var(--text-muted);
+        }
+
+        .task-status.running {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .task-status.completed {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        /* Mobile Quick Actions */
+        .mobile-quick-actions {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 90;
+        }
+
+        .fab {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--gradient-1);
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fab:active {
+            transform: scale(0.95);
+        }
+
+        /* Empty State */
+        .empty {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .empty p {
+            font-size: 14px;
         }
 
         /* Scrollbar */
@@ -1227,46 +1415,176 @@
             background: var(--border-light);
         }
 
-        /* Empty State */
-        .empty {
-            text-align: center;
-            padding: 48px 20px;
-            color: var(--text-muted);
+        /* MOBILE RESPONSIVE STYLES */
+        @media (max-width: 1024px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .config-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
-        .empty h3 {
-            font-size: 16px;
-            margin-bottom: 8px;
-            color: var(--text);
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                width: 280px;
+            }
+
+            .sidebar.mobile-visible {
+                transform: translateX(0);
+            }
+
+            .mobile-close {
+                display: block;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .menu-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .header {
+                padding: 0 16px;
+                height: 60px;
+            }
+
+            .header-title h2 {
+                font-size: 16px;
+            }
+
+            .header-actions .btn-secondary {
+                display: none;
+            }
+
+            .content {
+                padding: 16px;
+                padding-bottom: 100px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .stat-card {
+                padding: 16px;
+            }
+
+            .stat-value {
+                font-size: 24px;
+            }
+
+            .model-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .agents-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .mcp-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .chart-container {
+                height: 200px;
+            }
+
+            .provider-item {
+                flex-direction: column;
+            }
+
+            .provider-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            .mobile-quick-actions {
+                display: block;
+            }
+
+            .modal {
+                border-radius: 20px 20px 0 0;
+                max-height: 85vh;
+            }
+
+            .modal-footer {
+                flex-direction: column;
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+            }
+
+            .repo-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .task-item {
+                flex-direction: column;
+            }
+
+            .task-priority {
+                width: 100%;
+                height: 4px;
+            }
         }
 
-        .empty p {
-            font-size: 13px;
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .mcp-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .btn {
+                padding: 12px 16px;
+                font-size: 15px;
+            }
+
+            .task-priority-selector {
+                flex-direction: column;
+            }
+
+            .priority-btn {
+                width: 100%;
+            }
+
+            .chart-period {
+                width: 100%;
+            }
+
+            .period-btn {
+                flex: 1;
+            }
+
+            .nav-item {
+                padding: 14px 16px;
+                font-size: 15px;
+            }
         }
 
-        /* Helper classes */
-        .flex {
-            display: flex;
-        }
-
-        .flex-col {
-            flex-direction: column;
-        }
-
-        .gap-2 {
-            gap: 8px;
-        }
-
-        .mb-4 {
-            margin-bottom: 16px;
-        }
-
-        .text-sm {
-            font-size: 12px;
-        }
-
-        .text-muted {
-            color: var(--text-muted);
+        /* Touch-friendly improvements */
+        @media (hover: none) {
+            .btn:active,
+            .nav-item:active,
+            .agent-card:active,
+            .mcp-card:active,
+            .repo-item:active,
+            .task-item:active {
+                transform: scale(0.98);
+                opacity: 0.9;
+            }
         }
     </style>
 </head>
@@ -1294,18 +1612,26 @@
                         <div class="nav-indicator"></div>
                         <span>Dashboard</span>
                     </div>
+                    <div class="nav-item" data-view="tasks">
+                        <div class="nav-indicator"></div>
+                        <span>Tasks</span>
+                        <span class="nav-badge" id="task-count">0</span>
+                    </div>
                     <div class="nav-item" data-view="agents">
                         <div class="nav-indicator"></div>
                         <span>Agents</span>
                         <span class="nav-badge">7</span>
                     </div>
-                    <div class="nav-item" data-view="tasks">
-                        <div class="nav-indicator"></div>
-                        <span>Tasks</span>
-                    </div>
                     <div class="nav-item" data-view="activity">
                         <div class="nav-indicator"></div>
                         <span>Activity</span>
+                    </div>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-title">Projects</div>
+                    <div class="nav-item" data-view="repos">
+                        <div class="nav-indicator"></div>
+                        <span>GitLab Repos</span>
                     </div>
                 </div>
                 <div class="nav-section">
@@ -1353,7 +1679,7 @@
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-secondary btn-hide-mobile" onclick="refreshData()">Refresh</button>
-                    <button class="btn btn-primary" onclick="newTask()">+ New Task</button>
+                    <button class="btn btn-primary" onclick="openTaskModal()">+ New Task</button>
                 </div>
             </header>
 
@@ -1437,6 +1763,21 @@
                     </div>
                 </div>
 
+                <!-- Tasks View -->
+                <div class="view" id="view-tasks">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="font-size: 18px;">Task Queue</h3>
+                        <button class="btn btn-primary" onclick="openTaskModal()">+ Add Task</button>
+                    </div>
+                    <div class="task-list" id="task-list">
+                        <div class="empty">
+                            <h3>No tasks yet</h3>
+                            <p>Create a new task to get started</p>
+                            <button class="btn btn-primary" onclick="openTaskModal()" style="margin-top: 16px;">Create First Task</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Agents View -->
                 <div class="view" id="view-agents">
                     <div class="agents-grid" id="agents-grid"></div>
@@ -1444,7 +1785,7 @@
 
                 <!-- Agent Detail View -->
                 <div class="view" id="view-agent-detail">
-                    <button class="btn btn-secondary mb-4" onclick="showView('agents')">← Back to Agents</button>
+                    <button class="btn btn-secondary" onclick="showView('agents')" style="margin-bottom: 20px;">← Back to Agents</button>
                     
                     <div class="config-grid">
                         <div class="config-card">
@@ -1506,6 +1847,31 @@
                     </div>
                 </div>
 
+                <!-- Repos View -->
+                <div class="view" id="view-repos">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div>
+                            <h3 class="config-title" style="margin: 0;">GitLab Repositories</h3>
+                            <p class="text-sm text-muted">Select a repository for agents to work on</p>
+                        </div>
+                        <button class="btn btn-secondary" onclick="refreshRepos()">Refresh</button>
+                    </div>
+                    <div class="config-card">
+                        <div class="repo-list" id="repo-list">
+                            <div class="empty">
+                                <h3>No repositories configured</h3>
+                                <p>Add repositories in Settings to get started</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="config-card" style="margin-top: 20px;">
+                        <h3 class="config-title">Selected Repository</h3>
+                        <div id="selected-repo-info">
+                            <p class="text-muted">No repository selected</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Model Stats View -->
                 <div class="view" id="view-models">
                     <div class="charts-grid" style="grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));">
@@ -1538,12 +1904,14 @@
 
                 <!-- AI Providers View -->
                 <div class="view" id="view-ai-providers">
-                    <div class="config-card mb-4">
+                    <div class="config-card" style="margin-bottom: 20px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                            <h3 class="config-title" style="margin: 0;">AI Providers</h3>
+                            <div>
+                                <h3 class="config-title" style="margin: 0;">AI Providers</h3>
+                                <p class="text-sm text-muted">Configure AI providers and their API keys</p>
+                            </div>
                             <button class="btn btn-primary" onclick="openProviderModal()">+ Add Provider</button>
                         </div>
-                        <p class="text-sm text-muted mb-4">Configure AI providers and their API keys. You can add any provider that supports OpenAI-compatible APIs.</p>
                         
                         <div class="provider-list" id="provider-list">
                             <!-- Dynamically populated -->
@@ -1602,32 +1970,46 @@
                         </div>
 
                         <div class="config-card">
+                            <h3 class="config-title">GitLab Configuration</h3>
+                            <div class="form-group">
+                                <label class="form-label">GitLab URL</label>
+                                <input type="text" class="form-input" id="gitlab-url" value="https://gitlab.com">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">GitLab Token</label>
+                                <input type="password" class="form-input" id="gitlab-token" placeholder="glpat-...">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Default Namespace</label>
+                                <input type="text" class="form-input" id="gitlab-namespace" placeholder="username or group">
+                            </div>
+                            <button class="btn btn-primary" onclick="saveGitLabConfig()">Save GitLab Settings</button>
+                        </div>
+
+                        <div class="config-card">
                             <h3 class="config-title">API Keys</h3>
                             <div class="form-group">
                                 <label class="form-label">Telegram Bot Token</label>
                                 <input type="password" class="form-input" placeholder="from @BotFather">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">GitLab Token</label>
-                                <input type="password" class="form-input" placeholder="glpat-...">
+                                <label class="form-label">Anthropic API Key</label>
+                                <input type="password" class="form-input" placeholder="sk-ant-...">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">OpenAI API Key (Whisper)</label>
-                                <input type="password" class="form-input" placeholder="sk-...">
+                                <label class="form-label">Zhipu AI API Key</label>
+                                <input type="password" class="form-input" placeholder="from open.bigmodel.cn">
                             </div>
-                            <button class="btn btn-primary">Save Settings</button>
+                            <div class="form-group">
+                                <label class="form-label">Moonshot AI API Key</label>
+                                <input type="password" class="form-input" placeholder="from platform.moonshot.cn">
+                            </div>
+                            <button class="btn btn-primary">Save API Keys</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Other Views -->
-                <div class="view" id="view-tasks">
-                    <div class="empty">
-                        <h3>No tasks yet</h3>
-                        <p>Create a new task to get started</p>
-                    </div>
-                </div>
-
+                <!-- Activity View -->
                 <div class="view" id="view-activity">
                     <div class="activity-card">
                         <div class="activity-header">
@@ -1638,10 +2020,12 @@
                     </div>
                 </div>
 
+                <!-- MCP Tools View -->
                 <div class="view" id="view-mcp">
                     <div class="mcp-grid" id="mcp-grid"></div>
                 </div>
 
+                <!-- Logs View -->
                 <div class="view" id="view-logs">
                     <div class="config-card">
                         <h3 class="config-title">System Logs</h3>
@@ -1659,6 +2043,60 @@
                 </div>
             </div>
         </main>
+
+        <!-- Mobile FAB -->
+        <div class="mobile-quick-actions">
+            <button class="fab" onclick="openTaskModal()">+</button>
+        </div>
+    </div>
+
+    <!-- Create Task Modal -->
+    <div class="modal-overlay" id="task-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New Task</h3>
+                <button class="modal-close" onclick="closeTaskModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Task Title</label>
+                    <input type="text" class="form-input" id="task-title" placeholder="e.g., Add user authentication">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" id="task-desc" placeholder="Describe what needs to be done..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Repository</label>
+                    <select class="form-select" id="task-repo">
+                        <option value="">Select GitLab repository...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Priority</label>
+                    <div class="task-priority-selector">
+                        <button class="priority-btn" data-priority="low" onclick="selectPriority('low')">Low</button>
+                        <button class="priority-btn active medium" data-priority="medium" onclick="selectPriority('medium')">Medium</button>
+                        <button class="priority-btn" data-priority="high" onclick="selectPriority('high')">High</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Assign to Agent (Optional)</label>
+                    <select class="form-select" id="task-agent">
+                        <option value="">Auto-assign (Recommended)</option>
+                        <option value="orchestrator">Orchestrator</option>
+                        <option value="planner">Planner</option>
+                        <option value="backend-dev">Backend Dev</option>
+                        <option value="frontend-dev">Frontend Dev</option>
+                        <option value="qa-tester">QA Tester</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeTaskModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="createTask()">Create Task</button>
+            </div>
+        </div>
     </div>
 
     <!-- Add Provider Modal -->
@@ -1685,7 +2123,7 @@
                 <div class="form-group">
                     <label class="form-label">Models (press Enter to add multiple)</label>
                     <div class="tags-input" id="models-input">
-                        <input type="text" class="tag-input" id="model-input" placeholder="e.g., deepseek-chat, grok-beta">
+                        <input type="text" class="tag-input" id="model-input" placeholder="e.g., deepseek-chat">
                     </div>
                 </div>
                 <div class="form-group">
@@ -1707,7 +2145,7 @@
     </div>
 
     <script>
-        // Dynamic AI Providers - stored in localStorage for persistence
+        // Data
         let aiProviders = JSON.parse(localStorage.getItem('nigents_providers')) || {
             anthropic: {
                 name: 'Anthropic Claude',
@@ -1735,7 +2173,14 @@
             }
         };
 
-        // Data
+        let gitlabRepos = JSON.parse(localStorage.getItem('nigents_repos')) || [
+            { id: 'demo', name: 'Demo Project', namespace: 'example', url: 'https://gitlab.com/example/demo', defaultBranch: 'main', selected: true },
+            { id: 'backend', name: 'Backend API', namespace: 'example', url: 'https://gitlab.com/example/backend', defaultBranch: 'main', selected: false },
+            { id: 'frontend', name: 'Frontend App', namespace: 'example', url: 'https://gitlab.com/example/frontend', defaultBranch: 'main', selected: false }
+        ];
+
+        let tasks = JSON.parse(localStorage.getItem('nigents_tasks')) || [];
+
         const agents = [
             { id: 'orchestrator', name: 'Orchestrator', role: 'Team Lead & Router', status: 'idle', provider: 'anthropic', model: 'claude-3-sonnet', tasks: 0, calls: 0 },
             { id: 'planner', name: 'Planner', role: 'Architecture & Planning', status: 'idle', provider: 'anthropic', model: 'claude-3-sonnet', tasks: 0, calls: 0 },
@@ -1765,6 +2210,7 @@
         let selectedAgent = null;
         let charts = {};
         let tempModels = [];
+        let selectedPriority = 'medium';
 
         // Navigation
         document.querySelectorAll('.nav-item').forEach(item => {
@@ -1788,9 +2234,10 @@
             
             const titles = {
                 dashboard: 'Nigents Dashboard',
+                tasks: 'Task Queue',
                 agents: 'Agents',
                 'agent-detail': 'Agent Configuration',
-                tasks: 'Tasks',
+                repos: 'GitLab Repositories',
                 activity: 'Activity',
                 models: 'Model Statistics',
                 'ai-providers': 'AI Providers',
@@ -1802,6 +2249,8 @@
 
             if (view === 'agents') renderAgents();
             if (view === 'mcp') renderMCPs();
+            if (view === 'repos') renderRepos();
+            if (view === 'tasks') renderTasks();
             if (view === 'dashboard') {
                 initCharts();
                 renderDashboardModels();
@@ -1812,6 +2261,152 @@
                 initProviderCharts();
             }
             if (view === 'agent-detail' && selectedAgent) renderAgentDetail();
+        }
+
+        // Task Management
+        function openTaskModal() {
+            populateRepoSelect();
+            document.getElementById('task-title').value = '';
+            document.getElementById('task-desc').value = '';
+            selectPriority('medium');
+            document.getElementById('task-modal').classList.add('active');
+        }
+
+        function closeTaskModal() {
+            document.getElementById('task-modal').classList.remove('active');
+        }
+
+        function selectPriority(priority) {
+            selectedPriority = priority;
+            document.querySelectorAll('.priority-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.priority === priority) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        function populateRepoSelect() {
+            const select = document.getElementById('task-repo');
+            const selectedRepo = gitlabRepos.find(r => r.selected);
+            select.innerHTML = '<option value="">Select GitLab repository...</option>' + 
+                gitlabRepos.map(r => `<option value="${r.id}" ${r.selected ? 'selected' : ''}>${r.namespace}/${r.name}</option>`).join('');
+        }
+
+        function createTask() {
+            const title = document.getElementById('task-title').value.trim();
+            const desc = document.getElementById('task-desc').value.trim();
+            const repoId = document.getElementById('task-repo').value;
+            const agent = document.getElementById('task-agent').value;
+
+            if (!title) {
+                alert('Please enter a task title');
+                return;
+            }
+
+            const task = {
+                id: 'task-' + Date.now(),
+                title: title,
+                description: desc,
+                repo: repoId,
+                priority: selectedPriority,
+                agent: agent,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            };
+
+            tasks.unshift(task);
+            localStorage.setItem('nigents_tasks', JSON.stringify(tasks));
+            updateTaskCount();
+            closeTaskModal();
+            
+            if (currentView === 'tasks') {
+                renderTasks();
+            }
+
+            // Show notification
+            showNotification('Task created successfully!');
+        }
+
+        function renderTasks() {
+            const list = document.getElementById('task-list');
+            if (tasks.length === 0) {
+                list.innerHTML = `
+                    <div class="empty">
+                        <h3>No tasks yet</h3>
+                        <p>Create a new task to get started</p>
+                        <button class="btn btn-primary" onclick="openTaskModal()" style="margin-top: 16px;">Create First Task</button>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = tasks.map(t => `
+                <div class="task-item">
+                    <div class="task-priority ${t.priority}"></div>
+                    <div class="task-content">
+                        <div class="task-title">${t.title}</div>
+                        ${t.description ? `<div class="task-desc">${t.description}</div>` : ''}
+                        <div class="task-meta">
+                            <span class="task-status ${t.status}">${t.status}</span>
+                            ${t.repo ? `<span>${gitlabRepos.find(r => r.id === t.repo)?.name || t.repo}</span>` : ''}
+                            ${t.agent ? `<span>@${t.agent}</span>` : '<span>@Auto</span>'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateTaskCount() {
+            const pending = tasks.filter(t => t.status === 'pending' || t.status === 'running').length;
+            document.getElementById('task-count').textContent = pending;
+        }
+
+        function showNotification(message) {
+            // Simple notification - could be enhanced
+            console.log('Notification:', message);
+        }
+
+        // GitLab Repos
+        function renderRepos() {
+            const list = document.getElementById('repo-list');
+            list.innerHTML = gitlabRepos.map(r => `
+                <div class="repo-item ${r.selected ? 'selected' : ''}" onclick="selectRepo('${r.id}')">
+                    <div class="repo-info">
+                        <h4>${r.namespace}/${r.name}</h4>
+                        <p>${r.url}</p>
+                        <div class="repo-meta">
+                            <span class="repo-badge">${r.defaultBranch}</span>
+                            <span>${r.selected ? 'Selected' : 'Click to select'}</span>
+                        </div>
+                    </div>
+                    ${r.selected ? '<div class="repo-check">✓</div>' : ''}
+                </div>
+            `).join('');
+
+            const selected = gitlabRepos.find(r => r.selected);
+            document.getElementById('selected-repo-info').innerHTML = selected ? `
+                <div class="repo-item selected" style="margin-bottom: 12px;">
+                    <div class="repo-info">
+                        <h4>${selected.namespace}/${selected.name}</h4>
+                        <p>${selected.url}</p>
+                    </div>
+                    <div class="repo-check">✓</div>
+                </div>
+                <p class="text-sm text-muted">Agents will work on this repository by default.</p>
+            ` : '<p class="text-muted">No repository selected. Select one from the list above.</p>';
+        }
+
+        function selectRepo(id) {
+            gitlabRepos.forEach(r => r.selected = (r.id === id));
+            localStorage.setItem('nigents_repos', JSON.stringify(gitlabRepos));
+            renderRepos();
+        }
+
+        function refreshRepos() {
+            showNotification('Refreshing repositories...');
+            // In real implementation, this would fetch from GitLab API
+            renderRepos();
         }
 
         // Provider Management
@@ -1845,7 +2440,6 @@
             document.getElementById('new-provider-name').value = '';
             document.getElementById('new-provider-key').value = '';
             document.getElementById('new-provider-url').value = '';
-            document.getElementById('model-input').value = '';
             renderModelTags();
             document.getElementById('provider-modal').classList.add('active');
         }
@@ -1856,7 +2450,6 @@
 
         function renderModelTags() {
             const container = document.getElementById('models-input');
-            const input = document.getElementById('model-input');
             container.innerHTML = tempModels.map(m => `
                 <span class="tag">
                     ${m}
@@ -1864,7 +2457,6 @@
                 </span>
             `).join('') + '<input type="text" class="tag-input" id="model-input" placeholder="e.g., deepseek-chat">';
             
-            // Re-attach event listener
             document.getElementById('model-input').addEventListener('keydown', handleModelInput);
         }
 
@@ -1881,8 +2473,6 @@
                 renderModelTags();
             }
         }
-
-        document.getElementById('model-input')?.addEventListener('keydown', handleModelInput);
 
         function removeModel(model) {
             tempModels = tempModels.filter(m => m !== model);
@@ -1934,7 +2524,6 @@
             renderModelTags();
             document.getElementById('provider-modal').classList.add('active');
             
-            // Change add button to save
             const btn = document.querySelector('#provider-modal .btn-primary');
             btn.textContent = 'Save Changes';
             btn.onclick = () => saveProviderEdit(key);
@@ -1964,7 +2553,6 @@
             renderProviders();
             closeProviderModal();
             
-            // Reset button
             setTimeout(() => {
                 const btn = document.querySelector('#provider-modal .btn-primary');
                 btn.textContent = 'Add Provider';
@@ -1972,7 +2560,7 @@
             }, 300);
         }
 
-        // Initialize Charts
+        // Charts
         function initCharts() {
             if (charts.tasks) return;
 
@@ -2234,7 +2822,6 @@
             document.getElementById('detail-tasks').textContent = selectedAgent.tasks;
             document.getElementById('detail-calls').textContent = selectedAgent.calls;
 
-            // Populate provider dropdown
             const providerSelect = document.getElementById('cfg-provider');
             providerSelect.innerHTML = Object.entries(aiProviders).map(([key, p]) => 
                 `<option value="${key}" ${key === selectedAgent.provider ? 'selected' : ''}>${p.name}</option>`
@@ -2277,7 +2864,7 @@
             if (selectedAgent) {
                 selectedAgent.provider = document.getElementById('cfg-provider').value;
                 selectedAgent.model = document.getElementById('cfg-model').value;
-                alert('Configuration saved!');
+                showNotification('Configuration saved!');
             }
         }
 
@@ -2293,12 +2880,21 @@
             `).join('');
         }
 
-        function refreshData() {
-            console.log('Refreshing data...');
+        function saveGitLabConfig() {
+            const url = document.getElementById('gitlab-url').value;
+            const token = document.getElementById('gitlab-token').value;
+            const namespace = document.getElementById('gitlab-namespace').value;
+            
+            localStorage.setItem('nigents_gitlab_url', url);
+            localStorage.setItem('nigents_gitlab_token', token);
+            localStorage.setItem('nigents_gitlab_namespace', namespace);
+            
+            showNotification('GitLab settings saved!');
         }
 
-        function newTask() {
-            alert('Use Telegram bot to create tasks: /plan <description>');
+        function refreshData() {
+            console.log('Refreshing data...');
+            showNotification('Data refreshed');
         }
 
         // Socket
@@ -2318,6 +2914,7 @@
 
         // Init
         saveProviders();
+        updateTaskCount();
         renderAgents();
         renderMCPs();
         renderProviders();
