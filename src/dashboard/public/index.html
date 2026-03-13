@@ -2563,11 +2563,8 @@
             }
         };
 
-        let gitlabRepos = JSON.parse(localStorage.getItem('nigents_repos')) || [
-            { id: 'demo', name: 'Demo Project', namespace: 'example', url: 'https://gitlab.com/example/demo', defaultBranch: 'main', selected: true },
-            { id: 'backend', name: 'Backend API', namespace: 'example', url: 'https://gitlab.com/example/backend', defaultBranch: 'main', selected: false },
-            { id: 'frontend', name: 'Frontend App', namespace: 'example', url: 'https://gitlab.com/example/frontend', defaultBranch: 'main', selected: false }
-        ];
+        let gitlabRepos = JSON.parse(localStorage.getItem('nigents_repos')) || [];
+        let gitlabConfig = { configured: false, namespace: null };
 
         let tasks = JSON.parse(localStorage.getItem('nigents_tasks')) || [];
 
@@ -2940,6 +2937,38 @@
         // GitLab Repos
         function renderRepos() {
             const list = document.getElementById('repo-list');
+            
+            // Show config warning if GitLab not configured
+            if (!gitlabConfig.configured) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <h3>GitLab Not Configured</h3>
+                        <p>Add GITLAB_TOKEN and GITLAB_NAMESPACE to your .env file</p>
+                        <p style="margin-top: 12px; font-size: 12px; color: var(--text-muted);">
+                            1. Create token: GitLab → Profile → Access Tokens<br>
+                            2. Edit .env: nano /home/ubuntu/nightowl/.env<br>
+                            3. Restart: pm2 restart all
+                        </p>
+                    </div>
+                `;
+                document.getElementById('selected-repo-info').innerHTML = '<p class="text-muted">Configure GitLab to select a repository.</p>';
+                return;
+            }
+            
+            // Show empty state if no repos
+            if (gitlabRepos.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No Repositories Found</h3>
+                        <p>No repositories found in namespace: <strong>${gitlabConfig.namespace}</strong></p>
+                        <button class="btn btn-secondary" onclick="refreshRepos()" style="margin-top: 16px;">Refresh</button>
+                    </div>
+                `;
+                document.getElementById('selected-repo-info').innerHTML = '<p class="text-muted">Click Refresh to load repositories from GitLab.</p>';
+                return;
+            }
+            
+            // Render repo list
             list.innerHTML = gitlabRepos.map(r => `
                 <div class="repo-item ${r.selected ? 'selected' : ''}" onclick="selectRepo('${r.id}')">
                     <div class="repo-info">
@@ -2973,10 +3002,48 @@
             renderRepos();
         }
 
-        function refreshRepos() {
-            showNotification('Refreshing repositories...');
-            // In real implementation, this would fetch from GitLab API
-            renderRepos();
+        async function loadGitLabConfig() {
+            try {
+                const response = await fetch('/api/gitlab/config');
+                gitlabConfig = await response.json();
+            } catch (error) {
+                console.error('Failed to load GitLab config:', error);
+            }
+        }
+
+        async function refreshRepos() {
+            showNotification('Fetching repositories from GitLab...');
+            
+            try {
+                const response = await fetch('/api/gitlab/repos');
+                const data = await response.json();
+                
+                if (data.success) {
+                    gitlabRepos = data.repos.map(repo => ({
+                        id: repo.id,
+                        name: repo.name,
+                        namespace: repo.namespace,
+                        fullPath: repo.fullPath,
+                        url: repo.url,
+                        sshUrl: repo.sshUrl,
+                        defaultBranch: repo.defaultBranch,
+                        description: repo.description,
+                        selected: gitlabRepos.find(r => r.id === repo.id)?.selected || false
+                    }));
+                    
+                    // Save to localStorage
+                    localStorage.setItem('nigents_repos', JSON.stringify(gitlabRepos));
+                    
+                    renderRepos();
+                    updateRepoSelects();
+                    showNotification(`Loaded ${data.count} repositories from GitLab`, 'success');
+                } else {
+                    showNotification(data.message || 'Failed to fetch repositories', 'error');
+                }
+            } catch (error) {
+                console.error('Failed to fetch repos:', error);
+                showNotification('Failed to connect to GitLab API', 'error');
+            }
         }
 
         // Provider Management
@@ -3488,6 +3555,12 @@
         renderAgents();
         renderMCPs();
         renderProviders();
+        
+        // Load GitLab config on startup
+        loadGitLabConfig().then(() => {
+            renderRepos();
+            updateRepoSelects();
+        });
     </script>
 </body>
 </html>

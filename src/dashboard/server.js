@@ -10,6 +10,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const logger = require('../utils/logger');
+const axios = require('axios');
 
 const app = express();
 const server = http.createServer(app);
@@ -217,6 +218,147 @@ function addActivity(data) {
   
   io.emit('activity', data);
 }
+
+// ============================================================================
+// GitLab API Routes
+// ============================================================================
+
+// Get GitLab configuration status
+app.get('/api/gitlab/config', (req, res) => {
+  const hasToken = !!process.env.GITLAB_TOKEN;
+  const hasNamespace = !!process.env.GITLAB_NAMESPACE;
+  
+  res.json({
+    configured: hasToken && hasNamespace,
+    hasToken,
+    hasNamespace,
+    namespace: process.env.GITLAB_NAMESPACE || null,
+    url: process.env.GITLAB_URL || 'https://gitlab.com',
+  });
+});
+
+// Fetch repositories from GitLab
+app.get('/api/gitlab/repos', async (req, res) => {
+  try {
+    const token = process.env.GITLAB_TOKEN;
+    const namespace = process.env.GITLAB_NAMESPACE;
+    const baseUrl = process.env.GITLAB_URL || 'https://gitlab.com';
+    
+    if (!token) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'GITLAB_TOKEN not configured',
+        message: 'Add GITLAB_TOKEN to your .env file'
+      });
+    }
+    
+    if (!namespace) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'GITLAB_NAMESPACE not configured',
+        message: 'Add GITLAB_NAMESPACE to your .env file'
+      });
+    }
+    
+    // Fetch projects from GitLab API
+    const response = await axios.get(
+      `${baseUrl}/api/v4/projects`,
+      {
+        headers: {
+          'PRIVATE-TOKEN': token,
+        },
+        params: {
+          membership: true,
+          per_page: 100,
+          order_by: 'last_activity_at',
+          sort: 'desc',
+        },
+      }
+    );
+    
+    // Filter and format repos
+    const repos = response.data.map(project => ({
+      id: project.path,
+      name: project.name,
+      namespace: project.namespace.path,
+      fullPath: project.path_with_namespace,
+      url: project.web_url,
+      sshUrl: project.ssh_url_to_repo,
+      defaultBranch: project.default_branch || 'main',
+      description: project.description,
+      lastActivity: project.last_activity_at,
+      stars: project.star_count,
+      visibility: project.visibility,
+    }));
+    
+    res.json({
+      success: true,
+      count: repos.length,
+      repos,
+    });
+    
+  } catch (error) {
+    logger.error('[Dashboard] Failed to fetch GitLab repos:', error.message);
+    
+    if (error.response?.status === 401) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid GitLab token',
+        message: 'Your GITLAB_TOKEN is invalid or expired',
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch repositories',
+      message: error.message,
+    });
+  }
+});
+
+// Get specific project details
+app.get('/api/gitlab/repos/:projectPath', async (req, res) => {
+  try {
+    const { projectPath } = req.params;
+    const token = process.env.GITLAB_TOKEN;
+    const baseUrl = process.env.GITLAB_URL || 'https://gitlab.com';
+    
+    if (!token) {
+      return res.status(400).json({ success: false, error: 'GITLAB_TOKEN not configured' });
+    }
+    
+    const encodedPath = encodeURIComponent(projectPath);
+    const response = await axios.get(
+      `${baseUrl}/api/v4/projects/${encodedPath}`,
+      {
+        headers: {
+          'PRIVATE-TOKEN': token,
+        },
+      }
+    );
+    
+    res.json({
+      success: true,
+      project: {
+        id: response.data.path,
+        name: response.data.name,
+        namespace: response.data.namespace.path,
+        fullPath: response.data.path_with_namespace,
+        url: response.data.web_url,
+        defaultBranch: response.data.default_branch || 'main',
+        description: response.data.description,
+      },
+    });
+    
+  } catch (error) {
+    logger.error('[Dashboard] Failed to fetch project:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch project',
+      message: error.message,
+    });
+  }
+});
 
 // ============================================================================
 // Socket.IO
