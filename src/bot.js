@@ -11,6 +11,7 @@ const voice = require('./tools/voice');
 const gitlab = require('./tools/gitlab');
 const path = require('path');
 const fs = require('fs');
+const intentRouter = require('./utils/intent-router');
 
 // Import agents
 const {
@@ -83,45 +84,36 @@ bot.onText(/\/start/, async (msg) => {
   const welcomeMessage = `
 🦉 **Welcome to Nigents!**
 
-Your personal AI development team. Send a task before you sleep, wake up to a finished Merge Request.
+Your AI development team. Send tasks via voice or text, and I'll handle the rest.
 
-**Available Commands:**
+**🎙️ Just Talk To Me!**
+Send voice notes or text naturally:
+• "Add login feature with JWT"
+• "Switch to the frontend project"  
+• "Use Moonshot AI instead"
+• "What's the status?"
+• "I want to talk to the backend developer"
 
-📋 **Planning**
+**📋 Quick Commands:**
 • /plan <task> — Create implementation plan
-• /approve — Approve plan for implementation
-• /run — Start implementing queued tasks
+• /approve — Approve plan
+• /projects — List projects
+• /project <id> — Switch project
+• /models — List AI models
+• /model <id> — Switch AI model
+• /status — Check status
+• /ask <question> — Ask about code
 
-📁 **Projects**
-• /projects — List available projects
-• /project <id> — Switch active project
-
-🤖 **AI Models**
-• /models — List available AI providers
-• /model <id> — Switch AI provider
-  (anthropic, moonshot, zhipu, deepseek)
-
-💬 **Questions**
-• /ask <question> — Ask about your code
-
-📊 **Status**
-• /status — View task queue status
-• /queue — List queued tasks
-• /standup — Daily agent standup
-• /costs — API cost summary
-
-👥 **Agent Chat**
+**👥 Agent Chat:**
 • /meet <agent> — Chat with specific agent
   (planner, backend, frontend, qa, reviewer)
 
-⚙️ **Management**
-• /repos — Check GitLab connection
-• /cancel <id> — Cancel a task
+**⚙️ Management:**
+• /run — Start implementation now
+• /queue — List queued tasks
+• /cancel <id> — Cancel task
 
-🎙️ **Voice Support**
-Send voice notes in Arabic or English!
-
-Sleep well! 🌙
+I understand Arabic and English voice messages! 🌙
 `;
 
   await bot.sendMessage(msg.chat.id, welcomeMessage, { parse_mode: 'Markdown' });
@@ -468,22 +460,29 @@ bot.on('voice', async (msg) => {
     // Show transcription
     await bot.sendMessage(msg.chat.id, `📝 Transcribed: "${transcription.text}"`);
 
-    // Get active project for context
-    const activeProject = getActiveProject();
-
-    // Process as command
-    const result = await orchestrator.processCommand(transcription.text, {
+    // Use intent router to understand what user wants
+    await bot.sendChatAction(msg.chat.id, 'typing');
+    const intentResult = await intentRouter.detectIntent(transcription.text, {
       userId: msg.from.id,
-      chatId: msg.chat.id,
       isVoice: true,
-      detectedLanguage: transcription.language,
-      project: activeProject?.gitlabRepo,
-      projectInfo: activeProject,
     });
 
-    if (result.message) {
-      await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+    if (!intentResult.success) {
+      await bot.sendMessage(msg.chat.id, '❌ Sorry, I had trouble understanding. Please try again or use commands like /plan, /projects, etc.');
+      return;
     }
+
+    // Generate response based on intent
+    const response = await intentRouter.generateResponse(intentResult);
+    
+    // Acknowledge understanding
+    await bot.sendMessage(msg.chat.id, response.message);
+
+    // Execute the appropriate action
+    await executeIntent(msg, intentResult, response, {
+      isVoice: true,
+      detectedLanguage: transcription.language,
+    });
 
   } catch (error) {
     logger.error('Voice processing error:', error);
@@ -492,7 +491,7 @@ bot.on('voice', async (msg) => {
 });
 
 // ============================================================================
-// GENERAL MESSAGE HANDLER (for agent chat)
+// GENERAL MESSAGE HANDLER (for natural language and agent chat)
 // ============================================================================
 
 bot.on('message', async (msg) => {
@@ -508,11 +507,187 @@ bot.on('message', async (msg) => {
     // Route to specific agent
     const agent = orchestrator.agents.get(activeAgent);
     if (agent) {
-      const result = await agent.callClaude(msg.text);
+      const result = await agent.callAI(msg.text);
       await bot.sendMessage(msg.chat.id, result.content, { parse_mode: 'Markdown' });
     }
+    return;
+  }
+
+  // Natural language handling with intent router
+  await bot.sendChatAction(msg.chat.id, 'typing');
+  
+  try {
+    const intentResult = await intentRouter.detectIntent(msg.text, {
+      userId: msg.from.id,
+      isVoice: false,
+    });
+
+    if (!intentResult.success) {
+      await bot.sendMessage(msg.chat.id, 'I\'m not sure what you want to do. Try:\n• /plan <task>\n• /projects\n• /models\n• Or send "help" for more options.');
+      return;
+    }
+
+    // Generate and send response
+    const response = await intentRouter.generateResponse(intentResult);
+    await bot.sendMessage(msg.chat.id, response.message);
+
+    // Execute the action
+    await executeIntent(msg, intentResult, response, {
+      isVoice: false,
+    });
+
+  } catch (error) {
+    logger.error('Message processing error:', error);
+    await bot.sendMessage(msg.chat.id, '❌ Error processing your message');
   }
 });
+
+// ============================================================================
+// INTENT EXECUTION HELPER
+// ============================================================================
+
+async function executeIntent(msg, intent, response, context = {}) {
+  const activeProject = getActiveProject();
+  
+  switch (response.type) {
+    case 'PLAN':
+      if (response.task) {
+        await bot.sendChatAction(msg.chat.id, 'typing');
+        const result = await orchestrator.processCommand(`/plan ${response.task}`, {
+          userId: msg.from.id,
+          chatId: msg.chat.id,
+          project: activeProject?.gitlabRepo,
+          projectInfo: activeProject,
+          ...context,
+        });
+        await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+      }
+      break;
+
+    case 'PROJECT_SWITCH':
+      // Try to find matching project
+      try {
+        const projectsPath = path.join(__dirname, '..', 'config', 'projects.json');
+        const projectsConfig = JSON.parse(fs.readFileSync(projectsPath, 'utf8'));
+        
+        const matchedProject = projectsConfig.projects.find(p => 
+          p.id.toLowerCase() === intent.extracted_project?.toLowerCase() ||
+          p.name.toLowerCase().includes(intent.extracted_project?.toLowerCase())
+        );
+        
+        if (matchedProject) {
+          projectsConfig.defaultProject = matchedProject.id;
+          fs.writeFileSync(projectsPath, JSON.stringify(projectsConfig, null, 2));
+          orchestrator.activeProject = matchedProject.id;
+          
+          await bot.sendMessage(msg.chat.id, 
+            `✅ Switched to project: ${matchedProject.name}\nRepository: ${matchedProject.gitlabRepo}`
+          );
+        } else {
+          await bot.sendMessage(msg.chat.id, 
+            `❌ Project "${intent.extracted_project}" not found. Use /projects to see available projects.`
+          );
+        }
+      } catch (error) {
+        await bot.sendMessage(msg.chat.id, '❌ Error switching project');
+      }
+      break;
+
+    case 'PROJECT_LIST':
+      bot.emitText(msg, '/projects');
+      break;
+
+    case 'MODEL_SWITCH':
+      const aiClient = require('./utils/ai-client');
+      const providers = aiClient.getAvailableProviders();
+      
+      const matchedProvider = Object.entries(providers).find(([key, p]) => 
+        key.toLowerCase() === intent.extracted_model?.toLowerCase() ||
+        p.name.toLowerCase().includes(intent.extracted_model?.toLowerCase())
+      );
+      
+      if (matchedProvider && matchedProvider[1].enabled) {
+        aiClient.defaultProvider = matchedProvider[0];
+        orchestrator.provider = matchedProvider[0];
+        await bot.sendMessage(msg.chat.id, 
+          `✅ Switched to ${matchedProvider[1].name}`
+        );
+      } else {
+        await bot.sendMessage(msg.chat.id, 
+          `❌ Model "${intent.extracted_model}" not found or not configured. Use /models to see available models.`
+        );
+      }
+      break;
+
+    case 'MODEL_LIST':
+      bot.emitText(msg, '/models');
+      break;
+
+    case 'STATUS':
+      const statusResult = await orchestrator.processCommand('/status', {});
+      await bot.sendMessage(msg.chat.id, statusResult.message, { parse_mode: 'Markdown' });
+      break;
+
+    case 'APPROVE':
+      const approveResult = await orchestrator.processCommand('/approve', {
+        userId: msg.from.id,
+        chatId: msg.chat.id,
+      });
+      await bot.sendMessage(msg.chat.id, approveResult.message, { parse_mode: 'Markdown' });
+      break;
+
+    case 'ASK':
+      if (response.question) {
+        await bot.sendChatAction(msg.chat.id, 'typing');
+        const askResult = await orchestrator.processCommand(`/ask ${response.question}`, {
+          userId: msg.from.id,
+          chatId: msg.chat.id,
+        });
+        await bot.sendMessage(msg.chat.id, askResult.message, { parse_mode: 'Markdown' });
+      }
+      break;
+
+    case 'CHAT':
+      if (intent.extracted_agent) {
+        const agentMap = {
+          'planner': 'planner',
+          'backend': 'backend',
+          'frontend': 'frontend',
+          'qa': 'qa',
+          'reviewer': 'reviewer',
+          'dev': 'backend',
+          'developer': 'backend',
+        };
+        
+        const agentName = agentMap[intent.extracted_agent.toLowerCase()];
+        if (agentName) {
+          botState.activeChats.set(msg.from.id, agentName);
+          await bot.sendMessage(msg.chat.id, 
+            `💬 Now chatting with ${agentName} agent. Send your message or /exit to stop.`
+          );
+        } else {
+          await bot.sendMessage(msg.chat.id, 
+            `❌ Agent "${intent.extracted_agent}" not found. Available: planner, backend, frontend, qa, reviewer`
+          );
+        }
+      }
+      break;
+
+    case 'HELP':
+      bot.emitText(msg, '/start');
+      break;
+
+    case 'GREETING':
+      // Already sent greeting, nothing more to do
+      break;
+
+    case 'CLARIFY':
+    case 'UNKNOWN':
+    default:
+      // Already sent clarification message
+      break;
+  }
+}
 
 // ============================================================================
 // ORCHESTRATOR EVENT LISTENERS
