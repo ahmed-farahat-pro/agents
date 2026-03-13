@@ -48,8 +48,7 @@
 
         /* Layout */
         .app {
-            display: grid;
-            grid-template-columns: 260px 1fr;
+            display: flex;
             min-height: 100vh;
         }
 
@@ -63,11 +62,34 @@
             height: 100vh;
             width: 260px;
             z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar.mobile-hidden {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
         }
 
         .sidebar-header {
-            padding: 24px;
+            padding: 20px;
             border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .brand {
@@ -77,40 +99,50 @@
         }
 
         .brand-mark {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             background: var(--gradient-1);
-            border-radius: 12px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            font-size: 18px;
+            font-size: 16px;
         }
 
         .brand-text h1 {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             letter-spacing: -0.5px;
         }
 
         .brand-text span {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-muted);
         }
 
+        .mobile-close {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px;
+        }
+
         .nav {
-            padding: 16px 12px;
+            padding: 12px 8px;
             flex: 1;
             overflow-y: auto;
         }
 
         .nav-section {
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .nav-title {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -123,7 +155,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 10px 16px;
+            padding: 10px 14px;
             margin: 2px 8px;
             border-radius: 8px;
             cursor: pointer;
@@ -149,7 +181,7 @@
             top: 50%;
             transform: translateY(-50%);
             width: 3px;
-            height: 20px;
+            height: 18px;
             background: var(--accent-light);
             border-radius: 0 3px 3px 0;
         }
@@ -177,7 +209,7 @@
         }
 
         .sidebar-footer {
-            padding: 16px 24px;
+            padding: 16px;
             border-top: 1px solid var(--border);
         }
 
@@ -205,45 +237,65 @@
 
         /* Main Content */
         .main {
+            flex: 1;
             margin-left: 260px;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .header {
-            height: 70px;
+            height: 64px;
             background: var(--bg-elevated);
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 32px;
+            padding: 0 24px;
             position: sticky;
             top: 0;
             z-index: 50;
         }
 
-        .header-title h2 {
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text);
             font-size: 24px;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .header-title h2 {
+            font-size: 20px;
             font-weight: 700;
             letter-spacing: -0.5px;
         }
 
         .header-actions {
             display: flex;
-            gap: 12px;
+            gap: 8px;
         }
 
         .btn {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
+            gap: 6px;
+            padding: 8px 16px;
             border-radius: 8px;
             border: none;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             transition: all 0.2s;
+            white-space: nowrap;
         }
 
         .btn-secondary {
@@ -268,9 +320,25 @@
             box-shadow: var(--shadow-lg);
         }
 
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+            border: 1px solid var(--error);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
         /* Content Area */
         .content {
-            padding: 32px;
+            padding: 24px;
+            flex: 1;
         }
 
         .view {
@@ -290,16 +358,16 @@
         /* Stats Grid */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 24px;
-            margin-bottom: 32px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
         }
 
         .stat-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 12px;
+            padding: 20px;
             position: relative;
             overflow: hidden;
             transition: all 0.3s;
@@ -329,23 +397,23 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
         .stat-label {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-muted);
             font-weight: 500;
         }
 
         .stat-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 14px;
             font-weight: 700;
         }
 
@@ -370,14 +438,14 @@
         }
 
         .stat-value {
-            font-size: 36px;
+            font-size: 28px;
             font-weight: 800;
             letter-spacing: -1px;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
 
         .stat-change {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-muted);
         }
 
@@ -388,42 +456,44 @@
         /* Charts Section */
         .charts-grid {
             display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 24px;
-            margin-bottom: 32px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
         }
 
         .chart-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 12px;
+            padding: 20px;
         }
 
         .chart-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
         }
 
         .chart-title {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
         }
 
         .chart-period {
             display: flex;
-            gap: 8px;
+            gap: 4px;
         }
 
         .period-btn {
-            padding: 6px 12px;
+            padding: 4px 10px;
             border-radius: 6px;
             border: 1px solid var(--border);
             background: transparent;
             color: var(--text-muted);
-            font-size: 12px;
+            font-size: 11px;
             cursor: pointer;
             transition: all 0.2s;
         }
@@ -437,39 +507,39 @@
 
         .chart-container {
             position: relative;
-            height: 300px;
+            height: 250px;
         }
 
         /* Model Stats */
         .model-stats {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-            margin-bottom: 32px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
         }
 
         .model-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 12px;
+            padding: 20px;
         }
 
         .model-header {
             display: flex;
             align-items: center;
-            gap: 16px;
-            margin-bottom: 20px;
+            gap: 12px;
+            margin-bottom: 16px;
         }
 
         .model-logo {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 700;
         }
 
@@ -488,21 +558,26 @@
             color: white;
         }
 
+        .model-logo.custom {
+            background: var(--gradient-1);
+            color: white;
+        }
+
         .model-info h3 {
-            font-size: 18px;
+            font-size: 15px;
             font-weight: 600;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .model-info span {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-muted);
         }
 
         .model-metrics {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
+            gap: 12px;
         }
 
         .metric {
@@ -510,29 +585,30 @@
         }
 
         .metric-value {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
             color: var(--text);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .metric-label {
-            font-size: 12px;
+            font-size: 10px;
             color: var(--text-muted);
+            text-transform: uppercase;
         }
 
         /* Progress Bars */
         .progress-bar {
-            height: 8px;
+            height: 6px;
             background: var(--bg-hover);
-            border-radius: 4px;
+            border-radius: 3px;
             overflow: hidden;
-            margin-top: 8px;
+            margin-top: 12px;
         }
 
         .progress-fill {
             height: 100%;
-            border-radius: 4px;
+            border-radius: 3px;
             transition: width 0.3s ease;
         }
 
@@ -544,11 +620,11 @@
         .activity-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 16px;
+            border-radius: 12px;
         }
 
         .activity-header {
-            padding: 20px 24px;
+            padding: 16px 20px;
             border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
@@ -556,20 +632,20 @@
         }
 
         .activity-title {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
         }
 
         .activity-list {
-            max-height: 400px;
+            max-height: 350px;
             overflow-y: auto;
         }
 
         .activity-item {
             display: flex;
             align-items: flex-start;
-            gap: 16px;
-            padding: 16px 24px;
+            gap: 12px;
+            padding: 14px 20px;
             border-bottom: 1px solid var(--border);
             transition: background 0.2s;
         }
@@ -579,51 +655,54 @@
         }
 
         .activity-time {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-dim);
             font-family: monospace;
-            min-width: 60px;
+            min-width: 50px;
         }
 
         .activity-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            margin-top: 6px;
+            margin-top: 4px;
             flex-shrink: 0;
         }
 
-        .activity-dot.success { background: var(--success); box-shadow: 0 0 8px var(--success); }
-        .activity-dot.warning { background: var(--warning); box-shadow: 0 0 8px var(--warning); }
-        .activity-dot.info { background: var(--info); box-shadow: 0 0 8px var(--info); }
+        .activity-dot.success { background: var(--success); box-shadow: 0 0 6px var(--success); }
+        .activity-dot.warning { background: var(--warning); box-shadow: 0 0 6px var(--warning); }
+        .activity-dot.info { background: var(--info); box-shadow: 0 0 6px var(--info); }
 
         .activity-content {
             flex: 1;
+            min-width: 0;
         }
 
         .activity-agent {
             font-weight: 600;
             color: var(--accent-light);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
+            font-size: 13px;
         }
 
         .activity-message {
             color: var(--text-muted);
-            font-size: 13px;
+            font-size: 12px;
+            word-break: break-word;
         }
 
         /* Agent Grid */
         .agents-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
         }
 
         .agent-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
+            border-radius: 12px;
+            padding: 16px;
             cursor: pointer;
             transition: all 0.3s;
         }
@@ -638,24 +717,24 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
         .agent-info h3 {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .agent-role {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-muted);
         }
 
         .agent-status {
-            padding: 4px 12px;
+            padding: 3px 10px;
             border-radius: 20px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
         }
@@ -677,25 +756,25 @@
 
         .agent-stats-row {
             display: flex;
-            gap: 24px;
-            margin-top: 16px;
-            padding-top: 16px;
+            gap: 16px;
+            margin-top: 12px;
+            padding-top: 12px;
             border-top: 1px solid var(--border);
         }
 
         .agent-stat {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 2px;
         }
 
         .agent-stat-value {
-            font-size: 18px;
+            font-size: 14px;
             font-weight: 700;
         }
 
         .agent-stat-label {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--text-muted);
             text-transform: uppercase;
         }
@@ -703,47 +782,47 @@
         /* Configuration Form */
         .config-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
         }
 
         .config-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 12px;
+            padding: 20px;
         }
 
         .config-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             margin-bottom: 20px;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         .form-label {
             display: block;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 500;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .form-input,
         .form-select,
         .form-textarea {
             width: 100%;
-            padding: 12px 16px;
+            padding: 10px 14px;
             background: var(--bg);
             border: 1px solid var(--border);
-            border-radius: 10px;
+            border-radius: 8px;
             color: var(--text);
-            font-size: 14px;
+            font-size: 13px;
             transition: all 0.2s;
         }
 
@@ -756,7 +835,7 @@
         }
 
         .form-textarea {
-            min-height: 120px;
+            min-height: 100px;
             resize: vertical;
         }
 
@@ -765,28 +844,30 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 16px 0;
+            padding: 14px 0;
             border-bottom: 1px solid var(--border);
         }
 
         .toggle-info h4 {
             font-weight: 500;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
+            font-size: 14px;
         }
 
         .toggle-info p {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-muted);
         }
 
         .toggle {
-            width: 52px;
-            height: 28px;
+            width: 48px;
+            height: 26px;
             background: var(--bg-hover);
-            border-radius: 14px;
+            border-radius: 13px;
             position: relative;
             cursor: pointer;
             transition: background 0.3s;
+            flex-shrink: 0;
         }
 
         .toggle.active {
@@ -796,8 +877,8 @@
         .toggle::after {
             content: '';
             position: absolute;
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
             background: white;
             border-radius: 50%;
             top: 3px;
@@ -807,21 +888,21 @@
         }
 
         .toggle.active::after {
-            transform: translateX(24px);
+            transform: translateX(22px);
         }
 
         /* MCP Tools */
         .mcp-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
             gap: 12px;
         }
 
         .mcp-card {
             background: var(--bg);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
+            border-radius: 10px;
+            padding: 14px;
             transition: all 0.2s;
         }
 
@@ -832,8 +913,8 @@
         .mcp-header {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
+            gap: 8px;
+            margin-bottom: 6px;
         }
 
         .mcp-indicator {
@@ -841,43 +922,296 @@
             height: 8px;
             border-radius: 50%;
             background: var(--success);
-            box-shadow: 0 0 8px var(--success);
+            box-shadow: 0 0 6px var(--success);
         }
 
         .mcp-indicator.offline {
             background: var(--error);
-            box-shadow: 0 0 8px var(--error);
+            box-shadow: 0 0 6px var(--error);
         }
 
         .mcp-name {
             font-weight: 600;
-            font-size: 14px;
+            font-size: 13px;
         }
 
         .mcp-desc {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-muted);
         }
 
+        /* AI Provider Management */
+        .provider-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .provider-item {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .provider-info h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .provider-info p {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .provider-models {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .model-tag {
+            background: var(--bg-hover);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .provider-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        /* Model Tags Input */
+        .tags-input {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 8px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            min-height: 44px;
+        }
+
+        .tags-input:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .tag {
+            background: var(--accent-dark);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tag-remove {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        .tag-input {
+            background: none;
+            border: none;
+            color: var(--text);
+            flex: 1;
+            min-width: 80px;
+            font-size: 13px;
+        }
+
+        .tag-input:focus {
+            outline: none;
+        }
+
         /* Responsive */
-        @media (max-width: 1200px) {
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .charts-grid { grid-template-columns: 1fr; }
-            .model-stats { grid-template-columns: 1fr; }
+        @media (max-width: 1024px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 768px) {
-            .sidebar { display: none; }
-            .main { margin-left: 0; }
-            .stats-grid { grid-template-columns: 1fr; }
-            .config-grid { grid-template-columns: 1fr; }
-            .content { padding: 20px; }
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.mobile-visible {
+                transform: translateX(0);
+            }
+
+            .mobile-close {
+                display: block;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .header {
+                padding: 0 16px;
+            }
+
+            .header-title h2 {
+                font-size: 16px;
+            }
+
+            .header-actions {
+                gap: 6px;
+            }
+
+            .btn {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+
+            .btn-hide-mobile {
+                display: none;
+            }
+
+            .content {
+                padding: 16px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .stat-value {
+                font-size: 22px;
+            }
+
+            .model-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .config-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .agents-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .mcp-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .mcp-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-container {
+                height: 200px;
+            }
+
+            .provider-item {
+                flex-direction: column;
+            }
+
+            .provider-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
         }
 
         /* Scrollbar */
         ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
         }
 
         ::-webkit-scrollbar-track {
@@ -886,7 +1220,7 @@
 
         ::-webkit-scrollbar-thumb {
             background: var(--border);
-            border-radius: 4px;
+            border-radius: 3px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
@@ -896,21 +1230,53 @@
         /* Empty State */
         .empty {
             text-align: center;
-            padding: 60px 20px;
+            padding: 48px 20px;
             color: var(--text-muted);
         }
 
         .empty h3 {
-            font-size: 18px;
+            font-size: 16px;
             margin-bottom: 8px;
             color: var(--text);
+        }
+
+        .empty p {
+            font-size: 13px;
+        }
+
+        /* Helper classes */
+        .flex {
+            display: flex;
+        }
+
+        .flex-col {
+            flex-direction: column;
+        }
+
+        .gap-2 {
+            gap: 8px;
+        }
+
+        .mb-4 {
+            margin-bottom: 16px;
+        }
+
+        .text-sm {
+            font-size: 12px;
+        }
+
+        .text-muted {
+            color: var(--text-muted);
         }
     </style>
 </head>
 <body>
     <div class="app">
+        <!-- Sidebar Overlay for Mobile -->
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="brand">
                     <div class="brand-mark">N</div>
@@ -919,6 +1285,7 @@
                         <span>Night Agents</span>
                     </div>
                 </div>
+                <button class="mobile-close" onclick="toggleSidebar()">×</button>
             </div>
             <nav class="nav">
                 <div class="nav-section">
@@ -947,6 +1314,11 @@
                         <div class="nav-indicator"></div>
                         <span>Model Stats</span>
                     </div>
+                    <div class="nav-item" data-view="ai-providers">
+                        <div class="nav-indicator"></div>
+                        <span>AI Providers</span>
+                        <span class="nav-badge" id="provider-count">3</span>
+                    </div>
                     <div class="nav-item" data-view="mcp">
                         <div class="nav-indicator"></div>
                         <span>MCP Tools</span>
@@ -973,11 +1345,14 @@
         <!-- Main Content -->
         <main class="main">
             <header class="header">
-                <div class="header-title">
-                    <h2 id="page-title">Dashboard</h2>
+                <div class="header-left">
+                    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+                    <div class="header-title">
+                        <h2 id="page-title">Nigents Dashboard</h2>
+                    </div>
                 </div>
                 <div class="header-actions">
-                    <button class="btn btn-secondary" onclick="refreshData()">Refresh</button>
+                    <button class="btn btn-secondary btn-hide-mobile" onclick="refreshData()">Refresh</button>
                     <button class="btn btn-primary" onclick="newTask()">+ New Task</button>
                 </div>
             </header>
@@ -985,7 +1360,6 @@
             <div class="content">
                 <!-- Dashboard View -->
                 <div class="view active" id="view-dashboard">
-                    <!-- Stats Cards -->
                     <div class="stats-grid">
                         <div class="stat-card primary">
                             <div class="stat-header">
@@ -1021,7 +1395,6 @@
                         </div>
                     </div>
 
-                    <!-- Charts -->
                     <div class="charts-grid">
                         <div class="chart-card">
                             <div class="chart-header">
@@ -1046,93 +1419,14 @@
                         </div>
                     </div>
 
-                    <!-- Model Performance -->
-                    <div class="model-stats">
-                        <div class="model-card">
-                            <div class="model-header">
-                                <div class="model-logo claude">C</div>
-                                <div class="model-info">
-                                    <h3>Anthropic Claude</h3>
-                                    <span>US-Based Models</span>
-                                </div>
-                            </div>
-                            <div class="model-metrics">
-                                <div class="metric">
-                                    <div class="metric-value" id="claude-tasks">0</div>
-                                    <div class="metric-label">Tasks</div>
-                                </div>
-                                <div class="metric">
-                                    <div class="metric-value" id="claude-cost">$0</div>
-                                    <div class="metric-label">Cost</div>
-                                </div>
-                                <div class="metric">
-                                    <div class="metric-value" id="claude-avg">0s</div>
-                                    <div class="metric-label">Avg Time</div>
-                                </div>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill primary" style="width: 65%"></div>
-                            </div>
-                        </div>
-                        <div class="model-card">
-                            <div class="model-header">
-                                <div class="model-logo glm">Z</div>
-                                <div class="model-info">
-                                    <h3>Zhipu AI GLM</h3>
-                                    <span>Chinese Models</span>
-                                </div>
-                            </div>
-                            <div class="model-metrics">
-                                <div class="metric">
-                                    <div class="metric-value" id="glm-tasks">0</div>
-                                    <div class="metric-label">Tasks</div>
-                                </div>
-                                <div class="metric">
-                                    <div class="metric-value" id="glm-cost">¥0</div>
-                                    <div class="metric-label">Cost</div>
-                                </div>
-                                <div class="metric">
-                                    <div class="metric-value" id="glm-avg">0s</div>
-                                    <div class="metric-label">Avg Time</div>
-                                </div>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill success" style="width: 25%"></div>
-                            </div>
-                        </div>
-                        <div class="model-card">
-                            <div class="model-header">
-                                <div class="model-logo kimi">M</div>
-                                <div class="model-info">
-                                    <h3>Moonshot AI Kimi</h3>
-                                    <span>Long Context Models</span>
-                                </div>
-                            </div>
-                            <div class="model-metrics">
-                                <div class="metric">
-                                    <div class="metric-value" id="kimi-tasks">0</div>
-                                    <div class="metric-label">Tasks</div>
-                                </div>
-                                <div class="metric">
-                                    <div class="metric-value" id="kimi-cost">¥0</div>
-                                    <div class="metric-label">Cost</div>
-                                </div>
-                                <div class="metric">
-                                    <div class="metric-value" id="kimi-avg">0s</div>
-                                    <div class="metric-label">Avg Time</div>
-                                </div>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill warning" style="width: 10%"></div>
-                            </div>
-                        </div>
+                    <div class="model-stats" id="dashboard-models">
+                        <!-- Dynamically populated -->
                     </div>
 
-                    <!-- Activity Feed -->
                     <div class="activity-card">
                         <div class="activity-header">
                             <span class="activity-title">Recent Activity</span>
-                            <button class="btn btn-secondary">View All</button>
+                            <button class="btn btn-secondary btn-sm" onclick="showView('activity')">View All</button>
                         </div>
                         <div class="activity-list" id="activity-list">
                             <div class="empty">
@@ -1150,41 +1444,21 @@
 
                 <!-- Agent Detail View -->
                 <div class="view" id="view-agent-detail">
-                    <button class="btn btn-secondary" onclick="showView('agents')" style="margin-bottom: 24px;">← Back to Agents</button>
+                    <button class="btn btn-secondary mb-4" onclick="showView('agents')">← Back to Agents</button>
                     
                     <div class="config-grid">
                         <div class="config-card">
                             <h3 class="config-title">Configuration</h3>
                             <div class="form-group">
                                 <label class="form-label">AI Provider</label>
-                                <select class="form-select" id="cfg-provider" onchange="updateModels()">
-                                    <option value="anthropic">Anthropic (Claude)</option>
-                                    <option value="zhipu">Zhipu AI (GLM)</option>
-                                    <option value="moonshot">Moonshot AI (Kimi)</option>
+                                <select class="form-select" id="cfg-provider" onchange="updateModelsForProvider()">
+                                    <!-- Dynamically populated -->
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Model</label>
                                 <select class="form-select" id="cfg-model">
-                                    <optgroup label="Anthropic" data-provider="anthropic">
-                                        <option value="claude-3-opus">claude-3-opus</option>
-                                        <option value="claude-3-sonnet">claude-3-sonnet</option>
-                                        <option value="claude-3-haiku">claude-3-haiku</option>
-                                    </optgroup>
-                                    <optgroup label="Zhipu AI" data-provider="zhipu">
-                                        <option value="glm-4">glm-4</option>
-                                        <option value="glm-4-plus">glm-4-plus</option>
-                                        <option value="glm-4v">glm-4v</option>
-                                        <option value="glm-5">glm-5</option>
-                                        <option value="glm-5-plus">glm-5-plus</option>
-                                    </optgroup>
-                                    <optgroup label="Moonshot AI" data-provider="moonshot">
-                                        <option value="kimi-k2">kimi-k2</option>
-                                        <option value="kimi-k2-plus">kimi-k2-plus</option>
-                                        <option value="kimi-2.5">kimi-2.5</option>
-                                        <option value="kimi-2.5-32k">kimi-2.5-32k</option>
-                                        <option value="kimi-2.5-128k">kimi-2.5-128k</option>
-                                    </optgroup>
+                                    <!-- Dynamically populated -->
                                 </select>
                             </div>
                             <div class="form-group">
@@ -1194,16 +1468,17 @@
                             <div class="form-group">
                                 <label class="form-label">Temperature</label>
                                 <input type="range" class="form-input" id="cfg-temp" min="0" max="1" step="0.1" value="0.7">
+                                <span id="temp-value" class="text-sm text-muted">0.7</span>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">System Prompt</label>
                                 <textarea class="form-textarea" id="cfg-prompt"></textarea>
                             </div>
-                            <button class="btn btn-primary">Save Changes</button>
+                            <button class="btn btn-primary" onclick="saveAgentConfig()">Save Changes</button>
                         </div>
 
                         <div>
-                            <div class="config-card" style="margin-bottom: 24px;">
+                            <div class="config-card" style="margin-bottom: 20px;">
                                 <h3 class="config-title">Performance Stats</h3>
                                 <div class="form-group">
                                     <label class="form-label">Tasks Completed</label>
@@ -1233,7 +1508,7 @@
 
                 <!-- Model Stats View -->
                 <div class="view" id="view-models">
-                    <div class="charts-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div class="charts-grid" style="grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));">
                         <div class="chart-card">
                             <div class="chart-header">
                                 <span class="chart-title">Cost by Provider</span>
@@ -1251,12 +1526,42 @@
                             </div>
                         </div>
                     </div>
-                    <div class="chart-card" style="margin-top: 24px;">
+                    <div class="chart-card" style="margin-top: 20px;">
                         <div class="chart-header">
                             <span class="chart-title">Model Performance Comparison</span>
                         </div>
                         <div class="chart-container">
                             <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Providers View -->
+                <div class="view" id="view-ai-providers">
+                    <div class="config-card mb-4">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 class="config-title" style="margin: 0;">AI Providers</h3>
+                            <button class="btn btn-primary" onclick="openProviderModal()">+ Add Provider</button>
+                        </div>
+                        <p class="text-sm text-muted mb-4">Configure AI providers and their API keys. You can add any provider that supports OpenAI-compatible APIs.</p>
+                        
+                        <div class="provider-list" id="provider-list">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+
+                    <div class="config-grid">
+                        <div class="config-card">
+                            <h3 class="config-title">Provider Usage Stats</h3>
+                            <div class="chart-container" style="height: 200px;">
+                                <canvas id="providerUsageChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="config-card">
+                            <h3 class="config-title">Cost Comparison</h3>
+                            <div class="chart-container" style="height: 200px;">
+                                <canvas id="providerCostChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1303,24 +1608,12 @@
                                 <input type="password" class="form-input" placeholder="from @BotFather">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Anthropic API Key</label>
-                                <input type="password" class="form-input" placeholder="sk-ant-...">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Zhipu AI API Key</label>
-                                <input type="password" class="form-input" placeholder="from open.bigmodel.cn">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Moonshot AI API Key</label>
-                                <input type="form-input" class="form-input" placeholder="from platform.moonshot.cn">
+                                <label class="form-label">GitLab Token</label>
+                                <input type="password" class="form-input" placeholder="glpat-...">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">OpenAI API Key (Whisper)</label>
                                 <input type="password" class="form-input" placeholder="sk-...">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">GitLab Token</label>
-                                <input type="password" class="form-input" placeholder="glpat-...">
                             </div>
                             <button class="btn btn-primary">Save Settings</button>
                         </div>
@@ -1339,7 +1632,7 @@
                     <div class="activity-card">
                         <div class="activity-header">
                             <span class="activity-title">Full Activity Log</span>
-                            <button class="btn btn-secondary">Export</button>
+                            <button class="btn btn-secondary btn-sm">Export</button>
                         </div>
                         <div class="activity-list" id="full-activity"></div>
                     </div>
@@ -1368,16 +1661,89 @@
         </main>
     </div>
 
+    <!-- Add Provider Modal -->
+    <div class="modal-overlay" id="provider-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Add AI Provider</h3>
+                <button class="modal-close" onclick="closeProviderModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Provider Name</label>
+                    <input type="text" class="form-input" id="new-provider-name" placeholder="e.g., DeepSeek, Grok, Cohere">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">API Key</label>
+                    <input type="password" class="form-input" id="new-provider-key" placeholder="Enter API key">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Base URL (optional)</label>
+                    <input type="text" class="form-input" id="new-provider-url" placeholder="https://api.example.com/v1">
+                    <p class="text-sm text-muted" style="margin-top: 6px;">Leave empty for standard OpenAI-compatible endpoints</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Models (press Enter to add multiple)</label>
+                    <div class="tags-input" id="models-input">
+                        <input type="text" class="tag-input" id="model-input" placeholder="e.g., deepseek-chat, grok-beta">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Currency Symbol</label>
+                    <select class="form-select" id="new-provider-currency">
+                        <option value="$">USD ($)</option>
+                        <option value="¥">CNY (¥)</option>
+                        <option value="€">EUR (€)</option>
+                        <option value="£">GBP (£)</option>
+                        <option value="₹">INR (₹)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeProviderModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="addProvider()">Add Provider</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Dynamic AI Providers - stored in localStorage for persistence
+        let aiProviders = JSON.parse(localStorage.getItem('nigents_providers')) || {
+            anthropic: {
+                name: 'Anthropic Claude',
+                key: '',
+                models: ['claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku'],
+                currency: '$',
+                logo: 'C',
+                color: 'claude'
+            },
+            zhipu: {
+                name: 'Zhipu AI GLM',
+                key: '',
+                models: ['glm-4', 'glm-4-plus', 'glm-4v', 'glm-5', 'glm-5-plus'],
+                currency: '¥',
+                logo: 'Z',
+                color: 'glm'
+            },
+            moonshot: {
+                name: 'Moonshot AI Kimi',
+                key: '',
+                models: ['kimi-k2', 'kimi-k2-plus', 'kimi-2.5', 'kimi-2.5-32k', 'kimi-2.5-128k'],
+                currency: '¥',
+                logo: 'M',
+                color: 'kimi'
+            }
+        };
+
         // Data
         const agents = [
-            { id: 'orchestrator', name: 'Orchestrator', role: 'Team Lead & Router', status: 'idle', provider: 'anthropic', model: 'sonnet', tasks: 0, calls: 0 },
-            { id: 'planner', name: 'Planner', role: 'Architecture & Planning', status: 'idle', provider: 'anthropic', model: 'sonnet', tasks: 0, calls: 0 },
-            { id: 'backend', name: 'Backend Dev', role: 'Backend Developer', status: 'idle', provider: 'anthropic', model: 'sonnet', tasks: 0, calls: 0 },
-            { id: 'frontend', name: 'Frontend Dev', role: 'Frontend Developer', status: 'idle', provider: 'anthropic', model: 'haiku', tasks: 0, calls: 0 },
-            { id: 'qa', name: 'QA Tester', role: 'Quality Assurance', status: 'idle', provider: 'anthropic', model: 'haiku', tasks: 0, calls: 0 },
-            { id: 'reviewer', name: 'Reviewer', role: 'Code Reviewer', status: 'idle', provider: 'anthropic', model: 'sonnet', tasks: 0, calls: 0 },
-            { id: 'reporter', name: 'Reporter', role: 'Reporter & Communicator', status: 'idle', provider: 'anthropic', model: 'haiku', tasks: 0, calls: 0 },
+            { id: 'orchestrator', name: 'Orchestrator', role: 'Team Lead & Router', status: 'idle', provider: 'anthropic', model: 'claude-3-sonnet', tasks: 0, calls: 0 },
+            { id: 'planner', name: 'Planner', role: 'Architecture & Planning', status: 'idle', provider: 'anthropic', model: 'claude-3-sonnet', tasks: 0, calls: 0 },
+            { id: 'backend', name: 'Backend Dev', role: 'Backend Developer', status: 'idle', provider: 'anthropic', model: 'claude-3-sonnet', tasks: 0, calls: 0 },
+            { id: 'frontend', name: 'Frontend Dev', role: 'Frontend Developer', status: 'idle', provider: 'anthropic', model: 'claude-3-haiku', tasks: 0, calls: 0 },
+            { id: 'qa', name: 'QA Tester', role: 'Quality Assurance', status: 'idle', provider: 'anthropic', model: 'claude-3-haiku', tasks: 0, calls: 0 },
+            { id: 'reviewer', name: 'Reviewer', role: 'Code Reviewer', status: 'idle', provider: 'anthropic', model: 'claude-3-sonnet', tasks: 0, calls: 0 },
+            { id: 'reporter', name: 'Reporter', role: 'Reporter & Communicator', status: 'idle', provider: 'anthropic', model: 'claude-3-haiku', tasks: 0, calls: 0 },
         ];
 
         const mcps = [
@@ -1398,6 +1764,7 @@
         let currentView = 'dashboard';
         let selectedAgent = null;
         let charts = {};
+        let tempModels = [];
 
         // Navigation
         document.querySelectorAll('.nav-item').forEach(item => {
@@ -1405,8 +1772,14 @@
                 document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
                 item.classList.add('active');
                 showView(item.dataset.view);
+                if (window.innerWidth <= 768) toggleSidebar();
             });
         });
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('mobile-visible');
+            document.getElementById('sidebar-overlay').classList.toggle('active');
+        }
 
         function showView(view) {
             currentView = view;
@@ -1420,6 +1793,7 @@
                 tasks: 'Tasks',
                 activity: 'Activity',
                 models: 'Model Statistics',
+                'ai-providers': 'AI Providers',
                 mcp: 'MCP Tools',
                 settings: 'Settings',
                 logs: 'Logs'
@@ -1428,16 +1802,180 @@
 
             if (view === 'agents') renderAgents();
             if (view === 'mcp') renderMCPs();
-            if (view === 'dashboard') initCharts();
+            if (view === 'dashboard') {
+                initCharts();
+                renderDashboardModels();
+            }
             if (view === 'models') initModelCharts();
+            if (view === 'ai-providers') {
+                renderProviders();
+                initProviderCharts();
+            }
             if (view === 'agent-detail' && selectedAgent) renderAgentDetail();
+        }
+
+        // Provider Management
+        function saveProviders() {
+            localStorage.setItem('nigents_providers', JSON.stringify(aiProviders));
+            document.getElementById('provider-count').textContent = Object.keys(aiProviders).length;
+        }
+
+        function renderProviders() {
+            const list = document.getElementById('provider-list');
+            list.innerHTML = Object.entries(aiProviders).map(([key, provider]) => `
+                <div class="provider-item">
+                    <div class="provider-info">
+                        <h4>${provider.name}</h4>
+                        <p>${provider.key ? 'API Key: ' + provider.key.substring(0, 8) + '...' : 'No API key set'}</p>
+                        <div class="provider-models">
+                            ${provider.models.map(m => `<span class="model-tag">${m}</span>`).join('')}
+                        </div>
+                    </div>
+                    <div class="provider-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="editProvider('${key}')">Edit</button>
+                        ${key !== 'anthropic' && key !== 'zhipu' && key !== 'moonshot' ? 
+                            `<button class="btn btn-danger btn-sm" onclick="deleteProvider('${key}')">Delete</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openProviderModal() {
+            tempModels = [];
+            document.getElementById('new-provider-name').value = '';
+            document.getElementById('new-provider-key').value = '';
+            document.getElementById('new-provider-url').value = '';
+            document.getElementById('model-input').value = '';
+            renderModelTags();
+            document.getElementById('provider-modal').classList.add('active');
+        }
+
+        function closeProviderModal() {
+            document.getElementById('provider-modal').classList.remove('active');
+        }
+
+        function renderModelTags() {
+            const container = document.getElementById('models-input');
+            const input = document.getElementById('model-input');
+            container.innerHTML = tempModels.map(m => `
+                <span class="tag">
+                    ${m}
+                    <button class="tag-remove" onclick="removeModel('${m}')">×</button>
+                </span>
+            `).join('') + '<input type="text" class="tag-input" id="model-input" placeholder="e.g., deepseek-chat">';
+            
+            // Re-attach event listener
+            document.getElementById('model-input').addEventListener('keydown', handleModelInput);
+        }
+
+        function handleModelInput(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const value = e.target.value.trim();
+                if (value && !tempModels.includes(value)) {
+                    tempModels.push(value);
+                    renderModelTags();
+                }
+            } else if (e.key === 'Backspace' && e.target.value === '' && tempModels.length > 0) {
+                tempModels.pop();
+                renderModelTags();
+            }
+        }
+
+        document.getElementById('model-input')?.addEventListener('keydown', handleModelInput);
+
+        function removeModel(model) {
+            tempModels = tempModels.filter(m => m !== model);
+            renderModelTags();
+        }
+
+        function addProvider() {
+            const name = document.getElementById('new-provider-name').value.trim();
+            const key = document.getElementById('new-provider-key').value.trim();
+            const url = document.getElementById('new-provider-url').value.trim();
+            const currency = document.getElementById('new-provider-currency').value;
+            
+            if (!name || !key || tempModels.length === 0) {
+                alert('Please fill in all required fields and add at least one model');
+                return;
+            }
+
+            const keyId = name.toLowerCase().replace(/\s+/g, '-');
+            aiProviders[keyId] = {
+                name: name,
+                key: key,
+                models: [...tempModels],
+                currency: currency,
+                baseUrl: url || undefined,
+                logo: name.charAt(0).toUpperCase(),
+                color: 'custom'
+            };
+
+            saveProviders();
+            renderProviders();
+            closeProviderModal();
+        }
+
+        function deleteProvider(key) {
+            if (confirm('Are you sure you want to delete this provider?')) {
+                delete aiProviders[key];
+                saveProviders();
+                renderProviders();
+            }
+        }
+
+        function editProvider(key) {
+            const provider = aiProviders[key];
+            document.getElementById('new-provider-name').value = provider.name;
+            document.getElementById('new-provider-key').value = provider.key;
+            document.getElementById('new-provider-url').value = provider.baseUrl || '';
+            document.getElementById('new-provider-currency').value = provider.currency;
+            tempModels = [...provider.models];
+            renderModelTags();
+            document.getElementById('provider-modal').classList.add('active');
+            
+            // Change add button to save
+            const btn = document.querySelector('#provider-modal .btn-primary');
+            btn.textContent = 'Save Changes';
+            btn.onclick = () => saveProviderEdit(key);
+        }
+
+        function saveProviderEdit(key) {
+            const name = document.getElementById('new-provider-name').value.trim();
+            const apiKey = document.getElementById('new-provider-key').value.trim();
+            const url = document.getElementById('new-provider-url').value.trim();
+            const currency = document.getElementById('new-provider-currency').value;
+            
+            if (!name || !apiKey || tempModels.length === 0) {
+                alert('Please fill in all required fields and add at least one model');
+                return;
+            }
+
+            aiProviders[key] = {
+                ...aiProviders[key],
+                name: name,
+                key: apiKey,
+                models: [...tempModels],
+                currency: currency,
+                baseUrl: url || undefined
+            };
+
+            saveProviders();
+            renderProviders();
+            closeProviderModal();
+            
+            // Reset button
+            setTimeout(() => {
+                const btn = document.querySelector('#provider-modal .btn-primary');
+                btn.textContent = 'Add Provider';
+                btn.onclick = addProvider;
+            }, 300);
         }
 
         // Initialize Charts
         function initCharts() {
             if (charts.tasks) return;
 
-            // Tasks Chart
             const tasksCtx = document.getElementById('tasksChart').getContext('2d');
             charts.tasks = new Chart(tasksCtx, {
                 type: 'line',
@@ -1463,7 +2001,6 @@
                 }
             });
 
-            // Agent Distribution Chart
             const agentCtx = document.getElementById('agentChart').getContext('2d');
             charts.agent = new Chart(agentCtx, {
                 type: 'doughnut',
@@ -1481,27 +2018,25 @@
                     plugins: {
                         legend: {
                             position: 'bottom',
-                            labels: { color: '#8a8a95', padding: 20 }
+                            labels: { color: '#8a8a95', padding: 20, usePointStyle: true }
                         }
                     }
                 }
             });
         }
 
-        // Model Charts
         function initModelCharts() {
             if (charts.cost) return;
 
-            // Cost Chart
             const costCtx = document.getElementById('costChart').getContext('2d');
             charts.cost = new Chart(costCtx, {
                 type: 'bar',
                 data: {
-                    labels: ['Claude', 'GLM', 'Kimi'],
+                    labels: Object.values(aiProviders).map(p => p.name.split(' ')[0]),
                     datasets: [{
-                        label: 'Cost ($)',
-                        data: [0, 0, 0],
-                        backgroundColor: ['#6366f1', '#10b981', '#f59e0b'],
+                        label: 'Cost',
+                        data: Object.keys(aiProviders).map(() => 0),
+                        backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'],
                         borderRadius: 6
                     }]
                 },
@@ -1516,7 +2051,6 @@
                 }
             });
 
-            // Token Usage Chart
             const tokenCtx = document.getElementById('tokenChart').getContext('2d');
             charts.token = new Chart(tokenCtx, {
                 type: 'pie',
@@ -1534,38 +2068,23 @@
                     plugins: {
                         legend: {
                             position: 'bottom',
-                            labels: { color: '#8a8a95' }
+                            labels: { color: '#8a8a95', usePointStyle: true }
                         }
                     }
                 }
             });
 
-            // Performance Chart
             const perfCtx = document.getElementById('performanceChart').getContext('2d');
             charts.performance = new Chart(perfCtx, {
                 type: 'radar',
                 data: {
                     labels: ['Speed', 'Accuracy', 'Cost', 'Reliability', 'Context'],
-                    datasets: [
-                        {
-                            label: 'Claude',
-                            data: [85, 95, 70, 90, 85],
-                            borderColor: '#6366f1',
-                            backgroundColor: 'rgba(99, 102, 241, 0.2)'
-                        },
-                        {
-                            label: 'GLM',
-                            data: [80, 85, 90, 85, 80],
-                            borderColor: '#10b981',
-                            backgroundColor: 'rgba(16, 185, 129, 0.2)'
-                        },
-                        {
-                            label: 'Kimi',
-                            data: [75, 88, 85, 88, 95],
-                            borderColor: '#f59e0b',
-                            backgroundColor: 'rgba(245, 158, 11, 0.2)'
-                        }
-                    ]
+                    datasets: Object.entries(aiProviders).slice(0, 3).map(([key, provider], i) => ({
+                        label: provider.name.split(' ')[0],
+                        data: [70 + Math.random() * 20, 80 + Math.random() * 15, 60 + Math.random() * 30, 85, 75 + Math.random() * 20],
+                        borderColor: ['#6366f1', '#10b981', '#f59e0b'][i],
+                        backgroundColor: ['rgba(99, 102, 241, 0.2)', 'rgba(16, 185, 129, 0.2)', 'rgba(245, 158, 11, 0.2)'][i]
+                    }))
                 },
                 options: {
                     responsive: true,
@@ -1580,11 +2099,99 @@
                     plugins: {
                         legend: {
                             position: 'bottom',
-                            labels: { color: '#8a8a95' }
+                            labels: { color: '#8a8a95', usePointStyle: true }
                         }
                     }
                 }
             });
+        }
+
+        function initProviderCharts() {
+            if (charts.providerUsage) {
+                charts.providerUsage.destroy();
+                charts.providerCost.destroy();
+            }
+
+            const providerNames = Object.values(aiProviders).map(p => p.name.split(' ')[0]);
+            const colors = ['#6366f1', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
+
+            const usageCtx = document.getElementById('providerUsageChart').getContext('2d');
+            charts.providerUsage = new Chart(usageCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: providerNames,
+                    datasets: [{
+                        data: Object.keys(aiProviders).map(() => Math.floor(Math.random() * 100)),
+                        backgroundColor: colors,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { color: '#8a8a95', usePointStyle: true, boxWidth: 10 }
+                        }
+                    }
+                }
+            });
+
+            const costCtx = document.getElementById('providerCostChart').getContext('2d');
+            charts.providerCost = new Chart(costCtx, {
+                type: 'bar',
+                data: {
+                    labels: providerNames,
+                    datasets: [{
+                        label: 'Cost',
+                        data: Object.keys(aiProviders).map(() => 0),
+                        backgroundColor: colors,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: '#2a2a3a' }, ticks: { color: '#8a8a95' } },
+                        x: { ticks: { color: '#8a8a95' } }
+                    }
+                }
+            });
+        }
+
+        function renderDashboardModels() {
+            const container = document.getElementById('dashboard-models');
+            container.innerHTML = Object.entries(aiProviders).map(([key, provider]) => `
+                <div class="model-card">
+                    <div class="model-header">
+                        <div class="model-logo ${provider.color}">${provider.logo}</div>
+                        <div class="model-info">
+                            <h3>${provider.name}</h3>
+                            <span>${provider.models.length} models</span>
+                        </div>
+                    </div>
+                    <div class="model-metrics">
+                        <div class="metric">
+                            <div class="metric-value" id="${key}-tasks">0</div>
+                            <div class="metric-label">Tasks</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="${key}-cost">${provider.currency}0</div>
+                            <div class="metric-label">Cost</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="${key}-avg">0s</div>
+                            <div class="metric-label">Avg Time</div>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill ${provider.color === 'claude' ? 'primary' : provider.color === 'glm' ? 'success' : 'warning'}" style="width: ${Math.random() * 100}%"></div>
+                    </div>
+                </div>
+            `).join('');
         }
 
         // Render Agents
@@ -1601,7 +2208,7 @@
                     </div>
                     <div class="agent-stats-row">
                         <div class="agent-stat">
-                            <div class="agent-stat-value">${a.provider}</div>
+                            <div class="agent-stat-value">${aiProviders[a.provider]?.name.split(' ')[0] || a.provider}</div>
                             <div class="agent-stat-label">Provider</div>
                         </div>
                         <div class="agent-stat">
@@ -1627,6 +2234,14 @@
             document.getElementById('detail-tasks').textContent = selectedAgent.tasks;
             document.getElementById('detail-calls').textContent = selectedAgent.calls;
 
+            // Populate provider dropdown
+            const providerSelect = document.getElementById('cfg-provider');
+            providerSelect.innerHTML = Object.entries(aiProviders).map(([key, p]) => 
+                `<option value="${key}" ${key === selectedAgent.provider ? 'selected' : ''}>${p.name}</option>`
+            ).join('');
+
+            updateModelsForProvider();
+
             const agentMCPs = {
                 'orchestrator': ['memory', 'sequential-thinking', 'fetch', 'gitlab', 'task-splitter'],
                 'planner': ['filesystem', 'git', 'gitlab', 'brave-search', 'code-search'],
@@ -1648,6 +2263,24 @@
             `).join('');
         }
 
+        function updateModelsForProvider() {
+            const provider = document.getElementById('cfg-provider').value;
+            const modelSelect = document.getElementById('cfg-model');
+            const models = aiProviders[provider]?.models || [];
+            
+            modelSelect.innerHTML = models.map(m => 
+                `<option value="${m}" ${m === selectedAgent?.model ? 'selected' : ''}>${m}</option>`
+            ).join('');
+        }
+
+        function saveAgentConfig() {
+            if (selectedAgent) {
+                selectedAgent.provider = document.getElementById('cfg-provider').value;
+                selectedAgent.model = document.getElementById('cfg-model').value;
+                alert('Configuration saved!');
+            }
+        }
+
         function renderMCPs() {
             document.getElementById('mcp-grid').innerHTML = mcps.map(m => `
                 <div class="mcp-card">
@@ -1658,19 +2291,6 @@
                     <div class="mcp-desc">${m.desc}</div>
                 </div>
             `).join('');
-        }
-
-        function updateModels() {
-            const provider = document.getElementById('cfg-provider').value;
-            const modelSelect = document.getElementById('cfg-model');
-            const optgroups = modelSelect.querySelectorAll('optgroup');
-            
-            optgroups.forEach(og => {
-                og.style.display = og.dataset.provider === provider ? 'block' : 'none';
-            });
-            
-            const visibleOption = modelSelect.querySelector(`optgroup[data-provider="${provider}"] option`);
-            if (visibleOption) visibleOption.selected = true;
         }
 
         function refreshData() {
@@ -1691,9 +2311,16 @@
             document.getElementById('status-text').textContent = 'Disconnected';
         });
 
+        // Temperature slider
+        document.getElementById('cfg-temp')?.addEventListener('input', (e) => {
+            document.getElementById('temp-value').textContent = e.target.value;
+        });
+
         // Init
+        saveProviders();
         renderAgents();
         renderMCPs();
+        renderProviders();
     </script>
 </body>
 </html>
