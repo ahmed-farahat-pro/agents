@@ -647,11 +647,35 @@
                             </div>
                             <div class="card-body">
                                 <div class="form-group">
+                                    <label>Provider</label>
+                                    <select id="cfg-provider" onchange="updateModels()">
+                                        <option value="anthropic">Anthropic (Claude)</option>
+                                        <option value="zhipu">Zhipu AI (GLM)</option>
+                                        <option value="moonshot">Moonshot AI (Kimi)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
                                     <label>Model</label>
                                     <select id="cfg-model">
-                                        <option>claude-3-opus</option>
-                                        <option>claude-3-sonnet</option>
-                                        <option>claude-3-haiku</option>
+                                        <optgroup label="Anthropic" data-provider="anthropic">
+                                            <option value="claude-3-opus">claude-3-opus</option>
+                                            <option value="claude-3-sonnet">claude-3-sonnet</option>
+                                            <option value="claude-3-haiku">claude-3-haiku</option>
+                                        </optgroup>
+                                        <optgroup label="Zhipu AI" data-provider="zhipu">
+                                            <option value="glm-4">glm-4</option>
+                                            <option value="glm-4-plus">glm-4-plus</option>
+                                            <option value="glm-4v">glm-4v</option>
+                                            <option value="glm-5">glm-5</option>
+                                            <option value="glm-5-plus">glm-5-plus</option>
+                                        </optgroup>
+                                        <optgroup label="Moonshot AI" data-provider="moonshot">
+                                            <option value="kimi-k2">kimi-k2</option>
+                                            <option value="kimi-k2-plus">kimi-k2-plus</option>
+                                            <option value="kimi-2.5">kimi-2.5</option>
+                                            <option value="kimi-2.5-32k">kimi-2.5-32k</option>
+                                            <option value="kimi-2.5-128k">kimi-2.5-128k</option>
+                                        </optgroup>
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -796,19 +820,27 @@
                         <div class="card-body">
                             <div class="form-group">
                                 <label>Telegram Bot Token</label>
-                                <input type="password" value="****************">
+                                <input type="password" placeholder="from @BotFather">
                             </div>
                             <div class="form-group">
-                                <label>Anthropic API Key</label>
-                                <input type="password" value="****************">
+                                <label>Anthropic API Key (Claude)</label>
+                                <input type="password" placeholder="sk-ant-...">
                             </div>
                             <div class="form-group">
-                                <label>OpenAI API Key</label>
-                                <input type="password" value="****************">
+                                <label>OpenAI API Key (Whisper)</label>
+                                <input type="password" placeholder="sk-...">
+                            </div>
+                            <div class="form-group">
+                                <label>Zhipu AI API Key (GLM)</label>
+                                <input type="password" placeholder="from open.bigmodel.cn">
+                            </div>
+                            <div class="form-group">
+                                <label>Moonshot AI API Key (Kimi)</label>
+                                <input type="password" placeholder="from platform.moonshot.cn">
                             </div>
                             <div class="form-group">
                                 <label>GitLab Token</label>
-                                <input type="password" value="****************">
+                                <input type="password" placeholder="glpat-...">
                             </div>
                             <button class="primary">Save</button>
                         </div>
@@ -970,9 +1002,25 @@
             document.getElementById('status-text').textContent = 'Disconnected';
         });
 
+        // Update models based on provider
+        function updateModels() {
+            const provider = document.getElementById('cfg-provider').value;
+            const modelSelect = document.getElementById('cfg-model');
+            const optgroups = modelSelect.querySelectorAll('optgroup');
+            
+            optgroups.forEach(og => {
+                og.style.display = og.dataset.provider === provider ? 'block' : 'none';
+            });
+            
+            // Select first visible option
+            const visibleOption = modelSelect.querySelector(`optgroup[data-provider="${provider}"] option`);
+            if (visibleOption) visibleOption.selected = true;
+        }
+
         // Init
         renderAgents();
         renderMCPs();
+        updateModels();
     </script>
 </body>
 </html>
