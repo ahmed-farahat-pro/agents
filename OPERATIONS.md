@@ -6,7 +6,8 @@
 
 ## Table of Contents
 
-1. [Quick Reference](#quick-reference)
+1. [CI/CD Pipeline (Auto-Deploy)](#cicd-pipeline-auto-deploy)
+2. [Quick Reference](#quick-reference)
 2. [HTTPS Setup with Namecheap Domain](#https-setup-with-namecheap-domain)
 3. [Edit Environment Variables](#edit-environment-variables)
 4. [Pull Updates & Restart](#pull-updates--restart)
@@ -777,3 +778,103 @@ sudo swapon /swapfile
 **Last Updated:** 2025
 **Branch:** `feature/custom-mcp-servers`
 **Domain:** nigents.com
+
+---
+
+## CI/CD Pipeline (Auto-Deploy)
+
+Nigents uses GitLab CI/CD for automatic deployment to EC2. Every push to `main` triggers the pipeline.
+
+### Pipeline Stages
+
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│    TEST     │ →  │    BUILD    │ →  │   DEPLOY    │
+│             │    │             │    │             │
+│ • Lint code │    │ • Build MCP │    │ • SSH to EC2│
+│ • Test MCP  │    │   servers   │    │ • Git pull  │
+│   builds    │    │             │    │ • npm ci    │
+│             │    │             │    │ • pm2 reload│
+└─────────────┘    └─────────────┘    └─────────────┘
+```
+
+### Trigger Deployment
+
+Simply push to GitLab:
+
+```bash
+# Push to main triggers deployment
+git push gitlab main
+
+# Or merge a feature branch to main
+git checkout main
+git merge feature/my-feature
+git push gitlab main
+```
+
+### Monitor Pipeline
+
+1. Go to **GitLab** → Your Project → **CI/CD** → **Pipelines**
+2. Watch pipeline progress
+3. Green checkmark = deployed successfully
+4. Red X = check logs for errors
+
+### Setup CI/CD (First Time)
+
+See [GITLAB_SETUP.md](GITLAB_SETUP.md) for complete setup instructions.
+
+### Required CI/CD Variables
+
+Configure these in GitLab → Settings → CI/CD → Variables:
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `EC2_HOST` | Variable | EC2 public IP (e.g., 3.91.48.123) |
+| `EC2_SSH_KEY` | File | SSH private key (content of .pem file) |
+| `TELEGRAM_BOT_TOKEN` | Variable | (Optional) For deployment notifications |
+| `TELEGRAM_CHAT_ID` | Variable | (Optional) Telegram chat ID |
+
+### Manual Deployment (If CI/CD Fails)
+
+If automatic deployment fails, deploy manually:
+
+```bash
+# SSH to EC2
+ssh -i ~/Downloads/openclaw.pem ubuntu@YOUR_EC2_IP
+
+# Navigate and update
+cd /home/ubuntu/nightowl
+git pull origin main
+npm ci --production
+
+# Rebuild MCP servers
+cd mcp-servers/arabic-rtl-auditor && npm run build && cd ../..
+cd mcp-servers/task-splitter && npm run build && cd ../..
+cd mcp-servers/smart-code-search && npm run build && cd ../..
+
+# Restart services
+pm2 restart all
+
+# Verify
+pm2 status
+```
+
+### Rollback Deployment
+
+If a deployment breaks something:
+
+**Via GitLab (Recommended):**
+1. Go to GitLab → CI/CD → Pipelines
+2. Find previous successful pipeline
+3. Click "Rollback" job (manual trigger)
+
+**Manual Rollback:**
+```bash
+ssh -i ~/Downloads/openclaw.pem ubuntu@YOUR_EC2_IP
+cd /home/ubuntu/nightowl
+git reset --hard HEAD~1
+npm ci --production
+pm2 restart all
+```
+
+---
