@@ -789,6 +789,518 @@ You push to main branch
 
 ---
 
+## 🚀 Complete EC2 Deployment Guide (Step-by-Step)
+
+This guide walks you through setting up NightOwl on AWS EC2 from scratch, including building custom MCP servers and running the agent dashboard.
+
+### Prerequisites
+
+- AWS account with EC2 access
+- GitHub account (for this repo)
+- Telegram bot token (from @BotFather)
+- API keys: Anthropic (Claude), OpenAI (Whisper), GitLab
+- SSH key pair for EC2
+
+---
+
+### Step 1: Launch EC2 Instance
+
+```bash
+# AWS Console → EC2 → Launch Instance
+
+# Configuration:
+# ┌─────────────────────────────────────────┐
+# │ Name: nightowl-server                   │
+# │ OS: Ubuntu 22.04 LTS                    │
+# │ Instance Type: t3.large (2 vCPU, 8GB)   │
+# │ Storage: 30GB gp3                       │
+# │ Key Pair: Create new or use existing    │
+# └─────────────────────────────────────────┘
+
+# Security Group Rules:
+# ┌──────────┬──────────┬──────────────┬─────────────────┐
+# │ Type     │ Port     │ Source       │ Purpose         │
+# ├──────────┼──────────┼──────────────┼─────────────────┤
+# │ SSH      │ 22       │ Your IP      │ SSH access      │
+# │ Custom   │ 4000     │ Your IP      │ Dashboard       │
+# │ Custom   │ 3000     │ Your IP      │ OpenHands       │
+# └──────────┴──────────┴──────────────┴─────────────────┘
+
+# Download .pem key and set permissions:
+chmod 400 ~/Downloads/nightowl.pem
+```
+
+---
+
+### Step 2: Connect to EC2 & Install Dependencies
+
+```bash
+# SSH into your EC2 instance
+ssh -i ~/Downloads/nightowl.pem ubuntu@YOUR_EC2_IP
+
+# Update system
+sudo apt-get update && sudo apt-get upgrade -y
+
+# Install Node.js 20
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Verify Node installation
+node --version  # Should show v20.x.x
+npm --version   # Should show 10.x.x
+
+# Install Python and dependencies
+sudo apt-get install -y python3 python3-pip ffmpeg
+
+# Install PM2 globally
+sudo npm install -g pm2
+
+# Install Docker
+sudo apt-get install -y docker.io
+sudo usermod -aG docker ubuntu
+
+# Install Git
+sudo apt-get install -y git
+
+# Logout and login again for Docker group to take effect
+exit
+ssh -i ~/Downloads/nightowl.pem ubuntu@YOUR_EC2_IP
+```
+
+---
+
+### Step 3: Clone Repository
+
+```bash
+# Create workspace directory
+mkdir -p /home/ubuntu/workspace
+cd /home/ubuntu
+
+# Clone NightOwl repository
+git clone https://github.com/ahmed-farahat-pro/agents.git nightowl
+cd nightowl
+
+# Verify structure
+ls -la
+# Should see: src/, config/, mcp-servers/, scripts/, etc.
+```
+
+---
+
+### Step 4: Install Dependencies
+
+```bash
+cd /home/ubuntu/nightowl
+
+# Install main app dependencies
+npm install
+
+# Verify installation
+ls -la node_modules/ | head -10
+```
+
+---
+
+### Step 5: Build Custom MCP Servers
+
+```bash
+cd /home/ubuntu/nightowl
+
+# Build Arabic RTL Auditor MCP
+cd mcp-servers/arabic-rtl-auditor
+npm install
+npm run build
+
+# Verify build
+ls -la dist/
+# Should see: index.js, index.d.ts, etc.
+
+cd /home/ubuntu/nightowl
+
+# Build Task Splitter MCP
+cd mcp-servers/task-splitter
+npm install
+npm run build
+
+ls -la dist/
+
+cd /home/ubuntu/nightowl
+
+# Build Smart Code Search MCP
+cd mcp-servers/smart-code-search
+npm install
+npm run build
+
+ls -la dist/
+
+cd /home/ubuntu/nightowl
+
+echo "✅ All MCP servers built successfully!"
+```
+
+---
+
+### Step 6: Create Environment File
+
+```bash
+cd /home/ubuntu/nightowl
+
+# Copy example env
+cp .env.example .env
+
+# Edit with your actual values
+nano .env
+
+# Required variables to set:
+# ─────────────────────────────────────────────────
+# TELEGRAM_BOT_TOKEN=your_bot_token_from_botfather
+# TELEGRAM_CHAT_ID=your_chat_id_from_userinfobot
+# ANTHROPIC_API_KEY=your_claude_api_key
+# OPENAI_API_KEY=your_openai_api_key_for_whisper
+# GITLAB_TOKEN=your_gitlab_personal_access_token
+# GITLAB_NAMESPACE=your_gitlab_username
+# GITLAB_URL=https://gitlab.com
+# DASHBOARD_PORT=4000
+# DASHBOARD_PASSWORD=secure_password_here
+# ENABLE_VOICE=true
+# ENABLE_DASHBOARD=true
+# LOG_LEVEL=info
+# ─────────────────────────────────────────────────
+
+# Save and exit (Ctrl+X, Y, Enter)
+```
+
+---
+
+### Step 7: Setup OpenHands (Code Sandbox)
+
+```bash
+# Pull OpenHands Docker image
+docker pull ghcr.io/opendevin/opendevin:latest
+
+# Create OpenHands systemd service
+sudo tee /etc/systemd/system/openhands.service > /dev/null << 'EOF'
+[Unit]
+Description=OpenHands Code Sandbox
+After=docker.service
+Requires=docker.service
+
+[Service]
+Restart=always
+ExecStart=/usr/bin/docker run --rm \
+  -p 3000:3000 \
+  -v /home/ubuntu/workspace:/workspace \
+  -e SANDBOX_TYPE=exec \
+  -e LLM_MODEL=claude-3-sonnet-20240229 \
+  -e LLM_API_KEY=${ANTHROPIC_API_KEY} \
+  ghcr.io/opendevin/opendevin:latest
+ExecStop=/usr/bin/docker stop -t 10 $(/usr/bin/docker ps -q --filter ancestor=ghcr.io/opendevin/opendevin:latest)
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Start OpenHands
+sudo systemctl daemon-reload
+sudo systemctl enable openhands
+sudo systemctl start openhands
+
+# Verify OpenHands is running
+curl http://localhost:3000
+```
+
+---
+
+### Step 8: Configure GitLab SSH Access
+
+```bash
+# Generate SSH key for GitLab
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N "" -C "nightowl@ec2"
+
+# Display public key
+cat ~/.ssh/id_rsa.pub
+# Copy this key!
+
+# Add to GitLab:
+# 1. Go to GitLab → User Settings → SSH Keys
+# 2. Paste the key
+# 3. Title: "NightOwl EC2"
+# 4. Add key
+
+# Test GitLab connection
+ssh -T git@gitlab.com
+# Should see: "Welcome to GitLab, @username!"
+```
+
+---
+
+### Step 9: Start NightOwl Bot
+
+```bash
+cd /home/ubuntu/nightowl
+
+# Start bot with PM2
+pm2 start src/bot.js --name nightowl-bot
+
+# Save PM2 config
+pm2 save
+
+# Setup PM2 to start on boot
+sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u ubuntu --hp /home/ubuntu
+
+# Check bot status
+pm2 status
+pm2 logs nightowl-bot --lines 20
+```
+
+**Expected output:**
+```
+[PM2] Starting nightowl-bot in fork_mode (1 instance)
+[PM2] Done.
+┌─────┬──────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id  │ name             │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├─────┼──────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 0   │ nightowl-bot     │ default     │ 1.0.0   │ fork    │ 12345    │ 5s     │ 0    │ online    │ 0.5%     │ 85.2mb   │ ubuntu   │ disabled │
+└─────┴──────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+```
+
+---
+
+### Step 10: Start NightOwl Dashboard
+
+```bash
+cd /home/ubuntu/nightowl
+
+# Start dashboard with PM2
+pm2 start src/dashboard/server.js --name nightowl-dashboard
+
+# Save PM2 config
+pm2 save
+
+# Check dashboard status
+pm2 status nightowl-dashboard
+pm2 logs nightowl-dashboard --lines 20
+```
+
+**Expected output:**
+```
+🦉 NightOwl Dashboard running on port 4000
+Dashboard URL: http://localhost:4000
+```
+
+---
+
+### Step 11: Access the Dashboard
+
+```bash
+# Get your EC2 public IP
+EC2_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+echo "Dashboard URL: http://$EC2_IP:4000"
+```
+
+**Open browser:** `http://YOUR_EC2_IP:4000`
+
+**Dashboard Features:**
+- Real-time agent activity streaming
+- Live code edits with syntax highlighting
+- Agent-to-agent communication log
+- Task queue with progress bars
+- Connection status indicator
+
+---
+
+### Step 12: Test Telegram Bot
+
+1. **Open Telegram** on your phone
+2. **Find your bot** (the one you created with @BotFather)
+3. **Send:** `/start`
+4. **Expected response:**
+   ```
+   🦉 Welcome to NightOwl!
+   
+   Your personal AI development team...
+   ```
+
+5. **Test voice:** Send a voice note in Arabic or English
+6. **Test command:** `/plan Add user authentication to the API`
+
+---
+
+### Step 13: Verify Everything Works
+
+```bash
+# Check all services are running
+echo "=== PM2 Processes ==="
+pm2 status
+
+echo "=== OpenHands Container ==="
+docker ps | grep opendevin
+
+echo "=== Ports Listening ==="
+netstat -tlnp | grep -E '(:4000|:3000)'
+
+echo "=== Disk Space ==="
+df -h
+
+echo "=== Memory Usage ==="
+free -h
+```
+
+---
+
+### Step 14: Setup Auto-Start on Boot
+
+```bash
+# PM2 startup script already created
+# Verify it's enabled
+sudo systemctl status pm2-ubuntu
+
+# If not enabled:
+sudo systemctl enable pm2-ubuntu
+sudo systemctl start pm2-ubuntu
+
+# OpenHands already enabled via systemd
+sudo systemctl status openhands
+```
+
+---
+
+### Daily Operations
+
+```bash
+# View logs
+pm2 logs nightowl-bot
+pm2 logs nightowl-dashboard
+
+# Restart services
+pm2 restart nightowl-bot
+pm2 restart nightowl-dashboard
+
+# Monitor resources
+pm2 monit
+
+# Update code and restart
+cd /home/ubuntu/nightowl
+git pull origin main
+npm install
+pm2 restart all
+```
+
+---
+
+### Troubleshooting Common Issues
+
+#### Issue: Dashboard not accessible
+```bash
+# Check firewall
+sudo ufw status
+sudo ufw allow 4000/tcp
+
+# Check security group in AWS Console
+# Ensure port 4000 is open to your IP
+
+# Check if dashboard is listening
+netstat -tlnp | grep 4000
+```
+
+#### Issue: Bot not responding
+```bash
+# Check logs
+pm2 logs nightowl-bot --lines 50
+
+# Verify environment variables
+grep TELEGRAM .env
+
+# Test Telegram connection
+curl "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe"
+```
+
+#### Issue: MCP servers not working
+```bash
+# Check if built properly
+ls -la mcp-servers/*/dist/
+
+# Check paths in config
+cat config/mcp-servers.json | grep -A3 "arabic-rtl-auditor"
+
+# Rebuild if needed
+cd mcp-servers/arabic-rtl-auditor && npm run build
+```
+
+#### Issue: Out of memory
+```bash
+# Monitor memory
+watch -n 2 free -h
+
+# Increase swap
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+```
+
+---
+
+### Security Checklist
+
+- [ ] Security Group: Port 22 restricted to your IP only
+- [ ] Security Group: Port 4000 restricted to your IP only
+- [ ] `.env` file has correct permissions: `chmod 600 .env`
+- [ ] Dashboard has password protection
+- [ ] SSH key authentication only (no password login)
+- [ ] Regular security updates: `sudo apt-get update && sudo apt-get upgrade`
+
+---
+
+### Complete File Structure on EC2
+
+```
+/home/ubuntu/
+├── nightowl/                    # Main application
+│   ├── src/
+│   │   ├── bot.js              # Telegram bot entry
+│   │   ├── dashboard/          # Web dashboard
+│   │   │   └── server.js       # Dashboard server
+│   │   ├── agents/             # 7 AI agents
+│   │   ├── autogen/            # AutoGen integration
+│   │   ├── mcp/                # MCP client manager
+│   │   └── tools/              # External tools
+│   ├── mcp-servers/            # Custom MCP servers
+│   │   ├── arabic-rtl-auditor/
+│   │   │   ├── src/index.ts
+│   │   │   └── dist/           # Built files
+│   │   ├── task-splitter/
+│   │   │   └── dist/
+│   │   └── smart-code-search/
+│   │       └── dist/
+│   ├── config/
+│   │   ├── agents.json         # Agent configs
+│   │   └── mcp-servers.json    # MCP server configs
+│   ├── .env                    # Environment variables
+│   ├── package.json
+│   └── logs/                   # PM2 logs
+├── workspace/                  # OpenHands workspace
+└── .ssh/
+    └── id_rsa                  # GitLab SSH key
+```
+
+---
+
+### Next Steps After Deployment
+
+1. **Test your first task:**
+   ```
+   Telegram: /plan Add a simple API endpoint
+   ```
+
+2. **Watch the dashboard:** Open `http://EC2_IP:4000` and see agents work
+
+3. **Review the MR:** Check GitLab for the automatically created Merge Request
+
+4. **Iterate:** Refine your prompts based on results
+
+---
+
 ## Telegram Commands
 
 | Command | Description |
