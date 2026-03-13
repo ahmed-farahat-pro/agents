@@ -8,19 +8,139 @@ Your personal AI development company running on AWS EC2. 7 specialized agents co
 
 ## Table of Contents
 
-1. [What is Nigents?](#what-is-nigents)
-2. [What is OpenHands?](#what-is-openhands)
-3. [The 7-Agent Team](#the-7-agent-team)
-4. [App Flow & Workflow](#app-flow--workflow)
-5. [MCP Servers](#mcp-servers)
-6. [Custom MCP Servers We Built](#custom-mcp-servers-we-built)
-7. [Telegram Integration](#telegram-integration)
-8. [Dashboard Features](#dashboard-features)
-9. [Tech Stack](#tech-stack)
-10. [Quick Start (Local)](#quick-start-local)
-11. [Deploy on AWS EC2](#deploy-on-aws-ec2)
-12. [Configuration](#configuration)
-13. [Troubleshooting](#troubleshooting)
+1. [🚀 Quick Setup](#-quick-setup)
+2. [What is Nigents?](#what-is-nigents)
+3. [What is OpenHands?](#what-is-openhands)
+4. [The 7-Agent Team](#the-7-agent-team)
+5. [App Flow & Workflow](#app-flow--workflow)
+6. [MCP Servers](#mcp-servers)
+7. [Custom MCP Servers We Built](#custom-mcp-servers-we-built)
+8. [Telegram Integration](#telegram-integration)
+9. [Dashboard Features](#dashboard-features)
+10. [Tech Stack](#tech-stack)
+11. [💰 Nigents Cloud (Coming Soon)](#-nigents-cloud-coming-soon)
+12. [Quick Start (Local)](#quick-start-local)
+13. [Deploy on AWS EC2](#deploy-on-aws-ec2)
+14. [Configuration](#configuration)
+15. [Troubleshooting](#troubleshooting)
+
+---
+
+## 🚀 Quick Setup
+
+Get Nigents running in **5 minutes** with our automated setup scripts.
+
+### Option 1: One-Command EC2 Setup (Recommended)
+
+```bash
+# SSH to your fresh Ubuntu 22.04 EC2 instance
+ssh -i your-key.pem ubuntu@YOUR_EC2_IP
+
+# Run automated setup
+curl -fsSL https://gitlab.com/bonyad-tech/nigents/-/raw/main/scripts/setup-ec2.sh | bash
+
+# Edit environment variables
+nano /home/ubuntu/nightowl/.env
+
+# Start services
+pm2 start src/bot.js --name nigents-bot
+pm2 start src/dashboard/server.js --name nigents-dashboard
+pm2 save
+```
+
+### Option 2: Docker (Coming Soon)
+
+```bash
+# One-line Docker deployment (coming in v2.0)
+docker run -d \
+  -e TELEGRAM_BOT_TOKEN=your_token \
+  -e GITLAB_TOKEN=your_token \
+  -p 4000:4000 \
+  bonyadtech/nigents:latest
+```
+
+### Option 3: GitLab CI/CD Auto-Deploy
+
+```bash
+# Fork this repo to your GitLab
+# Add CI/CD variables (EC2_HOST, EC2_SSH_KEY)
+# Push to main - automatic deployment!
+
+git clone https://gitlab.com/bonyad-tech/nigents.git
+cd nigents
+git remote add gitlab https://gitlab.com/YOUR_USERNAME/nigents.git
+git push gitlab main
+```
+
+### What Gets Installed?
+
+| Component | Version | Purpose |
+|-----------|---------|---------|
+| Node.js | 20.x | Runtime |
+| PM2 | Latest | Process Manager |
+| Nginx | Latest | Reverse Proxy |
+| Certbot | Latest | SSL Certificates |
+| 7 AI Agents | - | Development Team |
+| 38 MCP Tools | - | Agent Capabilities |
+
+**⏱️ Total Setup Time: ~5 minutes**
+
+---
+
+## 🌐 Using Nigents with Your Own GitLab
+
+Nigents is **100% open source**. Use it with your own GitLab instance:
+
+### Step 1: Fork & Configure
+
+```bash
+# Fork this repository to your GitLab account
+# Go to: https://gitlab.com/bonyad-tech/nigents → Fork
+
+# Or clone and push to your own repo
+git clone https://gitlab.com/bonyad-tech/nigents.git my-nigents
+cd my-nigents
+git remote set-url origin https://gitlab.com/YOUR_USERNAME/my-nigents.git
+git push -u origin main
+```
+
+### Step 2: Setup CI/CD (Optional but Recommended)
+
+1. Go to your forked repo → **Settings** → **CI/CD** → **Variables**
+2. Add these variables:
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `EC2_HOST` | Variable | Your server IP |
+| `EC2_SSH_KEY` | File | SSH private key |
+| `TELEGRAM_BOT_TOKEN` | Variable | From @BotFather |
+| `TELEGRAM_CHAT_ID` | Variable | Your Telegram ID |
+
+3. Push to `main` branch → Auto-deploys to your server!
+
+### Step 3: Configure Your Environment
+
+```bash
+# On your server
+nano /home/ubuntu/nightowl/.env
+
+# Edit these for your setup:
+GITLAB_TOKEN=glpat-your_token
+GITLAB_NAMESPACE=your_username_or_group
+GITLAB_URL=https://gitlab.com  # Or your self-hosted GitLab
+TELEGRAM_BOT_TOKEN=your_token
+TELEGRAM_CHAT_ID=your_chat_id
+```
+
+### Self-Hosted GitLab Support
+
+Nigents works with self-hosted GitLab too:
+
+```env
+GITLAB_URL=https://gitlab.yourcompany.com
+GITLAB_TOKEN=glpat-your_token
+GITLAB_NAMESPACE=your-group
+```
 
 ---
 
@@ -611,6 +731,103 @@ The Nigents Dashboard runs at `http://EC2_IP:4000` and provides:
 | **Code Sandbox** | OpenHands (Docker) |
 | **Version Control** | Simple-git |
 | **Deployment** | AWS EC2 t3.large |
+
+---
+
+## 💰 Nigents Cloud (Coming Soon)
+
+**Don't want to self-host?** We're building **Nigents Cloud** - a managed service where you can rent AI agents by the model.
+
+### 🎯 Planned Pricing Model
+
+| Plan | Price | Agents Included | Best For |
+|------|-------|-----------------|----------|
+| **Starter** | $49/mo | Planner + Backend Dev | Solo developers |
+| **Pro** | $149/mo | Full 7-Agent Team | Small teams |
+| **Enterprise** | $499/mo | Full team + Priority Support | Companies |
+| **Pay-Per-Task** | $5/task | Any single agent | Occasional use |
+
+### 🛒 Model-by-Model Marketplace
+
+Rent individual agents for specific tasks:
+
+| Agent | Price/Task | Typical Duration |
+|-------|------------|------------------|
+| 🔧 **Backend Dev** | $5 | 30-60 min |
+| 🎨 **Frontend Dev** | $5 | 30-60 min |
+| 🧪 **QA Tester** | $3 | 15-30 min |
+| 🔍 **Code Reviewer** | $3 | 15-30 min |
+| 📋 **Planner** | $2 | 10-15 min |
+| 📊 **Reporter** | $2 | 5-10 min |
+| 🎯 **Orchestrator** | Included | Manages workflow |
+
+### ✨ Cloud Features (Coming Soon)
+
+- **Zero Setup** - We host everything on our infrastructure
+- **Instant Scaling** - Spin up multiple agent teams
+- **Priority Queue** - Your tasks run first
+- **Advanced Dashboard** - Analytics, history, team management
+- **Custom Training** - Train agents on your codebase
+- **SLA Guarantee** - 99.9% uptime, task completion guarantee
+
+### 📅 Roadmap
+
+| Milestone | Status | ETA |
+|-----------|--------|-----|
+| Beta Signup | 🟡 Open | Now |
+| Closed Beta | 🔴 Pending | Q2 2025 |
+| Public Launch | 🔴 Pending | Q3 2025 |
+| Enterprise Tier | 🔴 Pending | Q4 2025 |
+
+### 📝 Join the Waitlist
+
+**Be the first to access Nigents Cloud:**
+
+👉 [Join Waitlist](mailto:cloud@nigents.com?subject=Nigents%20Cloud%20Waitlist)
+
+Send email to `cloud@nigents.com` with subject "Nigents Cloud Waitlist" and get:
+- 50% off first 3 months
+- Priority beta access
+- Free migration from self-hosted
+
+---
+
+### 🤝 Monetization for Contributors
+
+**Are you a developer?** Contribute to Nigents and earn:
+
+| Contribution | Reward |
+|--------------|--------|
+| New MCP Server | $100-500 + Revenue share |
+| Bug Fix | $25-100 |
+| Feature Implementation | $50-300 |
+| Documentation | $25-50 |
+
+**Revenue Sharing Model:**
+- Custom MCP servers you build earn 20% of usage revenue
+- Popular agents can generate passive income
+- Example: Your Stripe MCP server used 1000x/month = $200/mo for you
+
+**Apply to Contribute:**
+👉 [contributors@nigents.com](mailto:contributors@nigents.com)
+
+---
+
+### 🏢 Enterprise & White-Label
+
+**For Companies:**
+
+- **Private Deployment** - Run on your own AWS/GCP/Azure
+- **Custom Agents** - Build specialized agents for your stack
+- **Integration Services** - Connect to your internal tools
+- **Training & Support** - Team onboarding and ongoing support
+
+**White-Label Options:**
+- Rebrand Nigents for your agency
+- Resell to your clients
+- Custom pricing tiers
+
+**Contact:** [enterprise@nigents.com](mailto:enterprise@nigents.com)
 
 ---
 
