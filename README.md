@@ -1892,24 +1892,153 @@ pm2 monit
 
 ---
 
-## API Keys Required
+## 🔑 API Keys Required
 
-| Key | Source | Purpose |
-|-----|--------|---------|
-| `TELEGRAM_BOT_TOKEN` | @BotFather | Telegram bot authentication |
-| `TELEGRAM_CHAT_ID` | @userinfobot | Your Telegram chat ID |
-| `ANTHROPIC_API_KEY` | console.anthropic.com | Claude AI models |
-| `OPENAI_API_KEY` | platform.openai.com | Whisper voice transcription |
-| `GITLAB_TOKEN` | GitLab → Settings → Access Tokens | GitLab API access |
+NightOwl requires several API keys to function. Here's the complete list:
 
-### Optional Keys
+### Required Keys (Must Have)
 
-| Key | Source | Purpose |
-|-----|--------|---------|
-| `BRAVE_API_KEY` | brave.com/search/api | Web search |
-| `FIGMA_ACCESS_TOKEN` | Figma → Settings | Design specs |
-| `SLACK_BOT_TOKEN` | Slack API | Notifications |
-| `NOTION_TOKEN` | Notion integrations | Documentation |
+| Key | Source | Purpose | Get It From |
+|-----|--------|---------|-------------|
+| **TELEGRAM_BOT_TOKEN** | Telegram BotFather | Bot authentication | Message [@BotFather](https://t.me/BotFather) → `/newbot` |
+| **TELEGRAM_CHAT_ID** | Telegram User Info | Your user ID | Message [@userinfobot](https://t.me/userinfobot) |
+| **ANTHROPIC_API_KEY** | Anthropic Console | Claude AI models | [console.anthropic.com](https://console.anthropic.com) |
+| **OPENAI_API_KEY** | OpenAI Platform | Whisper voice transcription | [platform.openai.com](https://platform.openai.com) |
+| **GITLAB_TOKEN** | GitLab Settings | GitLab API access | GitLab → User Settings → Access Tokens |
+
+### Optional Keys (Enhanced Features)
+
+| Key | Source | Purpose | When Needed |
+|-----|--------|---------|-------------|
+| **BRAVE_API_KEY** | Brave Search | Web search capability | If using web search MCP |
+| **FIGMA_ACCESS_TOKEN** | Figma | Design specs integration | If working with Figma designs |
+| **SLACK_BOT_TOKEN** | Slack API | Slack notifications | If using Slack integration |
+| **NOTION_TOKEN** | Notion | Documentation export | If using Notion integration |
+| **GITHUB_TOKEN** | GitHub | GitHub repo editing | If editing GitHub repos |
+| **SENTRY_AUTH_TOKEN** | Sentry | Error tracking | If using Sentry MCP |
+
+### How to Get Each Key
+
+#### 1. Telegram Bot Token
+```
+1. Open Telegram
+2. Search for @BotFather
+3. Send /newbot
+4. Follow instructions
+5. Copy the token (looks like: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz)
+```
+
+#### 2. Telegram Chat ID
+```
+1. Open Telegram
+2. Search for @userinfobot
+3. Start the bot
+4. It will reply with your ID (e.g., 123456789)
+```
+
+#### 3. Anthropic API Key (Claude)
+```
+1. Go to https://console.anthropic.com
+2. Sign up / Sign in
+3. Go to "API Keys"
+4. Click "Create Key"
+5. Copy the key (starts with sk-ant-)
+```
+
+#### 4. OpenAI API Key (Whisper)
+```
+1. Go to https://platform.openai.com
+2. Sign up / Sign in
+3. Go to "API Keys"
+4. Click "Create new secret key"
+5. Copy the key (starts with sk-)
+```
+
+#### 5. GitLab Token
+```
+1. Go to GitLab.com
+2. Click your avatar → Edit Profile
+3. Left sidebar → Access Tokens
+4. Click "Add new token"
+5. Name: "NightOwl"
+6. Scopes: api, read_repository, write_repository
+7. Click "Create personal access token"
+8. Copy the token immediately!
+```
+
+### Environment File Setup
+
+Create `.env` file with all keys:
+
+```bash
+# Required - NightOwl won't work without these
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+TELEGRAM_CHAT_ID=your_telegram_chat_id_here
+ANTHROPIC_API_KEY=sk-ant-your_anthropic_key_here
+OPENAI_API_KEY=sk-your_openai_key_here
+GITLAB_TOKEN=glpat-your_gitlab_token_here
+GITLAB_NAMESPACE=your_gitlab_username
+GITLAB_URL=https://gitlab.com
+
+# Server Configuration
+PORT=4000
+NODE_ENV=development
+DASHBOARD_PORT=4000
+DASHBOARD_PASSWORD=your_secure_password
+
+# Feature Flags
+ENABLE_VOICE=true
+ENABLE_DASHBOARD=true
+ENABLE_OPENHANDS=true
+LOG_LEVEL=info
+```
+
+### Cost Estimates
+
+| Service | Free Tier | Paid Usage | Typical Monthly Cost |
+|---------|-----------|------------|---------------------|
+| **Anthropic Claude** | $5 credit | $3-8 per task | $50-200/month |
+| **OpenAI Whisper** | $18 credit | $0.006/minute | $5-20/month |
+| **GitLab** | Free tier | Free for personal | $0 |
+| **Telegram Bot** | Unlimited | Free | $0 |
+
+**Total estimated cost:** $55-220/month for moderate usage
+
+---
+
+## 🎨 Dashboard Features
+
+The NightOwl Dashboard provides comprehensive control over your AI agent team:
+
+### Dashboard Views
+
+| View | Description |
+|------|-------------|
+| **Dashboard** | Overview with live activity, stats, and system status |
+| **Agents** | Grid view of all 7 agents with status and configuration |
+| **Agent Detail** | Individual agent settings, model config, MCP tools, statistics |
+| **Tasks** | Task queue with filtering (pending, running, completed, failed) |
+| **Activity** | Full activity log with filtering and export |
+| **MCP Tools** | Status and configuration for all 38 MCP tools |
+| **Settings** | General settings, API configuration, feature toggles |
+| **Logs** | System logs with level filtering |
+
+### Agent Configuration Panel
+
+Each agent can be configured individually:
+- **Model Selection**: Claude Opus/Sonnet/Haiku
+- **Max Tokens**: Adjust response length
+- **Temperature**: Control creativity (0-1)
+- **System Prompt**: Customize agent behavior
+- **MCP Tools**: Enable/disable specific tools
+- **Statistics**: Tasks completed, API calls, success rate
+
+### MCP Tools Management
+
+View and manage all 38 MCP tools:
+- Core: filesystem, git, gitlab, postgresql
+- Custom: arabic-rtl-auditor, task-splitter, smart-code-search
+- External: brave-search, docker, puppeteer, etc.
 
 ---
 

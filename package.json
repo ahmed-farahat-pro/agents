@@ -47,7 +47,7 @@
     "date-fns": "^3.3.1",
     "lodash": "^4.17.21",
     "fs-extra": "^11.2.0",
-    "autogen": "^0.3.0",
+
     "gtts": "^0.2.1"
   },
   "devDependencies": {
