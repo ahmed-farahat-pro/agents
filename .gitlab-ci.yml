@@ -27,13 +27,33 @@ cache:
 # Before each job - setup SSH
 default:
   before_script:
+    - echo "🔍 DEBUG: Checking environment variables..."
+    - echo "🔍 DEBUG: EC2_HOST = '$EC2_HOST'"
+    - echo "🔍 DEBUG: SSH_USER = '$SSH_USER'"
+    - echo "🔍 DEBUG: CI_COMMIT_REF_NAME = '$CI_COMMIT_REF_NAME'"
+    - echo "🔍 DEBUG: SSH_PRIVATE_KEY length = ${#SSH_PRIVATE_KEY}"
+    - |
+      if [ -z "$EC2_HOST" ]; then
+        echo "❌ ERROR: EC2_HOST is not set!"
+        echo "❌ Please set EC2_HOST in GitLab CI/CD Variables"
+        exit 1
+      fi
+    - |
+      if [ -z "$SSH_PRIVATE_KEY" ]; then
+        echo "❌ ERROR: SSH_PRIVATE_KEY is not set!"
+        echo "❌ Please set EC2_SSH_KEY in GitLab CI/CD Variables"
+        exit 1
+      fi
+    - echo "✅ DEBUG: All required variables are set"
     - apk add --no-cache openssh-client bash
     - eval $(ssh-agent -s)
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
+    - echo "🔍 DEBUG: Adding EC2_HOST to known_hosts: $EC2_HOST"
     - ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
+    - echo "✅ DEBUG: SSH setup complete"
 
 # =============================================================================
 # STAGE 1: TEST
@@ -111,6 +131,9 @@ deploy-to-ec2:
     url: https://nigents.com
   script:
     - echo "🚀 Starting deployment to EC2..."
+    - echo "🔍 DEBUG: EC2_HOST = '$EC2_HOST'"
+    - echo "🔍 DEBUG: SSH_USER = '$SSH_USER'"
+    - echo "🔍 DEBUG: DEPLOY_DIR = '$DEPLOY_DIR'"
     
     # Create deployment script
     - |
