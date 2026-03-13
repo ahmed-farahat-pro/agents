@@ -1379,6 +1379,330 @@
             transform: scale(0.95);
         }
 
+        /* Agent Activity Monitor */
+        .agent-monitor {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .agent-activity-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.3s;
+        }
+
+        .agent-activity-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .agent-activity-card.active {
+            border-color: var(--success);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
+        }
+
+        .agent-activity-card.busy {
+            border-color: var(--warning);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.1);
+        }
+
+        .agent-activity-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .agent-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .agent-avatar.orchestrator { background: var(--gradient-1); }
+        .agent-avatar.planner { background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); }
+        .agent-avatar.backend { background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%); }
+        .agent-avatar.frontend { background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); }
+        .agent-avatar.qa { background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); }
+        .agent-avatar.reviewer { background: linear-gradient(135deg, #84cc16 0%, #10b981 100%); }
+        .agent-avatar.reporter { background: linear-gradient(135deg, #f472b6 0%, #8b5cf6 100%); }
+
+        .agent-activity-info {
+            flex: 1;
+        }
+
+        .agent-activity-info h4 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .agent-activity-info span {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .agent-status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--text-dim);
+            flex-shrink: 0;
+        }
+
+        .agent-status-indicator.active {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        .agent-status-indicator.busy {
+            background: var(--warning);
+            box-shadow: 0 0 10px var(--warning);
+        }
+
+        .agent-current-task {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+
+        .agent-current-task h5 {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .agent-current-task p {
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .agent-progress {
+            margin-top: 10px;
+        }
+
+        .agent-progress-bar {
+            height: 6px;
+            background: var(--bg-hover);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .agent-progress-fill {
+            height: 100%;
+            background: var(--gradient-1);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .agent-progress-text {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Agent Communication Feed */
+        .comm-feed {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .comm-feed-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .comm-feed-title {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .comm-feed-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .comm-message {
+            display: flex;
+            gap: 12px;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+
+        .comm-message:hover {
+            background: var(--bg-hover);
+        }
+
+        .comm-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .comm-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .comm-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .comm-sender {
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .comm-time {
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        .comm-text {
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .comm-recipient {
+            color: var(--accent-light);
+            font-weight: 500;
+        }
+
+        .comm-meta {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .comm-tag {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: var(--bg-hover);
+            color: var(--text-muted);
+        }
+
+        .comm-tag.task { background: rgba(99, 102, 241, 0.2); color: var(--accent-light); }
+        .comm-tag.question { background: rgba(59, 130, 246, 0.2); color: var(--info); }
+        .comm-tag.response { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+
+        /* Live Indicator */
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--error);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--error);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--error);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        /* System Status Panel */
+        .system-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .status-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .status-icon.online {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .status-icon.warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .status-icon.offline {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+        }
+
+        .status-details h4 {
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .status-details span {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Responsive for Agent Monitor */
+        @media (max-width: 768px) {
+            .agent-monitor {
+                grid-template-columns: 1fr;
+            }
+            
+            .comm-message {
+                padding: 12px 16px;
+            }
+        }
+
         /* Empty State */
         .empty {
             text-align: center;
@@ -1612,6 +1936,10 @@
                         <div class="nav-indicator"></div>
                         <span>Dashboard</span>
                     </div>
+                    <div class="nav-item" data-view="monitor">
+                        <div class="nav-indicator"></div>
+                        <span>🔴 Live Monitor</span>
+                    </div>
                     <div class="nav-item" data-view="tasks">
                         <div class="nav-indicator"></div>
                         <span>Tasks</span>
@@ -1774,6 +2102,68 @@
                             <h3>No tasks yet</h3>
                             <p>Create a new task to get started</p>
                             <button class="btn btn-primary" onclick="openTaskModal()" style="margin-top: 16px;">Create First Task</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agent Monitor View -->
+                <div class="view" id="view-monitor">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div>
+                            <h3 style="font-size: 18px;">Agent Activity Monitor</h3>
+                            <p class="text-sm text-muted">Real-time view of what each agent is doing</p>
+                        </div>
+                        <div class="live-indicator">
+                            <div class="live-dot"></div>
+                            <span>LIVE</span>
+                        </div>
+                    </div>
+
+                    <div class="system-status" id="system-status">
+                        <div class="status-item">
+                            <div class="status-icon online">●</div>
+                            <div class="status-details">
+                                <h4>Orchestrator</h4>
+                                <span>Online - Coordinating</span>
+                            </div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-icon online">●</div>
+                            <div class="status-details">
+                                <h4>MCP Servers</h4>
+                                <span>38/38 Online</span>
+                            </div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-icon online">●</div>
+                            <div class="status-details">
+                                <h4>GitLab API</h4>
+                                <span>Connected</span>
+                            </div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-icon online">●</div>
+                            <div class="status-details">
+                                <h4>OpenHands</h4>
+                                <span>Sandbox Ready</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="agent-monitor" id="agent-monitor">
+                        <!-- Dynamically populated -->
+                    </div>
+
+                    <div class="comm-feed" style="margin-top: 20px;">
+                        <div class="comm-feed-header">
+                            <span class="comm-feed-title">💬 Agent Communication</span>
+                            <button class="btn btn-sm btn-secondary" onclick="clearCommFeed()">Clear</button>
+                        </div>
+                        <div class="comm-feed-list" id="comm-feed-list">
+                            <div class="empty">
+                                <h3>No messages yet</h3>
+                                <p>Agent conversations will appear here</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2234,6 +2624,7 @@
             
             const titles = {
                 dashboard: 'Nigents Dashboard',
+                monitor: 'Agent Monitor',
                 tasks: 'Task Queue',
                 agents: 'Agents',
                 'agent-detail': 'Agent Configuration',
@@ -2251,6 +2642,12 @@
             if (view === 'mcp') renderMCPs();
             if (view === 'repos') renderRepos();
             if (view === 'tasks') renderTasks();
+            if (view === 'monitor') {
+                renderAgentMonitor();
+                startLiveUpdates();
+            } else {
+                stopLiveUpdates();
+            }
             if (view === 'dashboard') {
                 initCharts();
                 renderDashboardModels();
@@ -2261,6 +2658,179 @@
                 initProviderCharts();
             }
             if (view === 'agent-detail' && selectedAgent) renderAgentDetail();
+        }
+
+        // Agent Monitor Functions
+        let liveUpdateInterval = null;
+
+        function renderAgentMonitor() {
+            const monitor = document.getElementById('agent-monitor');
+            monitor.innerHTML = agents.map(a => `
+                <div class="agent-activity-card ${a.status}" id="agent-card-${a.id}">
+                    <div class="agent-activity-header">
+                        <div class="agent-avatar ${a.id}">${a.name.charAt(0)}</div>
+                        <div class="agent-activity-info">
+                            <h4>${a.name}</h4>
+                            <span>${a.role}</span>
+                        </div>
+                        <div class="agent-status-indicator ${a.status}"></div>
+                    </div>
+                    <div class="agent-current-task">
+                        <h5>Current Task</h5>
+                        <p id="agent-task-${a.id}">${a.currentTask || 'Idle - Waiting for assignment'}</p>
+                        ${a.progress ? `
+                        <div class="agent-progress">
+                            <div class="agent-progress-bar">
+                                <div class="agent-progress-fill" style="width: ${a.progress}%"></div>
+                            </div>
+                            <div class="agent-progress-text">${a.progress}% complete</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            // Load initial comm feed
+            renderCommFeed();
+        }
+
+        function startLiveUpdates() {
+            if (liveUpdateInterval) return;
+            
+            // Simulate live updates
+            liveUpdateInterval = setInterval(() => {
+                // Randomly update agent status
+                const randomAgent = agents[Math.floor(Math.random() * agents.length)];
+                if (Math.random() > 0.7) {
+                    const tasks = [
+                        'Analyzing codebase structure...',
+                        'Writing unit tests...',
+                        'Reviewing pull request...',
+                        'Generating implementation plan...',
+                        'Checking RTL compliance...',
+                        'Running security audit...',
+                        'Creating feature branch...',
+                        'Committing changes...'
+                    ];
+                    randomAgent.currentTask = tasks[Math.floor(Math.random() * tasks.length)];
+                    randomAgent.progress = Math.floor(Math.random() * 100);
+                    randomAgent.status = randomAgent.progress > 0 ? 'busy' : 'idle';
+                    
+                    // Add to activity
+                    addActivity({
+                        agent: randomAgent.name,
+                        message: randomAgent.currentTask,
+                        type: 'info'
+                    });
+
+                    // Re-render if on monitor page
+                    if (currentView === 'monitor') {
+                        renderAgentMonitor();
+                    }
+                }
+            }, 3000);
+
+            // Simulate agent communication
+            setTimeout(() => {
+                simulateAgentCommunication();
+            }, 2000);
+        }
+
+        function stopLiveUpdates() {
+            if (liveUpdateInterval) {
+                clearInterval(liveUpdateInterval);
+                liveUpdateInterval = null;
+            }
+        }
+
+        function simulateAgentCommunication() {
+            const conversations = [
+                { from: 'Orchestrator', to: 'Planner', message: '@planner Please analyze the payment flow and create an implementation plan', type: 'task' },
+                { from: 'Planner', to: 'Orchestrator', message: '@orchestrator Plan ready. Complexity: Medium. Files to modify: 3', type: 'response' },
+                { from: 'Orchestrator', to: 'Backend Dev', message: '@backend-dev Please implement the payment API endpoint', type: 'task' },
+                { from: 'Backend Dev', to: 'Orchestrator', message: '@orchestrator Implementation complete. Branch: nigents/task-123', type: 'response' },
+                { from: 'Orchestrator', to: 'QA Tester', message: '@qa-tester Please test the payment endpoint', type: 'task' },
+                { from: 'QA Tester', to: 'Backend Dev', message: '@backend-dev Tests found 2 issues: 1) Missing validation 2) Wrong error code', type: 'question' },
+                { from: 'Backend Dev', to: 'QA Tester', message: '@qa-tester Fixed both issues. Please re-test.', type: 'response' },
+                { from: 'QA Tester', to: 'Orchestrator', message: '@orchestrator All tests passed (12/12)', type: 'response' },
+                { from: 'Orchestrator', to: 'Code Reviewer', message: '@code-reviewer Please review for security', type: 'task' },
+                { from: 'Code Reviewer', to: 'Orchestrator', message: '@orchestrator Approved. No security issues found.', type: 'response' },
+            ];
+
+            let index = 0;
+            setInterval(() => {
+                if (index < conversations.length && Math.random() > 0.5) {
+                    const msg = conversations[index];
+                    addCommMessage(msg);
+                    index = (index + 1) % conversations.length;
+                }
+            }, 5000);
+        }
+
+        function addCommMessage(msg) {
+            const feed = document.getElementById('comm-feed-list');
+            const empty = feed.querySelector('.empty');
+            if (empty) empty.remove();
+
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            
+            const div = document.createElement('div');
+            div.className = 'comm-message';
+            div.innerHTML = `
+                <div class="comm-avatar ${msg.from.toLowerCase().replace(' ', '-')}">${msg.from.charAt(0)}</div>
+                <div class="comm-content">
+                    <div class="comm-header">
+                        <span class="comm-sender">${msg.from}</span>
+                        <span class="comm-time">${time}</span>
+                    </div>
+                    <div class="comm-text">
+                        ${msg.message.replace(/@(\w+)/, '<span class="comm-recipient">@$1</span>')}
+                    </div>
+                    <div class="comm-meta">
+                        <span class="comm-tag ${msg.type}">${msg.type}</span>
+                    </div>
+                </div>
+            `;
+            
+            feed.insertBefore(div, feed.firstChild);
+            
+            // Keep only last 50 messages
+            while (feed.children.length > 50) {
+                feed.removeChild(feed.lastChild);
+            }
+        }
+
+        function renderCommFeed() {
+            const feed = document.getElementById('comm-feed-list');
+            feed.innerHTML = `
+                <div class="empty">
+                    <h3>No messages yet</h3>
+                    <p>Agent conversations will appear here in real-time</p>
+                </div>
+            `;
+        }
+
+        function clearCommFeed() {
+            renderCommFeed();
+        }
+
+        function addActivity(data) {
+            const list = document.getElementById('activity-list');
+            const empty = list.querySelector('.empty');
+            if (empty) empty.remove();
+
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+            const item = document.createElement('div');
+            item.className = 'activity-item';
+            item.innerHTML = `
+                <span class="activity-time">${time}</span>
+                <div class="activity-dot ${data.type}"></div>
+                <div class="activity-content">
+                    <div class="activity-agent">${data.agent}</div>
+                    <div class="activity-message">${data.message}</div>
+                </div>
+            `;
+            list.insertBefore(item, list.firstChild);
         }
 
         // Task Management

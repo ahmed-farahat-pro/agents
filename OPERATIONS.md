@@ -4,6 +4,19 @@
 
 ---
 
+## Table of Contents
+
+1. [Quick Reference](#quick-reference)
+2. [HTTPS Setup with Namecheap Domain](#https-setup-with-namecheap-domain)
+3. [Edit Environment Variables](#edit-environment-variables)
+4. [Pull Updates & Restart](#pull-updates--restart)
+5. [Restart Individual Components](#restart-individual-components)
+6. [GitLab Connection Fix](#gitlab-connection-fix)
+7. [Common Commands](#common-commands)
+8. [Troubleshooting](#troubleshooting)
+
+---
+
 ## Quick Reference
 
 ```bash
@@ -20,11 +33,221 @@ git pull origin feature/custom-mcp-servers
 npm install
 pm2 restart all
 
-# RESTART SERVICES
+# RESTART EVERYTHING
 pm2 restart all
 
 # CHECK LOGS
 pm2 logs --lines 50
+
+# HTTPS SETUP (see full guide below)
+sudo certbot --nginx -d nigents.com -d www.nigents.com
+```
+
+---
+
+## HTTPS Setup with Namecheap Domain
+
+### Step 1: Point Domain to EC2 in Namecheap
+
+1. Log in to **Namecheap.com**
+2. Go to **Domain List** → Find `nigents.com` → Click **Manage**
+3. Click **Advanced DNS** tab
+4. Delete any existing A records
+5. Add new **A Records**:
+
+| Type | Host | Value | TTL |
+|------|------|-------|-----|
+| A Record | @ | YOUR_EC2_IP | Automatic |
+| A Record | www | YOUR_EC2_IP | Automatic |
+| A Record | dashboard | YOUR_EC2_IP | Automatic |
+
+**Example:**
+```
+A Record @ 3.91.48.123 Automatic
+A Record www 3.91.48.123 Automatic
+```
+
+6. Click **Save All Changes**
+7. Wait 10-30 minutes for DNS to propagate
+
+**Test DNS:**
+```bash
+# From your laptop
+nslookup nigents.com
+# Should show your EC2 IP
+```
+
+---
+
+### Step 2: Install Nginx & Certbot (On EC2)
+
+```bash
+ssh -i ~/Downloads/openclaw.pem ubuntu@YOUR_EC2_IP
+
+# Update system
+sudo apt-get update
+
+# Install Nginx
+sudo apt-get install -y nginx
+
+# Install Certbot for SSL
+sudo apt-get install -y certbot python3-certbot-nginx
+
+# Remove default Nginx site
+sudo rm /etc/nginx/sites-enabled/default
+
+# Start Nginx
+sudo systemctl start nginx
+sudo systemctl enable nginx
+```
+
+---
+
+### Step 3: Configure Nginx
+
+```bash
+sudo nano /etc/nginx/sites-available/nigents
+```
+
+Paste this configuration:
+
+```nginx
+# HTTP - Redirect to HTTPS
+server {
+    listen 80;
+    listen [::]:80;
+    server_name nigents.com www.nigents.com dashboard.nigents.com;
+    
+    location / {
+        return 301 https://$server_name$request_uri;
+    }
+}
+
+# HTTPS - Main Dashboard
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name nigents.com www.nigents.com;
+
+    # SSL will be configured by Certbot
+    
+    # Proxy to Node.js dashboard
+    location / {
+        proxy_pass http://localhost:4000;
+        proxy_http_version 1.1;
+        
+        # WebSocket support for real-time updates
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        
+        # Headers
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+}
+```
+
+Enable the site:
+```bash
+sudo ln -s /etc/nginx/sites-available/nigents /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+---
+
+### Step 4: Get Free SSL Certificate
+
+```bash
+sudo certbot --nginx -d nigents.com -d www.nigents.com
+
+# Follow the prompts:
+# - Enter your email address
+# - Agree to terms of service (A)
+# - Share email with EFF? (Y or N)
+# - Redirect HTTP to HTTPS? (Choose 2 - Redirect)
+```
+
+**Success message:**
+```
+Congratulations! You have successfully enabled
+https://nigents.com and https://www.nigents.com
+```
+
+---
+
+### Step 5: Update AWS Security Group
+
+**AWS Console → EC2 → Security Groups → Your Instance's Security Group → Edit Inbound Rules:**
+
+Remove or modify:
+- Delete port 4000 rule (or restrict to My IP only)
+
+Add:
+| Type | Protocol | Port | Source | Description |
+|------|----------|------|--------|-------------|
+| SSH | TCP | 22 | My IP | SSH access |
+| HTTPS | TCP | 443 | Anywhere | Secure dashboard |
+| HTTP | TCP | 80 | Anywhere | HTTP redirect |
+
+---
+
+### Step 6: Update .env with Domain
+
+```bash
+nano /home/ubuntu/nightowl/.env
+
+# Add or update:
+DASHBOARD_URL=https://nigents.com
+DASHBOARD_PORT=4000
+DOMAIN=nigents.com
+
+# Save and restart
+pm2 restart all
+```
+
+---
+
+### Step 7: Test HTTPS
+
+```bash
+# Test SSL certificate
+curl -I https://nigents.com
+
+# Should show:
+# HTTP/2 200
+# strict-transport-security: max-age=31536000
+```
+
+Open in browser:
+```
+https://nigents.com
+```
+
+✅ Should show green lock icon!
+
+---
+
+### Step 8: Auto-Renewal (Already Set Up)
+
+```bash
+# Test auto-renewal
+sudo certbot renew --dry-run
+
+# Check renewal timer
+sudo systemctl status certbot.timer
+
+# Certificates auto-renew every 90 days
 ```
 
 ---
@@ -68,6 +291,7 @@ OPENAI_API_KEY=sk-your-openai-key-here
 # Dashboard
 DASHBOARD_PORT=4000
 DASHBOARD_PASSWORD=your_secure_password
+DASHBOARD_URL=https://nigents.com
 
 # Feature flags
 ENABLE_VOICE=true
@@ -147,6 +371,112 @@ pm2 logs --lines 20
 
 ---
 
+## Restart Individual Components
+
+### Restart Everything
+
+```bash
+pm2 restart all
+```
+
+### Restart Only Frontend (Dashboard)
+
+```bash
+pm2 restart nigents-dashboard
+
+# Or stop and start:
+pm2 stop nigents-dashboard
+pm2 start src/dashboard/server.js --name nigents-dashboard
+```
+
+### Restart Only Backend (Bot)
+
+```bash
+pm2 restart nigents-bot
+
+# Or stop and start:
+pm2 stop nigents-bot
+pm2 start src/bot.js --name nigents-bot
+```
+
+### Restart Only MCP Servers
+
+MCP servers run as child processes, so they restart with the main app. But to fully rebuild them:
+
+```bash
+cd /home/ubuntu/nightowl
+
+# Rebuild all MCPs
+cd mcp-servers/arabic-rtl-auditor && npm run build && cd ../..
+cd mcp-servers/task-splitter && npm run build && cd ../..
+cd mcp-servers/smart-code-search && npm run build && cd ../..
+
+# Then restart main app
+pm2 restart all
+```
+
+### Restart Individual MCP Server
+
+```bash
+# Find MCP process
+ps aux | grep arabic-rtl-auditor
+
+# Kill it (it will auto-restart with next task)
+kill <PID>
+
+# Or rebuild specifically:
+cd mcp-servers/arabic-rtl-auditor
+npm run build
+cd /home/ubuntu/nightowl
+```
+
+### Restart Nginx (Web Server)
+
+```bash
+# Test config first
+sudo nginx -t
+
+# Reload (no downtime)
+sudo systemctl reload nginx
+
+# Or hard restart
+sudo systemctl restart nginx
+
+# Check status
+sudo systemctl status nginx
+```
+
+### Restart OpenHands (Code Sandbox)
+
+```bash
+# If using systemd
+sudo systemctl restart openhands
+
+# Or manually
+docker stop $(docker ps -q --filter ancestor=ghcr.io/opendevin/opendevin)
+docker run -d -p 3000:3000 -v /home/ubuntu/workspace:/workspace ghcr.io/opendevin/opendevin
+```
+
+### Full System Restart Sequence
+
+```bash
+# 1. Nginx (web server)
+sudo systemctl reload nginx
+
+# 2. Main application (includes MCPs)
+pm2 restart all
+
+# 3. OpenHands (if using)
+sudo systemctl restart openhands
+
+# 4. Verify all running
+pm2 status
+sudo systemctl status nginx
+sudo systemctl status openhands
+```
+
+---
+
 ## GitLab Connection Fix (Repos Not Showing)
 
 ### The Problem
@@ -210,7 +540,7 @@ curl --header "PRIVATE-TOKEN: glpat-YOUR_TOKEN" \
 #### Step 5: Configure Repositories
 
 **Via Dashboard (Easiest):**
-1. Open: `http://YOUR_EC2_IP:4000`
+1. Open: `https://nigents.com`
 2. Go to **Settings**
 3. Enter GitLab Token and Namespace
 4. Click **"Save GitLab Settings"**
@@ -311,6 +641,25 @@ git reset --hard origin/feature/custom-mcp-servers
 
 ## Troubleshooting
 
+### HTTPS Not Working
+
+```bash
+# Check certificate
+sudo certbot certificates
+
+# Renew manually
+sudo certbot renew
+
+# Check Nginx config
+sudo nginx -t
+
+# Check Nginx error log
+sudo tail -f /var/log/nginx/error.log
+
+# Test SSL
+openssl s_client -connect nigents.com:443
+```
+
 ### Dashboard Not Accessible
 
 ```bash
@@ -325,7 +674,7 @@ sudo ufw status
 sudo ufw allow from YOUR_IP to any port 4000
 
 # Check AWS Security Group
-# AWS Console → EC2 → Security Groups → Must have port 4000 open
+# AWS Console → EC2 → Security Groups → Must have port 443 open
 ```
 
 ### GitLab Repos Not Showing
@@ -413,14 +762,18 @@ sudo swapon /swapfile
 | Problem | Quick Fix |
 |---------|-----------|
 | Can't access dashboard | Check AWS Security Group + UFW firewall |
+| HTTPS not working | Run `sudo certbot --nginx -d nigents.com` |
 | Repos not showing | Add `GITLAB_TOKEN` to .env |
 | Bot not responding | Check `TELEGRAM_BOT_TOKEN` |
 | Changes not applied | Run `pm2 restart all` |
 | Need to update code | `git pull origin feature/custom-mcp-servers` |
-| Full restart | `pm2 restart all` |
+| Restart frontend only | `pm2 restart nigents-dashboard` |
+| Restart backend only | `pm2 restart nigents-bot` |
+| Restart MCP servers | Rebuild them, then `pm2 restart all` |
 | View errors | `pm2 logs --lines 100` |
 
 ---
 
 **Last Updated:** 2025
 **Branch:** `feature/custom-mcp-servers`
+**Domain:** nigents.com
