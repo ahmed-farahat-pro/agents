@@ -96,6 +96,11 @@ Your personal AI development team. Send a task before you sleep, wake up to a fi
 • /projects — List available projects
 • /project <id> — Switch active project
 
+🤖 **AI Models**
+• /models — List available AI providers
+• /model <id> — Switch AI provider
+  (anthropic, moonshot, zhipu, deepseek)
+
 💬 **Questions**
 • /ask <question> — Ask about your code
 
@@ -336,6 +341,101 @@ bot.onText(/\/project (.+)/, async (msg, match) => {
   } catch (error) {
     logger.error('Failed to switch project:', error);
     await bot.sendMessage(msg.chat.id, '❌ Error switching project');
+  }
+});
+
+// ============================================================================
+// AI MODEL COMMANDS
+// ============================================================================
+
+// /models command - List available AI models
+bot.onText(/\/models/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  try {
+    const aiClient = require('./utils/ai-client');
+    const providers = aiClient.getAvailableProviders();
+    const currentProvider = aiClient.defaultProvider;
+    
+    let message = '🤖 **Available AI Models**\n\n';
+    
+    Object.entries(providers).forEach(([key, provider]) => {
+      const isActive = key === currentProvider ? ' ✅' : '';
+      const status = provider.enabled ? '🟢' : '🔴';
+      
+      message += `${status} **${provider.name}**${isActive}\n`;
+      message += `  ID: \`${key}\`\n`;
+      message += `  Models: ${provider.models.slice(0, 3).join(', ')}${provider.models.length > 3 ? '...' : ''}\n`;
+      message += `  Status: ${provider.enabled ? 'Available' : 'Not configured'}\n\n`;
+    });
+    
+    message += `Current provider: **${providers[currentProvider]?.name || currentProvider}**\n\n`;
+    message += `To switch provider, use:\n`;
+    message += '`/model <provider-id>`\n\n';
+    message += `Examples:\n`;
+    message += '`/model anthropic` - Use Claude\n';
+    message += '`/model moonshot` - Use Moonshot AI\n';
+    message += '`/model zhipu` - Use Zhipu GLM\n';
+    message += '`/model deepseek` - Use DeepSeek';
+    
+    await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+  } catch (error) {
+    logger.error('Failed to get AI models:', error);
+    await bot.sendMessage(msg.chat.id, '❌ Error loading AI models');
+  }
+});
+
+// /model command - Switch AI provider
+bot.onText(/\/model (.+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const providerId = match[1].trim().toLowerCase();
+  
+  try {
+    const aiClient = require('./utils/ai-client');
+    const providers = aiClient.getAvailableProviders();
+    
+    const provider = providers[providerId];
+    
+    if (!provider) {
+      await bot.sendMessage(msg.chat.id, 
+        `❌ Provider "${providerId}" not found.\n\nUse /models to see available providers.`
+      );
+      return;
+    }
+    
+    if (!provider.enabled) {
+      await bot.sendMessage(msg.chat.id, 
+        `❌ Provider "${provider.name}" is not configured.\n\n` +
+        `Please add the API key to your .env file:\n` +
+        `${providerId.toUpperCase()}_API_KEY=your_key_here`
+      );
+      return;
+    }
+    
+    // Update default provider
+    aiClient.defaultProvider = providerId;
+    
+    // Also update orchestrator's default
+    orchestrator.provider = providerId;
+    
+    await bot.sendMessage(msg.chat.id, 
+      `✅ **Switched to AI Provider: ${provider.name}**\n\n` +
+      `Default model: \`${provider.defaultModel}\`\n` +
+      `Available models: ${provider.models.length}\n\n` +
+      `All future tasks will use this provider.`,
+      { parse_mode: 'Markdown' }
+    );
+    
+    // Send voice confirmation
+    await reporter.sendVoice(
+      `Switched to ${provider.name}. This model will be used for all future tasks.`,
+      'en'
+    );
+    
+  } catch (error) {
+    logger.error('Failed to switch AI provider:', error);
+    await bot.sendMessage(msg.chat.id, '❌ Error switching AI provider');
   }
 });
 
