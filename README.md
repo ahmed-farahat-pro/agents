@@ -1,4 +1,4 @@
-# 🦉 NightOwl — AI Agent Development Team for GitLab
+# 🌙 Nigents — Night Agents for GitLab
 
 > **Send a task on Telegram before you sleep. Wake up to a finished Merge Request.**
 
@@ -30,7 +30,7 @@ Your personal AI development company running on AWS EC2. 7 specialized agents co
 
 ## Overview
 
-NightOwl is a self-hosted AI agent team that runs on your AWS EC2 server and deploys to **GitLab only**. You interact via:
+Nigents is a self-hosted AI agent team that runs on your AWS EC2 server and deploys to **GitLab only**. You interact via:
 
 - **Telegram** — voice notes and text commands, Arabic or English
 - **Web Dashboard** — real-time agent activity, streaming code edits, agent communication
@@ -367,7 +367,7 @@ Defines 35+ MCP servers with their configuration:
 
 ### 3. Project Configuration (`config/projects.json`)
 
-Defines the projects NightOwl can work on:
+Defines the projects Nigents can work on:
 
 ```json
 {
@@ -512,7 +512,7 @@ Defines the projects NightOwl can work on:
 
 ## 35+ MCP Integrations
 
-NightOwl uses the Model Context Protocol (MCP) to give agents superpowers:
+Nigents uses the Model Context Protocol (MCP) to give agents superpowers:
 
 ### Core Development MCPs (Always Enabled)
 | MCP | Purpose | Used By |
@@ -722,7 +722,7 @@ cat ~/.ssh/id_rsa.pub
 ssh -T git@gitlab.com
 ```
 
-### Step 6: Deploy NightOwl
+### Step 6: Deploy Nigents
 
 ```bash
 # From your local machine:
@@ -791,7 +791,7 @@ You push to main branch
 
 ## 💻 Local Development Guide (Test Before EC2)
 
-Run NightOwl locally to test everything before deploying to EC2.
+Run Nigents locally to test everything before deploying to EC2.
 
 ### Prerequisites for Local Development
 
@@ -944,13 +944,13 @@ npm run dashboard
 node src/dashboard/server.js
 
 # Expected output:
-# 🦉 NightOwl Dashboard running on port 4000
+# 🦉 Nigents Dashboard running on port 4000
 # Dashboard URL: http://localhost:4000
 ```
 
 **Access dashboard:**
 - Open browser: `http://localhost:4000`
-- You should see the NightOwl dashboard with agent status
+- You should see the Nigents dashboard with agent status
 
 ### Step 7: Start the Telegram Bot (Local)
 
@@ -962,8 +962,8 @@ npm run dev
 node src/bot.js
 
 # Expected output:
-# 🦉 NightOwl Bot starting...
-# 🦉 NightOwl Bot is running!
+# 🦉 Nigents Bot starting...
+# 🦉 Nigents Bot is running!
 ```
 
 ### Step 8: Test Locally
@@ -1133,7 +1133,7 @@ pm2 restart all
 
 ## 🚀 Complete EC2 Deployment Guide (Step-by-Step)
 
-This guide walks you through setting up NightOwl on AWS EC2 from scratch, including building custom MCP servers and running the agent dashboard.
+This guide walks you through setting up Nigents on AWS EC2 from scratch, including building custom MCP servers and running the agent dashboard.
 
 ### Prerequisites
 
@@ -1218,7 +1218,7 @@ ssh -i ~/Downloads/nightowl.pem ubuntu@YOUR_EC2_IP
 mkdir -p /home/ubuntu/workspace
 cd /home/ubuntu
 
-# Clone NightOwl repository
+# Clone Nigents repository
 git clone https://github.com/ahmed-farahat-pro/agents.git nightowl
 cd nightowl
 
@@ -1366,7 +1366,7 @@ cat ~/.ssh/id_rsa.pub
 # Add to GitLab:
 # 1. Go to GitLab → User Settings → SSH Keys
 # 2. Paste the key
-# 3. Title: "NightOwl EC2"
+# 3. Title: "Nigents EC2"
 # 4. Add key
 
 # Test GitLab connection
@@ -1376,7 +1376,7 @@ ssh -T git@gitlab.com
 
 ---
 
-### Step 9: Start NightOwl Bot
+### Step 9: Start Nigents Bot
 
 ```bash
 cd /home/ubuntu/nightowl
@@ -1408,7 +1408,7 @@ pm2 logs nightowl-bot --lines 20
 
 ---
 
-### Step 10: Start NightOwl Dashboard
+### Step 10: Start Nigents Dashboard
 
 ```bash
 cd /home/ubuntu/nightowl
@@ -1426,7 +1426,7 @@ pm2 logs nightowl-dashboard --lines 20
 
 **Expected output:**
 ```
-🦉 NightOwl Dashboard running on port 4000
+🦉 Nigents Dashboard running on port 4000
 Dashboard URL: http://localhost:4000
 ```
 
@@ -1458,7 +1458,7 @@ echo "Dashboard URL: http://$EC2_IP:4000"
 3. **Send:** `/start`
 4. **Expected response:**
    ```
-   🦉 Welcome to NightOwl!
+   🦉 Welcome to Nigents!
    
    Your personal AI development team...
    ```
@@ -1666,7 +1666,7 @@ sudo swapon /swapfile
 
 ## Web Dashboard
 
-The NightOwl Dashboard provides real-time visibility into agent activities:
+The Nigents Dashboard provides real-time visibility into agent activities:
 
 ### Features
 
@@ -1680,7 +1680,7 @@ The NightOwl Dashboard provides real-time visibility into agent activities:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ NightOwl AI Development Team              ● Connected       │
+│ Nigents AI Development Team              ● Connected       │
 ├───────────────┬───────────────────────────┬─────────────────┤
 │               │                           │                 │
 │   AGENTS      │    LIVE ACTIVITY          │  AGENT COMM     │
@@ -1750,7 +1750,7 @@ socket.emit('chat', { agent, message });    // Send chat message
 
 ## Voice Processing
 
-NightOwl supports voice commands in Arabic and English:
+Nigents supports voice commands in Arabic and English:
 
 ### Voice Flow
 
@@ -1787,7 +1787,7 @@ ENABLE_VOICE=true
 
 ## AutoGen Group Chat
 
-NightOwl uses Microsoft AutoGen for multi-agent coordination:
+Nigents uses Microsoft AutoGen for multi-agent coordination:
 
 ### Group Chat Features
 
@@ -1902,11 +1902,11 @@ pm2 monit
 
 ## 🔑 API Keys Required
 
-NightOwl requires several API keys to function. Here's the complete list:
+Nigents requires several API keys to function. Here's the complete list:
 
 ### Required Keys (Choose Your AI Provider)
 
-NightOwl supports multiple AI providers. You need at least **one** AI provider configured:
+Nigents supports multiple AI providers. You need at least **one** AI provider configured:
 
 #### Option 1: Anthropic Claude (Recommended for English)
 | Key | Source | Purpose | Get It From |
@@ -2029,7 +2029,7 @@ Pricing: ¥0.012-0.024 per 1K tokens depending on model
 2. Click your avatar → Edit Profile
 3. Left sidebar → Access Tokens
 4. Click "Add new token"
-5. Name: "NightOwl"
+5. Name: "Nigents"
 6. Scopes: api, read_repository, write_repository
 7. Click "Create personal access token"
 8. Copy the token immediately!
@@ -2040,7 +2040,7 @@ Pricing: ¥0.012-0.024 per 1K tokens depending on model
 Create `.env` file with all keys:
 
 ```bash
-# Required - NightOwl won't work without these
+# Required - Nigents won't work without these
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 TELEGRAM_CHAT_ID=your_telegram_chat_id_here
 ANTHROPIC_API_KEY=sk-ant-your_anthropic_key_here
@@ -2083,7 +2083,7 @@ LOG_LEVEL=info
 
 ## 🎨 Dashboard Features
 
-The NightOwl Dashboard provides comprehensive control over your AI agent team:
+The Nigents Dashboard provides comprehensive control over your AI agent team:
 
 ### Dashboard Views
 
@@ -2117,4 +2117,4 @@ View and manage all 38 MCP tools:
 
 ---
 
-**NightOwl — Sleep well. Code better.** 🦉🌙
+**Nigents — Sleep well. Code better.** 🦉🌙

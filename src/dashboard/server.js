@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - Web Dashboard Server
+ * 🦉 Nigents - Web Dashboard Server
  * Real-time agent activity and task monitoring with streaming
  */
 
@@ -253,7 +253,7 @@ io.on('connection', (socket) => {
 // ============================================================================
 
 server.listen(PORT, () => {
-  logger.info(`NightOwl Dashboard running on port ${PORT}`);
+  logger.info(`Nigents Dashboard running on port ${PORT}`);
   logger.info(`Dashboard URL: http://localhost:${PORT}`);
 });
 

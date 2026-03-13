@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - OpenHands Tool
+ * 🦉 Nigents - OpenHands Tool
  * Code execution sandbox for writing and testing code
  */
 

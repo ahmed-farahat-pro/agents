@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - Reporter Agent
+ * 🦉 Nigents - Reporter Agent
  * Sends Telegram updates and reports
  */
 
@@ -118,7 +118,7 @@ Sleep well! 🌙
       day: 'numeric',
     });
 
-    let message = `🌅 **Good morning! NightOwl Daily Report**\n`;
+    let message = `🌅 **Good morning! Nigents Daily Report**\n`;
     message += `━━━━━━━━━━━━━━━━━━━━━━\n`;
     message += `${date}\n\n`;
 
@@ -154,7 +154,7 @@ Sleep well! 🌙
 
     // Voice summary
     const completedCount = completed.length;
-    const voiceText = `Good morning! NightOwl completed ${completedCount} task${completedCount !== 1 ? 's' : ''} overnight. Check Telegram for details.`;
+    const voiceText = `Good morning! Nigents completed ${completedCount} task${completedCount !== 1 ? 's' : ''} overnight. Check Telegram for details.`;
     await this.sendVoice(voiceText, { language: 'en' });
   }
 

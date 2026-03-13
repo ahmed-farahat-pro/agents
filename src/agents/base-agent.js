@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - Base Agent Class
+ * 🦉 Nigents - Base Agent Class
  * All agents extend this base class for common functionality
  */
 

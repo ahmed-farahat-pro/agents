@@ -1,7 +1,7 @@
 {
-  "name": "nightowl",
+  "name": "nigents",
   "version": "1.0.0",
-  "description": "NightOwl — AI Agent Development Team for GitLab. Send a task before you sleep, wake up to a finished Merge Request.",
+  "description": "Nigents — Night Agents for GitLab. Send a task before you sleep, wake up to a finished Merge Request.",
   "main": "src/bot.js",
   "scripts": {
     "start": "node src/bot.js",
@@ -27,7 +27,7 @@
     "code-generation",
     "devops"
   ],
-  "author": "NightOwl Team",
+  "author": "Nigents Team",
   "license": "MIT",
   "dependencies": {
     "node-telegram-bot-api": "^0.66.0",

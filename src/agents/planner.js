@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - Planner Agent with MCP
+ * 🦉 Nigents - Planner Agent with MCP
  * Architecture & Planning - Creates implementation plans with codebase analysis
  */
 
@@ -227,7 +227,7 @@ Respond with valid JSON in this format:
   "filesToCreate": ["path/to/newfile"],
   "dependencies": ["dep1", "dep2"],
   "testingNotes": "What needs to be tested",
-  "branch": "nightowl/task-{timestamp}"
+  "branch": "nigents/task-{timestamp}"
 }
 `;
 
@@ -254,7 +254,7 @@ Respond with valid JSON in this format:
     plan.createdAt = new Date().toISOString();
     plan.project = project;
     plan.originalTask = task;
-    plan.branch = plan.branch || `nightowl/task-${Date.now()}`;
+    plan.branch = plan.branch || `nigents/task-${Date.now()}`;
 
     return plan;
   }

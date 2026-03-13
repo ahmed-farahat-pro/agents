@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - Code Reviewer Agent
+ * 🦉 Nigents - Code Reviewer Agent
  * Reviews code for quality, security, and standards
  */
 

@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - QA Tester Agent
+ * 🦉 Nigents - QA Tester Agent
  * Writes and runs tests
  */
 

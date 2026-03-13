@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - Orchestrator Agent
+ * 🦉 Nigents - Orchestrator Agent
  * Team Lead & Router - Coordinates all other agents
  */
 
