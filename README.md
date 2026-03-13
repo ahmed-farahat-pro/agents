@@ -844,8 +844,17 @@ nano .env  # or use your editor
 TELEGRAM_BOT_TOKEN=your_bot_token_here
 TELEGRAM_CHAT_ID=your_chat_id_here
 
-# AI APIs
+# AI Providers (choose at least one)
+# Option 1: Anthropic Claude
 ANTHROPIC_API_KEY=your_anthropic_key
+
+# Option 2: Zhipu AI GLM (Chinese models)
+ZHIPU_API_KEY=your_zhipu_key
+
+# Option 3: Moonshot AI Kimi (Chinese models, long context)
+MOONSHOT_API_KEY=your_moonshot_key
+
+# Voice Processing (OpenAI Whisper)
 OPENAI_API_KEY=your_openai_key
 
 # GitLab (for testing integrations)
@@ -859,9 +868,8 @@ NODE_ENV=development
 DASHBOARD_PORT=4000
 DASHBOARD_PASSWORD=local_test_password
 
-# Disable EC2-specific features
-# EC2_HOST=localhost
-# EC2_USER=ubuntu
+# Default AI provider (anthropic|zhipu|moonshot)
+DEFAULT_AI_PROVIDER=anthropic
 
 # Feature flags
 ENABLE_VOICE=true
@@ -1896,13 +1904,50 @@ pm2 monit
 
 NightOwl requires several API keys to function. Here's the complete list:
 
-### Required Keys (Must Have)
+### Required Keys (Choose Your AI Provider)
+
+NightOwl supports multiple AI providers. You need at least **one** AI provider configured:
+
+#### Option 1: Anthropic Claude (Recommended for English)
+| Key | Source | Purpose | Get It From |
+|-----|--------|---------|-------------|
+| **ANTHROPIC_API_KEY** | Anthropic Console | Claude AI models | [console.anthropic.com](https://console.anthropic.com) |
+
+**Models Available:**
+- `claude-3-opus` - Most capable, best for complex tasks
+- `claude-3-sonnet` - Balanced performance and cost
+- `claude-3-haiku` - Fastest, most cost-effective
+
+#### Option 2: Zhipu AI GLM (Best for Chinese)
+| Key | Source | Purpose | Get It From |
+|-----|--------|---------|-------------|
+| **ZHIPU_API_KEY** | Zhipu AI Open Platform | GLM AI models | [open.bigmodel.cn](https://open.bigmodel.cn) |
+
+**Models Available:**
+- `glm-4` - General purpose
+- `glm-4-plus` - Enhanced capabilities
+- `glm-4v` - Vision capabilities
+- `glm-5` - Latest generation
+- `glm-5-plus` - Most capable GLM model
+
+#### Option 3: Moonshot AI Kimi (Good for Chinese & Long Context)
+| Key | Source | Purpose | Get It From |
+|-----|--------|---------|-------------|
+| **MOONSHOT_API_KEY** | Moonshot Platform | Kimi AI models | [platform.moonshot.cn](https://platform.moonshot.cn) |
+
+**Models Available:**
+- `kimi-2.5` - Balanced performance
+- `kimi-2.5-32k` - 32K context window
+- `kimi-2.5-128k` - 128K context window
+- `kimi-k2` - Latest Kimi model
+- `kimi-k2-plus` - Enhanced Kimi model
+
+### Required Keys (All Setups)
 
 | Key | Source | Purpose | Get It From |
 |-----|--------|---------|-------------|
 | **TELEGRAM_BOT_TOKEN** | Telegram BotFather | Bot authentication | Message [@BotFather](https://t.me/BotFather) → `/newbot` |
 | **TELEGRAM_CHAT_ID** | Telegram User Info | Your user ID | Message [@userinfobot](https://t.me/userinfobot) |
-| **ANTHROPIC_API_KEY** | Anthropic Console | Claude AI models | [console.anthropic.com](https://console.anthropic.com) |
 | **OPENAI_API_KEY** | OpenAI Platform | Whisper voice transcription | [platform.openai.com](https://platform.openai.com) |
 | **GITLAB_TOKEN** | GitLab Settings | GitLab API access | GitLab → User Settings → Access Tokens |
 
@@ -1954,7 +1999,31 @@ NightOwl requires several API keys to function. Here's the complete list:
 5. Copy the key (starts with sk-)
 ```
 
-#### 5. GitLab Token
+#### 5. Zhipu AI API Key (Optional - for GLM models)
+```
+1. Go to https://open.bigmodel.cn
+2. Sign up / Sign in with phone number
+3. Go to "API Keys" (API密钥管理)
+4. Click "Create API Key" (创建API密钥)
+5. Copy the key (starts with your user ID)
+
+Note: Zhipu AI requires Chinese phone verification
+Pricing: ¥0.005-0.1 per 1K tokens depending on model
+```
+
+#### 6. Moonshot AI API Key (Optional - for Kimi models)
+```
+1. Go to https://platform.moonshot.cn
+2. Sign up / Sign in
+3. Go to "API Key Management" (API密钥管理)
+4. Click "Create Key" (创建密钥)
+5. Copy the key
+
+Note: Moonshot AI requires Chinese phone verification
+Pricing: ¥0.012-0.024 per 1K tokens depending on model
+```
+
+#### 7. GitLab Token
 ```
 1. Go to GitLab.com
 2. Click your avatar → Edit Profile
@@ -1998,11 +2067,17 @@ LOG_LEVEL=info
 | Service | Free Tier | Paid Usage | Typical Monthly Cost |
 |---------|-----------|------------|---------------------|
 | **Anthropic Claude** | $5 credit | $3-8 per task | $50-200/month |
+| **Zhipu AI GLM** | ¥100 credit | ¥0.005-0.1/1K tokens | $20-80/month |
+| **Moonshot AI Kimi** | ¥100 credit | ¥0.012-0.024/1K tokens | $30-100/month |
 | **OpenAI Whisper** | $18 credit | $0.006/minute | $5-20/month |
 | **GitLab** | Free tier | Free for personal | $0 |
 | **Telegram Bot** | Unlimited | Free | $0 |
 
-**Total estimated cost:** $55-220/month for moderate usage
+**Total estimated cost:** 
+- Claude only: $55-220/month
+- Zhipu AI only: $25-100/month (good for Chinese)
+- Moonshot only: $35-120/month (good for long context)
+- Mixed usage: $50-200/month
 
 ---
 
