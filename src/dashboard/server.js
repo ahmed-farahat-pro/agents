@@ -1393,6 +1393,80 @@ app.get('/api/materials/stats', (req, res) => {
   }
 });
 
+// Get all subscribers (admin - requires password)
+app.get('/api/materials/subscribers', (req, res) => {
+  try {
+    const { password } = req.query;
+    const adminPassword = process.env.DASHBOARD_PASSWORD || 'admin123';
+    
+    if (password !== adminPassword) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized - invalid password',
+      });
+    }
+    
+    const subscribers = loadSubscribers();
+    const subscriberList = Object.entries(subscribers).map(([email, data]) => ({
+      email,
+      name: data.name || '',
+      roadmaps: data.roadmaps || [],
+      subscribedAt: data.subscribedAt,
+    }));
+    
+    res.json({
+      success: true,
+      count: subscriberList.length,
+      subscribers: subscriberList,
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Get subscribers error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Export subscribers to CSV (admin)
+app.get('/api/materials/subscribers/export', (req, res) => {
+  try {
+    const { password, format = 'csv' } = req.query;
+    const adminPassword = process.env.DASHBOARD_PASSWORD || 'admin123';
+    
+    if (password !== adminPassword) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized - invalid password',
+      });
+    }
+    
+    const subscribers = loadSubscribers();
+    const emails = Object.keys(subscribers);
+    
+    if (format === 'json') {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', 'attachment; filename=subscribers.json');
+      return res.json(subscribers);
+    }
+    
+    // CSV format
+    let csv = 'Email,Name,Roadmaps,Subscribed Date\n';
+    emails.forEach(email => {
+      const s = subscribers[email];
+      const name = (s.name || '').replace(/"/g, '""');
+      const roadmaps = (s.roadmaps || []).join(';');
+      const date = s.subscribedAt ? new Date(s.subscribedAt).toISOString() : '';
+      csv += `"${email}","${name}","${roadmaps}","${date}"\n`;
+    });
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=subscribers.csv');
+    res.send(csv);
+    
+  } catch (error) {
+    logger.error('[Dashboard] Export error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // ============================================================================
 // Socket.IO
 // ============================================================================
