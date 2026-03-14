@@ -200,7 +200,8 @@ Send voice notes or text naturally:
 • "I want to talk to the backend developer"
 
 **Quick Commands:**
-• /plan <task> — Create implementation plan
+• /plan <task> — Create implementation plan (interactive)
+• /quickplan <task> | <project> — Create plan directly
 • /plans — List your pending plans
 • /approve — Approve plan
 • /projects — List projects
@@ -1001,6 +1002,82 @@ bot.onText(/\/plan (.+)/, async (msg, match) => {
   } catch (error) {
     logger.error('Failed to load projects for plan:', error);
     await bot.sendMessage(msg.chat.id, 'Error loading projects from GitLab. Please check your configuration.');
+  }
+});
+
+// /quickplan command - Direct plan creation without pending storage
+bot.onText(/\/quickplan (.+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const args = match[1].trim();
+  const userId = msg.from.id;
+  
+  // Parse: task | project
+  const parts = args.split('|').map(p => p.trim());
+  
+  if (parts.length < 2) {
+    await bot.sendMessage(msg.chat.id, 
+      `**Quick Plan Usage:**
+
+\`/quickplan <task> | <project-id>\`
+
+**Example:**
+\`/quickplan Add user authentication | my-project\`
+
+Use /projects to see available project IDs.`,
+      { parse_mode: 'Markdown' }
+    );
+    return;
+  }
+  
+  const task = parts[0];
+  const projectId = parts[1];
+  
+  await bot.sendChatAction(msg.chat.id, 'typing');
+  
+  try {
+    const projects = await getGitLabProjects();
+    const project = projects.find(p => p.id === projectId || p.fullPath === projectId || p.name === projectId);
+    
+    if (!project) {
+      await bot.sendMessage(msg.chat.id, `Project "${projectId}" not found. Use /projects to see available projects.`);
+      return;
+    }
+    
+    const statusMsg = await bot.sendMessage(msg.chat.id, `Creating plan for: **${task}**\nProject: ${project.name}...`, { parse_mode: 'Markdown' });
+    
+    // Get user's preferred AI provider/model
+    const userSettings = chatStorage.getUserSettings(userId);
+    const aiProvider = userSettings.preferredAI;
+    const aiModel = userSettings.preferredModel;
+    
+    const result = await orchestrator.processCommand(`/plan ${task}`, {
+      userId: userId,
+      chatId: msg.chat.id,
+      project: project.fullPath,
+      projectInfo: project,
+      aiProvider: aiProvider,
+      aiModel: aiModel,
+    });
+    
+    await bot.deleteMessage(msg.chat.id, statusMsg.message_id);
+    
+    if (result.success) {
+      const keyboard = [[
+        { text: '✅ Approve Plan', callback_data: `approve:${result.plan?.id || 'latest'}:${userId}` },
+        { text: '❌ Cancel', callback_data: `cancelplan:${userId}` },
+      ]];
+      
+      await bot.sendMessage(msg.chat.id, result.message, {
+        parse_mode: 'Markdown',
+        reply_markup: { inline_keyboard: keyboard },
+      });
+    } else {
+      await bot.sendMessage(msg.chat.id, `Error: ${result.message}`);
+    }
+  } catch (error) {
+    logger.error('[Bot] Quick plan error:', error);
+    await bot.sendMessage(msg.chat.id, `Error creating plan: ${error.message}`);
   }
 });
 
