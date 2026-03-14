@@ -303,6 +303,11 @@ class ChatStorage {
     this.setUserSettings(userId, { language });
   }
 
+  // Get all user settings (for dashboard)
+  getAllUserSettings() {
+    return this.userSettings;
+  }
+
   // Debug method
   getStats() {
     return {

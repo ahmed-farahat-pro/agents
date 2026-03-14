@@ -806,6 +806,125 @@ app.get('/api/chats/files/list', (req, res) => {
 });
 
 // ============================================================================
+// User Settings API
+// ============================================================================
+
+const chatStorage = require('../utils/chat-storage');
+
+// Get all user settings
+app.get('/api/settings/users', (req, res) => {
+  try {
+    const allSettings = chatStorage.getAllUserSettings ? chatStorage.getAllUserSettings() : {};
+    
+    res.json({
+      success: true,
+      users: allSettings,
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to get user settings:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Get user settings by ID
+app.get('/api/settings/users/:userId', (req, res) => {
+  try {
+    const { userId } = req.params;
+    const settings = chatStorage.getUserSettings(userId);
+    
+    res.json({
+      success: true,
+      userId,
+      settings,
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to get user settings:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Update user settings
+app.put('/api/settings/users/:userId', (req, res) => {
+  try {
+    const { userId } = req.params;
+    const settings = req.body;
+    
+    chatStorage.setUserSettings(userId, settings);
+    
+    res.json({
+      success: true,
+      message: 'Settings updated',
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to update user settings:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// ============================================================================
+// Shared Config API
+// ============================================================================
+
+const sharedConfig = require('../utils/shared-config');
+
+// Get shared config (without sensitive data)
+app.get('/api/config/public', (req, res) => {
+  try {
+    const providers = sharedConfig.getCustomProviders();
+    
+    // Return only non-sensitive info
+    const safeProviders = {};
+    for (const [key, provider] of Object.entries(providers)) {
+      safeProviders[key] = {
+        name: provider.name,
+        baseUrl: provider.baseUrl,
+        model: provider.model,
+        isCustom: provider.isCustom,
+      };
+    }
+    
+    res.json({
+      success: true,
+      customProviders: safeProviders,
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to get public config:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Get AI providers status
+app.get('/api/ai/providers', (req, res) => {
+  try {
+    const aiClient = require('../utils/ai-client');
+    const providers = aiClient.getAvailableProviders();
+    
+    res.json({
+      success: true,
+      providers,
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to get AI providers:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// ============================================================================
 // Socket.IO
 // ============================================================================
 
