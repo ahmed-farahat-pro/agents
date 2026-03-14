@@ -41,11 +41,11 @@ class AIClient {
         defaultModel: 'claude-3-5-sonnet-20241022',
       },
       zhipu: {
-        name: 'Z.AI (Zhipu)',
+        name: 'Zhipu AI (GLM)',
         enabled: !!apiKeys.ZHIPU_API_KEY,
         apiKey: apiKeys.ZHIPU_API_KEY,
-        baseUrl: 'https://api.z.ai/api/coding/paas/v4',
-        models: ['glm-4', 'glm-4-flash', 'glm-4v'],
+        baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+        models: ['glm-4', 'glm-4-flash', 'glm-4v', 'glm-4-plus'],
         defaultModel: 'glm-4',
       },
       moonshot: {
@@ -335,9 +335,11 @@ class AIClient {
     logger.info(`[AIClient] Zhipu REQUEST:`, {
       model,
       promptLength: prompt.length,
+      baseUrl: provider.baseUrl,
     });
 
     try {
+      // Zhipu uses X-API-Key header format
       const response = await axios.post(
         `${provider.baseUrl}/chat/completions`,
         {
