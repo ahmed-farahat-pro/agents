@@ -21,6 +21,7 @@ const voiceProcessor = require('./utils/voice-processor');
 const gitlab = require('./tools/gitlab');
 const path = require('path');
 const fs = require('fs');
+const axios = require('axios');
 const intentRouter = require('./utils/intent-router');
 const aiClient = require('./utils/ai-client');
 const sharedConfig = require('./utils/shared-config');
@@ -229,6 +230,9 @@ Send voice notes or text naturally:
 • /addmodel — Add custom AI model
 • /addglm <key> [model] — Add Zhipu GLM model quickly
 • /addmoonshot <key> [model] — Add Moonshot model quickly
+• /testmodel — Test any AI model
+• /testglm <key> [model] — Quick test Zhipu GLM
+• /testmoonshot <key> [model] — Quick test Moonshot
 • /mymodels — List your custom AI models
 • /reload — Reload configuration and API keys
 • /debug — Show debug information
@@ -473,6 +477,288 @@ Use /mymodels to see all your models.`,
   } catch (error) {
     logger.error('[Bot] Failed to add Moonshot model:', error);
     await bot.sendMessage(msg.chat.id, `❌ Error adding model: ${error.message}`);
+  }
+});
+
+// /testmodel command - Test any AI model
+bot.onText(/\/testmodel/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const message = `**🧪 Test AI Model**
+
+Test any AI model before adding it.
+
+**Usage:**
+\`testmodel <base_url>|<api_key>|<model_name> [message]\`
+
+**Examples:**
+\`testmodel https://api.moonshot.cn/v1|sk-your-key|moonshot-v1-8k\`
+\`testmodel https://api.z.ai/api/paas/v4|your-key|glm-5 Hello!\`
+
+**Quick Tests:**
+• /testglm - Test Zhipu GLM
+• /testmoonshot - Test Moonshot
+
+The bot will send a test message and show the response.`;
+
+  await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+});
+
+// Handle testmodel with parameters
+bot.onText(/testmodel (.+)\|(.+)\|(.+)(?:\s+(.+))?/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const baseUrl = match[1].trim();
+  const apiKey = match[2].trim();
+  const modelName = match[3].trim();
+  const customMessage = match[4] || 'Hello! Please respond with a short greeting to confirm this test is working.';
+
+  await bot.sendChatAction(msg.chat.id, 'typing');
+
+  try {
+    const startTime = Date.now();
+    
+    const response = await axios.post(
+      `${baseUrl}/chat/completions`,
+      {
+        model: modelName,
+        messages: [
+          { role: 'system', content: 'You are a helpful assistant.' },
+          { role: 'user', content: customMessage },
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000,
+      }
+    );
+    
+    const duration = Date.now() - startTime;
+    const content = response.data.choices?.[0]?.message?.content || 'No content';
+    const usage = response.data.usage || {};
+    
+    const resultMessage = `✅ **Test Successful!**
+
+**Model:** ${modelName}
+**Duration:** ${duration}ms
+**Tokens:** ${usage.total_tokens || 0} total (${usage.prompt_tokens || 0} prompt, ${usage.completion_tokens || 0} completion)
+
+**Response:**
+\`\`\`
+${content.substring(0, 3000)}
+\`\`\`
+
+✅ This model is working correctly!`;
+
+    await bot.sendMessage(msg.chat.id, resultMessage, { parse_mode: 'Markdown' });
+  } catch (error) {
+    const errorMsg = error.response?.data?.error?.message || error.message;
+    const statusCode = error.response?.status;
+    
+    await bot.sendMessage(msg.chat.id, 
+      `❌ **Test Failed!**
+
+**Model:** ${modelName}
+**Status:** ${statusCode || 'Network Error'}
+**Error:** ${errorMsg}
+
+Please check:
+• Base URL is correct
+• API key is valid
+• Model name exists
+• API key has sufficient credits`,
+      { parse_mode: 'Markdown' }
+    );
+  }
+});
+
+// /testglm command - Quick test Zhipu GLM
+bot.onText(/\/testglm(?:\s+(.+))?/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const apiKey = match[1];
+  
+  if (!apiKey) {
+    await bot.sendMessage(msg.chat.id, 
+      `**🧪 Test Zhipu GLM**
+
+Send your API key to test:
+
+\`/testglm your-api-key\`
+
+You can also specify a model:
+\`/testglm your-api-key glm-5\`
+
+The default test uses glm-4.`,
+      { parse_mode: 'Markdown' }
+    );
+    return;
+  }
+
+  const parts = apiKey.trim().split(/\s+/);
+  const key = parts[0];
+  const modelName = parts[1] || 'glm-4';
+  
+  await bot.sendChatAction(msg.chat.id, 'typing');
+
+  try {
+    const startTime = Date.now();
+    const baseUrl = 'https://api.z.ai/api/paas/v4';
+    
+    const response = await axios.post(
+      `${baseUrl}/chat/completions`,
+      {
+        model: modelName,
+        messages: [
+          { role: 'system', content: 'You are a helpful assistant.' },
+          { role: 'user', content: 'Hello! Please confirm this test is working and tell me which model you are.' },
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000,
+      }
+    );
+    
+    const duration = Date.now() - startTime;
+    const content = response.data.choices?.[0]?.message?.content || 'No content';
+    const usage = response.data.usage || {};
+    
+    const resultMessage = `✅ **Zhipu GLM Test Successful!**
+
+**Model:** ${modelName}
+**Base URL:** ${baseUrl}
+**Duration:** ${duration}ms
+**Tokens:** ${usage.total_tokens || 0} total
+
+**Response:**
+\`\`\`
+${content.substring(0, 3000)}
+\`\`\`
+
+✅ Working! Add it with:
+\`/addglm ${key.substring(0, 8)}... ${modelName}\``;
+
+    await bot.sendMessage(msg.chat.id, resultMessage, { parse_mode: 'Markdown' });
+  } catch (error) {
+    const errorMsg = error.response?.data?.error?.message || error.message;
+    const statusCode = error.response?.status;
+    
+    await bot.sendMessage(msg.chat.id, 
+      `❌ **GLM Test Failed!**
+
+**Status:** ${statusCode || 'Network Error'}
+**Error:** ${errorMsg}
+
+Please check your API key at:
+https://z.ai/ or https://open.bigmodel.cn/`,
+      { parse_mode: 'Markdown' }
+    );
+  }
+});
+
+// /testmoonshot command - Quick test Moonshot
+bot.onText(/\/testmoonshot(?:\s+(.+))?/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const apiKey = match[1];
+  
+  if (!apiKey) {
+    await bot.sendMessage(msg.chat.id, 
+      `**🧪 Test Moonshot**
+
+Send your API key to test:
+
+\`/testmoonshot sk-your-api-key\`
+
+You can also specify a model:
+\`/testmoonshot sk-your-key moonshot-v1-32k\`
+
+The default test uses moonshot-v1-8k.`,
+      { parse_mode: 'Markdown' }
+    );
+    return;
+  }
+
+  const parts = apiKey.trim().split(/\s+/);
+  const key = parts[0];
+  const modelName = parts[1] || 'moonshot-v1-8k';
+  
+  if (!key.startsWith('sk-')) {
+    await bot.sendMessage(msg.chat.id, '❌ Invalid API key. Moonshot keys start with "sk-"');
+    return;
+  }
+  
+  await bot.sendChatAction(msg.chat.id, 'typing');
+
+  try {
+    const startTime = Date.now();
+    const baseUrl = 'https://api.moonshot.cn/v1';
+    
+    const response = await axios.post(
+      `${baseUrl}/chat/completions`,
+      {
+        model: modelName,
+        messages: [
+          { role: 'system', content: 'You are a helpful assistant.' },
+          { role: 'user', content: 'Hello! Please confirm this test is working and tell me which model you are.' },
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000,
+      }
+    );
+    
+    const duration = Date.now() - startTime;
+    const content = response.data.choices?.[0]?.message?.content || 'No content';
+    const usage = response.data.usage || {};
+    
+    const resultMessage = `✅ **Moonshot Test Successful!**
+
+**Model:** ${modelName}
+**Base URL:** ${baseUrl}
+**Duration:** ${duration}ms
+**Tokens:** ${usage.total_tokens || 0} total
+
+**Response:**
+\`\`\`
+${content.substring(0, 3000)}
+\`\`\`
+
+✅ Working! Add it with:
+\`/addmoonshot ${key.substring(0, 8)}... ${modelName}\``;
+
+    await bot.sendMessage(msg.chat.id, resultMessage, { parse_mode: 'Markdown' });
+  } catch (error) {
+    const errorMsg = error.response?.data?.error?.message || error.message;
+    const statusCode = error.response?.status;
+    
+    await bot.sendMessage(msg.chat.id, 
+      `❌ **Moonshot Test Failed!**
+
+**Status:** ${statusCode || 'Network Error'}
+**Error:** ${errorMsg}
+
+Please check your API key at:
+https://platform.moonshot.cn/`,
+      { parse_mode: 'Markdown' }
+    );
   }
 });
 
