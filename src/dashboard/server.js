@@ -925,6 +925,133 @@ app.get('/api/ai/providers', (req, res) => {
 });
 
 // ============================================================================
+// AI Model Testing API
+// ============================================================================
+
+// Test an AI model with custom base URL
+app.post('/api/ai/test', async (req, res) => {
+  try {
+    const { baseUrl, apiKey, model, message, systemMessage } = req.body;
+    
+    if (!baseUrl || !apiKey || !model) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: baseUrl, apiKey, model',
+      });
+    }
+
+    const testMessage = message || 'Hello, this is a test message. Please respond with "Test successful".';
+    const testSystem = systemMessage || 'You are a helpful assistant.';
+    
+    logger.info(`[Dashboard] Testing AI model: ${model} at ${baseUrl}`);
+    
+    const startTime = Date.now();
+    
+    try {
+      const response = await axios.post(
+        `${baseUrl}/chat/completions`,
+        {
+          model: model,
+          messages: [
+            { role: 'system', content: testSystem },
+            { role: 'user', content: testMessage },
+          ],
+          temperature: 0.7,
+          max_tokens: 500,
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 30000, // 30 second timeout
+        }
+      );
+      
+      const duration = Date.now() - startTime;
+      const content = response.data.choices?.[0]?.message?.content || 'No content';
+      const usage = response.data.usage || {};
+      
+      logger.info(`[Dashboard] AI test successful: ${model}`, { duration });
+      
+      res.json({
+        success: true,
+        response: content,
+        model: model,
+        duration: duration,
+        tokens: {
+          prompt: usage.prompt_tokens || 0,
+          completion: usage.completion_tokens || 0,
+          total: usage.total_tokens || 0,
+        },
+        raw: response.data,
+      });
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      
+      logger.error(`[Dashboard] AI test failed:`, error.message);
+      
+      // Extract useful error info
+      const errorData = error.response?.data || {};
+      const errorMessage = errorData.error?.message || error.message;
+      
+      res.status(200).json({
+        success: false,
+        error: errorMessage,
+        statusCode: error.response?.status,
+        duration: duration,
+        details: errorData,
+      });
+    }
+  } catch (error) {
+    logger.error('[Dashboard] AI test endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Fetch available models from OpenAI-compatible endpoint
+app.post('/api/ai/models', async (req, res) => {
+  try {
+    const { baseUrl, apiKey } = req.body;
+    
+    if (!baseUrl || !apiKey) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: baseUrl, apiKey',
+      });
+    }
+    
+    logger.info(`[Dashboard] Fetching models from: ${baseUrl}`);
+    
+    const response = await axios.get(
+      `${baseUrl}/models`,
+      {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        timeout: 10000,
+      }
+    );
+    
+    const models = response.data.data?.map(m => m.id) || [];
+    
+    res.json({
+      success: true,
+      models: models,
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Fetch models error:', error.message);
+    res.status(200).json({
+      success: false,
+      error: error.response?.data?.error?.message || error.message,
+    });
+  }
+});
+
+// ============================================================================
 // Socket.IO
 // ============================================================================
 

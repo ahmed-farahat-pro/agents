@@ -2310,6 +2310,7 @@
                                 <p class="text-sm text-muted">Configure AI providers and their API keys</p>
                             </div>
                             <button class="btn btn-primary" onclick="openProviderModal()">+ Add Provider</button>
+                            <button class="btn btn-secondary" onclick="openTestModelModal()">🧪 Test Model</button>
                         </div>
                         
                         <div class="provider-list" id="provider-list">
@@ -2573,6 +2574,67 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeProviderModal()">Cancel</button>
                 <button class="btn btn-primary" onclick="addProvider()">Add Provider</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Model Modal -->
+    <div class="modal-overlay" id="test-model-modal">
+        <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h3 class="modal-title">🧪 Test AI Model</h3>
+                <button class="modal-close" onclick="closeTestModelModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Base URL <span class="text-danger">*</span></label>
+                    <input type="text" class="form-input" id="test-base-url" placeholder="https://api.moonshot.cn/v1">
+                    <p class="text-sm text-muted">OpenAI-compatible API endpoint</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">API Key <span class="text-danger">*</span></label>
+                    <input type="password" class="form-input" id="test-api-key" placeholder="sk-...">
+                </div>
+                <div class="form-group">
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 2;">
+                            <label class="form-label">Model <span class="text-danger">*</span></label>
+                            <input type="text" class="form-input" id="test-model-name" placeholder="moonshot-v1-8k">
+                        </div>
+                        <div style="flex: 1; display: flex; align-items: flex-end;">
+                            <button class="btn btn-secondary" onclick="fetchModelsForTest()" style="width: 100%; margin-bottom: 1px;">
+                                🔍 Fetch Models
+                            </button>
+                        </div>
+                    </div>
+                    <div id="test-model-select-container" style="margin-top: 8px; display: none;">
+                        <select class="form-select" id="test-model-select" onchange="document.getElementById('test-model-name').value = this.value">
+                            <option value="">Select a model...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Test Message</label>
+                    <textarea class="form-textarea" id="test-message" rows="3" placeholder="Hello, this is a test message.">Hello! Please respond with a short greeting and confirm this test is working.</textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">System Message (Optional)</label>
+                    <input type="text" class="form-input" id="test-system-message" placeholder="You are a helpful assistant." value="You are a helpful assistant.">
+                </div>
+                
+                <!-- Test Result -->
+                <div id="test-result" style="display: none; margin-top: 20px;">
+                    <div class="form-group">
+                        <label class="form-label">Result</label>
+                        <div id="test-result-status" style="padding: 12px; border-radius: 8px; margin-bottom: 12px;"></div>
+                        <div id="test-result-content" style="background: #1e293b; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 13px; white-space: pre-wrap; max-height: 300px; overflow-y: auto;"></div>
+                        <div id="test-result-stats" style="margin-top: 12px; padding: 12px; background: #0f172a; border-radius: 8px; font-size: 12px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeTestModelModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="testAIModel()">🚀 Test Model</button>
             </div>
         </div>
     </div>
@@ -3162,6 +3224,123 @@
 
         function closeProviderModal() {
             document.getElementById('provider-modal').classList.remove('active');
+        }
+
+        // Test Model Functions
+        function openTestModelModal() {
+            document.getElementById('test-base-url').value = '';
+            document.getElementById('test-api-key').value = '';
+            document.getElementById('test-model-name').value = '';
+            document.getElementById('test-message').value = 'Hello! Please respond with a short greeting and confirm this test is working.';
+            document.getElementById('test-system-message').value = 'You are a helpful assistant.';
+            document.getElementById('test-result').style.display = 'none';
+            document.getElementById('test-model-select-container').style.display = 'none';
+            document.getElementById('test-model-modal').classList.add('active');
+        }
+
+        function closeTestModelModal() {
+            document.getElementById('test-model-modal').classList.remove('active');
+        }
+
+        async function fetchModelsForTest() {
+            const baseUrl = document.getElementById('test-base-url').value.trim();
+            const apiKey = document.getElementById('test-api-key').value.trim();
+            
+            if (!baseUrl || !apiKey) {
+                alert('Please enter both Base URL and API Key');
+                return;
+            }
+            
+            const btn = document.querySelector('#test-model-modal .btn-secondary');
+            const originalText = btn.textContent;
+            btn.textContent = '⏳ Loading...';
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/ai/models', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ baseUrl, apiKey }),
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.models.length > 0) {
+                    const select = document.getElementById('test-model-select');
+                    select.innerHTML = '<option value="">Select a model...</option>' +
+                        data.models.map(m => `<option value="${m}">${m}</option>`).join('');
+                    document.getElementById('test-model-select-container').style.display = 'block';
+                } else {
+                    alert('No models found. You can still enter the model name manually.');
+                }
+            } catch (error) {
+                alert('Failed to fetch models: ' + error.message);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function testAIModel() {
+            const baseUrl = document.getElementById('test-base-url').value.trim();
+            const apiKey = document.getElementById('test-api-key').value.trim();
+            const model = document.getElementById('test-model-name').value.trim();
+            const message = document.getElementById('test-message').value.trim();
+            const systemMessage = document.getElementById('test-system-message').value.trim();
+            
+            if (!baseUrl || !apiKey || !model) {
+                alert('Please fill in all required fields: Base URL, API Key, and Model');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('test-result');
+            const statusDiv = document.getElementById('test-result-status');
+            const contentDiv = document.getElementById('test-result-content');
+            const statsDiv = document.getElementById('test-result-stats');
+            
+            resultDiv.style.display = 'block';
+            statusDiv.style.background = '#f59e0b';
+            statusDiv.style.color = 'white';
+            statusDiv.textContent = '⏳ Testing...';
+            contentDiv.textContent = 'Sending request to ' + baseUrl + '...';
+            statsDiv.textContent = '';
+            
+            try {
+                const response = await fetch('/api/ai/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ baseUrl, apiKey, model, message, systemMessage }),
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusDiv.style.background = '#10b981';
+                    statusDiv.style.color = 'white';
+                    statusDiv.innerHTML = `✅ Success! (${data.duration}ms)`;
+                    contentDiv.textContent = data.response;
+                    statsDiv.innerHTML = `
+                        <strong>Model:</strong> ${data.model}<br>
+                        <strong>Tokens:</strong> ${data.tokens.total} total (${data.tokens.prompt} prompt, ${data.tokens.completion} completion)<br>
+                        <strong>Duration:</strong> ${data.duration}ms
+                    `;
+                } else {
+                    statusDiv.style.background = '#ef4444';
+                    statusDiv.style.color = 'white';
+                    statusDiv.innerHTML = `❌ Failed! (${data.duration || 'N/A'}ms)`;
+                    contentDiv.textContent = `Error: ${data.error}`;
+                    if (data.details) {
+                        contentDiv.textContent += '\n\nDetails: ' + JSON.stringify(data.details, null, 2);
+                    }
+                    statsDiv.textContent = '';
+                }
+            } catch (error) {
+                statusDiv.style.background = '#ef4444';
+                statusDiv.style.color = 'white';
+                statusDiv.textContent = '❌ Network Error';
+                contentDiv.textContent = 'Error: ' + error.message;
+                statsDiv.textContent = '';
+            }
         }
 
         function renderModelTags() {
