@@ -312,6 +312,344 @@ You (Telegram/Phone)          EC2 Server (AWS)                GitLab
 
 ## App Flow & Workflow
 
+### Detailed Code Flow
+
+This section shows exactly how the code flows from user input to dashboard visualization:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          TELEGRAM BOT FLOW                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+1. USER SENDS MESSAGE (Voice/Text)
+   │
+   ▼
+┌─────────────────────────────────────────┐
+│  src/bot.js                             │
+│  ─────────────────                      │
+│  bot.on('message', async (msg) => {     │
+│    const voiceFile = await              │
+│      downloadVoiceFile(msg.voice);      │
+│    const text = await                   │
+│      transcribeVoice(voiceFile);        │
+│  });                                    │
+└─────────────────────────────────────────┘
+   │
+   ▼
+2. MESSAGE PARSED & COMMAND EXTRACTED
+   │
+   ▼
+┌─────────────────────────────────────────┐
+│  src/bot.js - Command Handlers          │
+│  ─────────────────────────────          │
+│  bot.onText(/\\/plan (.+)/, async (msg, │
+│    const task = parseCommand(match[1]); │
+│    const result = await                 │
+│      orchestrator.processCommand(       │
+│        `/plan ${task}`,                 │
+│        { userId, project, aiProvider }  │
+│      );                                 │
+│  });                                    │
+└─────────────────────────────────────────┘
+   │
+   ▼
+3. ORCHESTRATOR PROCESSES TASK
+   │
+   ▼
+┌─────────────────────────────────────────┐
+│  src/agents/orchestrator.js             │
+│  ───────────────────────────            │
+│  async processCommand(command, ctx) {   │
+│    const parsed = parseCommand(command);│
+│    // Route to appropriate agent        │
+│    switch(parsed.type) {                │
+│      case 'plan':                       │
+│        return await                     │
+│          handlePlanTask(parsed, ctx);   │
+│      case 'ask':                        │
+│        return await                     │
+│          handleAskTask(parsed, ctx);    │
+│    }                                    │
+│  }                                      │
+└─────────────────────────────────────────┘
+   │
+   ▼
+4. PLANNER AGENT CREATES PLAN
+   │
+   ▼
+┌─────────────────────────────────────────┐
+│  src/agents/planner.js                  │
+│  ─────────────────────                  │
+│  async createPlan({task, project}) {    │
+│    // Use AI to generate plan           │
+│    const plan = await aiClient.call(    │
+│      `Create plan for: ${task}`, {      │
+│        provider: this.aiProvider,       │
+│        systemMessage: plannerPrompt     │
+│      }                                  │
+│    );                                   │
+│    // Store pending plan                │
+│    await savePendingPlan(plan);         │
+│    return plan;                         │
+│  }                                      │
+└─────────────────────────────────────────┘
+   │
+   ▼
+5. PLAN SENT TO USER FOR APPROVAL
+   │
+   ▼
+┌─────────────────────────────────────────┐
+│  src/bot.js                             │
+│  ─────────────────                      │
+│  // Send plan with approve/cancel       │
+│  bot.sendMessage(chatId, planText, {    │
+│    reply_markup: {                      │
+│      inline_keyboard: [[               │
+│        { text: '✓ Approve',             │
+│          callback_data: 'planwith:...' }│
+│      ]]                                 │
+│    }                                    │
+│  });                                    │
+└─────────────────────────────────────────┘
+   │
+   ▼
+6. USER APPROVES PLAN
+   │
+   ▼
+┌─────────────────────────────────────────┐
+│  src/bot.js - Callback Handler          │
+│  ─────────────────────────────          │
+│  bot.on('callback_query', async (q) => {│
+│    if (q.data.startsWith('planwith:')) {│
+│      const planId = extractId(q.data);  │
+│      await orchestrator.executePlan(    │
+│        planId, ctx                      │
+│      );                                 │
+│    }                                    │
+│  });                                    │
+└─────────────────────────────────────────┘
+   │
+   ▼
+7. EXECUTION VIA AUTOGEN GROUP CHAT
+   │
+   ▼
+┌─────────────────────────────────────────┐
+│  src/autogen/group-chat.js              │
+│  ───────────────────────────            │
+│  async executePlan(plan, context) {     │
+│    // Create AutoGen group chat         │
+│    const groupChat = new GroupChat({    │
+│      agents: [planner, backend,         │
+│        frontend, qa, reviewer],         │
+│      messages: []                       │
+│    });                                  │
+│    // Start collaboration               │
+│    await groupChat.run(plan);           │
+│  }                                      │
+└─────────────────────────────────────────┘
+   │
+   ▼
+8. AGENTS COLLABORATE & REPORT PROGRESS
+   │
+   ▼
+┌─────────────────────────────────────────┐
+│  Dashboard API Calls (Real-time)        │
+│  ─────────────────────────────────      │
+│  // Each agent reports status           │
+│  await fetch('/api/agents/' + name +    │
+│    '/status', {                         │
+│      method: 'POST',                    │
+│      body: JSON.stringify({             │
+│        status: 'active',                │
+│        activity: 'Writing code...'      │
+│      })                                 │
+│    });                                  │
+│                                         │
+│  // Code edits streamed                 │
+│  await fetch('/api/code-edit', {        │
+│      method: 'POST',                    │
+│      body: JSON.stringify({             │
+│        agent: 'backend',                │
+│        file: 'PaymentController.java',  │
+│        action: 'write',                 │
+│        code: '...'                      │
+│      })                                 │
+│  });                                    │
+└─────────────────────────────────────────┘
+```
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        DASHBOARD DISPLAY FLOW                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+1. DASHBOARD SERVER STARTS
+   │
+   ▼
+┌─────────────────────────────────────────┐
+│  src/dashboard/server.js                │
+│  ───────────────────────                │
+│  const io = new Server(server);         │
+│  // Socket.io for real-time updates     │
+│  io.on('connection', (socket) => {      │
+│    socket.emit('init', dashboardState); │
+│  });                                    │
+└─────────────────────────────────────────┘
+   │
+   ▼
+2. BROWSER LOADS DASHBOARD
+   │
+   ▼
+┌─────────────────────────────────────────┐
+│  src/dashboard/public/dashboard.html    │
+│  ────────────────────────────────────   │
+│  const socket = io();                   │
+│  socket.on('init', (state) => {         │
+│    renderAgents(state.agents);          │
+│    renderTasks(state.tasks);            │
+│  });                                    │
+│                                         │
+│  socket.on('codeEdit', (edit) => {      │
+│    showCodeEdit(edit);  // Live code!   │
+│  });                                    │
+└─────────────────────────────────────────┘
+   │
+   ▼
+3. AGENT UPDATES SENT TO DASHBOARD
+   │
+   ▼
+┌─────────────────────────────────────────┐
+│  Agent → Dashboard Update               │
+│  ─────────────────────────              │
+│  // Agent calls API                     │
+│  POST /api/agents/backend/status        │
+│  {                                      │
+│    status: "busy",                      │
+│    activity: "Writing PaymentController │
+│               at line 45",              │
+│    progress: 67,                        │
+│    currentFile: "PaymentController.java"│
+│  }                                      │
+│  → io.emit('agentStatus', data)         │
+│  → Dashboard updates UI instantly       │
+└─────────────────────────────────────────┘
+   │
+   ▼
+4. LIVE CODE EDITS DISPLAYED
+   │
+   ▼
+┌─────────────────────────────────────────┐
+│  Code Editor Component (dashboard.html) │
+│  ────────────────────────────────────── │
+│  socket.on('codeEdit', (data) => {      │
+│    const editor = document.getElementBy │
+│      Id('code-editor');                 │
+│    editor.innerHTML = highlightCode(    │
+│      data.code                          │
+│    );                                   │
+│    // Scroll to changed lines           │
+│    scrollToLine(data.lineNumbers[0]);   │
+│  });                                    │
+└─────────────────────────────────────────┘
+```
+
+### Key Files & Their Roles
+
+| File | Role | Key Functions |
+|------|------|---------------|
+| `src/bot.js` | Telegram interface | Message handling, voice transcription, command parsing |
+| `src/agents/orchestrator.js` | Task router | `processCommand()`, `handlePlanTask()`, `handleAskTask()` |
+| `src/agents/planner.js` | Plan creation | `createPlan()`, `generatePlanWithMCP()` |
+| `src/agents/backend-dev.js` | Backend coding | `implementFeature()`, `writeTests()` |
+| `src/agents/frontend-dev.js` | Frontend coding | `implementUI()`, `fixRTL()` |
+| `src/agents/qa-tester.js` | Testing | `writeTests()`, `runTestSuite()` |
+| `src/agents/code-reviewer.js` | Review | `reviewCode()`, `securityAudit()` |
+| `src/autogen/group-chat.js` | Agent coordination | `executePlan()`, `manageConversation()` |
+| `src/dashboard/server.js` | Dashboard API | Real-time updates via Socket.io |
+| `src/utils/ai-client.js` | AI provider abstraction | `call()`, `callClaude()`, `callZhipu()` |
+| `src/utils/mcp-client.js` | MCP tool calling | `callTool()`, `listTools()` |
+
+### Data Flow Examples
+
+**Example 1: User sends `/plan Add payment API`**
+
+```javascript
+// 1. Telegram bot receives
+bot.onText(/\/plan (.+)/, handler)
+
+// 2. Orchestrator routes to planner
+orchestrator.handlePlanTask(parsed, context)
+
+// 3. Planner generates plan
+planner.createPlan({ task: "Add payment API", project })
+  → Calls AI: "Create implementation plan..."
+  → Returns structured plan
+
+// 4. Plan sent to Telegram with buttons
+bot.sendMessage(chatId, plan, { reply_markup: approveButtons })
+
+// 5. Dashboard notified
+fetch('/api/tasks', { method: 'POST', body: plan })
+io.emit('task', plan)  // Real-time to dashboard
+```
+
+**Example 2: User approves plan, agents execute**
+
+```javascript
+// 1. User clicks approve
+bot.on('callback_query', handler)
+  → orchestrator.executePlan(planId)
+
+// 2. AutoGen group chat starts
+groupChat.executePlan(plan)
+  → backendDev: "I'll implement the API"
+  → qaTester: "I'll prepare tests"
+
+// 3. Backend dev writes code
+backendDev.writeCode(plan.steps[0])
+  → mcpClient.callTool('filesystem', 'writeFile', ...)
+  → Dashboard: POST /api/code-edit
+  → io.emit('codeEdit', editData)
+
+// 4. QA tester reviews
+qaTester.reviewImplementation()
+  → mcpClient.callTool('docker', 'runTests', ...)
+  → Reports: "Tests passed!"
+
+// 5. Code reviewer approves
+codeReviewer.securityReview()
+  → Approves → Merge request created
+```
+
+### API Endpoints (Dashboard)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/status` | GET | Server status, uptime |
+| `/api/agents` | GET | List all agents with status |
+| `/api/agents/:name/status` | POST | Update agent status |
+| `/api/tasks` | GET/POST | List/create tasks |
+| `/api/tasks/:id/progress` | PUT | Update task progress |
+| `/api/code-edit` | POST | Stream code edits |
+| `/api/agent-communication` | POST | Agent chat messages |
+| `/api/activity` | GET | Recent activities |
+| `/api/gitlab/repos` | GET | List GitLab repositories |
+| `/api/ai/providers` | GET | Available AI providers |
+| `/api/ai/test` | POST | Test AI provider |
+| `/api/materials/stats` | GET | Subscribers stats |
+| `/api/materials/subscribers` | GET | List subscribers |
+
+### Socket.io Events
+
+| Event | Direction | Data |
+|-------|-----------|------|
+| `init` | Server → Client | Full dashboard state |
+| `agentStatus` | Server → Client | Agent status update |
+| `codeEdit` | Server → Client | Live code edit |
+| `agentCommunication` | Server → Client | Agent chat message |
+| `task` | Server → Client | Task created/updated |
+| `activity` | Server → Client | New activity logged |
+
 ### Complete Workflow Diagram
 
 ```
