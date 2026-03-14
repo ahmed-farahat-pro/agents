@@ -1117,18 +1117,18 @@ async function sendRoadmapEmail(subscriber, roadmap) {
   const mailOptions = {
     from: `"Nigents" <${gmailUser}>`,
     to: email,
-    subject: `🎓 Your ${roadmapTitle} Developer Roadmap`,
+    subject: `Your ${roadmapTitle} Developer Roadmap`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
           <h1 style="color: #fff; margin: 0; font-size: 24px;">Nigents Learning</h1>
         </div>
         <div style="background: #fff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
-          <h2 style="color: #10b981; margin-top: 0;">Hi ${displayName}! 👋</h2>
+          <h2 style="color: #10b981; margin-top: 0;">Hi ${displayName}!</h2>
           <p>Thank you for subscribing! Here's your <strong>${roadmapTitle} Developer Roadmap</strong>.</p>
           
           <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-            <p style="margin: 0 0 15px 0; font-size: 16px;">📥 Download your PDF:</p>
+            <p style="margin: 0 0 15px 0; font-size: 16px;">Download your PDF:</p>
             <a href="https://nigents.com/materials/${roadmap}-roadmap.pdf" 
                style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600;">
                Download ${roadmapTitle} Roadmap
@@ -1351,10 +1351,10 @@ app.post('/api/materials/test-email', async (req, res) => {
     const result = await transporter.sendMail({
       from: `"Nigents Test" <${gmailUser}>`,
       to: to,
-      subject: '🧪 Test Email from Nigents',
+      subject: 'Test Email from Nigents',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-          <h2 style="color: #6366f1;">🧪 Test Email</h2>
+          <h2 style="color: #6366f1;">Test Email</h2>
           <p>This is a test email from your Nigents server.</p>
           <p>If you're receiving this, email configuration is working correctly!</p>
           <p>Time sent: ${new Date().toISOString()}</p>
@@ -1362,7 +1362,7 @@ app.post('/api/materials/test-email', async (req, res) => {
           <p style="color: #6b7280; font-size: 12px;">Sent from Nigents Dashboard</p>
         </div>
       `,
-      text: `🧪 Test Email\n\nThis is a test email from your Nigents server.\nIf you're receiving this, email configuration is working correctly!\n\nTime sent: ${new Date().toISOString()}`,
+      text: `Test Email\n\nThis is a test email from your Nigents server.\nIf you're receiving this, email configuration is working correctly!\n\nTime sent: ${new Date().toISOString()}`,
     });
     
     logger.info(`[TestEmail] Test email sent successfully to ${to}`);

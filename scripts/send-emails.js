@@ -62,10 +62,10 @@ async function sendRoadmapEmail(transporter, subscriber) {
   const mailOptions = {
     from: `"Nigents Learning" <${GMAIL_USER}>`,
     to: email,
-    subject: '🎓 Your Free Learning Roadmap is Here!',
+    subject: 'Your Free Learning Roadmap is Here!',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #10b981;">Hi ${displayName}! 👋</h2>
+        <h2 style="color: #10b981;">Hi ${displayName}!</h2>
         
         <p>Thank you for subscribing! Here are your requested roadmaps:</p>
         
@@ -143,7 +143,7 @@ async function sendToAll(options = {}) {
       subject: subject,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #10b981;">Hi ${displayName}! 👋</h2>
+          <h2 style="color: #10b981;">Hi ${displayName}!</h2>
           <div>${message}</div>
           <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
           <p style="color: #6b7280; font-size: 12px;">
@@ -257,17 +257,17 @@ Setup Gmail:
       const result = await transporter.sendMail({
         from: `"Nigents Learning" <${GMAIL_USER}>`,
         to: testEmail,
-        subject: '🧪 Test Email from Nigents',
+        subject: 'Test Email from Nigents',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #10b981;">🧪 Test Email</h2>
+            <h2 style="color: #10b981;">Test Email</h2>
             <p>This is a test email from your Nigents email sender.</p>
             <p>If you're seeing this, your Gmail configuration is working!</p>
             <hr style="margin: 30px 0;">
             <p style="color: #6b7280; font-size: 12px;">Sent from Nigents Dashboard</p>
           </div>
         `,
-        text: '🧪 Test Email\n\nThis is a test email from your Nigents email sender.\nIf you\'re seeing this, your Gmail configuration is working!',
+        text: 'Test Email\n\nThis is a test email from your Nigents email sender.\nIf you\'re seeing this, your Gmail configuration is working!',
       });
 
       console.log('✅ Test email sent successfully!');
