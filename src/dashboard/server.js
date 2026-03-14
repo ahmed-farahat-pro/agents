@@ -1052,6 +1052,176 @@ app.post('/api/ai/models', async (req, res) => {
 });
 
 // ============================================================================
+// Free Materials API
+// ============================================================================
+
+const SUBSCRIBERS_FILE = path.join(MATERIALS_DATA_DIR, 'subscribers.json');
+const DOWNLOADS_FILE = path.join(MATERIALS_DATA_DIR, 'downloads.json');
+
+// Ensure data directory exists
+if (!fs.existsSync(MATERIALS_DATA_DIR)) {
+  fs.mkdirSync(MATERIALS_DATA_DIR, { recursive: true });
+}
+
+// Load subscribers
+function loadSubscribers() {
+  try {
+    if (fs.existsSync(SUBSCRIBERS_FILE)) {
+      return JSON.parse(fs.readFileSync(SUBSCRIBERS_FILE, 'utf8'));
+    }
+  } catch (error) {
+    logger.error('[Dashboard] Error loading subscribers:', error);
+  }
+  return {};
+}
+
+// Save subscribers
+function saveSubscribers(subscribers) {
+  try {
+    fs.writeFileSync(SUBSCRIBERS_FILE, JSON.stringify(subscribers, null, 2));
+    return true;
+  } catch (error) {
+    logger.error('[Dashboard] Error saving subscribers:', error);
+    return false;
+  }
+}
+
+// Load downloads
+function loadDownloads() {
+  try {
+    if (fs.existsSync(DOWNLOADS_FILE)) {
+      return JSON.parse(fs.readFileSync(DOWNLOADS_FILE, 'utf8'));
+    }
+  } catch (error) {
+    logger.error('[Dashboard] Error loading downloads:', error);
+  }
+  return [];
+}
+
+// Save download
+function saveDownload(download) {
+  try {
+    const downloads = loadDownloads();
+    downloads.push({
+      ...download,
+      timestamp: new Date().toISOString(),
+    });
+    fs.writeFileSync(DOWNLOADS_FILE, JSON.stringify(downloads, null, 2));
+    return true;
+  } catch (error) {
+    logger.error('[Dashboard] Error saving download:', error);
+    return false;
+  }
+}
+
+// Subscribe to free materials
+app.post('/api/materials/subscribe', (req, res) => {
+  try {
+    const { email, name, roadmap } = req.body;
+    
+    if (!email || !roadmap) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email and roadmap are required',
+      });
+    }
+    
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid email address',
+      });
+    }
+    
+    const subscribers = loadSubscribers();
+    
+    // Check if already subscribed
+    if (subscribers[email]) {
+      // Add roadmap to their list if not already there
+      if (!subscribers[email].roadmaps.includes(roadmap)) {
+        subscribers[email].roadmaps.push(roadmap);
+        saveSubscribers(subscribers);
+      }
+      
+      return res.json({
+        success: true,
+        message: 'Welcome back! Download your roadmap below.',
+        existing: true,
+      });
+    }
+    
+    // New subscriber
+    subscribers[email] = {
+      email,
+      name: name || '',
+      roadmaps: [roadmap],
+      subscribedAt: new Date().toISOString(),
+      updatesEnabled: true,
+    };
+    
+    saveSubscribers(subscribers);
+    
+    logger.info(`[Dashboard] New subscriber: ${email} for ${roadmap}`);
+    
+    res.json({
+      success: true,
+      message: 'Thank you! Your roadmap is ready for download.',
+      existing: false,
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Subscribe error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process subscription',
+    });
+  }
+});
+
+// Track download
+app.post('/api/materials/download', (req, res) => {
+  try {
+    const { email, roadmap, filename } = req.body;
+    
+    saveDownload({
+      email,
+      roadmap,
+      filename,
+      ip: req.ip,
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('[Dashboard] Download tracking error:', error);
+    res.status(500).json({ success: false });
+  }
+});
+
+// Get subscribers count (admin)
+app.get('/api/materials/stats', (req, res) => {
+  try {
+    const subscribers = loadSubscribers();
+    const downloads = loadDownloads();
+    
+    res.json({
+      success: true,
+      totalSubscribers: Object.keys(subscribers).length,
+      totalDownloads: downloads.length,
+      roadmaps: {
+        fullstack: downloads.filter(d => d.roadmap === 'fullstack').length,
+        backend: downloads.filter(d => d.roadmap === 'backend').length,
+        frontend: downloads.filter(d => d.roadmap === 'frontend').length,
+        qa: downloads.filter(d => d.roadmap === 'qa').length,
+      },
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Stats error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ============================================================================
 // Socket.IO
 // ============================================================================
 
