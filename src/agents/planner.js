@@ -186,7 +186,8 @@ class PlannerAgent extends BaseAgent {
    * Generate plan with MCP tool assistance
    */
   async generatePlanWithMCP(task, codebaseAnalysis, project, preferredProvider = null, preferredModel = null) {
-    const prompt = `You are a technical planner. Create a detailed implementation plan.
+    const prompt = `
+Create a detailed implementation plan for the following task:
 
 TASK: ${task}
 ${project ? `PROJECT: ${project}` : ''}
@@ -209,34 +210,37 @@ ${f.content.substring(0, 1000)}
 `).join('\n')}
 ` : ''}
 
-IMPORTANT: Respond ONLY with valid JSON. No markdown, no explanations, just JSON.
+Create a structured implementation plan with:
+1. Title
+2. Description
+3. Step-by-step implementation steps
+4. Files to modify/create
+5. Complexity estimate (S/M/L)
+6. Estimated time
+7. Dependencies
+8. Testing considerations
 
-Required JSON format:
+Respond with valid JSON in this format:
 {
-  "title": "Implement User Authentication API",
-  "description": "Add JWT-based authentication with login/logout endpoints",
-  "complexity": "M",
-  "estimatedHours": 4,
+  "title": "Brief title",
+  "description": "Detailed description",
+  "complexity": "S|M|L",
+  "estimatedHours": number,
   "steps": [
     {
       "order": 1,
-      "description": "Create AuthController with login endpoint",
-      "files": ["src/controllers/AuthController.java"],
-      "type": "create"
-    },
-    {
-      "order": 2,
-      "description": "Add JWT token generation service",
-      "files": ["src/services/JwtService.java"],
-      "type": "create"
+      "description": "What to do",
+      "files": ["file1.java", "file2.java"],
+      "type": "create|modify|delete"
     }
   ],
-  "filesToModify": [],
-  "filesToCreate": ["src/controllers/AuthController.java", "src/services/JwtService.java"],
-  "dependencies": ["jwt-library"],
-  "testingNotes": "Test with valid and invalid credentials",
-  "branch": "nigents/task-${Date.now()}"
-}`}};
+  "filesToModify": ["path/to/file1", "path/to/file2"],
+  "filesToCreate": ["path/to/newfile"],
+  "dependencies": ["dep1", "dep2"],
+  "testingNotes": "What needs to be tested",
+  "branch": "nigents/task-{timestamp}"
+}
+`;
 
     // Try MCP first, fall back to direct AI call
     let result;
@@ -268,63 +272,20 @@ Required JSON format:
     if (!result.success) {
       throw new Error('Failed to generate plan: ' + result.error);
     }
-    
-    // Log the raw response for debugging
-    logger.info(`[Planner] Raw AI response length: ${result.content.length}`);
-    logger.debug(`[Planner] Raw AI response: ${result.content.substring(0, 500)}...`);
 
-    // Extract JSON from response - try multiple approaches
+    // Extract JSON from response
     let plan;
-    let parseAttempts = [];
-    
     try {
-      // Attempt 1: Try to find JSON between triple backticks
-      const codeBlockMatch = result.content.match(/```(?:json)?\s*([\s\S]*?)```/);
-      if (codeBlockMatch) {
-        parseAttempts.push('code block');
-        plan = JSON.parse(codeBlockMatch[1].trim());
+      const jsonMatch = result.content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('Could not parse plan JSON from response');
       }
-      
-      // Attempt 2: Try to find JSON between curly braces
-      if (!plan) {
-        const jsonMatch = result.content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          parseAttempts.push('curly braces');
-          plan = JSON.parse(jsonMatch[0]);
-        }
-      }
-      
-      // Attempt 3: Try the whole content
-      if (!plan) {
-        parseAttempts.push('full content');
-        plan = JSON.parse(result.content.trim());
-      }
-      
-      if (!plan) {
-        throw new Error('Could not extract JSON from response');
-      }
-      
-      logger.info(`[Planner] JSON parsed successfully using: ${parseAttempts.join(', ')}`);
-      
+
+      plan = JSON.parse(jsonMatch[0]);
     } catch (parseError) {
-      logger.error('[Planner] Failed to parse plan JSON after all attempts:', parseError);
-      logger.error('[Planner] Raw response:', result.content.substring(0, 1000));
-      
-      // Fallback: Create a basic plan from the raw content
-      logger.warn('[Planner] Creating fallback plan from raw content');
-      plan = {
-        title: task.substring(0, 50),
-        description: result.content.substring(0, 500),
-        complexity: 'M',
-        estimatedHours: 2,
-        steps: [{ order: 1, description: 'Review the generated plan and break it down into steps', files: [], type: 'review' }],
-        filesToModify: [],
-        filesToCreate: [],
-        dependencies: [],
-        testingNotes: 'Manual testing required',
-        _parseError: true,
-        _rawResponse: result.content.substring(0, 1000),
-      };
+      logger.error('[Planner] Failed to parse plan JSON:', parseError);
+      logger.error('[Planner] Raw response:', result.content.substring(0, 500));
+      throw new Error('Failed to parse plan: ' + parseError.message);
     }
     
     // Ensure required fields exist
