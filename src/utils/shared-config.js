@@ -189,6 +189,12 @@ class SharedConfig {
     return this.loadConfig();
   }
 
+  // Get custom models/providers
+  getCustomProviders() {
+    const config = this.loadConfig();
+    return config.customModels || {};
+  }
+
   // Apply to environment - call this after loading
   applyToEnv() {
     const config = this.loadConfig();

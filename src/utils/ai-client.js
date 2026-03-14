@@ -686,7 +686,9 @@ class AIClient {
         }
         return this.callDeepseek(prompt, options);
       default:
-        throw new Error(`Unknown provider: ${provider}`);
+        const availableProviders = Object.keys(this.providers).join(', ');
+        logger.error(`[AIClient] Unknown provider: ${provider}. Available: ${availableProviders}`);
+        throw new Error(`Unknown provider: ${provider}. Available: ${availableProviders}`);
     }
   }
 
