@@ -116,26 +116,42 @@ deploy-to-ec2:
       echo "  NIGENTS DEPLOYMENT - DATA PRESERVING"
       echo "=========================================="
 
+      DEPLOY_DIR=/home/ubuntu/nigents
+      DATA_DIR=$DEPLOY_DIR/data
+      BACKUP_DIR=/home/ubuntu/nigents-backups
+
       echo "Navigating to project directory..."
-      cd /home/ubuntu/nigents
+      cd $DEPLOY_DIR
+
+      echo "Creating backup directory..."
+      mkdir -p $BACKUP_DIR
 
       echo "Creating data directories if not exist..."
       mkdir -p data logs .cache
 
-      echo "Backing up local data (just in case)..."
-      if [ -d "data" ]; then
-        cp -r data data.backup.$(date +%Y%m%d_%H%M%S) 2>/dev/null || true
+      echo "Backing up data BEFORE deployment..."
+      if [ -d "$DATA_DIR" ] && [ "$(ls -A $DATA_DIR)" ]; then
+        BACKUP_NAME="data.backup.$(date +%Y%m%d_%H%M%S)"
+        cp -r $DATA_DIR $BACKUP_DIR/$BACKUP_NAME
+        echo "Data backed up to: $BACKUP_DIR/$BACKUP_NAME"
+        ls -la $BACKUP_DIR/$BACKUP_NAME/
+      else
+        echo "WARNING: Data directory is empty or does not exist!"
       fi
 
-      echo "Stashing any local changes..."
-      git stash || true
+      echo "Saving pending plans info..."
+      if [ -f "$DATA_DIR/pending-plans.json" ]; then
+        echo "Pending plans BEFORE update:"
+        cat $DATA_DIR/pending-plans.json | head -20
+      fi
 
       echo "Pulling latest changes..."
       git fetch origin
-      git pull origin main
+      git reset --hard origin/main
 
-      echo "Restoring data if needed..."
-      # Data directory is preserved as it's in .gitignore
+      echo "Restoring data directory..."
+      # Ensure data directory still exists (git reset might have removed it)
+      mkdir -p $DATA_DIR
 
       echo "Installing dependencies..."
       npm ci --production
@@ -144,6 +160,14 @@ deploy-to-ec2:
       cd mcp-servers/arabic-rtl-auditor && npm ci && npm run build && cd ../..
       cd mcp-servers/task-splitter && npm ci && npm run build && cd ../..
       cd mcp-servers/smart-code-search && npm ci && npm run build && cd ../..
+
+      echo "Verifying data after build..."
+      if [ -f "$DATA_DIR/pending-plans.json" ]; then
+        echo "Pending plans AFTER build:"
+        cat $DATA_DIR/pending-plans.json | head -20
+      else
+        echo "WARNING: pending-plans.json not found after build!"
+      fi
 
       echo "Restarting services with PM2 ecosystem..."
       if [ -f "ecosystem.config.js" ]; then
@@ -159,8 +183,15 @@ deploy-to-ec2:
       echo "=========================================="
       pm2 status
       echo ""
-      echo "Data directories preserved:"
-      ls -la data/ 2>/dev/null || echo "  (data directory is empty)"
+      echo "Data directory contents:"
+      ls -la $DATA_DIR/ 2>/dev/null || echo "  (data directory is empty)"
+      echo ""
+      echo "Pending plans count:"
+      if [ -f "$DATA_DIR/pending-plans.json" ]; then
+        cat $DATA_DIR/pending-plans.json | grep -o '"task"' | wc -l
+      else
+        echo "0 (file not found)"
+      fi
       EOF
 
     - scp -o StrictHostKeyChecking=no deploy.sh "${SSH_USER}@${EC2_HOST}:/tmp/deploy.sh"

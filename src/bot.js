@@ -142,6 +142,7 @@ Send voice notes or text naturally:
 
 **Quick Commands:**
 • /plan <task> — Create implementation plan
+• /plans — List your pending plans
 • /approve — Approve plan
 • /projects — List projects
 • /project <id> — Switch project
@@ -209,6 +210,32 @@ bot.onText(/\/clearhistory/, async (msg) => {
   await bot.sendMessage(msg.chat.id, 'Chat history cleared.');
 });
 
+// /plans command - List all pending plans
+bot.onText(/\/plans/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const allPlans = chatStorage.getAllPendingPlans();
+  const planEntries = Object.entries(allPlans);
+  
+  if (planEntries.length === 0) {
+    await bot.sendMessage(msg.chat.id, '**No Pending Plans**\n\nUse `/plan <task>` to create a new plan.', { parse_mode: 'Markdown' });
+    return;
+  }
+  
+  let message = `**Pending Plans (${planEntries.length})**\n\n`;
+  
+  planEntries.forEach(([userId, plan], index) => {
+    const age = Math.round((Date.now() - plan.createdAt) / 1000 / 60);
+    message += `${index + 1}. **${plan.task}**\n`;
+    message += `   User: ${plan.username || userId}\n`;
+    message += `   Age: ${age} minutes ago\n\n`;
+  });
+  
+  message += 'Use `/planwith <project-id>` to select a project for your plan.';
+  
+  await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+});
+
 // /debug command - Show debug info
 bot.onText(/\/debug/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
@@ -219,6 +246,7 @@ bot.onText(/\/debug/, async (msg) => {
   
   let message = '**Debug Info**\n\n';
   message += `Data Directory: \`${stats.dataDir}\`\n`;
+  message += `Files exist: ${JSON.stringify(stats.files)}\n\n`;
   message += `Pending Plans: ${stats.pendingPlansCount}\n`;
   message += `Chat Histories: ${stats.chatHistoryCount}\n`;
   message += `User Settings: ${stats.userSettingsCount}\n\n`;
