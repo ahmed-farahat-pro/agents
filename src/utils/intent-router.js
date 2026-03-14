@@ -51,13 +51,17 @@ Available intents:
 4. MODEL_SWITCH - User wants to change AI model/provider (e.g., "use Claude", "switch to Moonshot")
 5. MODEL_LIST - User wants to see available AI models (e.g., "what models available", "show AI providers")
 6. STATUS - User wants to check current status (e.g., "what's the status", "how is my task")
-7. APPROVE - User wants to approve a pending plan (e.g., "approve", "yes go ahead")
-8. ASK - User is asking a question about code (e.g., "how does auth work", "explain this function")
-9. CHAT - User wants to chat with a specific agent (e.g., "talk to backend dev", "ask planner")
-10. CANCEL - User wants to cancel a task (e.g., "cancel this", "stop the task")
-11. HELP - User wants help or command list (e.g., "help", "what can you do")
-12. GREETING - User is just greeting (e.g., "hello", "hi", "good morning")
-13. UNKNOWN - Cannot determine intent
+7. QUEUE - User wants to see the task queue/list (e.g., "show my tasks", "list pending tasks", "what's in the queue")
+8. APPROVE - User wants to approve a pending plan (e.g., "approve", "yes go ahead")
+9. ASK - User is asking a question about code (e.g., "how does auth work", "explain this function")
+10. CHAT - User wants to chat with a specific agent (e.g., "talk to backend dev", "ask planner")
+11. CANCEL - User wants to cancel a queued/approved task (e.g., "cancel task abc123", "remove from queue")
+12. STOP - User wants to stop a running task (e.g., "stop the running task", "stop task abc123")
+13. REMOVE - User wants to remove a pending plan (e.g., "remove pending plan", "delete plan abc123")
+14. CLEAR - User wants to clear completed tasks (e.g., "clear history", "clean up completed tasks")
+15. HELP - User wants help or command list (e.g., "help", "what can you do")
+16. GREETING - User is just greeting (e.g., "hello", "hi", "good morning")
+17. UNKNOWN - Cannot determine intent
 
 Extract:
 - intent: The primary intent from the list above
@@ -71,13 +75,14 @@ Extract:
 
 Respond with JSON only:
 {
-  "intent": "PLAN|PROJECT_SWITCH|PROJECT_LIST|MODEL_SWITCH|MODEL_LIST|STATUS|APPROVE|ASK|CHAT|CANCEL|HELP|GREETING|UNKNOWN",
+  "intent": "PLAN|PROJECT_SWITCH|PROJECT_LIST|MODEL_SWITCH|MODEL_LIST|STATUS|QUEUE|APPROVE|ASK|CHAT|CANCEL|STOP|REMOVE|CLEAR|HELP|GREETING|UNKNOWN",
   "confidence": "high|medium|low",
   "extracted_task": "the task if PLAN",
   "extracted_project": "project name if PROJECT_SWITCH",
   "extracted_model": "model name if MODEL_SWITCH",
   "extracted_agent": "agent name if CHAT",
   "extracted_question": "question if ASK",
+  "extracted_task_id": "task ID if CANCEL/STOP/REMOVE",
   "language": "en|ar|other",
   "response_message": "suggested response to user"
 }`;
@@ -237,10 +242,43 @@ Respond with JSON only:
             : `I'll connect you with: ${extracted_agent}`,
         };
 
+      case 'QUEUE':
+        return {
+          type: 'QUEUE',
+          message: 'Here is your task queue:',
+        };
+
       case 'CANCEL':
         return {
           type: 'CANCEL',
-          message: 'Which task would you like to cancel?',
+          taskId: intent.extracted_task_id,
+          message: intent.extracted_task_id 
+            ? `Cancelling task: ${intent.extracted_task_id}`
+            : 'Which task would you like to cancel? Use /queue to see task IDs.',
+        };
+
+      case 'STOP':
+        return {
+          type: 'STOP',
+          taskId: intent.extracted_task_id,
+          message: intent.extracted_task_id
+            ? `Stopping task: ${intent.extracted_task_id}`
+            : 'Which running task would you like to stop? Use /queue to see task IDs.',
+        };
+
+      case 'REMOVE':
+        return {
+          type: 'REMOVE',
+          taskId: intent.extracted_task_id,
+          message: intent.extracted_task_id
+            ? `Removing pending plan: ${intent.extracted_task_id}`
+            : 'Which pending plan would you like to remove? Use /queue to see task IDs.',
+        };
+
+      case 'CLEAR':
+        return {
+          type: 'CLEAR',
+          message: 'Clearing completed tasks history...',
         };
 
       case 'HELP':

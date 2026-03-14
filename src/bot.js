@@ -108,8 +108,11 @@ Send voice notes or text naturally:
 
 **Management:**
 • /run — Start implementation now
-• /queue — List queued tasks
-• /cancel <id> — Cancel task
+• /queue — List all tasks with IDs
+• /cancel <id> — Cancel a queued/approved task
+• /stop <id> — Stop a running task
+• /remove <id> — Remove a pending plan
+• /clear — Clear all completed/cancelled tasks
 
 I understand Arabic and English voice messages!
 `;
@@ -350,6 +353,75 @@ bot.onText(/\/ask (.+)/, async (msg, match) => {
   }
 });
 
+// /queue command - List all tasks with their IDs
+bot.onText(/\/queue/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  await bot.sendChatAction(msg.chat.id, 'typing');
+
+  const result = await orchestrator.processCommand('/queue', {});
+  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+});
+
+// /cancel command - Cancel a queued or approved task
+bot.onText(/\/cancel (.+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const taskId = match[1].trim();
+  await bot.sendChatAction(msg.chat.id, 'typing');
+
+  const result = await orchestrator.processCommand(`/cancel ${taskId}`, {
+    userId: msg.from.id,
+    chatId: msg.chat.id,
+  });
+
+  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+});
+
+// /stop command - Stop a running task
+bot.onText(/\/stop (.+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const taskId = match[1].trim();
+  await bot.sendChatAction(msg.chat.id, 'typing');
+
+  const result = await orchestrator.processCommand(`/stop ${taskId}`, {
+    userId: msg.from.id,
+    chatId: msg.chat.id,
+  });
+
+  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+});
+
+// /remove command - Remove a pending plan (waiting for approval)
+bot.onText(/\/remove (.+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const taskId = match[1].trim();
+  await bot.sendChatAction(msg.chat.id, 'typing');
+
+  const result = await orchestrator.processCommand(`/remove ${taskId}`, {
+    userId: msg.from.id,
+    chatId: msg.chat.id,
+  });
+
+  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+});
+
+// /clear command - Clear all completed and cancelled tasks
+bot.onText(/\/clear/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  await bot.sendChatAction(msg.chat.id, 'typing');
+
+  const result = await orchestrator.processCommand('/clear', {
+    userId: msg.from.id,
+    chatId: msg.chat.id,
+  });
+
+  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+});
+
 // ============================================================================
 // VOICE MESSAGE HANDLER
 // ============================================================================
@@ -440,6 +512,38 @@ bot.on('voice', async (msg) => {
         
       case 'APPROVE':
         bot.emitText(msg, '/approve');
+        break;
+      
+      case 'QUEUE':
+        bot.emitText(msg, '/queue');
+        break;
+      
+      case 'CANCEL':
+        if (intentResult.extracted_task_id) {
+          bot.emitText(msg, `/cancel ${intentResult.extracted_task_id}`);
+        } else {
+          await bot.sendMessage(msg.chat.id, 'Please specify which task to cancel. Say something like "cancel task abc123" or use /queue to see task IDs.');
+        }
+        break;
+      
+      case 'STOP':
+        if (intentResult.extracted_task_id) {
+          bot.emitText(msg, `/stop ${intentResult.extracted_task_id}`);
+        } else {
+          await bot.sendMessage(msg.chat.id, 'Please specify which task to stop. Say something like "stop task abc123" or use /queue to see task IDs.');
+        }
+        break;
+      
+      case 'REMOVE':
+        if (intentResult.extracted_task_id) {
+          bot.emitText(msg, `/remove ${intentResult.extracted_task_id}`);
+        } else {
+          await bot.sendMessage(msg.chat.id, 'Please specify which pending plan to remove. Say something like "remove plan abc123" or use /queue to see task IDs.');
+        }
+        break;
+      
+      case 'CLEAR':
+        bot.emitText(msg, '/clear');
         break;
         
       case 'GREETING':

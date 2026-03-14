@@ -69,6 +69,18 @@ class OrchestratorAgent extends BaseAgent {
         case 'cancel':
           return await this.handleCancelTask(parsed, context, taskId);
         
+        case 'stop':
+          return await this.handleStopTask(parsed, context, taskId);
+        
+        case 'remove':
+          return await this.handleRemoveTask(parsed, context, taskId);
+        
+        case 'clear':
+          return await this.handleClearTasks(parsed, context, taskId);
+        
+        case 'queue':
+          return await this.handleQueueList(parsed, context, taskId);
+        
         default:
           return {
             success: false,
@@ -136,8 +148,26 @@ class OrchestratorAgent extends BaseAgent {
       };
     }
     
+    if (lowerCmd.startsWith('/stop ')) {
+      return {
+        type: 'stop',
+        taskId: command.substring(6).trim(),
+      };
+    }
+    
+    if (lowerCmd.startsWith('/remove ')) {
+      return {
+        type: 'remove',
+        taskId: command.substring(8).trim(),
+      };
+    }
+    
+    if (lowerCmd === '/clear') {
+      return { type: 'clear' };
+    }
+    
     if (lowerCmd === '/queue') {
-      return { type: 'status' };
+      return { type: 'queue' };
     }
 
     // Use Claude to understand natural language intent
@@ -439,15 +469,90 @@ Provide a helpful answer. If the question is about specific code and you don't h
   }
 
   /**
-   * Handle cancel task
+   * Handle queue list - show all tasks with their IDs
+   */
+  async handleQueueList(parsed, context, taskId) {
+    if (this.taskQueue.length === 0 && this.completedTasks.length === 0) {
+      return {
+        success: true,
+        message: '**Task Queue is empty**\n\nNo tasks pending or completed. Use /plan to create a new task.',
+      };
+    }
+
+    let message = '**Task Queue**\n\n';
+
+    // Pending Approval tasks
+    const pendingApproval = this.taskQueue.filter(t => t.status === 'pending_approval');
+    if (pendingApproval.length > 0) {
+      message += '**📝 Pending Approval:**\n';
+      pendingApproval.forEach(t => {
+        const shortId = t.id.substring(0, 8);
+        message += `• \`${shortId}\` - ${t.plan?.title || t.task || 'Unknown task'}\n`;
+      });
+      message += '\n';
+    }
+
+    // Approved/Queued tasks
+    const queued = this.taskQueue.filter(t => t.status === 'approved');
+    if (queued.length > 0) {
+      message += '**⏳ Queued (Approved):**\n';
+      queued.forEach(t => {
+        const shortId = t.id.substring(0, 8);
+        message += `• \`${shortId}\` - ${t.plan?.title || t.task || 'Unknown task'}\n`;
+      });
+      message += '\n';
+    }
+
+    // Running tasks
+    const running = this.taskQueue.filter(t => t.status === 'running');
+    if (running.length > 0) {
+      message += '**🔄 Running:**\n';
+      running.forEach(t => {
+        const shortId = t.id.substring(0, 8);
+        message += `• \`${shortId}\` - ${t.plan?.title || t.task || 'Unknown task'}\n`;
+      });
+      message += '\n';
+    }
+
+    // Completed tasks
+    if (this.completedTasks.length > 0) {
+      message += `**✅ Completed (${this.completedTasks.length}):**\n`;
+      this.completedTasks.slice(-5).forEach(t => {
+        const shortId = t.id.substring(0, 8);
+        const status = t.status === 'completed' ? '✓' : '✗';
+        message += `${status} \`${shortId}\` - ${t.plan?.title || t.task || 'Unknown task'}\n`;
+      });
+      message += '\n';
+    }
+
+    message += '**Commands:**\n';
+    message += '`/cancel <id>` - Cancel queued/approved task\n';
+    message += '`/stop <id>` - Stop running task\n';
+    message += '`/remove <id>` - Remove pending plan\n';
+    message += '`/clear` - Clear completed tasks';
+
+    return {
+      success: true,
+      message,
+      queue: {
+        pendingApproval: pendingApproval.length,
+        queued: queued.length,
+        running: running.length,
+        completed: this.completedTasks.length,
+      },
+    };
+  }
+
+  /**
+   * Handle cancel task - cancel queued or approved tasks
    */
   async handleCancelTask(parsed, context, taskId) {
-    const taskIndex = this.taskQueue.findIndex(t => t.id === parsed.taskId);
+    const taskIndex = this.taskQueue.findIndex(t => t.id.startsWith(parsed.taskId) || t.id === parsed.taskId);
     
     if (taskIndex === -1) {
       return {
         success: false,
-        message: `Task ${parsed.taskId} not found.`,
+        message: `Task \`${parsed.taskId}\` not found. Use /queue to see all tasks with IDs.`,
       };
     }
 
@@ -456,7 +561,79 @@ Provide a helpful answer. If the question is about specific code and you don't h
     if (task.status === 'running') {
       return {
         success: false,
-        message: `Task ${parsed.taskId} is currently running and cannot be cancelled.`,
+        message: `Task \`${parsed.taskId}\` is currently running. Use /stop to stop it.`,
+      };
+    }
+
+    // Move to completed with cancelled status
+    task.status = 'cancelled';
+    this.completedTasks.push(task);
+    this.taskQueue.splice(taskIndex, 1);
+
+    return {
+      success: true,
+      message: `✅ Task \`${parsed.taskId}\` has been cancelled.`,
+    };
+  }
+
+  /**
+   * Handle stop task - stop a running task
+   */
+  async handleStopTask(parsed, context, taskId) {
+    const taskIndex = this.taskQueue.findIndex(t => t.id.startsWith(parsed.taskId) || t.id === parsed.taskId);
+    
+    if (taskIndex === -1) {
+      return {
+        success: false,
+        message: `Task \`${parsed.taskId}\` not found. Use /queue to see all tasks with IDs.`,
+      };
+    }
+
+    const task = this.taskQueue[taskIndex];
+    
+    if (task.status !== 'running') {
+      return {
+        success: false,
+        message: `Task \`${parsed.taskId}\` is not running (status: ${task.status}). Use /cancel to remove it.`,
+      };
+    }
+
+    // Signal the task to stop (best effort)
+    task.status = 'stopped';
+    task.stoppedAt = new Date().toISOString();
+    
+    // Move to completed
+    this.completedTasks.push(task);
+    this.taskQueue.splice(taskIndex, 1);
+
+    // Emit stop event so agents can clean up
+    this.emit('taskStopped', { taskId: task.id, task });
+
+    return {
+      success: true,
+      message: `🛑 Task \`${parsed.taskId}\` has been stopped.`,
+    };
+  }
+
+  /**
+   * Handle remove task - remove a pending approval task
+   */
+  async handleRemoveTask(parsed, context, taskId) {
+    const taskIndex = this.taskQueue.findIndex(t => t.id.startsWith(parsed.taskId) || t.id === parsed.taskId);
+    
+    if (taskIndex === -1) {
+      return {
+        success: false,
+        message: `Task \`${parsed.taskId}\` not found. Use /queue to see all tasks with IDs.`,
+      };
+    }
+
+    const task = this.taskQueue[taskIndex];
+    
+    if (task.status !== 'pending_approval') {
+      return {
+        success: false,
+        message: `Task \`${parsed.taskId}\` is ${task.status}. Use /cancel or /stop instead.`,
       };
     }
 
@@ -464,7 +641,25 @@ Provide a helpful answer. If the question is about specific code and you don't h
 
     return {
       success: true,
-      message: `✅ Task ${parsed.taskId} has been cancelled.`,
+      message: `🗑️ Pending plan \`${parsed.taskId}\` has been removed.`,
+    };
+  }
+
+  /**
+   * Handle clear tasks - clear completed and cancelled tasks
+   */
+  async handleClearTasks(parsed, context, taskId) {
+    const beforeCount = this.completedTasks.length;
+    
+    // Keep only the last 10 completed tasks
+    this.completedTasks = this.completedTasks.slice(-10);
+    
+    const clearedCount = beforeCount - this.completedTasks.length;
+
+    return {
+      success: true,
+      message: `🧹 Cleared ${clearedCount} completed/cancelled tasks. Keeping last 10 for reference.`,
+      cleared: clearedCount,
     };
   }
 
