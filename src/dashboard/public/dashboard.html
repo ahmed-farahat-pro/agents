@@ -1988,6 +1988,11 @@
                         <div class="nav-indicator"></div>
                         <span>Settings</span>
                     </div>
+                    <div class="nav-item" data-view="subscribers">
+                        <div class="nav-indicator"></div>
+                        <span>Subscribers</span>
+                        <span class="nav-badge" id="subscriber-count">0</span>
+                    </div>
                     <a href="/logs.html" style="text-decoration: none; color: inherit;">
                         <div class="nav-item">
                             <div class="nav-indicator"></div>
@@ -2431,6 +2436,139 @@
                     </div>
                 </div>
 
+                <!-- Subscribers View -->
+                <div class="view" id="view-subscribers">
+                    <div class="stats-grid">
+                        <div class="stat-card primary">
+                            <div class="stat-header">
+                                <span class="stat-label">Total Subscribers</span>
+                                <div class="stat-icon">👥</div>
+                            </div>
+                            <div class="stat-value" id="subscribers-total">0</div>
+                            <div class="stat-change">Email subscribers</div>
+                        </div>
+                        <div class="stat-card success">
+                            <div class="stat-header">
+                                <span class="stat-label">Downloads</span>
+                                <div class="stat-icon">📥</div>
+                            </div>
+                            <div class="stat-value" id="downloads-total">0</div>
+                            <div class="stat-change">Total PDF downloads</div>
+                        </div>
+                        <div class="stat-card warning">
+                            <div class="stat-header">
+                                <span class="stat-label">Fullstack</span>
+                                <div class="stat-icon">💻</div>
+                            </div>
+                            <div class="stat-value" id="subscribers-fullstack">0</div>
+                            <div class="stat-change">Fullstack downloads</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                            <div class="stat-header">
+                                <span class="stat-label">Backend</span>
+                                <div class="stat-icon">⚙️</div>
+                            </div>
+                            <div class="stat-value" id="subscribers-backend">0</div>
+                            <div class="stat-change">Backend downloads</div>
+                        </div>
+                    </div>
+
+                    <div class="content-grid" style="margin-top: 24px;">
+                        <div class="activity-card" style="flex: 2;">
+                            <div class="activity-header">
+                                <div>
+                                    <div class="activity-title">All Subscribers</div>
+                                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Click to view details</div>
+                                </div>
+                                <div style="display: flex; gap: 10px;">
+                                    <button class="btn btn-secondary btn-sm" onclick="exportSubscribers('csv')">📄 Export CSV</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="exportSubscribers('json')">📄 Export JSON</button>
+                                </div>
+                            </div>
+                            <div style="padding: 20px; border-bottom: 1px solid var(--border);">
+                                <input type="text" id="subscriber-search" placeholder="Search by email or name..." 
+                                    style="width: 100%; padding: 10px 14px; background: var(--bg-hover); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 14px;"
+                                    oninput="filterSubscribers()">
+                            </div>
+                            <div class="activity-list" id="subscribers-list" style="max-height: 500px;">
+                                <div class="empty">
+                                    <h3>Loading subscribers...</h3>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+                            <div class="activity-card">
+                                <div class="activity-header">
+                                    <div class="activity-title">Download Stats</div>
+                                </div>
+                                <div style="padding: 20px;">
+                                    <div style="margin-bottom: 16px;">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                            <span style="font-size: 13px; color: var(--text-muted);">Fullstack</span>
+                                            <span style="font-size: 13px; font-weight: 600;" id="stat-fullstack-pct">0%</span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill primary" id="stat-fullstack-bar" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                    <div style="margin-bottom: 16px;">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                            <span style="font-size: 13px; color: var(--text-muted);">Backend</span>
+                                            <span style="font-size: 13px; font-weight: 600;" id="stat-backend-pct">0%</span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" id="stat-backend-bar" style="width: 0%; background: #3b82f6;"></div>
+                                        </div>
+                                    </div>
+                                    <div style="margin-bottom: 16px;">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                            <span style="font-size: 13px; color: var(--text-muted);">Frontend</span>
+                                            <span style="font-size: 13px; font-weight: 600;" id="stat-frontend-pct">0%</span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" id="stat-frontend-bar" style="width: 0%; background: #8b5cf6;"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                            <span style="font-size: 13px; color: var(--text-muted);">QA</span>
+                                            <span style="font-size: 13px; font-weight: 600;" id="stat-qa-pct">0%</span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill warning" id="stat-qa-bar" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="activity-card">
+                                <div class="activity-header">
+                                    <div class="activity-title">Email Status</div>
+                                </div>
+                                <div style="padding: 20px;">
+                                    <div id="email-config-status" style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                                        <div style="width: 12px; height: 12px; border-radius: 50%; background: var(--text-dim);"></div>
+                                        <span style="font-size: 14px;">Checking...</span>
+                                    </div>
+                                    <button class="btn btn-primary" onclick="testEmailConfig()" style="width: 100%;">Test Email</button>
+                                </div>
+                            </div>
+
+                            <div class="activity-card">
+                                <div class="activity-header">
+                                    <div class="activity-title">Recent Downloads</div>
+                                </div>
+                                <div class="activity-list" id="recent-downloads-list" style="max-height: 200px;">
+                                    <div class="empty">
+                                        <h3>No downloads yet</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Activity View -->
                 <div class="view" id="view-activity">
                     <div class="activity-card">
@@ -2736,7 +2874,8 @@
                 'ai-providers': 'AI Providers',
                 mcp: 'MCP Tools',
                 settings: 'Settings',
-                logs: 'Logs'
+                logs: 'Logs',
+                subscribers: 'Subscribers & Downloads'
             };
             document.getElementById('page-title').textContent = titles[view] || view;
 
@@ -2760,6 +2899,7 @@
                 initProviderCharts();
             }
             if (view === 'agent-detail' && selectedAgent) renderAgentDetail();
+            if (view === 'subscribers') loadSubscribersData();
         }
 
         // Agent Monitor Functions
@@ -3959,6 +4099,196 @@
         
         // Refresh providers every 30 seconds
         setInterval(loadAiProviders, 30000);
+
+        // ============================================
+        // SUBSCRIBERS & EMAILS MANAGEMENT
+        // ============================================
+        
+        let subscribersData = [];
+        let filteredSubscribers = [];
+        
+        async function loadSubscribersData() {
+            try {
+                // Load stats
+                const statsRes = await fetch('/api/materials/stats');
+                const stats = await statsRes.json();
+                
+                if (stats.success) {
+                    document.getElementById('subscribers-total').textContent = stats.totalSubscribers;
+                    document.getElementById('downloads-total').textContent = stats.totalDownloads;
+                    document.getElementById('subscriber-count').textContent = stats.totalSubscribers;
+                    
+                    if (stats.roadmaps) {
+                        document.getElementById('subscribers-fullstack').textContent = stats.roadmaps.fullstack || 0;
+                        document.getElementById('subscribers-backend').textContent = stats.roadmaps.backend || 0;
+                        
+                        // Update progress bars
+                        const total = stats.totalDownloads || 1;
+                        const fs = stats.roadmaps.fullstack || 0;
+                        const be = stats.roadmaps.backend || 0;
+                        const fe = stats.roadmaps.frontend || 0;
+                        const qa = stats.roadmaps.qa || 0;
+                        
+                        document.getElementById('stat-fullstack-bar').style.width = (fs/total*100) + '%';
+                        document.getElementById('stat-fullstack-pct').textContent = Math.round(fs/total*100) + '%';
+                        document.getElementById('stat-backend-bar').style.width = (be/total*100) + '%';
+                        document.getElementById('stat-backend-pct').textContent = Math.round(be/total*100) + '%';
+                        document.getElementById('stat-frontend-bar').style.width = (fe/total*100) + '%';
+                        document.getElementById('stat-frontend-pct').textContent = Math.round(fe/total*100) + '%';
+                        document.getElementById('stat-qa-bar').style.width = (qa/total*100) + '%';
+                        document.getElementById('stat-qa-pct').textContent = Math.round(qa/total*100) + '%';
+                    }
+                }
+                
+                // Load subscribers list
+                const subRes = await fetch('/api/materials/subscribers?password=admin123');
+                const subData = await subRes.json();
+                
+                if (subData.success) {
+                    subscribersData = subData.subscribers || [];
+                    filteredSubscribers = [...subscribersData];
+                    renderSubscribersList();
+                }
+                
+                // Check email config
+                const emailRes = await fetch('/api/materials/email-config');
+                const emailData = await emailRes.json();
+                
+                const emailStatus = document.getElementById('email-config-status');
+                if (emailData.configured) {
+                    emailStatus.innerHTML = `
+                        <div style="width: 12px; height: 12px; border-radius: 50%; background: var(--success);"></div>
+                        <span style="font-size: 14px;">Email Configured ✓</span>
+                    `;
+                } else {
+                    emailStatus.innerHTML = `
+                        <div style="width: 12px; height: 12px; border-radius: 50%; background: var(--error);"></div>
+                        <span style="font-size: 14px;">Email Not Configured ✗</span>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('Error loading subscribers:', error);
+                document.getElementById('subscribers-list').innerHTML = `
+                    <div class="empty">
+                        <h3>Error loading data</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function renderSubscribersList() {
+            const list = document.getElementById('subscribers-list');
+            
+            if (filteredSubscribers.length === 0) {
+                list.innerHTML = `
+                    <div class="empty">
+                        <h3>No subscribers yet</h3>
+                        <p>Subscribers will appear here when they download roadmaps</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Sort by date (newest first)
+            const sorted = filteredSubscribers.sort((a, b) => 
+                new Date(b.subscribedAt || 0) - new Date(a.subscribedAt || 0)
+            );
+            
+            list.innerHTML = sorted.map((sub, i) => {
+                const date = sub.subscribedAt ? new Date(sub.subscribedAt).toLocaleDateString() : 'N/A';
+                const roadmaps = (sub.roadmaps || []).map(r => {
+                    const colors = {
+                        fullstack: '#6366f1',
+                        backend: '#3b82f6',
+                        frontend: '#8b5cf6',
+                        qa: '#f59e0b'
+                    };
+                    return `<span style="display: inline-block; padding: 2px 8px; background: ${colors[r] || '#666'}; color: white; border-radius: 4px; font-size: 11px; margin-right: 4px; text-transform: capitalize;">${r}</span>`;
+                }).join('');
+                
+                return `
+                    <div class="activity-item" style="cursor: pointer;" onclick="showSubscriberDetails(${i})">
+                        <div class="activity-time">${date}</div>
+                        <div class="activity-dot info"></div>
+                        <div class="activity-content">
+                            <div class="activity-agent">${sub.email}</div>
+                            <div class="activity-message">${sub.name || '(no name)'}</div>
+                            <div style="margin-top: 6px;">${roadmaps}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function filterSubscribers() {
+            const query = document.getElementById('subscriber-search').value.toLowerCase();
+            filteredSubscribers = subscribersData.filter(sub => 
+                sub.email.toLowerCase().includes(query) ||
+                (sub.name && sub.name.toLowerCase().includes(query))
+            );
+            renderSubscribersList();
+        }
+        
+        function showSubscriberDetails(index) {
+            const sub = filteredSubscribers[index];
+            if (!sub) return;
+            
+            const roadmaps = (sub.roadmaps || []).join(', ') || 'None';
+            const date = sub.subscribedAt ? new Date(sub.subscribedAt).toLocaleString() : 'N/A';
+            
+            alert(`Subscriber Details:
+
+Email: ${sub.email}
+Name: ${sub.name || '(no name)'}
+Roadmaps: ${roadmaps}
+Subscribed: ${date}
+
+Updates Enabled: ${sub.updatesEnabled !== false ? 'Yes' : 'No'}`);
+        }
+        
+        function exportSubscribers(format) {
+            const password = 'admin123';
+            window.open(`/api/materials/subscribers/export?password=${password}&format=${format}`, '_blank');
+        }
+        
+        async function testEmailConfig() {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'Testing...';
+            btn.disabled = true;
+            
+            try {
+                // Just verify the config is set
+                const res = await fetch('/api/materials/email-config');
+                const data = await res.json();
+                
+                if (data.configured) {
+                    alert('✓ Email is configured correctly!\n\nUser: ' + data.user + '***\n\nEmails will be sent when users subscribe.');
+                } else {
+                    alert('✗ Email is NOT configured.\n\nPlease set GMAIL_USER and GMAIL_PASS in the .env file.');
+                }
+            } catch (error) {
+                alert('Error testing email: ' + error.message);
+            }
+            
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+        
+        // Auto-refresh subscribers data every 30 seconds when viewing
+        let subscribersRefreshInterval = null;
+        document.querySelectorAll('.nav-item[data-view="subscribers"]').forEach(item => {
+            item.addEventListener('click', () => {
+                if (subscribersRefreshInterval) clearInterval(subscribersRefreshInterval);
+                subscribersRefreshInterval = setInterval(() => {
+                    if (currentView === 'subscribers') {
+                        loadSubscribersData();
+                    }
+                }, 30000);
+            });
+        });
     </script>
 </body>
 </html>
