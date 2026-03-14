@@ -295,7 +295,7 @@ TELEGRAM_CHAT_ID=123456789
 ANTHROPIC_API_KEY=sk-ant-api03-your-key-here
 
 # Option 2: Zhipu AI (Chinese model, cheaper)
-# Get from: https://open.bigmodel.cn/
+# Get from: https://z.ai/
 ZHIPU_API_KEY=your.zhipu.api.key.here
 
 # Option 3: Moonshot AI

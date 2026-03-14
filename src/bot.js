@@ -342,7 +342,7 @@ Send your API key and optionally the model:
 • glm-4v - Vision capable
 • glm-4-long - Long context
 
-Get your API key from: https://z.ai/ (or https://open.bigmodel.cn/ for older accounts)`;
+Get your API key from: https://z.ai/`;
     
     await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
     return;
@@ -662,7 +662,7 @@ ${content.substring(0, 3000)}
 **Error:** ${errorMsg}
 
 Please check your API key at:
-https://z.ai/ or https://open.bigmodel.cn/`,
+https://z.ai/`,
       { parse_mode: 'Markdown' }
     );
   }
