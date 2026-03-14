@@ -553,6 +553,7 @@
                 <a href="#features">Features</a>
                 <a href="#agents">Agents</a>
                 <a href="#providers">AI Models</a>
+                <a href="#materials" style="color: #10b981;">Free Materials</a>
                 <a href="/login.html" class="nav-cta">Get Started</a>
             </div>
         </div>
@@ -706,6 +707,93 @@
         </div>
     </section>
 
+    <!-- Free Materials Section -->
+    <section class="providers" id="materials" style="background: linear-gradient(180deg, #0a0a0f 0%, #0f172a 100%);">
+        <div class="providers-container">
+            <div class="section-header">
+                <h2>Free Learning Roadmaps</h2>
+                <p>Download professional 30-day learning roadmaps. 100% free - just enter your email!</p>
+            </div>
+            
+            <div class="providers-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
+                <!-- Fullstack -->
+                <div class="provider-card available" style="text-align: center; padding: 40px 24px; cursor: pointer;" onclick="showMaterialModal('fullstack')">
+                    <div style="font-size: 48px; margin-bottom: 16px;">💻</div>
+                    <h4>Fullstack Developer</h4>
+                    <p style="margin: 12px 0;">Complete 30-day roadmap covering frontend, backend, databases & deployment</p>
+                    <span class="provider-status active" style="background: #10b981;">Free Download</span>
+                </div>
+                
+                <!-- Backend -->
+                <div class="provider-card available" style="text-align: center; padding: 40px 24px; cursor: pointer;" onclick="showMaterialModal('backend')">
+                    <div style="font-size: 48px; margin-bottom: 16px;">⚙️</div>
+                    <h4>Backend Developer</h4>
+                    <p style="margin: 12px 0;">Master server-side development with APIs, databases & microservices</p>
+                    <span class="provider-status active" style="background: #3b82f6;">Free Download</span>
+                </div>
+                
+                <!-- Frontend -->
+                <div class="provider-card available" style="text-align: center; padding: 40px 24px; cursor: pointer;" onclick="showMaterialModal('frontend')">
+                    <div style="font-size: 48px; margin-bottom: 16px;">🎨</div>
+                    <h4>Frontend Developer</h4>
+                    <p style="margin: 12px 0;">Learn React, CSS, responsive design & performance optimization</p>
+                    <span class="provider-status active" style="background: #8b5cf6;">Free Download</span>
+                </div>
+                
+                <!-- QA -->
+                <div class="provider-card available" style="text-align: center; padding: 40px 24px; cursor: pointer;" onclick="showMaterialModal('qa')">
+                    <div style="font-size: 48px; margin-bottom: 16px;">🧪</div>
+                    <h4>QA Engineer</h4>
+                    <p style="margin: 12px 0;">Become a testing expert with automation & CI/CD integration</p>
+                    <span class="provider-status active" style="background: #f59e0b;">Free Download</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Material Subscribe Modal -->
+    <div id="material-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center;">
+        <div style="background: #1a1a2e; border-radius: 16px; padding: 40px; max-width: 450px; width: 90%; border: 1px solid rgba(255,255,255,0.1); position: relative;">
+            <button onclick="closeMaterialModal()" style="position: absolute; top: 16px; right: 16px; background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer;">&times;</button>
+            
+            <div id="material-form-content">
+                <h3 style="margin: 0 0 8px 0; color: #10b981;">🎓 Get Your Free Roadmap</h3>
+                <p style="color: #94a3b8; margin-bottom: 24px;">Enter your email to receive the roadmap and updates.</p>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 14px; color: #94a3b8;">Name (Optional)</label>
+                    <input type="text" id="material-name" placeholder="John Doe" style="width: 100%; padding: 12px; background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; font-size: 15px;">
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 14px; color: #94a3b8;">Email Address *</label>
+                    <input type="email" id="material-email" placeholder="you@example.com" required style="width: 100%; padding: 12px; background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; font-size: 15px;">
+                </div>
+                
+                <div style="margin-bottom: 24px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 14px; color: #94a3b8;">Selected Roadmap</label>
+                    <input type="text" id="material-roadmap-display" readonly style="width: 100%; padding: 12px; background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; font-size: 15px; cursor: not-allowed; opacity: 0.7;">
+                </div>
+                
+                <button onclick="submitMaterialForm()" id="material-submit-btn" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer; font-size: 16px;">Get Free Access</button>
+            </div>
+            
+            <div id="material-loading" style="display: none; text-align: center; padding: 40px;">
+                <div style="font-size: 48px; margin-bottom: 16px;">⏳</div>
+                <p>Processing...</p>
+            </div>
+            
+            <div id="material-success" style="display: none; text-align: center; padding: 20px;">
+                <div style="font-size: 64px; margin-bottom: 16px;">🎉</div>
+                <h3 style="color: #10b981; margin-bottom: 8px;">Success!</h3>
+                <p style="color: #94a3b8; margin-bottom: 24px;">Check your email for the download link!</p>
+                <a id="material-download-btn" href="#" class="btn-primary" style="display: inline-block; text-decoration: none;" download>Download PDF</a>
+            </div>
+            
+            <div id="material-error" style="display: none; background: #ef4444; color: white; padding: 12px; border-radius: 8px; margin-top: 16px; font-size: 14px;"></div>
+        </div>
+    </div>
+
     <!-- CTA Section -->
     <section class="cta">
         <h2>Ready to Build While You Sleep?</h2>
@@ -715,7 +803,92 @@
 
     <!-- Footer -->
     <footer class="footer">
-        <p>© 2025 Nigents (Night Agents). Open source on <a href="https://gitlab.com/bonyad-tech/nigents" style="color: #667eea;">GitLab</a>.</p>
+        <p>&copy; 2025 Nigents (Night Agents). Open source on <a href="https://gitlab.com/bonyad-tech/nigents" style="color: #667eea;">GitLab</a>.</p>
     </footer>
+
+    <script>
+        let selectedRoadmap = null;
+        
+        function showMaterialModal(roadmap) {
+            selectedRoadmap = roadmap;
+            document.getElementById('material-roadmap-display').value = roadmap.charAt(0).toUpperCase() + roadmap.slice(1) + ' Developer';
+            document.getElementById('material-modal').style.display = 'flex';
+            document.getElementById('material-form-content').style.display = 'block';
+            document.getElementById('material-loading').style.display = 'none';
+            document.getElementById('material-success').style.display = 'none';
+            document.getElementById('material-error').style.display = 'none';
+            document.getElementById('material-email').value = '';
+            document.getElementById('material-name').value = '';
+        }
+        
+        function closeMaterialModal() {
+            document.getElementById('material-modal').style.display = 'none';
+            selectedRoadmap = null;
+        }
+        
+        async function submitMaterialForm() {
+            const email = document.getElementById('material-email').value.trim();
+            const name = document.getElementById('material-name').value.trim();
+            
+            if (!email) {
+                showMaterialError('Please enter your email address');
+                return;
+            }
+            
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showMaterialError('Please enter a valid email address');
+                return;
+            }
+            
+            document.getElementById('material-form-content').style.display = 'none';
+            document.getElementById('material-loading').style.display = 'block';
+            document.getElementById('material-error').style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/materials/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, name, roadmap: selectedRoadmap }),
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('material-loading').style.display = 'none';
+                    document.getElementById('material-success').style.display = 'block';
+                    document.getElementById('material-download-btn').href = '/materials/' + selectedRoadmap + '-roadmap.pdf';
+                    
+                    await fetch('/api/materials/download', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, roadmap: selectedRoadmap, filename: selectedRoadmap + '-roadmap.pdf' }),
+                    });
+                } else {
+                    showMaterialError(data.error || 'Something went wrong. Please try again.');
+                    document.getElementById('material-form-content').style.display = 'block';
+                    document.getElementById('material-loading').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMaterialError('Network error. Please try again.');
+                document.getElementById('material-form-content').style.display = 'block';
+                document.getElementById('material-loading').style.display = 'none';
+            }
+        }
+        
+        function showMaterialError(message) {
+            const errorDiv = document.getElementById('material-error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('material-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeMaterialModal();
+            }
+        });
+    </script>
 </body>
 </html>
