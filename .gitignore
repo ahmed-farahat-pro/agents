@@ -52,3 +52,9 @@ docker-volumes/
 tmp/
 temp/
 *.tmp
+
+# Root PDF files (copied to public)
+/*.pdf
+/*.PDF
+/problemx_*.pdf
+/px_*.pdf
