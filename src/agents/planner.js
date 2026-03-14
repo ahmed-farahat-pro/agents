@@ -236,9 +236,7 @@ Required JSON format:
   "dependencies": ["jwt-library"],
   "testingNotes": "Test with valid and invalid credentials",
   "branch": "nigents/task-${Date.now()}"
-}`}}  
-
-Now your JSON response for this task:`
+}`}};
 
     // Try MCP first, fall back to direct AI call
     let result;
