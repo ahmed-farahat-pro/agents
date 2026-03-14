@@ -11,6 +11,21 @@ variables:
   DEPLOY_DIR: /home/ubuntu/nigents
   GIT_DEPTH: 10
   GIT_STRATEGY: clone
+  # MySQL Configuration for CI tests
+  DB_HOST: mysql
+  DB_PORT: 3306
+  DB_USER: nigents
+  DB_PASSWORD: nigents_test_password
+  DB_NAME: nigents_test
+  # MySQL Service Configuration
+  MYSQL_ROOT_PASSWORD: root_password
+  MYSQL_DATABASE: nigents_test
+  MYSQL_USER: nigents
+  MYSQL_PASSWORD: nigents_test_password
+
+# MySQL service for tests
+services:
+  - mysql:8.0
 
 cache:
   key: ${CI_COMMIT_REF_SLUG}
@@ -55,11 +70,25 @@ default:
 lint:
   stage: test
   image: node:20-alpine
+  services:
+    - mysql:8.0
+  variables:
+    DB_HOST: mysql
+    DB_PORT: 3306
+    DB_USER: nigents
+    DB_PASSWORD: nigents_test_password
+    DB_NAME: nigents_test
+    MYSQL_ROOT_PASSWORD: root_password
+    MYSQL_DATABASE: nigents_test
+    MYSQL_USER: nigents
+    MYSQL_PASSWORD: nigents_test_password
   script:
     - npm ci
     - npm run lint || echo "No lint script"
     - node --check src/bot.js
     - node --check src/dashboard/server.js
+    - node --check src/database/connection.js
+    - node --check src/database/migrate.js
   rules:
     - if: '$CI_COMMIT_BRANCH =~ /^main|develop|feature\/.*$/'
 
@@ -169,6 +198,44 @@ deploy-to-ec2:
         echo "WARNING: pending-plans.json not found after build!"
       fi
 
+      echo "=========================================="
+      echo "  DATABASE SETUP & MIGRATION"
+      echo "=========================================="
+      
+      # Check if MySQL is installed
+      if ! command -v mysql &> /dev/null; then
+        echo "Installing MySQL..."
+        sudo apt-get update
+        sudo apt-get install -y mysql-server
+        sudo systemctl start mysql
+        sudo systemctl enable mysql
+      fi
+      
+      # Create database and user if not exists
+      echo "Setting up database..."
+      sudo mysql -e "CREATE DATABASE IF NOT EXISTS nigents CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+      sudo mysql -e "CREATE USER IF NOT EXISTS 'nigents'@'localhost' IDENTIFIED BY 'nigents_password';"
+      sudo mysql -e "GRANT ALL PRIVILEGES ON nigents.* TO 'nigents'@'localhost';"
+      sudo mysql -e "FLUSH PRIVILEGES;"
+      
+      # Run schema
+      echo "Running database schema..."
+      sudo mysql nigents < src/database/schema.sql
+      
+      # Run migration if data exists
+      if [ -f "$DATA_DIR/pending-plans.json" ] || [ -f "$DATA_DIR/user-settings.json" ]; then
+        echo "Migrating existing JSON data to MySQL..."
+        export DB_HOST=localhost
+        export DB_PORT=3306
+        export DB_USER=nigents
+        export DB_PASSWORD=nigents_password
+        export DB_NAME=nigents
+        export DATA_DIR=$DATA_DIR
+        node src/database/migrate.js || echo "Migration completed with warnings"
+      fi
+      
+      echo "Database setup complete!"
+
       echo "Stopping all PM2 services..."
       pm2 stop all 2>/dev/null || true
       pm2 delete all 2>/dev/null || true
@@ -178,6 +245,13 @@ deploy-to-ec2:
       
       echo "Waiting for processes to stop..."
       sleep 3
+      
+      echo "Setting up environment variables..."
+      export DB_HOST=localhost
+      export DB_PORT=3306
+      export DB_USER=nigents
+      export DB_PASSWORD=nigents_password
+      export DB_NAME=nigents
       
       echo "Starting services fresh..."
       pm2 start src/bot.js --name nigents-bot --update-env

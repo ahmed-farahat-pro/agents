@@ -13,9 +13,28 @@ class OrchestratorAgent extends BaseAgent {
     super(config);
     
     this.agents = new Map();
-    this.taskQueue = [];
+    this.taskQueue = []; // In-memory fallback
     this.activeTasks = new Map();
     this.completedTasks = [];
+    
+    // Load database task queue if MySQL is configured
+    this.dbTaskQueue = null;
+    this.useDatabase = process.env.DB_HOST && process.env.DB_USER && process.env.DB_PASSWORD;
+    
+    if (this.useDatabase) {
+      try {
+        this.dbTaskQueue = require('../database/task-queue-mysql');
+        this.chatStorage = require('../database/chat-storage-mysql');
+        logger.info('[Orchestrator] Database storage enabled (MySQL)');
+      } catch (error) {
+        logger.error('[Orchestrator] Failed to load database modules:', error.message);
+        this.useDatabase = false;
+        this.chatStorage = require('../utils/chat-storage-json');
+      }
+    } else {
+      this.chatStorage = require('../utils/chat-storage-json');
+      logger.info('[Orchestrator] Using JSON file storage');
+    }
   }
 
   /**
@@ -253,6 +272,23 @@ Respond with JSON only:
       }
       
       this.taskQueue.push(taskEntry);
+      
+      // Also save to database if available
+      if (this.useDatabase && this.dbTaskQueue) {
+        try {
+          await this.dbTaskQueue.createTask({
+            id: taskId,
+            userId: context.userId || 'system',
+            type: 'implementation',
+            title: result.plan?.title || parsed.task,
+            description: parsed.task,
+            status: 'pending',
+            plan: result.plan,
+          });
+        } catch (error) {
+          logger.error('[Orchestrator] Failed to save task to database:', error.message);
+        }
+      }
 
       this.emit('taskCompleted', { taskId, type: 'plan', result });
     }
@@ -345,6 +381,15 @@ Provide a helpful answer. If the question is about specific code and you don't h
       this.chatStorage.deletePendingPlan(pendingPlan.userId);
       logger.info(`[Orchestrator] Deleted pending plan for user ${pendingPlan.userId} from storage`);
     }
+    
+    // Update database task status if using database
+    if (this.useDatabase && this.dbTaskQueue) {
+      try {
+        await this.dbTaskQueue.updateTaskStatus(pendingPlan.id, 'approved');
+      } catch (error) {
+        logger.error('[Orchestrator] Failed to update task status in database:', error.message);
+      }
+    }
 
     this.emit('planApproved', { taskId: pendingPlan.id, plan: pendingPlan.plan });
 
@@ -410,6 +455,15 @@ Provide a helpful answer. If the question is about specific code and you don't h
 
     task.status = 'running';
     task.startedAt = new Date();
+    
+    // Update database if using database
+    if (this.useDatabase && this.dbTaskQueue) {
+      try {
+        await this.dbTaskQueue.updateTaskStatus(task.id, 'running');
+      } catch (error) {
+        logger.error('[Orchestrator] Failed to update task status in database:', error.message);
+      }
+    }
 
     this.emit('implementationStarted', { taskId: task.id });
 
@@ -460,12 +514,35 @@ Provide a helpful answer. If the question is about specific code and you don't h
       task.status = 'completed';
       task.completedAt = new Date();
       task.mrUrl = mrResult.url;
+      
+      // Update database if using database
+      if (this.useDatabase && this.dbTaskQueue) {
+        try {
+          await this.dbTaskQueue.updateTaskStatus(task.id, 'completed', {
+            result: { mrUrl: mrResult.url },
+          });
+        } catch (error) {
+          logger.error('[Orchestrator] Failed to update task status in database:', error.message);
+        }
+      }
 
       if (reporter) {
         await reporter.sendCompletionReport(task);
       }
     } else {
       task.status = 'needs_changes';
+      
+      // Update database if using database
+      if (this.useDatabase && this.dbTaskQueue) {
+        try {
+          await this.dbTaskQueue.updateTaskStatus(task.id, 'failed', {
+            result: { reviewResult },
+          });
+        } catch (error) {
+          logger.error('[Orchestrator] Failed to update task status in database:', error.message);
+        }
+      }
+      
       if (reporter) {
         await reporter.sendProgress('❌ Code review requested changes. Manual intervention needed.');
       }

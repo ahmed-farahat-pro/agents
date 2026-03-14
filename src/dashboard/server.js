@@ -44,6 +44,21 @@ const dashboardState = {
   startTime: new Date(),
 };
 
+// Database integration
+const useDatabase = process.env.DB_HOST && process.env.DB_USER && process.env.DB_PASSWORD;
+let dbTaskQueue = null;
+let dbChatStorage = null;
+
+if (useDatabase) {
+  try {
+    dbTaskQueue = require('../database/task-queue-mysql');
+    dbChatStorage = require('../database/chat-storage-mysql');
+    logger.info('[Dashboard] Database integration enabled (MySQL)');
+  } catch (error) {
+    logger.error('[Dashboard] Failed to load database modules:', error.message);
+  }
+}
+
 // ============================================================================
 // API Routes
 // ============================================================================
@@ -80,31 +95,84 @@ app.get('/logs.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'logs.html'));
 });
 
-app.get('/api/status', (req, res) => {
-  res.json({
-    status: dashboardState.systemStatus,
-    uptime: Date.now() - dashboardState.startTime,
-    agents: dashboardState.agents.length,
-    activeTasks: dashboardState.tasks.filter(t => t.status === 'running').length,
-    queuedTasks: dashboardState.tasks.filter(t => t.status === 'queued').length,
-    completedTasks: dashboardState.tasks.filter(t => t.status === 'completed').length,
-  });
+app.get('/api/status', async (req, res) => {
+  try {
+    let stats = {
+      status: dashboardState.systemStatus,
+      uptime: Date.now() - dashboardState.startTime,
+    };
+    
+    if (dbTaskQueue) {
+      const allTasks = await dbTaskQueue.getAllTasks(1000);
+      stats.agents = (await dbTaskQueue.getAgents()).length;
+      stats.activeTasks = allTasks.filter(t => t.status === 'running').length;
+      stats.queuedTasks = allTasks.filter(t => t.status === 'pending' || t.status === 'approved').length;
+      stats.completedTasks = allTasks.filter(t => t.status === 'completed').length;
+    } else {
+      stats.agents = dashboardState.agents.length;
+      stats.activeTasks = dashboardState.tasks.filter(t => t.status === 'running').length;
+      stats.queuedTasks = dashboardState.tasks.filter(t => t.status === 'queued').length;
+      stats.completedTasks = dashboardState.tasks.filter(t => t.status === 'completed').length;
+    }
+    
+    res.json(stats);
+  } catch (error) {
+    logger.error('[Dashboard] Failed to get status:', error);
+    res.json({
+      status: dashboardState.systemStatus,
+      uptime: Date.now() - dashboardState.startTime,
+      agents: dashboardState.agents.length,
+      activeTasks: dashboardState.tasks.filter(t => t.status === 'running').length,
+      queuedTasks: dashboardState.tasks.filter(t => t.status === 'queued').length,
+      completedTasks: dashboardState.tasks.filter(t => t.status === 'completed').length,
+    });
+  }
 });
 
-app.get('/api/agents', (req, res) => {
-  res.json(dashboardState.agents);
+app.get('/api/agents', async (req, res) => {
+  try {
+    if (dbTaskQueue) {
+      const agents = await dbTaskQueue.getAgents();
+      res.json(agents);
+    } else {
+      res.json(dashboardState.agents);
+    }
+  } catch (error) {
+    logger.error('[Dashboard] Failed to get agents:', error);
+    res.json(dashboardState.agents);
+  }
 });
 
-app.get('/api/tasks', (req, res) => {
-  res.json(dashboardState.tasks);
+app.get('/api/tasks', async (req, res) => {
+  try {
+    if (dbTaskQueue) {
+      const tasks = await dbTaskQueue.getAllTasks(100);
+      res.json(tasks);
+    } else {
+      res.json(dashboardState.tasks);
+    }
+  } catch (error) {
+    logger.error('[Dashboard] Failed to get tasks:', error);
+    res.json(dashboardState.tasks);
+  }
 });
 
-app.get('/api/activity', (req, res) => {
-  res.json(dashboardState.activities.slice(-100));
+app.get('/api/activity', async (req, res) => {
+  try {
+    if (dbTaskQueue) {
+      const activities = await dbTaskQueue.getActivities(100);
+      res.json(activities);
+    } else {
+      res.json(dashboardState.activities.slice(-100));
+    }
+  } catch (error) {
+    logger.error('[Dashboard] Failed to get activities:', error);
+    res.json(dashboardState.activities.slice(-100));
+  }
 });
 
 // Update agent status with activity
-app.post('/api/agents/:name/status', (req, res) => {
+app.post('/api/agents/:name/status', async (req, res) => {
   const { name } = req.params;
   const { status, activity, ...rest } = req.body;
 
@@ -126,6 +194,23 @@ app.post('/api/agents/:name/status', (req, res) => {
       ...rest,
     });
   }
+  
+  // Also save to database if available
+  if (dbTaskQueue) {
+    try {
+      await dbTaskQueue.registerAgent({
+        id: name,
+        name,
+        displayName: rest.displayName || name,
+        role: rest.role || 'agent',
+        status,
+        metadata: rest,
+      });
+      await dbTaskQueue.updateAgentStatus(name, status, activity, rest.taskId);
+    } catch (error) {
+      logger.error('[Dashboard] Failed to update agent in database:', error);
+    }
+  }
 
   io.emit('agentStatus', { name, status, activity });
   
@@ -138,6 +223,15 @@ app.post('/api/agents/:name/status', (req, res) => {
       timestamp: new Date(),
     };
     addActivity(activityData);
+    
+    // Save to database if available
+    if (dbTaskQueue) {
+      try {
+        await dbTaskQueue.addActivity(activityData);
+      } catch (error) {
+        logger.error('[Dashboard] Failed to save activity:', error);
+      }
+    }
   }
   
   res.json({ success: true });
@@ -246,7 +340,7 @@ app.put('/api/tasks/:id/progress', (req, res) => {
 });
 
 // Add activity helper
-function addActivity(data) {
+async function addActivity(data) {
   dashboardState.activities.push(data);
   
   if (dashboardState.activities.length > 100) {
@@ -254,6 +348,15 @@ function addActivity(data) {
   }
   
   io.emit('activity', data);
+  
+  // Save to database if available
+  if (dbTaskQueue) {
+    try {
+      await dbTaskQueue.addActivity(data);
+    } catch (error) {
+      logger.error('[Dashboard] Failed to save activity to database:', error);
+    }
+  }
 }
 
 // ============================================================================
