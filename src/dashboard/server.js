@@ -27,6 +27,12 @@ const PORT = process.env.DASHBOARD_PORT || 4000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Request logging middleware
+app.use((req, res, next) => {
+  logger.info(`[HTTP] ${req.method} ${req.path}`);
+  next();
+});
+
 // Dashboard state
 const dashboardState = {
   agents: [],
@@ -1071,18 +1077,31 @@ function createEmailTransporter() {
   const gmailUser = process.env.GMAIL_USER;
   const gmailPass = process.env.GMAIL_PASS;
   
+  logger.info(`[Email] Config check - GMAIL_USER: ${gmailUser ? 'SET' : 'NOT SET'}, GMAIL_PASS: ${gmailPass ? 'SET' : 'NOT SET'}`);
+  
   if (!gmailUser || !gmailPass) {
     logger.warn('[Email] GMAIL_USER or GMAIL_PASS not set, emails disabled');
     return null;
   }
   
-  return nodemailer.createTransport({
+  const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: gmailUser,
       pass: gmailPass,
     },
   });
+  
+  // Verify transporter
+  transporter.verify((error, success) => {
+    if (error) {
+      logger.error('[Email] Transporter verification failed:', error.message);
+    } else {
+      logger.info('[Email] Transporter verified successfully');
+    }
+  });
+  
+  return transporter;
 }
 
 // Send roadmap email to subscriber
@@ -1194,10 +1213,13 @@ function saveDownload(download) {
 
 // Subscribe to free materials
 app.post('/api/materials/subscribe', async (req, res) => {
+  logger.info(`[Subscribe] Received request: ${JSON.stringify({ email: req.body?.email, roadmap: req.body?.roadmap })}`);
+  
   try {
     const { email, name, roadmap } = req.body;
     
     if (!email || !roadmap) {
+      logger.warn(`[Subscribe] Missing fields: email=${!!email}, roadmap=${!!roadmap}`);
       return res.status(400).json({
         success: false,
         error: 'Email and roadmap are required',
@@ -1207,6 +1229,7 @@ app.post('/api/materials/subscribe', async (req, res) => {
     // Validate email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
+      logger.warn(`[Subscribe] Invalid email: ${email}`);
       return res.status(400).json({
         success: false,
         error: 'Invalid email address',
@@ -1214,17 +1237,27 @@ app.post('/api/materials/subscribe', async (req, res) => {
     }
     
     const subscribers = loadSubscribers();
+    logger.info(`[Subscribe] Loaded ${Object.keys(subscribers).length} existing subscribers`);
     
     // Check if already subscribed
     if (subscribers[email]) {
+      logger.info(`[Subscribe] Existing subscriber: ${email}`);
+      
       // Add roadmap to their list if not already there
       if (!subscribers[email].roadmaps.includes(roadmap)) {
         subscribers[email].roadmaps.push(roadmap);
         saveSubscribers(subscribers);
+        logger.info(`[Subscribe] Added new roadmap '${roadmap}' to existing subscriber ${email}`);
         
         // Send email for the new roadmap (don't block response)
-        sendRoadmapEmail(subscribers[email], roadmap).catch(err => {
-          logger.error(`[Dashboard] Email error for existing subscriber ${email}:`, err.message);
+        sendRoadmapEmail(subscribers[email], roadmap).then(result => {
+          if (result.success) {
+            logger.info(`[Subscribe] Email sent successfully to ${email}`);
+          } else {
+            logger.error(`[Subscribe] Email failed to ${email}:`, result.error);
+          }
+        }).catch(err => {
+          logger.error(`[Subscribe] Email error for existing subscriber ${email}:`, err.message);
         });
       }
       
@@ -1245,19 +1278,19 @@ app.post('/api/materials/subscribe', async (req, res) => {
     };
     
     subscribers[email] = newSubscriber;
-    saveSubscribers(subscribers);
+    const saved = saveSubscribers(subscribers);
     
-    logger.info(`[Dashboard] New subscriber: ${email} for ${roadmap}`);
+    logger.info(`[Subscribe] New subscriber saved: ${email} for ${roadmap} (saved=${saved})`);
     
     // Send welcome email with roadmap (don't block response on email)
     sendRoadmapEmail(newSubscriber, roadmap).then(result => {
       if (result.success) {
-        logger.info(`[Dashboard] Email sent successfully to ${email}`);
+        logger.info(`[Subscribe] Email sent successfully to ${email}, messageId: ${result.messageId}`);
       } else {
-        logger.error(`[Dashboard] Email failed to ${email}:`, result.error);
+        logger.error(`[Subscribe] Email failed to ${email}:`, result.error);
       }
     }).catch(err => {
-      logger.error(`[Dashboard] Email error for ${email}:`, err.message);
+      logger.error(`[Subscribe] Email error for ${email}:`, err.message);
     });
     
     res.json({
@@ -1266,7 +1299,7 @@ app.post('/api/materials/subscribe', async (req, res) => {
       existing: false,
     });
   } catch (error) {
-    logger.error('[Dashboard] Subscribe error:', error);
+    logger.error('[Subscribe] Error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to process subscription',
@@ -1283,7 +1316,39 @@ app.get('/api/materials/email-config', (req, res) => {
     success: true,
     configured: !!(gmailUser && gmailPass),
     user: gmailUser ? `${gmailUser.substring(0, 3)}***` : null,
+    envLoaded: !!process.env.GMAIL_USER,
   });
+});
+
+// List available PDF files
+app.get('/api/materials/pdfs', (req, res) => {
+  try {
+    const materialsDir = path.join(__dirname, 'public', 'materials');
+    logger.info(`[Materials] Checking PDFs in: ${materialsDir}`);
+    
+    if (!fs.existsSync(materialsDir)) {
+      logger.error(`[Materials] Directory not found: ${materialsDir}`);
+      return res.status(500).json({
+        success: false,
+        error: 'Materials directory not found',
+      });
+    }
+    
+    const files = fs.readdirSync(materialsDir);
+    const pdfs = files.filter(f => f.endsWith('.pdf'));
+    
+    logger.info(`[Materials] Found ${pdfs.length} PDFs: ${pdfs.join(', ')}`);
+    
+    res.json({
+      success: true,
+      count: pdfs.length,
+      files: pdfs,
+      path: materialsDir,
+    });
+  } catch (error) {
+    logger.error('[Materials] Error listing PDFs:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 // Track download
