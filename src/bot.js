@@ -642,7 +642,7 @@ bot.onText(/\/project (.+)/, async (msg, match) => {
   }
 });
 
-// /models command - List all AI models
+// /models command - List all AI models with inline keyboard
 bot.onText(/\/models/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
@@ -653,26 +653,30 @@ bot.onText(/\/models/, async (msg) => {
     const settings = chatStorage.getUserSettings(msg.from.id);
     
     let message = '**Available AI Models**\n\n';
+    message += 'Click a provider to select it:\n\n';
+    
+    // Create keyboard for enabled providers
+    const keyboard = [];
     
     for (const [key, provider] of Object.entries(providers)) {
       const status = provider.enabled ? '✅' : '❌';
-      message += `${status} **${provider.name}** (${key})\n`;
+      message += `${status} **${provider.name}**\n`;
       
       if (provider.enabled) {
-        message += `   Models: ${provider.models.join(', ')}\n`;
-        message += `   Default: \`${provider.defaultModel}\`\n`;
-      } else {
-        message += `   (API key not configured)\n`;
+        keyboard.push([{
+          text: `Use ${provider.name}`,
+          callback_data: `setprovider:${key}:${msg.from.id}`
+        }]);
       }
-      message += '\n';
     }
     
-    message += '**Usage:**\n';
-    message += '`/model <provider>` - Set default provider\n';
-    message += 'Example: `/model anthropic` or `/model moonshot`\n\n';
-    message += `Your current preference: ${settings.preferredAI || 'Auto (Cheapest)'}`;
+    message += '\n**Current:** ' + (settings.preferredAI || 'Auto (Cheapest)');
     
-    await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+    await bot.sendMessage(msg.chat.id, message, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard.length > 0 ? { inline_keyboard: keyboard } : undefined,
+    });
+    
     chatStorage.addMessage(msg.from.id, 'assistant', message, { type: 'models_list' });
   } catch (error) {
     logger.error('Failed to load models:', error);
@@ -1157,6 +1161,28 @@ bot.on('callback_query', async (query) => {
       );
       
       await bot.sendMessage(chatId, '❌ Plan cancelled.');
+    }
+    
+    // Handle setprovider:providerName:userId
+    else if (data.startsWith('setprovider:')) {
+      const parts = data.split(':');
+      const providerName = parts[1];
+      const expectedUserId = parts[2];
+      
+      if (userId.toString() !== expectedUserId) {
+        await bot.sendMessage(chatId, 'This button is not for you.');
+        return;
+      }
+      
+      // Update user settings
+      chatStorage.setUserSettings(userId, { preferredAI: providerName });
+      
+      await bot.editMessageReplyMarkup(
+        { inline_keyboard: [] },
+        { chat_id: chatId, message_id: query.message.message_id }
+      );
+      
+      await bot.sendMessage(chatId, `✅ AI provider set to: **${providerName}**`, { parse_mode: 'Markdown' });
     }
     
   } catch (error) {
