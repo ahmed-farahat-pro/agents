@@ -361,46 +361,99 @@ bot.on('voice', async (msg) => {
 
   try {
     const voiceFile = await voice.downloadVoiceFile(bot, msg.voice.file_id);
-    await bot.sendMessage(msg.chat.id, 'Transcribing voice...');
     
     const transcription = await voice.speechToText(voiceFile);
     voice.cleanup(voiceFile);
 
     if (!transcription.success) {
-      await bot.sendMessage(msg.chat.id, 'Failed to transcribe voice message');
+      await bot.sendMessage(msg.chat.id, 'Failed to transcribe voice message. Please try again or use text.');
       return;
     }
 
-    await bot.sendMessage(msg.chat.id, `Transcribed: "${transcription.text}"`);
+    // Show transcribed text
+    await bot.sendMessage(msg.chat.id, `You said: "${transcription.text}"`);
 
     // Route via intent router
     await bot.sendChatAction(msg.chat.id, 'typing');
     const intentResult = await intentRouter.detectIntent(transcription.text);
 
     if (!intentResult.success) {
-      await bot.sendMessage(msg.chat.id, 'Sorry, I did not understand. Try /plan, /projects, etc.');
+      const errorMsg = 'Sorry, I did not understand. Try saying things like:\n\n• "Create a plan for adding login"\n• "Show my projects"\n• "What is the status?"';
+      await bot.sendMessage(msg.chat.id, errorMsg);
       return;
     }
 
     const response = await intentRouter.generateResponse(intentResult);
+    
+    // Send text response
     await bot.sendMessage(msg.chat.id, response.message);
 
-    // Handle project selection for plan intent
-    if (intentResult.intent === 'PLAN' && intentResult.extracted_task) {
-      // Store and show project selection
-      pendingPlanSelections.set(msg.from.id, {
-        task: intentResult.extracted_task,
-        timestamp: Date.now(),
-      });
-      
-      // Trigger project selection
-      bot.emitText(msg, '/projects');
-      await bot.sendMessage(msg.chat.id, 'Reply with: `/planwith <project-id>` to create the plan.');
+    // Handle specific intents
+    switch (intentResult.intent) {
+      case 'PLAN':
+        if (intentResult.extracted_task) {
+          // Store the pending plan
+          pendingPlanSelections.set(msg.from.id, {
+            task: intentResult.extracted_task,
+            timestamp: Date.now(),
+            fromVoice: true,
+            language: intentResult.language,
+          });
+          
+          // Get projects and show selection
+          await bot.sendChatAction(msg.chat.id, 'typing');
+          const projects = await getGitLabProjects();
+          
+          if (projects.length === 0) {
+            await bot.sendMessage(msg.chat.id, 'No projects found. Please check your GitLab configuration.');
+            return;
+          }
+          
+          // Show project selection
+          let projectMsg = `**Task:** ${intentResult.extracted_task}\n\n`;
+          projectMsg += '**Select a project by typing:**\n';
+          projectMsg += '`/planwith <project-id>`\n\n';
+          projectMsg += '**Your projects:**\n';
+          
+          projects.slice(0, 10).forEach((p, i) => {
+            projectMsg += `${i + 1}. **${p.name}**\n   ID: \`${p.id}\`\n`;
+          });
+          
+          await bot.sendMessage(msg.chat.id, projectMsg, { parse_mode: 'Markdown' });
+          
+          // Send voice confirmation
+          const voiceResponse = intentResult.language === 'ar' 
+            ? `تم استلام طلبك: ${intentResult.extracted_task}. اختر مشروعاً من القائمة.`
+            : `I received your request: ${intentResult.extracted_task}. Please select a project from the list.`;
+          await reporter.sendVoice(voiceResponse, intentResult.language === 'ar' ? 'ar' : 'en');
+        }
+        break;
+        
+      case 'PROJECT_LIST':
+        // Trigger projects command
+        bot.emitText(msg, '/projects');
+        break;
+        
+      case 'STATUS':
+        bot.emitText(msg, '/status');
+        break;
+        
+      case 'APPROVE':
+        bot.emitText(msg, '/approve');
+        break;
+        
+      case 'GREETING':
+        // Send voice greeting back
+        const greetingVoice = intentResult.language === 'ar'
+          ? 'أهلاً بك! أنا نايت أوول، فريق التطوير الذكي. يمكنك إرسال مهامك بالصوت وسأقوم بإنشاء خطط التنفيذ والتنفيذ لك.'
+          : 'Hello! I am NightOwl, your AI development team. You can send me tasks by voice and I will create implementation plans and execute them for you.';
+        await reporter.sendVoice(greetingVoice, intentResult.language === 'ar' ? 'ar' : 'en');
+        break;
     }
 
   } catch (error) {
     logger.error('Voice processing error:', error);
-    await bot.sendMessage(msg.chat.id, 'Error processing voice message');
+    await bot.sendMessage(msg.chat.id, 'Error processing your voice message. Please try again or use text commands.');
   }
 });
 
