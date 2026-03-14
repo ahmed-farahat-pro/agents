@@ -169,13 +169,19 @@ deploy-to-ec2:
         echo "WARNING: pending-plans.json not found after build!"
       fi
 
-      echo "Restarting services with PM2 ecosystem..."
-      if [ -f "ecosystem.config.js" ]; then
-        pm2 reload ecosystem.config.js --update-env || pm2 start ecosystem.config.js
-      else
-        pm2 reload nigents-bot --update-env || pm2 start src/bot.js --name nigents-bot
-        pm2 reload nigents-dashboard --update-env || pm2 start src/dashboard/server.js --name nigents-dashboard
-      fi
+      echo "Stopping all PM2 services..."
+      pm2 stop all 2>/dev/null || true
+      pm2 delete all 2>/dev/null || true
+      
+      echo "Clearing single instance locks..."
+      rm -f /tmp/nigents*.lock 2>/dev/null || true
+      
+      echo "Waiting for processes to stop..."
+      sleep 3
+      
+      echo "Starting services fresh..."
+      pm2 start src/bot.js --name nigents-bot --update-env
+      pm2 start src/dashboard/server.js --name nigents-dashboard --update-env
 
       pm2 save
       echo "=========================================="
