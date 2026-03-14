@@ -5,6 +5,14 @@
 
 require('dotenv').config();
 
+// Single instance check
+const singleInstance = require('./utils/single-instance');
+if (!singleInstance.acquire()) {
+  console.error('[Bot] Another instance is already running. Exiting.');
+  process.exit(1);
+}
+singleInstance.startHeartbeat();
+
 const TelegramBot = require('node-telegram-bot-api');
 const logger = require('./utils/logger');
 const chatStorage = require('./utils/chat-storage');
@@ -42,7 +50,28 @@ if (!token || !chatId) {
 }
 
 // Create bot with polling
-const bot = new TelegramBot(token, { polling: true });
+const bot = new TelegramBot(token, { 
+  polling: {
+    interval: 300, // ms between polling
+    autoStart: true,
+    params: {
+      timeout: 10, // Timeout for long polling
+    },
+  },
+});
+
+// Properly stop polling on exit
+function stopBot() {
+  logger.info('[Bot] Stopping bot polling...');
+  bot.stopPolling();
+  singleInstance.release();
+  logger.info('[Bot] Bot stopped');
+  process.exit(0);
+}
+
+process.on('SIGINT', stopBot);
+process.on('SIGTERM', stopBot);
+process.on('SIGUSR2', stopBot); // PM2 reload signal
 
 // Initialize agents
 const orchestrator = new OrchestratorAgent();
