@@ -271,7 +271,7 @@ To add a custom AI model, please send:
 • /addmoonshot - Add Moonshot model (easier)
 
 **Popular presets:**
-• **Zhipu GLM:** base_url=\`https://open.bigmodel.cn/api/paas/v4\`
+• **Zhipu GLM:** base_url=\`https://api.z.ai/api/paas/v4\`
   Models: glm-5, glm-4.5, glm-4, glm-4-plus, glm-4-flash
 • **Moonshot:** base_url=\`https://api.moonshot.cn/v1\`
   Models: moonshot-v1-8k, moonshot-v1-32k, moonshot-v1-128k
@@ -308,7 +308,7 @@ Send your API key and optionally the model:
 • glm-4v - Vision capable
 • glm-4-long - Long context
 
-Get your API key from: https://open.bigmodel.cn/`;
+Get your API key from: https://z.ai/ (or https://open.bigmodel.cn/ for older accounts)`;
     
     await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
     return;
@@ -325,7 +325,7 @@ Get your API key from: https://open.bigmodel.cn/`;
   }
 
   try {
-    const baseUrl = 'https://open.bigmodel.cn/api/paas/v4';
+    const baseUrl = 'https://api.z.ai/api/paas/v4';
     const name = `GLM ${modelName.toUpperCase()}`;
     const providerKey = `zhipu_${modelName.replace(/[^a-z0-9]/g, '_')}`;
 
