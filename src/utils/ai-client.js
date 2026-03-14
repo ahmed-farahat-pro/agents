@@ -45,8 +45,9 @@ class AIClient {
         enabled: !!apiKeys.ZHIPU_API_KEY,
         apiKey: apiKeys.ZHIPU_API_KEY,
         baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
-        models: ['glm-4', 'glm-4-flash', 'glm-4v', 'glm-4-plus'],
+        models: ['glm-5', 'glm-4.5', 'glm-4', 'glm-4-plus', 'glm-4-flash', 'glm-4v', 'glm-4-long', 'glm-4-air', 'glm-4-airx'],
         defaultModel: 'glm-4',
+        docsUrl: 'https://docs.z.ai/',
       },
       moonshot: {
         name: 'Moonshot AI',

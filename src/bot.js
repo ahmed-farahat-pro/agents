@@ -195,7 +195,11 @@ Send voice notes or text naturally:
 **Settings:**
 • /voice — Toggle voice responses on/off
 • /settings — View your settings
-• /addmodel — Add custom AI model (API key + URL)
+• /models — Select AI provider (interactive)
+• /model <provider> [model] — Switch AI model
+• /addmodel — Add custom AI model
+• /addglm <key> [model] — Add Zhipu GLM model quickly
+• /addmoonshot <key> [model] — Add Moonshot model quickly
 • /mymodels — List your custom AI models
 • /reload — Reload configuration and API keys
 • /debug — Show debug information
@@ -249,7 +253,7 @@ bot.onText(/\/addmodel/, async (msg) => {
 
   const message = `**Add Custom AI Model**
 
-To add a custom AI model (like Kimi 2.5), please send:
+To add a custom AI model, please send:
 
 \`addmodel <name>|<api_key>|<base_url>|<model_name>\`
 
@@ -262,11 +266,185 @@ To add a custom AI model (like Kimi 2.5), please send:
 • base_url: API base URL
 • model_name: Model identifier
 
+**Quick Commands:**
+• /addglm - Add Zhipu GLM model (easier)
+• /addmoonshot - Add Moonshot model (easier)
+
 **Popular presets:**
-• Moonshot Kimi 2.5: base_url=\`https://api.moonshot.cn/v1\`, model=\`kimi-k2-5\`
-• OpenRouter: base_url=\`https://openrouter.ai/api/v1\``;
+• **Zhipu GLM:** base_url=\`https://open.bigmodel.cn/api/paas/v4\`
+  Models: glm-5, glm-4.5, glm-4, glm-4-plus, glm-4-flash
+• **Moonshot:** base_url=\`https://api.moonshot.cn/v1\`
+  Models: moonshot-v1-8k, moonshot-v1-32k, moonshot-v1-128k
+• **OpenRouter:** base_url=\`https://openrouter.ai/api/v1\``;
 
   await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+});
+
+// /addglm command - Quick add Zhipu GLM model
+bot.onText(/\/addglm(?:\s+(.+))?/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const args = match[1];
+  
+  // If no args, show help
+  if (!args) {
+    const message = `**Add Zhipu GLM Model**
+
+Send your API key and optionally the model:
+
+\`/addglm <api_key> [model]\`
+
+**Examples:**
+\`/addglm your-api-key-here\` (uses glm-4)
+\`/addglm your-api-key-here glm-5\`
+\`/addglm your-api-key-here glm-4-plus\`
+
+**Available Models:**
+• glm-5 - Latest, best performance
+• glm-4.5 - Advanced reasoning
+• glm-4 - Balanced (default)
+• glm-4-plus - Enhanced version
+• glm-4-flash - Fast, cheaper
+• glm-4v - Vision capable
+• glm-4-long - Long context
+
+Get your API key from: https://open.bigmodel.cn/`;
+    
+    await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+    return;
+  }
+
+  // Parse: api_key [model]
+  const parts = args.trim().split(/\s+/);
+  const apiKey = parts[0];
+  const modelName = parts[1] || 'glm-4';
+  
+  if (!apiKey || apiKey.length < 10) {
+    await bot.sendMessage(msg.chat.id, '❌ Invalid API key. Please provide a valid Zhipu API key.');
+    return;
+  }
+
+  try {
+    const baseUrl = 'https://open.bigmodel.cn/api/paas/v4';
+    const name = `GLM ${modelName.toUpperCase()}`;
+    const providerKey = `zhipu_${modelName.replace(/[^a-z0-9]/g, '_')}`;
+
+    // Store in shared config
+    const customModels = sharedConfig.getFullConfig().customModels || {};
+    customModels[providerKey] = {
+      name: name,
+      apiKey: apiKey,
+      baseUrl: baseUrl,
+      model: modelName,
+      enabled: true,
+      addedBy: msg.from.id,
+      addedAt: new Date().toISOString(),
+    };
+
+    sharedConfig.saveConfig({
+      ...sharedConfig.getFullConfig(),
+      customModels,
+    });
+
+    // Refresh AI client
+    aiClient.refreshProviders();
+
+    await bot.sendMessage(msg.chat.id, 
+      `✅ **Zhipu GLM model added!**
+
+Model: ${name}
+Base URL: ${baseUrl}
+Model ID: ${modelName}
+
+Use /model ${providerKey} to select it.
+Use /mymodels to see all your models.`,
+      { parse_mode: 'Markdown' }
+    );
+  } catch (error) {
+    logger.error('[Bot] Failed to add GLM model:', error);
+    await bot.sendMessage(msg.chat.id, `❌ Error adding model: ${error.message}`);
+  }
+});
+
+// /addmoonshot command - Quick add Moonshot model
+bot.onText(/\/addmoonshot(?:\s+(.+))?/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const args = match[1];
+  
+  // If no args, show help
+  if (!args) {
+    const message = `**Add Moonshot Model**
+
+Send your API key and optionally the model:
+
+\`/addmoonshot <api_key> [model]\`
+
+**Examples:**
+\`/addmoonshot sk-your-key\` (uses moonshot-v1-8k)
+\`/addmoonshot sk-your-key moonshot-v1-32k\`
+
+**Available Models:**
+• moonshot-v1-8k - 8k context (default)
+• moonshot-v1-32k - 32k context
+• moonshot-v1-128k - 128k context
+
+Get your API key from: https://platform.moonshot.cn/`;
+    
+    await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+    return;
+  }
+
+  // Parse: api_key [model]
+  const parts = args.trim().split(/\s+/);
+  const apiKey = parts[0];
+  const modelName = parts[1] || 'moonshot-v1-8k';
+  
+  if (!apiKey || !apiKey.startsWith('sk-')) {
+    await bot.sendMessage(msg.chat.id, '❌ Invalid API key. Moonshot keys start with "sk-"');
+    return;
+  }
+
+  try {
+    const baseUrl = 'https://api.moonshot.cn/v1';
+    const name = `Moonshot ${modelName.replace('moonshot-', '').toUpperCase()}`;
+    const providerKey = `moonshot_${modelName.replace(/[^a-z0-9]/g, '_')}`;
+
+    // Store in shared config
+    const customModels = sharedConfig.getFullConfig().customModels || {};
+    customModels[providerKey] = {
+      name: name,
+      apiKey: apiKey,
+      baseUrl: baseUrl,
+      model: modelName,
+      enabled: true,
+      addedBy: msg.from.id,
+      addedAt: new Date().toISOString(),
+    };
+
+    sharedConfig.saveConfig({
+      ...sharedConfig.getFullConfig(),
+      customModels,
+    });
+
+    // Refresh AI client
+    aiClient.refreshProviders();
+
+    await bot.sendMessage(msg.chat.id, 
+      `✅ **Moonshot model added!**
+
+Model: ${name}
+Base URL: ${baseUrl}
+Model ID: ${modelName}
+
+Use /model ${providerKey} to select it.
+Use /mymodels to see all your models.`,
+      { parse_mode: 'Markdown' }
+    );
+  } catch (error) {
+    logger.error('[Bot] Failed to add Moonshot model:', error);
+    await bot.sendMessage(msg.chat.id, `❌ Error adding model: ${error.message}`);
+  }
 });
 
 // Handle addmodel with parameters
