@@ -231,11 +231,31 @@ Respond with valid JSON in this format:
 }
 `;
 
-    // Use MCP enhanced execution for better research
-    const result = await this.executeWithMCP(prompt, { 
-      task: 'create_plan',
-      project,
-    });
+    // Try MCP first, fall back to direct AI call
+    let result;
+    try {
+      result = await this.executeWithMCP(prompt, { 
+        task: 'create_plan',
+        project,
+      });
+    } catch (mcpError) {
+      logger.warn('[Planner] MCP failed, falling back to direct AI call:', mcpError.message);
+      
+      // Fallback to direct AI call
+      const aiResult = await this.callAI(prompt, {
+        model: this.model,
+        maxTokens: 4096,
+      });
+      
+      if (!aiResult.success) {
+        throw new Error('Failed to generate plan: ' + aiResult.error);
+      }
+      
+      result = {
+        success: true,
+        content: aiResult.content,
+      };
+    }
 
     if (!result.success) {
       throw new Error('Failed to generate plan: ' + result.error);
