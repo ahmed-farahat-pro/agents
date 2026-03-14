@@ -1,109 +1,200 @@
-# 🦉 NightOwl GitLab CI/CD Pipeline
+# Nigents CI/CD Pipeline
+# Auto-deploys to AWS EC2 on every push to main branch
 
 stages:
-  - lint
+  - test
   - build
   - deploy
-  - notify
 
 variables:
-  DOCKER_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+  SSH_USER: ubuntu
+  DEPLOY_DIR: /home/ubuntu/nigents
+  GIT_DEPTH: 10
+  GIT_STRATEGY: clone
 
-# Cache node_modules
 cache:
+  key: ${CI_COMMIT_REF_SLUG}
   paths:
     - node_modules/
+    - mcp-servers/*/node_modules/
 
-# Lint Stage
-lint:
-  stage: lint
-  image: node:20-alpine
+default:
   before_script:
-    - npm ci
-  script:
-    - npm run lint || true
-    - node --check src/bot.js
-  tags:
-    - docker
+    - echo "=== DEBUG Environment Variables ==="
+    - echo "EC2_HOST=${EC2_HOST}"
+    - echo "SSH_USER=${SSH_USER}"
+    - echo "SSH_PRIVATE_KEY is set=$(if [ -n "${SSH_PRIVATE_KEY}" ]; then echo 'YES'; else echo 'NO'; fi)"
 
-# Build Stage
-build:
-  stage: build
-  image: docker:latest
-  services:
-    - docker:dind
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-  script:
-    - docker build -t $DOCKER_IMAGE .
-    - docker push $DOCKER_IMAGE
-  only:
-    - main
-    - master
-  tags:
-    - docker
+    - |
+      if [ -z "${EC2_HOST}" ]; then
+        echo "ERROR: EC2_HOST is not set!"
+        exit 1
+      fi
 
-# Deploy Stage
-deploy:
-  stage: deploy
-  image: alpine:latest
-  before_script:
-    - apk add --no-cache openssh-client rsync
+    - |
+      if [ -z "${SSH_PRIVATE_KEY}" ]; then
+        echo "ERROR: SSH_PRIVATE_KEY is not set!"
+        exit 1
+      fi
+
+    - echo "=== Setting up SSH ==="
+    - apk update
+    - apk add --no-cache openssh-client bash
     - eval $(ssh-agent -s)
-    - echo "$EC2_SSH_KEY" | tr -d '\r' | ssh-add -
+    - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
+    - ssh-keyscan -H "${EC2_HOST}" >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - echo "=== SSH Setup Complete ==="
+
+# ============================================================
+# STAGE 1: TEST
+# ============================================================
+
+lint:
+  stage: test
+  image: node:20-alpine
   script:
-    - rsync -avz --exclude 'node_modules' --exclude '.git' --exclude 'logs'
-        -e "ssh -o StrictHostKeyChecking=no" 
-        ./ $EC2_USER@$EC2_HOST:/home/ubuntu/nightowl/
+    - npm ci
+    - npm run lint || echo "No lint script"
+    - node --check src/bot.js
+    - node --check src/dashboard/server.js
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^main|develop|feature\/.*$/'
+
+test-mcp-builds:
+  stage: test
+  image: node:20-alpine
+  script:
+    - cd mcp-servers/arabic-rtl-auditor && npm ci && npm run build && cd ../..
+    - cd mcp-servers/task-splitter && npm ci && npm run build && cd ../..
+    - cd mcp-servers/smart-code-search && npm ci && npm run build && cd ../..
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^main|feature\/.*$/'
+
+# ============================================================
+# STAGE 2: BUILD
+# ============================================================
+
+build-mcps:
+  stage: build
+  image: node:20-alpine
+  script:
+    - cd mcp-servers/arabic-rtl-auditor && npm ci && npm run build && cd ../..
+    - cd mcp-servers/task-splitter && npm ci && npm run build && cd ../..
+    - cd mcp-servers/smart-code-search && npm ci && npm run build && cd ../..
+    - tar -czf mcp-dist.tar.gz mcp-servers/*/dist/
+  artifacts:
+    paths:
+      - mcp-dist.tar.gz
+    expire_in: 1 hour
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"'
+
+# ============================================================
+# STAGE 3: DEPLOY
+# ============================================================
+
+deploy-to-ec2:
+  stage: deploy
+  image: alpine:latest
+  environment:
+    name: production
+    url: https://nigents.com
+  script:
+    - echo "=== Starting deployment to EC2 ==="
+    - echo "EC2_HOST=${EC2_HOST}"
+    - echo "SSH_USER=${SSH_USER}"
+
     - |
-      ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << EOF
-        cd /home/ubuntu/nightowl
-        npm ci --production
-        pm2 reload nightowl-bot || pm2 start src/bot.js --name nightowl-bot
-        pm2 reload nightowl-dashboard || pm2 start src/dashboard/server.js --name nightowl-dashboard
-        pm2 save
+      cat > deploy.sh << 'EOF'
+      #!/bin/bash
+      set -e
+
+      echo "=========================================="
+      echo "  NIGENTS DEPLOYMENT - DATA PRESERVING"
+      echo "=========================================="
+
+      echo "Navigating to project directory..."
+      cd /home/ubuntu/nigents
+
+      echo "Creating data directories if not exist..."
+      mkdir -p data logs .cache
+
+      echo "Backing up local data (just in case)..."
+      if [ -d "data" ]; then
+        cp -r data data.backup.$(date +%Y%m%d_%H%M%S) 2>/dev/null || true
+      fi
+
+      echo "Stashing any local changes..."
+      git stash || true
+
+      echo "Pulling latest changes..."
+      git fetch origin
+      git pull origin main
+
+      echo "Restoring data if needed..."
+      # Data directory is preserved as it's in .gitignore
+
+      echo "Installing dependencies..."
+      npm ci --production
+
+      echo "Rebuilding MCP servers..."
+      cd mcp-servers/arabic-rtl-auditor && npm ci && npm run build && cd ../..
+      cd mcp-servers/task-splitter && npm ci && npm run build && cd ../..
+      cd mcp-servers/smart-code-search && npm ci && npm run build && cd ../..
+
+      echo "Restarting services with PM2 ecosystem..."
+      if [ -f "ecosystem.config.js" ]; then
+        pm2 reload ecosystem.config.js --update-env || pm2 start ecosystem.config.js
+      else
+        pm2 reload nigents-bot --update-env || pm2 start src/bot.js --name nigents-bot
+        pm2 reload nigents-dashboard --update-env || pm2 start src/dashboard/server.js --name nigents-dashboard
+      fi
+
+      pm2 save
+      echo "=========================================="
+      echo "  DEPLOYMENT COMPLETE!"
+      echo "=========================================="
+      pm2 status
+      echo ""
+      echo "Data directories preserved:"
+      ls -la data/ 2>/dev/null || echo "  (data directory is empty)"
       EOF
-  only:
-    - main
-    - master
-  tags:
-    - docker
 
-# Notify Stage
-notify_success:
-  stage: notify
-  image: alpine:latest
-  before_script:
-    - apk add --no-cache curl
-  script:
-    - |
-      curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-        -d "chat_id=${TELEGRAM_CHAT_ID}" \
-        -d "text=✅ NightOwl deployed successfully!%0ACommit: ${CI_COMMIT_SHA:0:8}%0ABranch: ${CI_COMMIT_BRANCH}" \
-        -d "parse_mode=HTML"
+    - scp -o StrictHostKeyChecking=no deploy.sh "${SSH_USER}@${EC2_HOST}:/tmp/deploy.sh"
+    - ssh -o StrictHostKeyChecking=no "${SSH_USER}@${EC2_HOST}" "chmod +x /tmp/deploy.sh && /tmp/deploy.sh"
+    - ssh -o StrictHostKeyChecking=no "${SSH_USER}@${EC2_HOST}" "rm /tmp/deploy.sh"
+    - echo "=== Deployment successful! ==="
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
   when: on_success
-  only:
-    - main
-    - master
-  tags:
-    - docker
 
-notify_failure:
-  stage: notify
+# ============================================================
+# TELEGRAM NOTIFICATION
+# ============================================================
+
+notify-telegram:
+  stage: deploy
   image: alpine:latest
-  before_script:
-    - apk add --no-cache curl
   script:
+    - apk add --no-cache curl
     - |
+      MESSAGE="🚀 Nigents Deployment
+      Status: ✅ SUCCESS
+      Branch: ${CI_COMMIT_REF_NAME}
+      Commit: ${CI_COMMIT_SHORT_SHA}
+      Author: ${GITLAB_USER_NAME}
+      Dashboard: https://nigents.com"
+
       curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
         -d "chat_id=${TELEGRAM_CHAT_ID}" \
-        -d "text=❌ NightOwl deployment failed!%0ACommit: ${CI_COMMIT_SHA:0:8}%0ACheck pipeline: ${CI_PIPELINE_URL}" \
-        -d "parse_mode=HTML"
-  when: on_failure
-  only:
-    - main
-    - master
-  tags:
-    - docker
+        --data-urlencode "text=${MESSAGE}" \
+        -d "parse_mode=Markdown" || echo "Telegram notification failed"
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  when: on_success
+  allow_failure: true

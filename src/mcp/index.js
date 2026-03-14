@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - MCP Module Exports
+ * 🦉 Nigents - MCP Module Exports
  */
 
 const mcpClient = require('./mcp-client');

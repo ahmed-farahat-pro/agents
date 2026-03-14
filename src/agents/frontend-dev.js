@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - Frontend Developer Agent
+ * 🦉 Nigents - Frontend Developer Agent
  * Writes React/React Native code with RTL support
  */
 
@@ -207,6 +207,13 @@ Return the complete updated code.
 `;
 
     return this.callClaude(prompt);
+  }
+
+  /**
+   * Execute task - required by BaseAgent
+   */
+  async execute(task) {
+    return this.implement(task);
   }
 }
 

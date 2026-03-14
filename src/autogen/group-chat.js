@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - AutoGen Group Chat System
+ * 🦉 Nigents - AutoGen Group Chat System
  * Multi-agent communication using AutoGen framework
  */
 
@@ -7,7 +7,7 @@ const { ConversableAgent, GroupChat, GroupChatManager } = require('autogen');
 const logger = require('../utils/logger');
 const EventEmitter = require('events');
 
-class NightOwlGroupChat extends EventEmitter {
+class NigentsGroupChat extends EventEmitter {
   constructor() {
     super();
     this.agents = new Map();
@@ -24,7 +24,7 @@ class NightOwlGroupChat extends EventEmitter {
   async initialize() {
     logger.info('[AutoGen] Initializing group chat system...');
 
-    // Create AutoGen agents for each NightOwl agent
+    // Create AutoGen agents for each Nigents agent
     await this.createAgents();
 
     // Create group chat
@@ -55,7 +55,7 @@ class NightOwlGroupChat extends EventEmitter {
   }
 
   /**
-   * Create AutoGen agents for each NightOwl agent
+   * Create AutoGen agents for each Nigents agent
    */
   async createAgents() {
     const agentConfigs = require('../../config/agents.json');
@@ -384,4 +384,4 @@ Please review and determine next actions.
   }
 }
 
-module.exports = NightOwlGroupChat;
+module.exports = NigentsGroupChat;

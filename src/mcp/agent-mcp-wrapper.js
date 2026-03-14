@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - Agent MCP Wrapper
+ * 🦉 Nigents - Agent MCP Wrapper
  * Wraps agents with MCP tool capabilities
  */
 
@@ -59,7 +59,7 @@ class AgentMCPWrapper {
     ).join('\n');
 
     return `
-You are ${this.agentName} agent in NightOwl AI development team.
+You are ${this.agentName} agent in Nigents AI development team.
 
 Task: ${task}
 

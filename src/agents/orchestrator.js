@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - Orchestrator Agent
+ * 🦉 Nigents - Orchestrator Agent
  * Team Lead & Router - Coordinates all other agents
  */
 
@@ -495,6 +495,13 @@ Provide a helpful answer. If the question is about specific code and you don't h
         completed: this.completedTasks.length,
       },
     };
+  }
+
+  /**
+   * Execute task - required by BaseAgent
+   */
+  async execute(task) {
+    return this.processCommand(task.command, task.context);
   }
 }
 

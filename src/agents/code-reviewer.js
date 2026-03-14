@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - Code Reviewer Agent
+ * 🦉 Nigents - Code Reviewer Agent
  * Reviews code for quality, security, and standards
  */
 
@@ -310,6 +310,13 @@ Provide a detailed code review with specific line references.
 `;
 
     return this.callClaude(prompt);
+  }
+
+  /**
+   * Execute task - required by BaseAgent
+   */
+  async execute(task) {
+    return this.review(task);
   }
 }
 

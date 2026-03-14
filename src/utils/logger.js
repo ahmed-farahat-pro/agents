@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - Winston Logger Configuration
+ * 🦉 Nigents - Winston Logger Configuration
  */
 
 const winston = require('winston');
@@ -19,7 +19,7 @@ const logger = winston.createLogger({
     winston.format.errors({ stack: true }),
     winston.format.json()
   ),
-  defaultMeta: { service: 'nightowl' },
+  defaultMeta: { service: "nigents" },
   transports: [
     // Write all logs to console
     new winston.transports.Console({

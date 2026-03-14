@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - Reporter Agent
+ * 🦉 Nigents - Reporter Agent
  * Sends Telegram updates and reports
  */
 
@@ -118,7 +118,7 @@ Sleep well! 🌙
       day: 'numeric',
     });
 
-    let message = `🌅 **Good morning! NightOwl Daily Report**\n`;
+    let message = `🌅 **Good morning! Nigents Daily Report**\n`;
     message += `━━━━━━━━━━━━━━━━━━━━━━\n`;
     message += `${date}\n\n`;
 
@@ -154,7 +154,7 @@ Sleep well! 🌙
 
     // Voice summary
     const completedCount = completed.length;
-    const voiceText = `Good morning! NightOwl completed ${completedCount} task${completedCount !== 1 ? 's' : ''} overnight. Check Telegram for details.`;
+    const voiceText = `Good morning! Nigents completed ${completedCount} task${completedCount !== 1 ? 's' : ''} overnight. Check Telegram for details.`;
     await this.sendVoice(voiceText, { language: 'en' });
   }
 
@@ -266,6 +266,42 @@ ${Object.entries(this.costTracking.tasks)
       'error': '🔴',
     };
     return emojis[status] || '⚪';
+  }
+
+  /**
+   * Send a report based on task type
+   */
+  async sendReport(task) {
+    const reportType = task.type || 'message';
+    
+    switch (reportType) {
+      case 'completion':
+        return this.sendCompletionReport(task);
+      case 'morning':
+        return this.sendMorningReport(task.tasks);
+      case 'standup':
+        return this.sendStandupReport(task.agents);
+      case 'health':
+        return this.sendProjectHealthReport(task.project, task.health);
+      case 'cost':
+        return this.sendCostReport();
+      case 'deployment':
+        return this.sendDeploymentNotification(task.version, task.status);
+      case 'voice':
+        return this.sendVoice(task.text, task.options);
+      case 'progress':
+        return this.sendProgress(task.message, task.options);
+      case 'message':
+      default:
+        return this.sendMessage(task.text || task.message, task.options);
+    }
+  }
+
+  /**
+   * Execute task - required by BaseAgent
+   */
+  async execute(task) {
+    return this.sendReport(task);
   }
 }
 

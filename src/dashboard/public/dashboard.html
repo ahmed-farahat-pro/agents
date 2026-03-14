@@ -1,0 +1,3588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nigents Dashboard</title>
+    <script>
+        // Check authentication
+        if (localStorage.getItem('nigents_auth') !== 'true') {
+            window.location.href = '/login.html';
+        }
+    </script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg: #0a0a0f;
+            --bg-elevated: #12121a;
+            --bg-card: #1a1a25;
+            --bg-hover: #252532;
+            --border: #2a2a3a;
+            --border-light: #3a3a4a;
+            --text: #f0f0f5;
+            --text-muted: #8a8a95;
+            --text-dim: #5a5a65;
+            --accent: #6366f1;
+            --accent-light: #818cf8;
+            --accent-dark: #4f46e5;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --info: #3b82f6;
+            --gradient-1: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --gradient-2: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+            --gradient-3: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            line-height: 1.5;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Layout */
+        .app {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--bg-elevated);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            width: 260px;
+            z-index: 100;
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .sidebar.mobile-hidden {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 99;
+            backdrop-filter: blur(2px);
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            background: var(--bg-elevated);
+            z-index: 10;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-mark {
+            width: 36px;
+            height: 36px;
+            background: var(--gradient-1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .brand-text h1 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-text span {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .mobile-close {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 28px;
+            cursor: pointer;
+            padding: 4px 8px;
+            line-height: 1;
+        }
+
+        .nav {
+            padding: 12px 8px;
+            flex: 1;
+        }
+
+        .nav-section {
+            margin-bottom: 20px;
+        }
+
+        .nav-title {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            padding: 8px 16px;
+            margin-bottom: 4px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            margin: 2px 8px;
+            border-radius: 10px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.2s;
+            position: relative;
+            font-size: 14px;
+        }
+
+        .nav-item:hover {
+            background: var(--bg-hover);
+            color: var(--text);
+        }
+
+        .nav-item.active {
+            background: var(--accent-dark);
+            color: white;
+        }
+
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 20px;
+            background: var(--accent-light);
+            border-radius: 0 3px 3px 0;
+        }
+
+        .nav-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-dim);
+            flex-shrink: 0;
+        }
+
+        .nav-item.active .nav-indicator {
+            background: var(--accent-light);
+            box-shadow: 0 0 8px var(--accent-light);
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: var(--accent);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+            position: sticky;
+            bottom: 0;
+            background: var(--bg-elevated);
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 2s infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            margin-left: 260px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            height: 64px;
+            background: var(--bg-elevated);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+            min-width: 44px;
+            min-height: 44px;
+        }
+
+        .header-title h2 {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            white-space: nowrap;
+            min-height: 44px;
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-light);
+        }
+
+        .btn-primary {
+            background: var(--gradient-1);
+            color: white;
+            box-shadow: var(--shadow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+            border: 1px solid var(--error);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 8px 14px;
+            font-size: 13px;
+            min-height: 40px;
+        }
+
+        /* Content Area */
+        .content {
+            padding: 20px;
+            flex: 1;
+        }
+
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            border-color: var(--border-light);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .stat-card.primary::before { background: var(--gradient-1); }
+        .stat-card.success::before { background: var(--gradient-2); }
+        .stat-card.warning::before { background: var(--gradient-3); }
+        .stat-card.info::before { background: var(--info); }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .stat-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .stat-card.primary .stat-icon {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--accent-light);
+        }
+
+        .stat-card.success .stat-icon {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .stat-card.warning .stat-icon {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .stat-card.info .stat-icon {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--info);
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 4px;
+        }
+
+        .stat-change {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .stat-change.positive {
+            color: var(--success);
+        }
+
+        /* Charts Section */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .chart-title {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .chart-period {
+            display: flex;
+            gap: 4px;
+        }
+
+        .period-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 36px;
+        }
+
+        .period-btn:hover,
+        .period-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+        }
+
+        /* Model Stats */
+        .model-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .model-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .model-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .model-logo {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .model-logo.claude {
+            background: linear-gradient(135deg, #d4a574 0%, #c9a86c 100%);
+            color: #1a1a1a;
+        }
+
+        .model-logo.glm {
+            background: linear-gradient(135deg, #1e88e5 0%, #0d47a1 100%);
+            color: white;
+        }
+
+        .model-logo.kimi {
+            background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
+            color: white;
+        }
+
+        .model-logo.custom {
+            background: var(--gradient-1);
+            color: white;
+        }
+
+        .model-info h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .model-info span {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .model-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .metric {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        /* Progress Bars */
+        .progress-bar {
+            height: 6px;
+            background: var(--bg-hover);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.primary { background: var(--accent); }
+        .progress-fill.success { background: var(--success); }
+        .progress-fill.warning { background: var(--warning); }
+
+        /* Activity Feed */
+        .activity-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        .activity-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .activity-title {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .activity-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+
+        .activity-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .activity-time {
+            font-size: 11px;
+            color: var(--text-dim);
+            font-family: monospace;
+            min-width: 50px;
+            flex-shrink: 0;
+        }
+
+        .activity-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 4px;
+            flex-shrink: 0;
+        }
+
+        .activity-dot.success { background: var(--success); box-shadow: 0 0 6px var(--success); }
+        .activity-dot.warning { background: var(--warning); box-shadow: 0 0 6px var(--warning); }
+        .activity-dot.info { background: var(--info); box-shadow: 0 0 6px var(--info); }
+
+        .activity-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .activity-agent {
+            font-weight: 600;
+            color: var(--accent-light);
+            margin-bottom: 2px;
+            font-size: 13px;
+        }
+
+        .activity-message {
+            color: var(--text-muted);
+            font-size: 12px;
+            word-break: break-word;
+        }
+
+        /* Agent Grid */
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .agent-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .agent-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .agent-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .agent-info h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .agent-role {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .agent-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .agent-status.idle {
+            background: rgba(90, 90, 101, 0.3);
+            color: var(--text-muted);
+        }
+
+        .agent-status.active {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .agent-status.busy {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .agent-stats-row {
+            display: flex;
+            gap: 16px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .agent-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .agent-stat-value {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .agent-stat-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        /* Configuration Form */
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .config-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .config-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 15px;
+            transition: all 0.2s;
+            min-height: 48px;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        /* Toggle Switch */
+        .toggle-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .toggle-info h4 {
+            font-weight: 500;
+            margin-bottom: 4px;
+            font-size: 15px;
+        }
+
+        .toggle-info p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .toggle {
+            width: 52px;
+            height: 28px;
+            background: var(--bg-hover);
+            border-radius: 14px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+            flex-shrink: 0;
+        }
+
+        .toggle.active {
+            background: var(--accent);
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .toggle.active::after {
+            transform: translateX(24px);
+        }
+
+        /* MCP Tools */
+        .mcp-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+        }
+
+        .mcp-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            transition: all 0.2s;
+        }
+
+        .mcp-card:hover {
+            border-color: var(--accent);
+        }
+
+        .mcp-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .mcp-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 6px var(--success);
+            flex-shrink: 0;
+        }
+
+        .mcp-indicator.offline {
+            background: var(--error);
+            box-shadow: 0 0 6px var(--error);
+        }
+
+        .mcp-name {
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .mcp-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* AI Provider Management */
+        .provider-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .provider-item {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .provider-info h4 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .provider-info p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .provider-models {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .model-tag {
+            background: var(--bg-hover);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .provider-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 200;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px 20px 0 0;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: var(--bg-card);
+            z-index: 10;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 28px;
+            cursor: pointer;
+            padding: 4px;
+            min-width: 44px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            position: sticky;
+            bottom: 0;
+            background: var(--bg-card);
+        }
+
+        /* Model Tags Input */
+        .tags-input {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            min-height: 52px;
+            align-items: center;
+        }
+
+        .tags-input:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .tag {
+            background: var(--accent-dark);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tag-remove {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            padding: 0;
+            min-width: 20px;
+            min-height: 20px;
+        }
+
+        .tag-input {
+            background: none;
+            border: none;
+            color: var(--text);
+            flex: 1;
+            min-width: 100px;
+            font-size: 15px;
+            min-height: 32px;
+        }
+
+        .tag-input:focus {
+            outline: none;
+        }
+
+        /* Task Creation Styles */
+        .task-priority-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .priority-btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            min-height: 44px;
+        }
+
+        .priority-btn:hover {
+            border-color: var(--accent);
+        }
+
+        .priority-btn.active.low {
+            background: var(--info);
+            border-color: var(--info);
+            color: white;
+        }
+
+        .priority-btn.active.medium {
+            background: var(--warning);
+            border-color: var(--warning);
+            color: white;
+        }
+
+        .priority-btn.active.high {
+            background: var(--error);
+            border-color: var(--error);
+            color: white;
+        }
+
+        /* GitLab Repos */
+        .repo-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .repo-item {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .repo-item:hover {
+            border-color: var(--accent);
+            background: var(--bg-hover);
+        }
+
+        .repo-item.selected {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .repo-info h4 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .repo-info p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .repo-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        .repo-badge {
+            background: var(--bg-hover);
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .repo-check {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--success);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+
+        /* Task List */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .task-item {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            gap: 12px;
+            transition: all 0.2s;
+        }
+
+        .task-item:hover {
+            border-color: var(--accent);
+        }
+
+        .task-priority {
+            width: 4px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        .task-priority.low { background: var(--info); }
+        .task-priority.medium { background: var(--warning); }
+        .task-priority.high { background: var(--error); }
+
+        .task-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .task-title {
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .task-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .task-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-dim);
+            flex-wrap: wrap;
+        }
+
+        .task-status {
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .task-status.pending {
+            background: rgba(90, 90, 101, 0.3);
+            color: var(--text-muted);
+        }
+
+        .task-status.running {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .task-status.completed {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        /* Mobile Quick Actions */
+        .mobile-quick-actions {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 90;
+        }
+
+        .fab {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--gradient-1);
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fab:active {
+            transform: scale(0.95);
+        }
+
+        /* Agent Activity Monitor */
+        .agent-monitor {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .agent-activity-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.3s;
+        }
+
+        .agent-activity-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .agent-activity-card.active {
+            border-color: var(--success);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
+        }
+
+        .agent-activity-card.busy {
+            border-color: var(--warning);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.1);
+        }
+
+        .agent-activity-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .agent-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .agent-avatar.orchestrator { background: var(--gradient-1); }
+        .agent-avatar.planner { background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); }
+        .agent-avatar.backend { background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%); }
+        .agent-avatar.frontend { background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); }
+        .agent-avatar.qa { background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); }
+        .agent-avatar.reviewer { background: linear-gradient(135deg, #84cc16 0%, #10b981 100%); }
+        .agent-avatar.reporter { background: linear-gradient(135deg, #f472b6 0%, #8b5cf6 100%); }
+
+        .agent-activity-info {
+            flex: 1;
+        }
+
+        .agent-activity-info h4 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .agent-activity-info span {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .agent-status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--text-dim);
+            flex-shrink: 0;
+        }
+
+        .agent-status-indicator.active {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        .agent-status-indicator.busy {
+            background: var(--warning);
+            box-shadow: 0 0 10px var(--warning);
+        }
+
+        .agent-current-task {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+
+        .agent-current-task h5 {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .agent-current-task p {
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .agent-progress {
+            margin-top: 10px;
+        }
+
+        .agent-progress-bar {
+            height: 6px;
+            background: var(--bg-hover);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .agent-progress-fill {
+            height: 100%;
+            background: var(--gradient-1);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .agent-progress-text {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Agent Communication Feed */
+        .comm-feed {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .comm-feed-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .comm-feed-title {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .comm-feed-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .comm-message {
+            display: flex;
+            gap: 12px;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+
+        .comm-message:hover {
+            background: var(--bg-hover);
+        }
+
+        .comm-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .comm-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .comm-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .comm-sender {
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .comm-time {
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        .comm-text {
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .comm-recipient {
+            color: var(--accent-light);
+            font-weight: 500;
+        }
+
+        .comm-meta {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .comm-tag {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: var(--bg-hover);
+            color: var(--text-muted);
+        }
+
+        .comm-tag.task { background: rgba(99, 102, 241, 0.2); color: var(--accent-light); }
+        .comm-tag.question { background: rgba(59, 130, 246, 0.2); color: var(--info); }
+        .comm-tag.response { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+
+        /* Live Indicator */
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--error);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--error);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--error);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        /* System Status Panel */
+        .system-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .status-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .status-icon.online {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .status-icon.warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .status-icon.offline {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+        }
+
+        .status-details h4 {
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .status-details span {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Responsive for Agent Monitor */
+        @media (max-width: 768px) {
+            .agent-monitor {
+                grid-template-columns: 1fr;
+            }
+            
+            .comm-message {
+                padding: 12px 16px;
+            }
+        }
+
+        /* Empty State */
+        .empty {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .empty p {
+            font-size: 14px;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-light);
+        }
+
+        /* MOBILE RESPONSIVE STYLES */
+        @media (max-width: 1024px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .config-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                width: 280px;
+            }
+
+            .sidebar.mobile-visible {
+                transform: translateX(0);
+            }
+
+            .mobile-close {
+                display: block;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .menu-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .header {
+                padding: 0 16px;
+                height: 60px;
+            }
+
+            .header-title h2 {
+                font-size: 16px;
+            }
+
+            .header-actions .btn-secondary {
+                display: none;
+            }
+
+            .content {
+                padding: 16px;
+                padding-bottom: 100px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .stat-card {
+                padding: 16px;
+            }
+
+            .stat-value {
+                font-size: 24px;
+            }
+
+            .model-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .agents-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .mcp-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .chart-container {
+                height: 200px;
+            }
+
+            .provider-item {
+                flex-direction: column;
+            }
+
+            .provider-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            .mobile-quick-actions {
+                display: block;
+            }
+
+            .modal {
+                border-radius: 20px 20px 0 0;
+                max-height: 85vh;
+            }
+
+            .modal-footer {
+                flex-direction: column;
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+            }
+
+            .repo-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .task-item {
+                flex-direction: column;
+            }
+
+            .task-priority {
+                width: 100%;
+                height: 4px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .mcp-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .btn {
+                padding: 12px 16px;
+                font-size: 15px;
+            }
+
+            .task-priority-selector {
+                flex-direction: column;
+            }
+
+            .priority-btn {
+                width: 100%;
+            }
+
+            .chart-period {
+                width: 100%;
+            }
+
+            .period-btn {
+                flex: 1;
+            }
+
+            .nav-item {
+                padding: 14px 16px;
+                font-size: 15px;
+            }
+        }
+
+        /* Touch-friendly improvements */
+        @media (hover: none) {
+            .btn:active,
+            .nav-item:active,
+            .agent-card:active,
+            .mcp-card:active,
+            .repo-item:active,
+            .task-item:active {
+                transform: scale(0.98);
+                opacity: 0.9;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Sidebar Overlay for Mobile -->
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <div class="brand-mark">N</div>
+                    <div class="brand-text">
+                        <h1>Nigents</h1>
+                        <span>Night Agents</span>
+                    </div>
+                </div>
+                <button class="mobile-close" onclick="toggleSidebar()">×</button>
+            </div>
+            <nav class="nav">
+                <div class="nav-section">
+                    <div class="nav-title">Overview</div>
+                    <div class="nav-item active" data-view="dashboard">
+                        <div class="nav-indicator"></div>
+                        <span>Dashboard</span>
+                    </div>
+                    <div class="nav-item" data-view="monitor">
+                        <div class="nav-indicator"></div>
+                        <span>Live Monitor</span>
+                    </div>
+                    <div class="nav-item" data-view="tasks">
+                        <div class="nav-indicator"></div>
+                        <span>Tasks</span>
+                        <span class="nav-badge" id="task-count">0</span>
+                    </div>
+                    <div class="nav-item" data-view="agents">
+                        <div class="nav-indicator"></div>
+                        <span>Agents</span>
+                        <span class="nav-badge">7</span>
+                    </div>
+                    <div class="nav-item" data-view="activity">
+                        <div class="nav-indicator"></div>
+                        <span>Activity</span>
+                    </div>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-title">Projects</div>
+                    <div class="nav-item" data-view="repos">
+                        <div class="nav-indicator"></div>
+                        <span>GitLab Repos</span>
+                    </div>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-title">System</div>
+                    <div class="nav-item" data-view="models">
+                        <div class="nav-indicator"></div>
+                        <span>Model Stats</span>
+                    </div>
+                    <div class="nav-item" data-view="ai-providers">
+                        <div class="nav-indicator"></div>
+                        <span>AI Providers</span>
+                        <span class="nav-badge" id="provider-count">3</span>
+                    </div>
+                    <div class="nav-item" data-view="mcp">
+                        <div class="nav-indicator"></div>
+                        <span>MCP Tools</span>
+                        <span class="nav-badge">38</span>
+                    </div>
+                    <div class="nav-item" data-view="settings">
+                        <div class="nav-indicator"></div>
+                        <span>Settings</span>
+                    </div>
+                    <a href="/logs.html" style="text-decoration: none; color: inherit;">
+                        <div class="nav-item">
+                            <div class="nav-indicator"></div>
+                            <span>Logs</span>
+                        </div>
+                    </a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="connection-status">
+                    <div class="status-dot"></div>
+                    <span id="status-text">Connected</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main">
+            <header class="header">
+                <div class="header-left">
+                    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+                    <div class="header-title">
+                        <h2 id="page-title">Nigents Dashboard</h2>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary btn-hide-mobile" onclick="refreshData()">Refresh</button>
+                    <button class="btn btn-primary" onclick="openTaskModal()">+ New Task</button>
+                    <button class="btn btn-secondary" onclick="logout()" title="Logout">🚪</button>
+                </div>
+            </header>
+
+            <div class="content">
+                <!-- Dashboard View -->
+                <div class="view active" id="view-dashboard">
+                    <div class="stats-grid">
+                        <div class="stat-card primary">
+                            <div class="stat-header">
+                                <span class="stat-label">Active Agents</span>
+                                <div class="stat-icon">A</div>
+                            </div>
+                            <div class="stat-value" id="stat-active">0</div>
+                            <div class="stat-change">of 7 total agents</div>
+                        </div>
+                        <div class="stat-card success">
+                            <div class="stat-header">
+                                <span class="stat-label">Tasks Completed</span>
+                                <div class="stat-icon">T</div>
+                            </div>
+                            <div class="stat-value" id="stat-completed">0</div>
+                            <div class="stat-change positive">+0 today</div>
+                        </div>
+                        <div class="stat-card warning">
+                            <div class="stat-header">
+                                <span class="stat-label">In Progress</span>
+                                <div class="stat-icon">P</div>
+                            </div>
+                            <div class="stat-value" id="stat-progress">0</div>
+                            <div class="stat-change">currently running</div>
+                        </div>
+                        <div class="stat-card info">
+                            <div class="stat-header">
+                                <span class="stat-label">API Cost</span>
+                                <div class="stat-icon">$</div>
+                            </div>
+                            <div class="stat-value" id="stat-cost">$0.00</div>
+                            <div class="stat-change">this session</div>
+                        </div>
+                    </div>
+
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <span class="chart-title">Task Completion Over Time</span>
+                                <div class="chart-period">
+                                    <button class="period-btn active">24h</button>
+                                    <button class="period-btn">7d</button>
+                                    <button class="period-btn">30d</button>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="tasksChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <span class="chart-title">Agent Distribution</span>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="agentChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="model-stats" id="dashboard-models">
+                        <!-- Dynamically populated -->
+                    </div>
+
+                    <div class="activity-card">
+                        <div class="activity-header">
+                            <span class="activity-title">Recent Activity</span>
+                            <button class="btn btn-secondary btn-sm" onclick="showView('activity')">View All</button>
+                        </div>
+                        <div class="activity-list" id="activity-list">
+                            <div class="empty">
+                                <h3>No activity yet</h3>
+                                <p>Start a task to see agent activity here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tasks View -->
+                <div class="view" id="view-tasks">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="font-size: 18px;">Task Queue</h3>
+                        <button class="btn btn-primary" onclick="openTaskModal()">+ Add Task</button>
+                    </div>
+                    <div class="task-list" id="task-list">
+                        <div class="empty">
+                            <h3>No tasks yet</h3>
+                            <p>Create a new task to get started</p>
+                            <button class="btn btn-primary" onclick="openTaskModal()" style="margin-top: 16px;">Create First Task</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agent Monitor View -->
+                <div class="view" id="view-monitor">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div>
+                            <h3 style="font-size: 18px;">Agent Activity Monitor</h3>
+                            <p class="text-sm text-muted">Real-time view of what each agent is doing</p>
+                        </div>
+                        <div class="live-indicator">
+                            <div class="live-dot"></div>
+                            <span>LIVE</span>
+                        </div>
+                    </div>
+
+                    <div class="system-status" id="system-status">
+                        <div class="status-item">
+                            <div class="status-icon online">●</div>
+                            <div class="status-details">
+                                <h4>Orchestrator</h4>
+                                <span>Online - Coordinating</span>
+                            </div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-icon online">●</div>
+                            <div class="status-details">
+                                <h4>MCP Servers</h4>
+                                <span>38/38 Online</span>
+                            </div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-icon online">●</div>
+                            <div class="status-details">
+                                <h4>GitLab API</h4>
+                                <span>Connected</span>
+                            </div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-icon online">●</div>
+                            <div class="status-details">
+                                <h4>OpenHands</h4>
+                                <span>Sandbox Ready</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="agent-monitor" id="agent-monitor">
+                        <!-- Dynamically populated -->
+                    </div>
+
+                    <div class="comm-feed" style="margin-top: 20px;">
+                        <div class="comm-feed-header">
+                            <span class="comm-feed-title">💬 Agent Communication</span>
+                            <button class="btn btn-sm btn-secondary" onclick="clearCommFeed()">Clear</button>
+                        </div>
+                        <div class="comm-feed-list" id="comm-feed-list">
+                            <div class="empty">
+                                <h3>No messages yet</h3>
+                                <p>Agent conversations will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agents View -->
+                <div class="view" id="view-agents">
+                    <div class="agents-grid" id="agents-grid"></div>
+                </div>
+
+                <!-- Agent Detail View -->
+                <div class="view" id="view-agent-detail">
+                    <button class="btn btn-secondary" onclick="showView('agents')" style="margin-bottom: 20px;">← Back to Agents</button>
+                    
+                    <div class="config-grid">
+                        <div class="config-card">
+                            <h3 class="config-title">Configuration</h3>
+                            <div class="form-group">
+                                <label class="form-label">AI Provider</label>
+                                <select class="form-select" id="cfg-provider" onchange="updateModelsForProvider()">
+                                    <!-- Dynamically populated -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Model</label>
+                                <select class="form-select" id="cfg-model">
+                                    <!-- Dynamically populated -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Max Tokens</label>
+                                <input type="number" class="form-input" id="cfg-tokens" value="4096">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Temperature</label>
+                                <input type="range" class="form-input" id="cfg-temp" min="0" max="1" step="0.1" value="0.7">
+                                <span id="temp-value" class="text-sm text-muted">0.7</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">System Prompt</label>
+                                <textarea class="form-textarea" id="cfg-prompt"></textarea>
+                            </div>
+                            <button class="btn btn-primary" onclick="saveAgentConfig()">Save Changes</button>
+                        </div>
+
+                        <div>
+                            <div class="config-card" style="margin-bottom: 20px;">
+                                <h3 class="config-title">Performance Stats</h3>
+                                <div class="form-group">
+                                    <label class="form-label">Tasks Completed</label>
+                                    <div class="metric-value" id="detail-tasks">0</div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">API Calls</label>
+                                    <div class="metric-value" id="detail-calls">0</div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Success Rate</label>
+                                    <div class="metric-value" style="color: var(--success);">100%</div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Avg Response Time</label>
+                                    <div class="metric-value">2.3s</div>
+                                </div>
+                            </div>
+
+                            <div class="config-card">
+                                <h3 class="config-title">MCP Tools</h3>
+                                <div class="mcp-grid" id="agent-mcps"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Repos View -->
+                <div class="view" id="view-repos">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div>
+                            <h3 class="config-title" style="margin: 0;">GitLab Repositories</h3>
+                            <p class="text-sm text-muted">Select a repository for agents to work on</p>
+                        </div>
+                        <button class="btn btn-secondary" onclick="refreshRepos()">Refresh</button>
+                    </div>
+                    <div class="config-card">
+                        <div class="repo-list" id="repo-list">
+                            <div class="empty">
+                                <h3>No repositories configured</h3>
+                                <p>Add repositories in Settings to get started</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="config-card" style="margin-top: 20px;">
+                        <h3 class="config-title">Selected Repository</h3>
+                        <div id="selected-repo-info">
+                            <p class="text-muted">No repository selected</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Model Stats View -->
+                <div class="view" id="view-models">
+                    <div class="charts-grid" style="grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <span class="chart-title">Cost by Provider</span>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="costChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <span class="chart-title">Token Usage</span>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="tokenChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-card" style="margin-top: 20px;">
+                        <div class="chart-header">
+                            <span class="chart-title">Model Performance Comparison</span>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Providers View -->
+                <div class="view" id="view-ai-providers">
+                    <div class="config-card" style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <div>
+                                <h3 class="config-title" style="margin: 0;">AI Providers</h3>
+                                <p class="text-sm text-muted">Configure AI providers and their API keys</p>
+                            </div>
+                            <button class="btn btn-primary" onclick="openProviderModal()">+ Add Provider</button>
+                        </div>
+                        
+                        <div class="provider-list" id="provider-list">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+
+                    <div class="config-grid">
+                        <div class="config-card">
+                            <h3 class="config-title">Provider Usage Stats</h3>
+                            <div class="chart-container" style="height: 200px;">
+                                <canvas id="providerUsageChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="config-card">
+                            <h3 class="config-title">Cost Comparison</h3>
+                            <div class="chart-container" style="height: 200px;">
+                                <canvas id="providerCostChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings View -->
+                <div class="view" id="view-settings">
+                    <div class="config-grid">
+                        <div class="config-card">
+                            <h3 class="config-title">Features</h3>
+                            <div class="toggle-wrapper">
+                                <div class="toggle-info">
+                                    <h4>Voice Processing</h4>
+                                    <p>Enable voice commands via Telegram</p>
+                                </div>
+                                <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+                            </div>
+                            <div class="toggle-wrapper">
+                                <div class="toggle-info">
+                                    <h4>Web Dashboard</h4>
+                                    <p>Run the web dashboard</p>
+                                </div>
+                                <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+                            </div>
+                            <div class="toggle-wrapper">
+                                <div class="toggle-info">
+                                    <h4>OpenHands Sandbox</h4>
+                                    <p>Use code sandbox for safe execution</p>
+                                </div>
+                                <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+                            </div>
+                            <div class="toggle-wrapper">
+                                <div class="toggle-info">
+                                    <h4>Debug Mode</h4>
+                                    <p>Enable verbose logging</p>
+                                </div>
+                                <div class="toggle" onclick="this.classList.toggle('active')"></div>
+                            </div>
+                        </div>
+
+                        <div class="config-card">
+                            <h3 class="config-title">GitLab Configuration</h3>
+                            <div class="form-group">
+                                <label class="form-label">GitLab URL</label>
+                                <input type="text" class="form-input" id="gitlab-url" value="https://gitlab.com">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">GitLab Token</label>
+                                <input type="password" class="form-input" id="gitlab-token" placeholder="glpat-...">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Default Namespace</label>
+                                <input type="text" class="form-input" id="gitlab-namespace" placeholder="username or group">
+                            </div>
+                            <button class="btn btn-primary" onclick="saveGitLabConfig()">Save GitLab Settings</button>
+                        </div>
+
+                        <div class="config-card">
+                            <h3 class="config-title">API Keys</h3>
+                            <div class="form-group">
+                                <label class="form-label">Telegram Bot Token</label>
+                                <input type="password" class="form-input" placeholder="from @BotFather">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Anthropic API Key</label>
+                                <input type="password" class="form-input" placeholder="sk-ant-...">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Zhipu AI API Key</label>
+                                <input type="password" class="form-input" placeholder="from open.bigmodel.cn">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Moonshot AI API Key</label>
+                                <input type="password" class="form-input" placeholder="from platform.moonshot.cn">
+                            </div>
+                            <button class="btn btn-primary">Save API Keys</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity View -->
+                <div class="view" id="view-activity">
+                    <div class="activity-card">
+                        <div class="activity-header">
+                            <span class="activity-title">Full Activity Log</span>
+                            <button class="btn btn-secondary btn-sm">Export</button>
+                        </div>
+                        <div class="activity-list" id="full-activity"></div>
+                    </div>
+                </div>
+
+                <!-- MCP Tools View -->
+                <div class="view" id="view-mcp">
+                    <div class="mcp-grid" id="mcp-grid"></div>
+                </div>
+
+                <!-- Logs View -->
+                <div class="view" id="view-logs">
+                    <div class="config-card">
+                        <h3 class="config-title">System Logs</h3>
+                        <div class="activity-list" id="logs-list" style="font-family: monospace; font-size: 12px;">
+                            <div class="activity-item">
+                                <span class="activity-time">04:44:34</span>
+                                <div class="activity-dot success"></div>
+                                <div class="activity-content">
+                                    <div class="activity-agent">System</div>
+                                    <div class="activity-message">Dashboard started on port 4000</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Mobile FAB -->
+        <div class="mobile-quick-actions">
+            <button class="fab" onclick="openTaskModal()">+</button>
+        </div>
+    </div>
+
+    <!-- Create Task Modal -->
+    <div class="modal-overlay" id="task-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New Task</h3>
+                <button class="modal-close" onclick="closeTaskModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Task Title</label>
+                    <input type="text" class="form-input" id="task-title" placeholder="e.g., Add user authentication">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" id="task-desc" placeholder="Describe what needs to be done..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Repository</label>
+                    <select class="form-select" id="task-repo">
+                        <option value="">Select GitLab repository...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Priority</label>
+                    <div class="task-priority-selector">
+                        <button class="priority-btn" data-priority="low" onclick="selectPriority('low')">Low</button>
+                        <button class="priority-btn active medium" data-priority="medium" onclick="selectPriority('medium')">Medium</button>
+                        <button class="priority-btn" data-priority="high" onclick="selectPriority('high')">High</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Assign to Agent (Optional)</label>
+                    <select class="form-select" id="task-agent">
+                        <option value="">Auto-assign (Recommended)</option>
+                        <option value="orchestrator">Orchestrator</option>
+                        <option value="planner">Planner</option>
+                        <option value="backend-dev">Backend Dev</option>
+                        <option value="frontend-dev">Frontend Dev</option>
+                        <option value="qa-tester">QA Tester</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeTaskModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="createTask()">Create Task</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Provider Modal -->
+    <div class="modal-overlay" id="provider-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Add AI Provider</h3>
+                <button class="modal-close" onclick="closeProviderModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Provider Name</label>
+                    <input type="text" class="form-input" id="new-provider-name" placeholder="e.g., DeepSeek, Grok, Cohere">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">API Key</label>
+                    <input type="password" class="form-input" id="new-provider-key" placeholder="Enter API key">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Base URL (optional)</label>
+                    <input type="text" class="form-input" id="new-provider-url" placeholder="https://api.example.com/v1">
+                    <p class="text-sm text-muted" style="margin-top: 6px;">Leave empty for standard OpenAI-compatible endpoints</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Models (press Enter to add multiple)</label>
+                    <div class="tags-input" id="models-input">
+                        <input type="text" class="tag-input" id="model-input" placeholder="e.g., deepseek-chat">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Currency Symbol</label>
+                    <select class="form-select" id="new-provider-currency">
+                        <option value="$">USD ($)</option>
+                        <option value="¥">CNY (¥)</option>
+                        <option value="€">EUR (€)</option>
+                        <option value="£">GBP (£)</option>
+                        <option value="₹">INR (₹)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeProviderModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="addProvider()">Add Provider</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data
+        let aiProviders = JSON.parse(localStorage.getItem('nigents_providers')) || {
+            anthropic: {
+                name: 'Anthropic Claude',
+                key: '',
+                models: ['claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku'],
+                currency: '$',
+                logo: 'C',
+                color: 'claude'
+            },
+            zhipu: {
+                name: 'Zhipu AI GLM',
+                key: '',
+                models: ['glm-4', 'glm-4-plus', 'glm-4v', 'glm-5', 'glm-5-plus'],
+                currency: '¥',
+                logo: 'Z',
+                color: 'glm'
+            },
+            moonshot: {
+                name: 'Moonshot AI Kimi',
+                key: '',
+                models: ['kimi-k2', 'kimi-k2-plus', 'kimi-2.5', 'kimi-2.5-32k', 'kimi-2.5-128k'],
+                currency: '¥',
+                logo: 'M',
+                color: 'kimi'
+            }
+        };
+
+        let gitlabRepos = JSON.parse(localStorage.getItem('nigents_repos')) || [];
+        let gitlabConfig = { configured: false, namespace: null };
+
+        let tasks = JSON.parse(localStorage.getItem('nigents_tasks')) || [];
+
+        const agents = [
+            { id: 'orchestrator', name: 'Orchestrator', role: 'Team Lead & Router', status: 'idle', provider: 'anthropic', model: 'claude-3-sonnet', tasks: 0, calls: 0 },
+            { id: 'planner', name: 'Planner', role: 'Architecture & Planning', status: 'idle', provider: 'anthropic', model: 'claude-3-sonnet', tasks: 0, calls: 0 },
+            { id: 'backend', name: 'Backend Dev', role: 'Backend Developer', status: 'idle', provider: 'anthropic', model: 'claude-3-sonnet', tasks: 0, calls: 0 },
+            { id: 'frontend', name: 'Frontend Dev', role: 'Frontend Developer', status: 'idle', provider: 'anthropic', model: 'claude-3-haiku', tasks: 0, calls: 0 },
+            { id: 'qa', name: 'QA Tester', role: 'Quality Assurance', status: 'idle', provider: 'anthropic', model: 'claude-3-haiku', tasks: 0, calls: 0 },
+            { id: 'reviewer', name: 'Reviewer', role: 'Code Reviewer', status: 'idle', provider: 'anthropic', model: 'claude-3-sonnet', tasks: 0, calls: 0 },
+            { id: 'reporter', name: 'Reporter', role: 'Reporter & Communicator', status: 'idle', provider: 'anthropic', model: 'claude-3-haiku', tasks: 0, calls: 0 },
+        ];
+
+        const mcps = [
+            { name: 'filesystem', desc: 'File operations', status: 'online' },
+            { name: 'git', desc: 'Git commands', status: 'online' },
+            { name: 'gitlab', desc: 'GitLab API', status: 'online' },
+            { name: 'postgresql', desc: 'Database queries', status: 'online' },
+            { name: 'arabic-rtl', desc: 'RTL compliance', status: 'online' },
+            { name: 'task-splitter', desc: 'Task management', status: 'online' },
+            { name: 'code-search', desc: 'Semantic search', status: 'online' },
+            { name: 'brave-search', desc: 'Web search', status: 'online' },
+            { name: 'docker', desc: 'Container management', status: 'online' },
+            { name: 'puppeteer', desc: 'Browser automation', status: 'online' },
+            { name: 'memory', desc: 'Persistent memory', status: 'online' },
+            { name: 'sequential-thinking', desc: 'Complex reasoning', status: 'online' },
+        ];
+
+        let currentView = 'dashboard';
+        let selectedAgent = null;
+        let charts = {};
+        let tempModels = [];
+        let selectedPriority = 'medium';
+
+        // Navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                showView(item.dataset.view);
+                if (window.innerWidth <= 768) toggleSidebar();
+            });
+        });
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('mobile-visible');
+            document.getElementById('sidebar-overlay').classList.toggle('active');
+        }
+
+        function showView(view) {
+            currentView = view;
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-' + view).classList.add('active');
+            
+            const titles = {
+                dashboard: 'Nigents Dashboard',
+                monitor: 'Agent Monitor',
+                tasks: 'Task Queue',
+                agents: 'Agents',
+                'agent-detail': 'Agent Configuration',
+                repos: 'GitLab Repositories',
+                activity: 'Activity',
+                models: 'Model Statistics',
+                'ai-providers': 'AI Providers',
+                mcp: 'MCP Tools',
+                settings: 'Settings',
+                logs: 'Logs'
+            };
+            document.getElementById('page-title').textContent = titles[view] || view;
+
+            if (view === 'agents') renderAgents();
+            if (view === 'mcp') renderMCPs();
+            if (view === 'repos') renderRepos();
+            if (view === 'tasks') renderTasks();
+            if (view === 'monitor') {
+                renderAgentMonitor();
+                startLiveUpdates();
+            } else {
+                stopLiveUpdates();
+            }
+            if (view === 'dashboard') {
+                initCharts();
+                renderDashboardModels();
+            }
+            if (view === 'models') initModelCharts();
+            if (view === 'ai-providers') {
+                renderProviders();
+                initProviderCharts();
+            }
+            if (view === 'agent-detail' && selectedAgent) renderAgentDetail();
+        }
+
+        // Agent Monitor Functions
+        let liveUpdateInterval = null;
+
+        function renderAgentMonitor() {
+            const monitor = document.getElementById('agent-monitor');
+            monitor.innerHTML = agents.map(a => `
+                <div class="agent-activity-card ${a.status}" id="agent-card-${a.id}">
+                    <div class="agent-activity-header">
+                        <div class="agent-avatar ${a.id}">${a.name.charAt(0)}</div>
+                        <div class="agent-activity-info">
+                            <h4>${a.name}</h4>
+                            <span>${a.role}</span>
+                        </div>
+                        <div class="agent-status-indicator ${a.status}"></div>
+                    </div>
+                    <div class="agent-current-task">
+                        <h5>Current Task</h5>
+                        <p id="agent-task-${a.id}">${a.currentTask || 'Idle - Waiting for assignment'}</p>
+                        ${a.progress ? `
+                        <div class="agent-progress">
+                            <div class="agent-progress-bar">
+                                <div class="agent-progress-fill" style="width: ${a.progress}%"></div>
+                            </div>
+                            <div class="agent-progress-text">${a.progress}% complete</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            // Load initial comm feed
+            renderCommFeed();
+        }
+
+        function startLiveUpdates() {
+            if (liveUpdateInterval) return;
+            
+            // Simulate live updates
+            liveUpdateInterval = setInterval(() => {
+                // Randomly update agent status
+                const randomAgent = agents[Math.floor(Math.random() * agents.length)];
+                if (Math.random() > 0.7) {
+                    const tasks = [
+                        'Analyzing codebase structure...',
+                        'Writing unit tests...',
+                        'Reviewing pull request...',
+                        'Generating implementation plan...',
+                        'Checking RTL compliance...',
+                        'Running security audit...',
+                        'Creating feature branch...',
+                        'Committing changes...'
+                    ];
+                    randomAgent.currentTask = tasks[Math.floor(Math.random() * tasks.length)];
+                    randomAgent.progress = Math.floor(Math.random() * 100);
+                    randomAgent.status = randomAgent.progress > 0 ? 'busy' : 'idle';
+                    
+                    // Add to activity
+                    addActivity({
+                        agent: randomAgent.name,
+                        message: randomAgent.currentTask,
+                        type: 'info'
+                    });
+
+                    // Re-render if on monitor page
+                    if (currentView === 'monitor') {
+                        renderAgentMonitor();
+                    }
+                }
+            }, 3000);
+
+            // Simulate agent communication
+            setTimeout(() => {
+                simulateAgentCommunication();
+            }, 2000);
+        }
+
+        function stopLiveUpdates() {
+            if (liveUpdateInterval) {
+                clearInterval(liveUpdateInterval);
+                liveUpdateInterval = null;
+            }
+        }
+
+        function simulateAgentCommunication() {
+            const conversations = [
+                { from: 'Orchestrator', to: 'Planner', message: '@planner Please analyze the payment flow and create an implementation plan', type: 'task' },
+                { from: 'Planner', to: 'Orchestrator', message: '@orchestrator Plan ready. Complexity: Medium. Files to modify: 3', type: 'response' },
+                { from: 'Orchestrator', to: 'Backend Dev', message: '@backend-dev Please implement the payment API endpoint', type: 'task' },
+                { from: 'Backend Dev', to: 'Orchestrator', message: '@orchestrator Implementation complete. Branch: nigents/task-123', type: 'response' },
+                { from: 'Orchestrator', to: 'QA Tester', message: '@qa-tester Please test the payment endpoint', type: 'task' },
+                { from: 'QA Tester', to: 'Backend Dev', message: '@backend-dev Tests found 2 issues: 1) Missing validation 2) Wrong error code', type: 'question' },
+                { from: 'Backend Dev', to: 'QA Tester', message: '@qa-tester Fixed both issues. Please re-test.', type: 'response' },
+                { from: 'QA Tester', to: 'Orchestrator', message: '@orchestrator All tests passed (12/12)', type: 'response' },
+                { from: 'Orchestrator', to: 'Code Reviewer', message: '@code-reviewer Please review for security', type: 'task' },
+                { from: 'Code Reviewer', to: 'Orchestrator', message: '@orchestrator Approved. No security issues found.', type: 'response' },
+            ];
+
+            let index = 0;
+            setInterval(() => {
+                if (index < conversations.length && Math.random() > 0.5) {
+                    const msg = conversations[index];
+                    addCommMessage(msg);
+                    index = (index + 1) % conversations.length;
+                }
+            }, 5000);
+        }
+
+        function addCommMessage(msg) {
+            const feed = document.getElementById('comm-feed-list');
+            const empty = feed.querySelector('.empty');
+            if (empty) empty.remove();
+
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            
+            const div = document.createElement('div');
+            div.className = 'comm-message';
+            div.innerHTML = `
+                <div class="comm-avatar ${msg.from.toLowerCase().replace(' ', '-')}">${msg.from.charAt(0)}</div>
+                <div class="comm-content">
+                    <div class="comm-header">
+                        <span class="comm-sender">${msg.from}</span>
+                        <span class="comm-time">${time}</span>
+                    </div>
+                    <div class="comm-text">
+                        ${msg.message.replace(/@(\w+)/, '<span class="comm-recipient">@$1</span>')}
+                    </div>
+                    <div class="comm-meta">
+                        <span class="comm-tag ${msg.type}">${msg.type}</span>
+                    </div>
+                </div>
+            `;
+            
+            feed.insertBefore(div, feed.firstChild);
+            
+            // Keep only last 50 messages
+            while (feed.children.length > 50) {
+                feed.removeChild(feed.lastChild);
+            }
+        }
+
+        function renderCommFeed() {
+            const feed = document.getElementById('comm-feed-list');
+            feed.innerHTML = `
+                <div class="empty">
+                    <h3>No messages yet</h3>
+                    <p>Agent conversations will appear here in real-time</p>
+                </div>
+            `;
+        }
+
+        function clearCommFeed() {
+            renderCommFeed();
+        }
+
+        function addActivity(data) {
+            const list = document.getElementById('activity-list');
+            const empty = list.querySelector('.empty');
+            if (empty) empty.remove();
+
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+            const item = document.createElement('div');
+            item.className = 'activity-item';
+            item.innerHTML = `
+                <span class="activity-time">${time}</span>
+                <div class="activity-dot ${data.type}"></div>
+                <div class="activity-content">
+                    <div class="activity-agent">${data.agent}</div>
+                    <div class="activity-message">${data.message}</div>
+                </div>
+            `;
+            list.insertBefore(item, list.firstChild);
+        }
+
+        // Task Management
+        function openTaskModal() {
+            populateRepoSelect();
+            document.getElementById('task-title').value = '';
+            document.getElementById('task-desc').value = '';
+            selectPriority('medium');
+            document.getElementById('task-modal').classList.add('active');
+        }
+
+        function closeTaskModal() {
+            document.getElementById('task-modal').classList.remove('active');
+        }
+
+        function selectPriority(priority) {
+            selectedPriority = priority;
+            document.querySelectorAll('.priority-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.priority === priority) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        function populateRepoSelect() {
+            const select = document.getElementById('task-repo');
+            const selectedRepo = gitlabRepos.find(r => r.selected);
+            select.innerHTML = '<option value="">Select GitLab repository...</option>' + 
+                gitlabRepos.map(r => `<option value="${r.id}" ${r.selected ? 'selected' : ''}>${r.namespace}/${r.name}</option>`).join('');
+        }
+
+        function createTask() {
+            const title = document.getElementById('task-title').value.trim();
+            const desc = document.getElementById('task-desc').value.trim();
+            const repoId = document.getElementById('task-repo').value;
+            const agent = document.getElementById('task-agent').value;
+
+            if (!title) {
+                alert('Please enter a task title');
+                return;
+            }
+
+            const task = {
+                id: 'task-' + Date.now(),
+                title: title,
+                description: desc,
+                repo: repoId,
+                priority: selectedPriority,
+                agent: agent,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            };
+
+            tasks.unshift(task);
+            localStorage.setItem('nigents_tasks', JSON.stringify(tasks));
+            updateTaskCount();
+            closeTaskModal();
+            
+            if (currentView === 'tasks') {
+                renderTasks();
+            }
+
+            // Show notification
+            showNotification('Task created successfully!');
+        }
+
+        function renderTasks() {
+            const list = document.getElementById('task-list');
+            if (tasks.length === 0) {
+                list.innerHTML = `
+                    <div class="empty">
+                        <h3>No tasks yet</h3>
+                        <p>Create a new task to get started</p>
+                        <button class="btn btn-primary" onclick="openTaskModal()" style="margin-top: 16px;">Create First Task</button>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = tasks.map(t => `
+                <div class="task-item">
+                    <div class="task-priority ${t.priority}"></div>
+                    <div class="task-content">
+                        <div class="task-title">${t.title}</div>
+                        ${t.description ? `<div class="task-desc">${t.description}</div>` : ''}
+                        <div class="task-meta">
+                            <span class="task-status ${t.status}">${t.status}</span>
+                            ${t.repo ? `<span>${gitlabRepos.find(r => r.id === t.repo)?.name || t.repo}</span>` : ''}
+                            ${t.agent ? `<span>@${t.agent}</span>` : '<span>@Auto</span>'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateTaskCount() {
+            const pending = tasks.filter(t => t.status === 'pending' || t.status === 'running').length;
+            document.getElementById('task-count').textContent = pending;
+        }
+
+        function showNotification(message) {
+            // Simple notification - could be enhanced
+            console.log('Notification:', message);
+        }
+
+        // GitLab Repos
+        function renderRepos() {
+            const list = document.getElementById('repo-list');
+            
+            // Show config warning if GitLab not configured
+            if (!gitlabConfig.configured) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <h3>GitLab Not Configured</h3>
+                        <p>Add GITLAB_TOKEN and GITLAB_NAMESPACE to your .env file</p>
+                        <p style="margin-top: 12px; font-size: 12px; color: var(--text-muted);">
+                            1. Create token: GitLab → Profile → Access Tokens<br>
+                            2. Edit .env: nano /home/ubuntu/nightowl/.env<br>
+                            3. Restart: pm2 restart all
+                        </p>
+                    </div>
+                `;
+                document.getElementById('selected-repo-info').innerHTML = '<p class="text-muted">Configure GitLab to select a repository.</p>';
+                return;
+            }
+            
+            // Show empty state if no repos
+            if (gitlabRepos.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No Repositories Found</h3>
+                        <p>No repositories found in namespace: <strong>${gitlabConfig.namespace}</strong></p>
+                        <button class="btn btn-secondary" onclick="refreshRepos()" style="margin-top: 16px;">Refresh</button>
+                    </div>
+                `;
+                document.getElementById('selected-repo-info').innerHTML = '<p class="text-muted">Click Refresh to load repositories from GitLab.</p>';
+                return;
+            }
+            
+            // Render repo list
+            list.innerHTML = gitlabRepos.map(r => `
+                <div class="repo-item ${r.selected ? 'selected' : ''}" onclick="selectRepo('${r.id}')">
+                    <div class="repo-info">
+                        <h4>${r.namespace}/${r.name}</h4>
+                        <p>${r.url}</p>
+                        <div class="repo-meta">
+                            <span class="repo-badge">${r.defaultBranch}</span>
+                            <span>${r.selected ? 'Selected' : 'Click to select'}</span>
+                        </div>
+                    </div>
+                    ${r.selected ? '<div class="repo-check">✓</div>' : ''}
+                </div>
+            `).join('');
+
+            const selected = gitlabRepos.find(r => r.selected);
+            document.getElementById('selected-repo-info').innerHTML = selected ? `
+                <div class="repo-item selected" style="margin-bottom: 12px;">
+                    <div class="repo-info">
+                        <h4>${selected.namespace}/${selected.name}</h4>
+                        <p>${selected.url}</p>
+                    </div>
+                    <div class="repo-check">✓</div>
+                </div>
+                <p class="text-sm text-muted">Agents will work on this repository by default.</p>
+            ` : '<p class="text-muted">No repository selected. Select one from the list above.</p>';
+        }
+
+        function selectRepo(id) {
+            gitlabRepos.forEach(r => r.selected = (r.id === id));
+            localStorage.setItem('nigents_repos', JSON.stringify(gitlabRepos));
+            renderRepos();
+        }
+
+        async function loadGitLabConfig() {
+            try {
+                const response = await fetch('/api/gitlab/config');
+                gitlabConfig = await response.json();
+            } catch (error) {
+                console.error('Failed to load GitLab config:', error);
+            }
+        }
+
+        async function refreshRepos() {
+            showNotification('Fetching repositories from GitLab...');
+            console.log('[GitLab] Starting repo fetch...');
+            
+            try {
+                console.log('[GitLab] Calling /api/gitlab/repos...');
+                const response = await fetch('/api/gitlab/repos');
+                console.log('[GitLab] Response status:', response.status);
+                
+                const data = await response.json();
+                console.log('[GitLab] Response data:', data);
+                
+                if (data.success) {
+                    gitlabRepos = data.repos.map(repo => ({
+                        id: repo.id,
+                        name: repo.name,
+                        namespace: repo.namespace,
+                        fullPath: repo.fullPath,
+                        url: repo.url,
+                        sshUrl: repo.sshUrl,
+                        defaultBranch: repo.defaultBranch,
+                        description: repo.description,
+                        selected: gitlabRepos.find(r => r.id === repo.id)?.selected || false
+                    }));
+                    
+                    // Save to localStorage
+                    localStorage.setItem('nigents_repos', JSON.stringify(gitlabRepos));
+                    
+                    renderRepos();
+                    updateRepoSelects();
+                    showNotification(`Loaded ${data.count} repositories from GitLab`, 'success');
+                } else {
+                    console.error('[GitLab] API error:', data);
+                    showNotification(data.message || data.error || 'Failed to fetch repositories', 'error');
+                }
+            } catch (error) {
+                console.error('[GitLab] Fetch error:', error);
+                showNotification('Failed to connect to GitLab API: ' + error.message, 'error');
+            }
+        }
+
+        // Provider Management
+        function saveProviders() {
+            localStorage.setItem('nigents_providers', JSON.stringify(aiProviders));
+            document.getElementById('provider-count').textContent = Object.keys(aiProviders).length;
+        }
+
+        function renderProviders() {
+            const list = document.getElementById('provider-list');
+            list.innerHTML = Object.entries(aiProviders).map(([key, provider]) => `
+                <div class="provider-item">
+                    <div class="provider-info">
+                        <h4>${provider.name}</h4>
+                        <p>${provider.key ? 'API Key: ' + provider.key.substring(0, 8) + '...' : 'No API key set'}</p>
+                        <div class="provider-models">
+                            ${provider.models.map(m => `<span class="model-tag">${m}</span>`).join('')}
+                        </div>
+                    </div>
+                    <div class="provider-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="editProvider('${key}')">Edit</button>
+                        ${key !== 'anthropic' && key !== 'zhipu' && key !== 'moonshot' ? 
+                            `<button class="btn btn-danger btn-sm" onclick="deleteProvider('${key}')">Delete</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openProviderModal() {
+            tempModels = [];
+            document.getElementById('new-provider-name').value = '';
+            document.getElementById('new-provider-key').value = '';
+            document.getElementById('new-provider-url').value = '';
+            renderModelTags();
+            document.getElementById('provider-modal').classList.add('active');
+        }
+
+        function closeProviderModal() {
+            document.getElementById('provider-modal').classList.remove('active');
+        }
+
+        function renderModelTags() {
+            const container = document.getElementById('models-input');
+            container.innerHTML = tempModels.map(m => `
+                <span class="tag">
+                    ${m}
+                    <button class="tag-remove" onclick="removeModel('${m}')">×</button>
+                </span>
+            `).join('') + '<input type="text" class="tag-input" id="model-input" placeholder="e.g., deepseek-chat">';
+            
+            document.getElementById('model-input').addEventListener('keydown', handleModelInput);
+        }
+
+        function handleModelInput(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const value = e.target.value.trim();
+                if (value && !tempModels.includes(value)) {
+                    tempModels.push(value);
+                    renderModelTags();
+                }
+            } else if (e.key === 'Backspace' && e.target.value === '' && tempModels.length > 0) {
+                tempModels.pop();
+                renderModelTags();
+            }
+        }
+
+        function removeModel(model) {
+            tempModels = tempModels.filter(m => m !== model);
+            renderModelTags();
+        }
+
+        function addProvider() {
+            const name = document.getElementById('new-provider-name').value.trim();
+            const key = document.getElementById('new-provider-key').value.trim();
+            const url = document.getElementById('new-provider-url').value.trim();
+            const currency = document.getElementById('new-provider-currency').value;
+            
+            if (!name || !key || tempModels.length === 0) {
+                alert('Please fill in all required fields and add at least one model');
+                return;
+            }
+
+            const keyId = name.toLowerCase().replace(/\s+/g, '-');
+            aiProviders[keyId] = {
+                name: name,
+                key: key,
+                models: [...tempModels],
+                currency: currency,
+                baseUrl: url || undefined,
+                logo: name.charAt(0).toUpperCase(),
+                color: 'custom'
+            };
+
+            saveProviders();
+            renderProviders();
+            closeProviderModal();
+        }
+
+        function deleteProvider(key) {
+            if (confirm('Are you sure you want to delete this provider?')) {
+                delete aiProviders[key];
+                saveProviders();
+                renderProviders();
+            }
+        }
+
+        function editProvider(key) {
+            const provider = aiProviders[key];
+            document.getElementById('new-provider-name').value = provider.name;
+            document.getElementById('new-provider-key').value = provider.key;
+            document.getElementById('new-provider-url').value = provider.baseUrl || '';
+            document.getElementById('new-provider-currency').value = provider.currency;
+            tempModels = [...provider.models];
+            renderModelTags();
+            document.getElementById('provider-modal').classList.add('active');
+            
+            const btn = document.querySelector('#provider-modal .btn-primary');
+            btn.textContent = 'Save Changes';
+            btn.onclick = () => saveProviderEdit(key);
+        }
+
+        function saveProviderEdit(key) {
+            const name = document.getElementById('new-provider-name').value.trim();
+            const apiKey = document.getElementById('new-provider-key').value.trim();
+            const url = document.getElementById('new-provider-url').value.trim();
+            const currency = document.getElementById('new-provider-currency').value;
+            
+            if (!name || !apiKey || tempModels.length === 0) {
+                alert('Please fill in all required fields and add at least one model');
+                return;
+            }
+
+            aiProviders[key] = {
+                ...aiProviders[key],
+                name: name,
+                key: apiKey,
+                models: [...tempModels],
+                currency: currency,
+                baseUrl: url || undefined
+            };
+
+            saveProviders();
+            renderProviders();
+            closeProviderModal();
+            
+            setTimeout(() => {
+                const btn = document.querySelector('#provider-modal .btn-primary');
+                btn.textContent = 'Add Provider';
+                btn.onclick = addProvider;
+            }, 300);
+        }
+
+        // Charts
+        function initCharts() {
+            if (charts.tasks) return;
+
+            const tasksCtx = document.getElementById('tasksChart').getContext('2d');
+            charts.tasks = new Chart(tasksCtx, {
+                type: 'line',
+                data: {
+                    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
+                    datasets: [{
+                        label: 'Tasks',
+                        data: [0, 0, 0, 0, 0, 0, 0],
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: '#2a2a3a' }, ticks: { color: '#8a8a95' } },
+                        x: { grid: { display: false }, ticks: { color: '#8a8a95' } }
+                    }
+                }
+            });
+
+            const agentCtx = document.getElementById('agentChart').getContext('2d');
+            charts.agent = new Chart(agentCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Idle', 'Active', 'Busy'],
+                    datasets: [{
+                        data: [7, 0, 0],
+                        backgroundColor: ['#5a5a65', '#10b981', '#f59e0b'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#8a8a95', padding: 20, usePointStyle: true }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initModelCharts() {
+            if (charts.cost) return;
+
+            const costCtx = document.getElementById('costChart').getContext('2d');
+            charts.cost = new Chart(costCtx, {
+                type: 'bar',
+                data: {
+                    labels: Object.values(aiProviders).map(p => p.name.split(' ')[0]),
+                    datasets: [{
+                        label: 'Cost',
+                        data: Object.keys(aiProviders).map(() => 0),
+                        backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: '#2a2a3a' }, ticks: { color: '#8a8a95' } },
+                        x: { ticks: { color: '#8a8a95' } }
+                    }
+                }
+            });
+
+            const tokenCtx = document.getElementById('tokenChart').getContext('2d');
+            charts.token = new Chart(tokenCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Input', 'Output'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: ['#3b82f6', '#8b5cf6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#8a8a95', usePointStyle: true }
+                        }
+                    }
+                }
+            });
+
+            const perfCtx = document.getElementById('performanceChart').getContext('2d');
+            charts.performance = new Chart(perfCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['Speed', 'Accuracy', 'Cost', 'Reliability', 'Context'],
+                    datasets: Object.entries(aiProviders).slice(0, 3).map(([key, provider], i) => ({
+                        label: provider.name.split(' ')[0],
+                        data: [70 + Math.random() * 20, 80 + Math.random() * 15, 60 + Math.random() * 30, 85, 75 + Math.random() * 20],
+                        borderColor: ['#6366f1', '#10b981', '#f59e0b'][i],
+                        backgroundColor: ['rgba(99, 102, 241, 0.2)', 'rgba(16, 185, 129, 0.2)', 'rgba(245, 158, 11, 0.2)'][i]
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            grid: { color: '#2a2a3a' },
+                            pointLabels: { color: '#8a8a95' },
+                            ticks: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#8a8a95', usePointStyle: true }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initProviderCharts() {
+            if (charts.providerUsage) {
+                charts.providerUsage.destroy();
+                charts.providerCost.destroy();
+            }
+
+            const providerNames = Object.values(aiProviders).map(p => p.name.split(' ')[0]);
+            const colors = ['#6366f1', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
+
+            const usageCtx = document.getElementById('providerUsageChart').getContext('2d');
+            charts.providerUsage = new Chart(usageCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: providerNames,
+                    datasets: [{
+                        data: Object.keys(aiProviders).map(() => Math.floor(Math.random() * 100)),
+                        backgroundColor: colors,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { color: '#8a8a95', usePointStyle: true, boxWidth: 10 }
+                        }
+                    }
+                }
+            });
+
+            const costCtx = document.getElementById('providerCostChart').getContext('2d');
+            charts.providerCost = new Chart(costCtx, {
+                type: 'bar',
+                data: {
+                    labels: providerNames,
+                    datasets: [{
+                        label: 'Cost',
+                        data: Object.keys(aiProviders).map(() => 0),
+                        backgroundColor: colors,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: '#2a2a3a' }, ticks: { color: '#8a8a95' } },
+                        x: { ticks: { color: '#8a8a95' } }
+                    }
+                }
+            });
+        }
+
+        function renderDashboardModels() {
+            const container = document.getElementById('dashboard-models');
+            container.innerHTML = Object.entries(aiProviders).map(([key, provider]) => `
+                <div class="model-card">
+                    <div class="model-header">
+                        <div class="model-logo ${provider.color}">${provider.logo}</div>
+                        <div class="model-info">
+                            <h3>${provider.name}</h3>
+                            <span>${provider.models.length} models</span>
+                        </div>
+                    </div>
+                    <div class="model-metrics">
+                        <div class="metric">
+                            <div class="metric-value" id="${key}-tasks">0</div>
+                            <div class="metric-label">Tasks</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="${key}-cost">${provider.currency}0</div>
+                            <div class="metric-label">Cost</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="${key}-avg">0s</div>
+                            <div class="metric-label">Avg Time</div>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill ${provider.color === 'claude' ? 'primary' : provider.color === 'glm' ? 'success' : 'warning'}" style="width: ${Math.random() * 100}%"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render Agents
+        function renderAgents() {
+            const grid = document.getElementById('agents-grid');
+            grid.innerHTML = agents.map(a => `
+                <div class="agent-card" onclick="selectAgent('${a.id}')">
+                    <div class="agent-header">
+                        <div class="agent-info">
+                            <h3>${a.name}</h3>
+                            <div class="agent-role">${a.role}</div>
+                        </div>
+                        <span class="agent-status ${a.status}">${a.status}</span>
+                    </div>
+                    <div class="agent-stats-row">
+                        <div class="agent-stat">
+                            <div class="agent-stat-value">${aiProviders[a.provider]?.name.split(' ')[0] || a.provider}</div>
+                            <div class="agent-stat-label">Provider</div>
+                        </div>
+                        <div class="agent-stat">
+                            <div class="agent-stat-value">${a.model}</div>
+                            <div class="agent-stat-label">Model</div>
+                        </div>
+                        <div class="agent-stat">
+                            <div class="agent-stat-value">${a.tasks}</div>
+                            <div class="agent-stat-label">Tasks</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectAgent(id) {
+            selectedAgent = agents.find(a => a.id === id);
+            showView('agent-detail');
+        }
+
+        function renderAgentDetail() {
+            if (!selectedAgent) return;
+            document.getElementById('detail-tasks').textContent = selectedAgent.tasks;
+            document.getElementById('detail-calls').textContent = selectedAgent.calls;
+
+            const providerSelect = document.getElementById('cfg-provider');
+            providerSelect.innerHTML = Object.entries(aiProviders).map(([key, p]) => 
+                `<option value="${key}" ${key === selectedAgent.provider ? 'selected' : ''}>${p.name}</option>`
+            ).join('');
+
+            updateModelsForProvider();
+
+            const agentMCPs = {
+                'orchestrator': ['memory', 'sequential-thinking', 'fetch', 'gitlab', 'task-splitter'],
+                'planner': ['filesystem', 'git', 'gitlab', 'brave-search', 'code-search'],
+                'backend': ['filesystem', 'git', 'gitlab', 'postgresql', 'docker'],
+                'frontend': ['filesystem', 'git', 'gitlab', 'puppeteer', 'arabic-rtl'],
+                'qa': ['filesystem', 'git', 'gitlab', 'puppeteer'],
+                'reviewer': ['filesystem', 'git', 'gitlab', 'sequential-thinking'],
+                'reporter': ['slack', 'discord', 'filesystem']
+            };
+
+            document.getElementById('agent-mcps').innerHTML = (agentMCPs[selectedAgent.id] || []).map(m => `
+                <div class="mcp-card">
+                    <div class="mcp-header">
+                        <div class="mcp-indicator"></div>
+                        <span class="mcp-name">${m}</span>
+                    </div>
+                    <div class="mcp-desc">MCP Tool</div>
+                </div>
+            `).join('');
+        }
+
+        function updateModelsForProvider() {
+            const provider = document.getElementById('cfg-provider').value;
+            const modelSelect = document.getElementById('cfg-model');
+            const models = aiProviders[provider]?.models || [];
+            
+            modelSelect.innerHTML = models.map(m => 
+                `<option value="${m}" ${m === selectedAgent?.model ? 'selected' : ''}>${m}</option>`
+            ).join('');
+        }
+
+        function saveAgentConfig() {
+            if (selectedAgent) {
+                selectedAgent.provider = document.getElementById('cfg-provider').value;
+                selectedAgent.model = document.getElementById('cfg-model').value;
+                showNotification('Configuration saved!');
+            }
+        }
+
+        function renderMCPs() {
+            document.getElementById('mcp-grid').innerHTML = mcps.map(m => `
+                <div class="mcp-card">
+                    <div class="mcp-header">
+                        <div class="mcp-indicator ${m.status}"></div>
+                        <span class="mcp-name">${m.name}</span>
+                    </div>
+                    <div class="mcp-desc">${m.desc}</div>
+                </div>
+            `).join('');
+        }
+
+        function saveGitLabConfig() {
+            const url = document.getElementById('gitlab-url').value;
+            const token = document.getElementById('gitlab-token').value;
+            const namespace = document.getElementById('gitlab-namespace').value;
+            
+            localStorage.setItem('nigents_gitlab_url', url);
+            localStorage.setItem('nigents_gitlab_token', token);
+            localStorage.setItem('nigents_gitlab_namespace', namespace);
+            
+            showNotification('GitLab settings saved!');
+        }
+
+        function refreshData() {
+            console.log('Refreshing data...');
+            showNotification('Data refreshed');
+        }
+
+        // Socket
+        const socket = io();
+        socket.on('connect', () => {
+            document.getElementById('status-text').textContent = 'Connected';
+        });
+
+        socket.on('disconnect', () => {
+            document.getElementById('status-text').textContent = 'Disconnected';
+        });
+
+        // Temperature slider
+        document.getElementById('cfg-temp')?.addEventListener('input', (e) => {
+            document.getElementById('temp-value').textContent = e.target.value;
+        });
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('nigents_auth');
+            localStorage.removeItem('nigents_user');
+            window.location.href = '/login.html';
+        }
+        
+        // Init
+        saveProviders();
+        updateTaskCount();
+        renderAgents();
+        renderMCPs();
+        renderProviders();
+        
+        // Load GitLab config on startup
+        loadGitLabConfig().then(() => {
+            renderRepos();
+            updateRepoSelects();
+        });
+    </script>
+</body>
+</html>
