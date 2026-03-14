@@ -195,6 +195,8 @@ Send voice notes or text naturally:
 **Settings:**
 • /voice — Toggle voice responses on/off
 • /settings — View your settings
+• /addmodel — Add custom AI model (API key + URL)
+• /mymodels — List your custom AI models
 • /reload — Reload configuration and API keys
 • /debug — Show debug information
 
@@ -237,6 +239,124 @@ bot.onText(/\/clearhistory/, async (msg) => {
 
   chatStorage.clearChatHistory(msg.from.id);
   await bot.sendMessage(msg.chat.id, 'Chat history cleared.');
+});
+
+// /addmodel command - Add custom AI model
+bot.onText(/\/addmodel/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const message = `**Add Custom AI Model**
+
+To add a custom AI model (like Kimi 2.5), please send:
+
+\`addmodel <name>|<api_key>|<base_url>|<model_name>\`
+
+**Example:**
+\`addmodel Kimi 2.5|sk-your-key|https://api.moonshot.cn/v1|kimi-k2-5\`
+
+**Parameters:**
+• name: Display name (e.g., "Kimi 2.5")
+• api_key: Your API key
+• base_url: API base URL
+• model_name: Model identifier
+
+**Popular presets:**
+• Moonshot Kimi 2.5: base_url=\`https://api.moonshot.cn/v1\`, model=\`kimi-k2-5\`
+• OpenRouter: base_url=\`https://openrouter.ai/api/v1\``;
+
+  await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+});
+
+// Handle addmodel with parameters
+bot.onText(/addmodel (.+)\|(.+)\|(.+)\|(.+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const name = match[1].trim();
+  const apiKey = match[2].trim();
+  const baseUrl = match[3].trim();
+  const modelName = match[4].trim();
+  const providerKey = `custom_${name.toLowerCase().replace(/\s+/g, '_')}`;
+
+  try {
+    // Store custom model in shared config
+    const customModels = sharedConfig.getFullConfig().customModels || {};
+    customModels[providerKey] = {
+      name: name,
+      apiKey: apiKey,
+      baseUrl: baseUrl,
+      model: modelName,
+      enabled: true,
+      addedBy: msg.from.id,
+      addedAt: new Date().toISOString(),
+    };
+
+    sharedConfig.saveConfig({
+      ...sharedConfig.getFullConfig(),
+      customModels,
+    });
+
+    await bot.sendMessage(msg.chat.id, 
+      `✅ **Custom model added!**\n\n` +
+      `Name: ${name}\n` +
+      `Model: ${modelName}\n` +
+      `URL: ${baseUrl}\n\n` +
+      `Use /mymodels to see all your models.\n` +
+      `Use /usemodel ${providerKey} to set as default.`,
+      { parse_mode: 'Markdown' }
+    );
+  } catch (error) {
+    logger.error('[Bot] Failed to add custom model:', error);
+    await bot.sendMessage(msg.chat.id, `Error adding model: ${error.message}`);
+  }
+});
+
+// /mymodels command - List custom models
+bot.onText(/\/mymodels/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const config = sharedConfig.getFullConfig();
+  const customModels = config.customModels || {};
+  const providers = aiClient.getAvailableProviders();
+
+  let message = '**Your AI Models**\n\n';
+
+  // Built-in providers
+  message += '**Built-in Providers:**\n';
+  Object.entries(providers).forEach(([key, p]) => {
+    message += `${p.enabled ? '✅' : '❌'} ${p.name} (${key})\n`;
+  });
+
+  // Custom models
+  const customEntries = Object.entries(customModels);
+  if (customEntries.length > 0) {
+    message += '\n**Custom Models:**\n';
+    customEntries.forEach(([key, model]) => {
+      message += `✅ ${model.name} (${key})\n`;
+      message += `   Model: ${model.model}\n`;
+      message += `   URL: ${model.baseUrl}\n`;
+    });
+  }
+
+  message += '\n**Usage:**\n';
+  message += '`/usemodel <provider>` - Set default\n';
+  message += '`/addmodel` - Add new model';
+
+  await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+});
+
+// /usemodel command - Set default model
+bot.onText(/\/usemodel (.+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const providerName = match[1].trim();
+  
+  chatStorage.setUserSettings(msg.from.id, { preferredAI: providerName });
+  
+  await bot.sendMessage(msg.chat.id, 
+    `✅ Default AI provider set to: **${providerName}**\n\n` +
+    `This will be used for your future requests.`,
+    { parse_mode: 'Markdown' }
+  );
 });
 
 // /plans command - List all pending plans
@@ -363,21 +483,25 @@ bot.onText(/\/plan (.+)/, async (msg, match) => {
     const verify = chatStorage.getPendingPlan(userId);
     logger.info(`[Bot] Verified pending plan: ${verify ? 'FOUND' : 'NOT FOUND'}`);
     
-    // Show project selection
-    let message = `**Task:** ${task}\n\n`;
-    message += '**Select a project by typing:**\n';
-    message += '`/planwith <project-id>`\n\n';
-    message += '**Your GitLab Projects:**\n';
+    // Show project selection with inline keyboard
+    const message = `**Task:** ${task}\n\nSelect a project:`;
     
-    projects.slice(0, 10).forEach((project, index) => {
-      message += `${index + 1}. **${project.name}**\n   ID: \`${project.id}\`\n`;
+    // Create inline keyboard with projects
+    const keyboard = projects.slice(0, 10).map(project => ([{
+      text: project.name,
+      callback_data: `planwith:${project.id}:${userId}`,
+    }]));
+    
+    await bot.sendMessage(msg.chat.id, message, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: keyboard,
+      },
     });
-    
-    await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
     
     // Add to chat history
     chatStorage.addMessage(userId, 'user', `/plan ${task}`, { type: 'command' });
-    chatStorage.addMessage(userId, 'assistant', message, { type: 'project_selection' });
+    chatStorage.addMessage(userId, 'assistant', message, { type: 'project_selection', projects: projects.map(p => p.name) });
     
   } catch (error) {
     logger.error('Failed to load projects for plan:', error);
@@ -900,6 +1024,144 @@ bot.on('voice', async (msg) => {
   } catch (error) {
     logger.error('Voice processing error:', error);
     await bot.sendMessage(msg.chat.id, 'Error processing your voice message. Please try again or use text commands.');
+  }
+});
+
+// ============================================================================
+// CALLBACK QUERY HANDLER (Inline Keyboard Buttons)
+// ============================================================================
+
+bot.on('callback_query', async (query) => {
+  const userId = query.from.id;
+  const chatId = query.message.chat.id;
+  const data = query.data;
+  
+  if (!isAuthorized(chatId)) return;
+  
+  try {
+    // Answer the callback query (removes loading state)
+    await bot.answerCallbackQuery(query.id);
+    
+    // Handle planwith:projectId:userId
+    if (data.startsWith('planwith:')) {
+      const parts = data.split(':');
+      const projectId = parts[1];
+      const expectedUserId = parts[2];
+      
+      // Security check
+      if (userId.toString() !== expectedUserId) {
+        await bot.sendMessage(chatId, 'This button is not for you.');
+        return;
+      }
+      
+      // Get pending plan
+      const pending = chatStorage.getPendingPlan(userId);
+      if (!pending) {
+        await bot.sendMessage(chatId, 'No pending plan found. Use `/plan <task>` first.');
+        return;
+      }
+      
+      // Get project
+      const projects = await getGitLabProjects();
+      const project = projects.find(p => p.id === projectId || p.fullPath === projectId);
+      
+      if (!project) {
+        await bot.sendMessage(chatId, `Project "${projectId}" not found.`);
+        return;
+      }
+      
+      // Delete pending plan
+      chatStorage.deletePendingPlan(userId);
+      
+      // Update message to show selection
+      await bot.editMessageText(
+        `**Task:** ${pending.task}\n\nSelected project: **${project.name}**\n\nCreating plan...`,
+        {
+          chat_id: chatId,
+          message_id: query.message.message_id,
+          parse_mode: 'Markdown',
+        }
+      );
+      
+      // Create the plan
+      await bot.sendChatAction(chatId, 'typing');
+      
+      const result = await orchestrator.processCommand(`/plan ${pending.task}`, {
+        userId: userId,
+        chatId: chatId,
+        project: project.fullPath,
+        projectInfo: project,
+      });
+      
+      if (result.success) {
+        // Show plan with approve button
+        const keyboard = [[
+          { text: '✅ Approve Plan', callback_data: `approve:${result.plan?.id || 'latest'}:${userId}` },
+          { text: '❌ Cancel', callback_data: `cancelplan:${userId}` },
+        ]];
+        
+        await bot.sendMessage(chatId, result.message, {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: keyboard,
+          },
+        });
+        
+        // Voice confirmation
+        const voiceText = `Plan created for ${pending.task}. Complexity: ${result.plan.complexity}, estimated ${result.plan.estimatedHours} hours.`;
+        await sendMessageWithVoice(userId, chatId, voiceText, { voice: true, language: 'en' });
+      } else {
+        await bot.sendMessage(chatId, `Error: ${result.message}`);
+      }
+    }
+    
+    // Handle approve:planId:userId
+    else if (data.startsWith('approve:')) {
+      const parts = data.split(':');
+      const expectedUserId = parts[2];
+      
+      if (userId.toString() !== expectedUserId) {
+        await bot.sendMessage(chatId, 'This button is not for you.');
+        return;
+      }
+      
+      // Update message
+      await bot.editMessageReplyMarkup(
+        { inline_keyboard: [] },
+        { chat_id: chatId, message_id: query.message.message_id }
+      );
+      
+      await bot.sendMessage(chatId, '✅ Plan approved! Starting implementation...');
+      
+      // Run the plan
+      const result = await orchestrator.processCommand('/run', {
+        userId: userId,
+        chatId: chatId,
+      });
+      
+      await sendMessageWithVoice(userId, chatId, result.message, { parse_mode: 'Markdown' });
+    }
+    
+    // Handle cancelplan:userId
+    else if (data.startsWith('cancelplan:')) {
+      const expectedUserId = data.split(':')[1];
+      
+      if (userId.toString() !== expectedUserId) {
+        await bot.sendMessage(chatId, 'This button is not for you.');
+        return;
+      }
+      
+      await bot.editMessageReplyMarkup(
+        { inline_keyboard: [] },
+        { chat_id: chatId, message_id: query.message.message_id }
+      );
+      
+      await bot.sendMessage(chatId, '❌ Plan cancelled.');
+    }
+    
+  } catch (error) {
+    logger.error('[Bot] Callback query error:', error);
+    await bot.sendMessage(chatId, 'Error processing button click. Please try again.');
   }
 });
 
