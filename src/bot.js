@@ -1013,10 +1013,17 @@ bot.onText(/\/planwith (.+)/, async (msg, match) => {
   
   // Get pending plan from persistent storage
   logger.info(`[Bot] Looking for pending plan for user ${userId}`);
-  const pending = chatStorage.getPendingPlan(userId);
+  let pending = chatStorage.getPendingPlan(userId);
+  
+  // Retry once if not found
+  if (!pending) {
+    logger.warn(`[Bot] No pending plan found for user ${userId}, retrying...`);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    pending = chatStorage.getPendingPlan(userId);
+  }
   
   if (!pending) {
-    logger.warn(`[Bot] No pending plan found for user ${userId}`);
+    logger.warn(`[Bot] No pending plan found for user ${userId} after retry`);
     await bot.sendMessage(msg.chat.id, 'No pending plan found. Please use `/plan <task>` first to create a plan.\n\nUse `/debug` to see storage status.');
     return;
   }
@@ -1622,12 +1629,23 @@ bot.on('callback_query', async (query) => {
         return;
       }
       
-      // Get pending plan
-      const pending = chatStorage.getPendingPlan(userId);
+      // Get pending plan with retry
+      let pending = chatStorage.getPendingPlan(userId);
+      
+      // Retry once after short delay if not found (might be race condition)
       if (!pending) {
-        await bot.sendMessage(chatId, 'No pending plan found. Use `/plan <task>` first.');
+        logger.warn(`[Bot] Pending plan not found for user ${userId}, retrying...`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        pending = chatStorage.getPendingPlan(userId);
+      }
+      
+      if (!pending) {
+        logger.error(`[Bot] No pending plan found for user ${userId} after retry`);
+        await bot.sendMessage(chatId, 'No pending plan found. The plan may have expired. Please use `/plan <task>` again.');
         return;
       }
+      
+      logger.info(`[Bot] Found pending plan for user ${userId}: ${pending.task}`);
       
       // Get project
       const projects = await getGitLabProjects();
