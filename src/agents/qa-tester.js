@@ -257,6 +257,13 @@ Return a validation report.
 
     return this.callClaude(prompt);
   }
+
+  /**
+   * Execute task - required by BaseAgent
+   */
+  async execute(task) {
+    return this.runTests(task);
+  }
 }
 
 module.exports = QATesterAgent;
