@@ -1440,9 +1440,33 @@ app.get('*', (req, res) => {
 // Start Server
 // ============================================================================
 
+// ============================================================================
+// Start Server
+// ============================================================================
+
 server.listen(PORT, () => {
-  logger.info(`Nigents Dashboard running on port ${PORT}`);
+  logger.info(`NIGENTS DASHBOARD v2 - Free Materials API Enabled`);
+  logger.info(`Running on port ${PORT}`);
   logger.info(`Dashboard URL: http://localhost:${PORT}`);
+  
+  // Verify critical routes are loaded
+  const routes = app._router?.stack || [];
+  const hasSubscribeRoute = routes.some(r => r.route?.path === '/api/materials/subscribe');
+  logger.info(`Subscribe API route loaded: ${hasSubscribeRoute}`);
+  
+  // Check email config
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailPass = process.env.GMAIL_PASS;
+  logger.info(`Email configured: ${!!(gmailUser && gmailPass)}`);
+  
+  // Check materials directory
+  const materialsDir = path.join(__dirname, 'public', 'materials');
+  if (fs.existsSync(materialsDir)) {
+    const pdfs = fs.readdirSync(materialsDir).filter(f => f.endsWith('.pdf'));
+    logger.info(`PDFs available: ${pdfs.length} (${pdfs.join(', ')})`);
+  } else {
+    logger.warn(`Materials directory not found: ${materialsDir}`);
+  }
 });
 
 module.exports = { app, server, io, addActivity };
