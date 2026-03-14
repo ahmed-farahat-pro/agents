@@ -190,7 +190,7 @@ Keep your response brief and conversational (1-2 sentences max).`;
    */
   async textToSpeech(text, language = 'en') {
     try {
-      const { gTTS } = require('gtts');
+      const gTTS = require('gtts');
       
       const langMap = {
         'en': 'en',

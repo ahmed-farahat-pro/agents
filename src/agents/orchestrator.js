@@ -21,6 +21,9 @@ class OrchestratorAgent extends BaseAgent {
     this.dbTaskQueue = null;
     this.useDatabase = process.env.DB_HOST && process.env.DB_USER && process.env.DB_PASSWORD;
     
+    // Always ensure chatStorage is set
+    this.chatStorage = null;
+    
     if (this.useDatabase) {
       try {
         this.dbTaskQueue = require('../database/task-queue-mysql');
@@ -29,11 +32,32 @@ class OrchestratorAgent extends BaseAgent {
       } catch (error) {
         logger.error('[Orchestrator] Failed to load database modules:', error.message);
         this.useDatabase = false;
-        this.chatStorage = require('../utils/chat-storage-json');
       }
-    } else {
-      this.chatStorage = require('../utils/chat-storage-json');
-      logger.info('[Orchestrator] Using JSON file storage');
+    }
+    
+    // Fallback to JSON storage if database not available or failed
+    if (!this.chatStorage) {
+      try {
+        this.chatStorage = require('../utils/chat-storage-json');
+        logger.info('[Orchestrator] Using JSON file storage');
+      } catch (error) {
+        logger.error('[Orchestrator] Failed to load JSON storage:', error.message);
+        // Create a minimal stub to prevent crashes
+        this.chatStorage = {
+          getPendingPlan: () => null,
+          deletePendingPlan: () => {},
+          setPendingPlan: () => false,
+          getUserSettings: () => ({
+            voiceResponse: true,
+            language: 'auto',
+            defaultProject: null,
+            preferredAI: null,
+            preferredModel: null,
+          }),
+          setUserSettings: () => {},
+        };
+        logger.warn('[Orchestrator] Using minimal stub storage - persistence disabled!');
+      }
     }
   }
 
