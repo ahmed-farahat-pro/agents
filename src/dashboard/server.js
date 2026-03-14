@@ -12,6 +12,8 @@ const path = require('path');
 const logger = require('../utils/logger');
 const axios = require('axios');
 const aiClient = require('../utils/ai-client');
+const fs = require('fs');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const server = http.createServer(app);
@@ -1055,12 +1057,88 @@ app.post('/api/ai/models', async (req, res) => {
 // Free Materials API
 // ============================================================================
 
+const MATERIALS_DATA_DIR = path.join(process.cwd(), 'data');
 const SUBSCRIBERS_FILE = path.join(MATERIALS_DATA_DIR, 'subscribers.json');
 const DOWNLOADS_FILE = path.join(MATERIALS_DATA_DIR, 'downloads.json');
 
 // Ensure data directory exists
 if (!fs.existsSync(MATERIALS_DATA_DIR)) {
   fs.mkdirSync(MATERIALS_DATA_DIR, { recursive: true });
+}
+
+// Create email transporter for sending roadmaps
+function createEmailTransporter() {
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailPass = process.env.GMAIL_PASS;
+  
+  if (!gmailUser || !gmailPass) {
+    logger.warn('[Email] GMAIL_USER or GMAIL_PASS not set, emails disabled');
+    return null;
+  }
+  
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: gmailUser,
+      pass: gmailPass,
+    },
+  });
+}
+
+// Send roadmap email to subscriber
+async function sendRoadmapEmail(subscriber, roadmap) {
+  const transporter = createEmailTransporter();
+  if (!transporter) return { success: false, error: 'Email not configured' };
+  
+  const { email, name } = subscriber;
+  const displayName = name || 'there';
+  const roadmapTitle = roadmap.charAt(0).toUpperCase() + roadmap.slice(1);
+  const gmailUser = process.env.GMAIL_USER;
+  
+  const mailOptions = {
+    from: `"Nigents" <${gmailUser}>`,
+    to: email,
+    subject: `🎓 Your ${roadmapTitle} Developer Roadmap`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h1 style="color: #fff; margin: 0; font-size: 24px;">Nigents Learning</h1>
+        </div>
+        <div style="background: #fff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+          <h2 style="color: #10b981; margin-top: 0;">Hi ${displayName}! 👋</h2>
+          <p>Thank you for subscribing! Here's your <strong>${roadmapTitle} Developer Roadmap</strong>.</p>
+          
+          <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+            <p style="margin: 0 0 15px 0; font-size: 16px;">📥 Download your PDF:</p>
+            <a href="https://nigents.com/materials/${roadmap}-roadmap.pdf" 
+               style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+               Download ${roadmapTitle} Roadmap
+            </a>
+          </div>
+          
+          <p>This 30-day roadmap will guide you step-by-step to become a professional ${roadmapTitle} Developer.</p>
+          
+          <p style="margin-top: 30px;">Good luck on your learning journey!<br><strong>The Nigents Team</strong></p>
+          
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+          <p style="color: #6b7280; font-size: 12px;">
+            You're receiving this because you subscribed at <a href="https://nigents.com" style="color: #667eea;">nigents.com</a>.<br>
+            To unsubscribe, reply with "UNSUBSCRIBE".
+          </p>
+        </div>
+      </div>
+    `,
+    text: `Hi ${displayName}!\n\nThank you for subscribing! Here's your ${roadmapTitle} Developer Roadmap.\n\nDownload your PDF: https://nigents.com/materials/${roadmap}-roadmap.pdf\n\nThis 30-day roadmap will guide you step-by-step to become a professional ${roadmapTitle} Developer.\n\nGood luck on your learning journey!\nThe Nigents Team\n\n---\nYou're receiving this because you subscribed at nigents.com.\nTo unsubscribe, reply with "UNSUBSCRIBE".`,
+  };
+  
+  try {
+    const result = await transporter.sendMail(mailOptions);
+    logger.info(`[Email] Roadmap email sent to ${email}`);
+    return { success: true, messageId: result.messageId };
+  } catch (error) {
+    logger.error(`[Email] Failed to send to ${email}:`, error.message);
+    return { success: false, error: error.message };
+  }
 }
 
 // Load subscribers
@@ -1115,7 +1193,7 @@ function saveDownload(download) {
 }
 
 // Subscribe to free materials
-app.post('/api/materials/subscribe', (req, res) => {
+app.post('/api/materials/subscribe', async (req, res) => {
   try {
     const { email, name, roadmap } = req.body;
     
@@ -1143,6 +1221,9 @@ app.post('/api/materials/subscribe', (req, res) => {
       if (!subscribers[email].roadmaps.includes(roadmap)) {
         subscribers[email].roadmaps.push(roadmap);
         saveSubscribers(subscribers);
+        
+        // Send email for the new roadmap
+        await sendRoadmapEmail(subscribers[email], roadmap);
       }
       
       return res.json({
@@ -1153,7 +1234,7 @@ app.post('/api/materials/subscribe', (req, res) => {
     }
     
     // New subscriber
-    subscribers[email] = {
+    const newSubscriber = {
       email,
       name: name || '',
       roadmaps: [roadmap],
@@ -1161,9 +1242,13 @@ app.post('/api/materials/subscribe', (req, res) => {
       updatesEnabled: true,
     };
     
+    subscribers[email] = newSubscriber;
     saveSubscribers(subscribers);
     
     logger.info(`[Dashboard] New subscriber: ${email} for ${roadmap}`);
+    
+    // Send welcome email with roadmap
+    await sendRoadmapEmail(newSubscriber, roadmap);
     
     res.json({
       success: true,
