@@ -6,57 +6,75 @@
 const { Anthropic } = require('@anthropic-ai/sdk');
 const axios = require('axios');
 const logger = require('./logger');
+const sharedConfig = require('./shared-config');
 
 class AIClient {
   constructor() {
-    this.providers = {
-      anthropic: {
-        name: 'Anthropic Claude',
-        enabled: !!process.env.ANTHROPIC_API_KEY,
-        client: process.env.ANTHROPIC_API_KEY ? new Anthropic({
-          apiKey: process.env.ANTHROPIC_API_KEY,
-        }) : null,
-        models: ['claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-haiku-20240307'],
-        defaultModel: 'claude-3-5-sonnet-20241022',
-      },
-      zhipu: {
-        name: 'Z.AI (Zhipu)',
-        enabled: !!process.env.ZHIPU_API_KEY,
-        apiKey: process.env.ZHIPU_API_KEY,
-        baseUrl: 'https://api.z.ai/api/coding/paas/v4',
-        models: ['glm-4', 'glm-4-flash', 'glm-4v'],
-        defaultModel: 'glm-4',
-      },
-      moonshot: {
-        name: 'Moonshot AI',
-        enabled: !!process.env.MOONSHOT_API_KEY,
-        apiKey: process.env.MOONSHOT_API_KEY,
-        baseUrl: 'https://api.moonshot.ai/v1',
-        models: ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k'],
-        defaultModel: 'moonshot-v1-8k',
-      },
-      deepseek: {
-        name: 'DeepSeek',
-        enabled: !!process.env.DEEPSEEK_API_KEY,
-        apiKey: process.env.DEEPSEEK_API_KEY,
-        baseUrl: 'https://api.deepseek.com/v1',
-        models: ['deepseek-chat', 'deepseek-coder'],
-        defaultModel: 'deepseek-chat',
-      },
-    };
-
-    this.defaultProvider = process.env.DEFAULT_AI_PROVIDER || 'anthropic';
     this.requestLog = [];
     this.maxLogSize = 1000;
+    
+    // Initialize providers (will be updated with actual keys from shared config)
+    this.refreshProviders();
+    
+    this.defaultProvider = process.env.DEFAULT_AI_PROVIDER || 'anthropic';
 
     // Log API keys status on startup
     this.logAPIKeysStatus();
   }
 
   /**
+   * Refresh provider configurations from shared config
+   */
+  refreshProviders() {
+    const apiKeys = sharedConfig.getApiKeys();
+    
+    this.providers = {
+      anthropic: {
+        name: 'Anthropic Claude',
+        enabled: !!apiKeys.ANTHROPIC_API_KEY,
+        apiKey: apiKeys.ANTHROPIC_API_KEY,
+        client: apiKeys.ANTHROPIC_API_KEY ? new Anthropic({
+          apiKey: apiKeys.ANTHROPIC_API_KEY,
+        }) : null,
+        models: ['claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-haiku-20240307'],
+        defaultModel: 'claude-3-5-sonnet-20241022',
+      },
+      zhipu: {
+        name: 'Z.AI (Zhipu)',
+        enabled: !!apiKeys.ZHIPU_API_KEY,
+        apiKey: apiKeys.ZHIPU_API_KEY,
+        baseUrl: 'https://api.z.ai/api/coding/paas/v4',
+        models: ['glm-4', 'glm-4-flash', 'glm-4v'],
+        defaultModel: 'glm-4',
+      },
+      moonshot: {
+        name: 'Moonshot AI',
+        enabled: !!apiKeys.MOONSHOT_API_KEY,
+        apiKey: apiKeys.MOONSHOT_API_KEY,
+        baseUrl: 'https://api.moonshot.ai/v1',
+        models: ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k'],
+        defaultModel: 'moonshot-v1-8k',
+      },
+      deepseek: {
+        name: 'DeepSeek',
+        enabled: !!apiKeys.DEEPSEEK_API_KEY,
+        apiKey: apiKeys.DEEPSEEK_API_KEY,
+        baseUrl: 'https://api.deepseek.com/v1',
+        models: ['deepseek-chat', 'deepseek-coder'],
+        defaultModel: 'deepseek-chat',
+      },
+    };
+    
+    logger.info('[AIClient] Providers refreshed from shared config');
+  }
+
+  /**
    * Get available providers
    */
   getAvailableProviders() {
+    // Always refresh before checking
+    this.refreshProviders();
+    
     const available = {};
     for (const [key, provider] of Object.entries(this.providers)) {
       available[key] = {
@@ -73,6 +91,9 @@ class AIClient {
    * Get API keys status - shows which providers are ready to use
    */
   getAPIKeysStatus() {
+    // Refresh from shared config
+    this.refreshProviders();
+    
     const status = {
       timestamp: new Date().toISOString(),
       providers: {},
@@ -101,7 +122,7 @@ class AIClient {
         status.notReady.push({
           key,
           name: provider.name,
-          reason: !provider.enabled ? 'API key not set in .env' : 'API key is empty',
+          reason: !provider.enabled ? 'API key not set' : 'API key is empty',
         });
       }
     }
@@ -198,9 +219,16 @@ class AIClient {
    * Call Anthropic Claude
    */
   async callAnthropic(prompt, options = {}) {
+    // Refresh providers to get latest API key
+    this.refreshProviders();
+    
     const provider = this.providers.anthropic;
     const model = options.model || provider.defaultModel;
     const startTime = Date.now();
+
+    if (!provider.client) {
+      throw new Error('Anthropic API key not configured');
+    }
 
     logger.info(`[AIClient] Anthropic REQUEST:`, {
       model,
@@ -262,9 +290,15 @@ class AIClient {
    * Call Zhipu AI (GLM)
    */
   async callZhipu(prompt, options = {}) {
+    this.refreshProviders();
+    
     const provider = this.providers.zhipu;
     const model = options.model || provider.defaultModel;
     const startTime = Date.now();
+
+    if (!provider.apiKey) {
+      throw new Error('Zhipu API key not configured');
+    }
 
     logger.info(`[AIClient] Zhipu REQUEST:`, {
       model,
@@ -336,9 +370,15 @@ class AIClient {
    * Call Moonshot AI (Kimi)
    */
   async callMoonshot(prompt, options = {}) {
+    this.refreshProviders();
+    
     const provider = this.providers.moonshot;
     const model = options.model || provider.defaultModel;
     const startTime = Date.now();
+
+    if (!provider.apiKey) {
+      throw new Error('Moonshot API key not configured');
+    }
 
     logger.info(`[AIClient] Moonshot REQUEST:`, {
       model,
@@ -410,9 +450,15 @@ class AIClient {
    * Call DeepSeek
    */
   async callDeepseek(prompt, options = {}) {
+    this.refreshProviders();
+    
     const provider = this.providers.deepseek;
     const model = options.model || provider.defaultModel;
     const startTime = Date.now();
+
+    if (!provider.apiKey) {
+      throw new Error('DeepSeek API key not configured');
+    }
 
     logger.info(`[AIClient] DeepSeek REQUEST:`, {
       model,
@@ -484,6 +530,9 @@ class AIClient {
    * Call AI with specified provider or default
    */
   async call(prompt, options = {}) {
+    // Refresh providers before each call
+    this.refreshProviders();
+    
     const provider = options.provider || this.defaultProvider;
 
     logger.info(`[AIClient] Calling ${provider}:`, {
@@ -521,6 +570,9 @@ class AIClient {
    * Try calling with fallback providers
    */
   async callWithFallback(prompt, options = {}, fallbackProviders = ['anthropic', 'zhipu', 'moonshot']) {
+    // Refresh providers before trying
+    this.refreshProviders();
+    
     const errors = [];
 
     for (const provider of fallbackProviders) {
@@ -537,6 +589,19 @@ class AIClient {
     }
 
     throw new Error(`All providers failed: ${JSON.stringify(errors)}`);
+  }
+
+  /**
+   * Get the cheapest available provider for intent detection
+   */
+  getCheapestProvider() {
+    // Refresh providers
+    this.refreshProviders();
+    
+    if (this.providers.zhipu.enabled) return 'zhipu';
+    if (this.providers.deepseek.enabled) return 'deepseek';
+    if (this.providers.moonshot.enabled) return 'moonshot';
+    return 'anthropic';
   }
 }
 
