@@ -159,38 +159,79 @@ class ChatStorage {
   setPendingPlan(userId, planData) {
     try {
       const key = userId.toString();
+      
+      // First reload to get any updates from other processes
+      this.pendingPlans = this.loadData(PENDING_PLANS_FILE, {});
+      
       this.pendingPlans[key] = {
         ...planData,
         createdAt: Date.now(),
       };
       
       logger.info(`[ChatStorage] Setting pending plan for user ${key}: ${planData.task}`);
+      logger.info(`[ChatStorage] Total pending plans now: ${Object.keys(this.pendingPlans).length}`);
       
       // Save immediately and verify
       const saved = this.saveData(PENDING_PLANS_FILE, this.pendingPlans);
       
       if (saved) {
-        // Verify by reading back
-        const verify = this.getPendingPlan(userId);
-        if (verify) {
-          logger.info(`[ChatStorage] Pending plan saved and verified for user ${key}`);
-        } else {
-          logger.error(`[ChatStorage] FAILED TO VERIFY pending plan for user ${key}`);
+        // Small delay to ensure filesystem sync
+        const verifyStart = Date.now();
+        let verified = false;
+        let verifyAttempts = 0;
+        
+        // Try verification multiple times
+        while (!verified && verifyAttempts < 3) {
+          const verify = this.loadData(PENDING_PLANS_FILE, {});
+          if (verify[key]) {
+            verified = true;
+            this.pendingPlans = verify; // Update in-memory cache
+            logger.info(`[ChatStorage] Pending plan saved and verified for user ${key} (attempt ${verifyAttempts + 1})`);
+          } else {
+            verifyAttempts++;
+            if (verifyAttempts < 3) {
+              logger.warn(`[ChatStorage] Verification attempt ${verifyAttempts} failed, retrying...`);
+              // Small delay before retry
+              const start = Date.now();
+              while (Date.now() - start < 100) {} // Busy wait 100ms
+            }
+          }
         }
+        
+        if (!verified) {
+          logger.error(`[ChatStorage] FAILED TO VERIFY pending plan for user ${key} after 3 attempts`);
+        }
+        
+        return verified;
       } else {
         logger.error(`[ChatStorage] FAILED TO SAVE pending plan for user ${key}`);
+        return false;
       }
     } catch (error) {
       logger.error('[ChatStorage] Failed to set pending plan:', error);
+      return false;
     }
   }
 
   getPendingPlan(userId) {
     try {
-      // Reload from disk to ensure we have latest data
+      const key = userId.toString();
+      
+      // First check in-memory cache
+      if (this.pendingPlans[key]) {
+        const plan = this.pendingPlans[key];
+        const age = Date.now() - plan.createdAt;
+        const maxAge = 24 * 60 * 60 * 1000;
+        
+        if (age <= maxAge) {
+          logger.info(`[ChatStorage] Found pending plan in memory for user ${key}: ${plan.task}`);
+          return plan;
+        }
+      }
+      
+      // Reload from disk if not in memory or expired
       this.pendingPlans = this.loadData(PENDING_PLANS_FILE, {});
       
-      const key = userId.toString();
       const plan = this.pendingPlans[key];
       
       if (!plan) {

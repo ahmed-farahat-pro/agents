@@ -907,7 +907,7 @@ bot.onText(/\/debug/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
   const stats = chatStorage.getStats();
-  const pending = chatStorage.getPendingPlan(msg.from.id);
+  const pending = chatStorage.getPendingPlan(msg.from.id.toString());
   const providers = aiClient.getAvailableProviders();
   
   let message = '**Debug Info**\n\n';
@@ -989,24 +989,25 @@ bot.onText(/\/plan (.+)/, async (msg, match) => {
     }
     
     // Store pending plan persistently
-    logger.info(`[Bot] Storing pending plan for user ${userId}: ${task}`);
-    chatStorage.setPendingPlan(userId, {
+    const userIdStr = userId.toString();
+    logger.info(`[Bot] Storing pending plan for user ${userIdStr}: ${task}`);
+    const saved = chatStorage.setPendingPlan(userIdStr, {
       task,
       chatId: msg.chat.id,
       username: msg.from.username || msg.from.first_name,
     });
     
     // Verify it was saved
-    const verify = chatStorage.getPendingPlan(userId);
-    logger.info(`[Bot] Verified pending plan: ${verify ? 'FOUND' : 'NOT FOUND'}`);
+    const verify = chatStorage.getPendingPlan(userIdStr);
+    logger.info(`[Bot] Verified pending plan: ${verify ? 'FOUND' : 'NOT FOUND'}, saved: ${saved}`);
     
     // Show project selection with inline keyboard
     const message = `**Task:** ${task}\n\nSelect a project:`;
     
-    // Create inline keyboard with projects
+    // Create inline keyboard with projects - use string userId consistently
     const keyboard = projects.slice(0, 10).map(project => ([{
       text: project.name,
-      callback_data: `planwith:${project.id}:${userId}`,
+      callback_data: `planwith:${project.id}:${userIdStr}`,
     }]));
     
     await bot.sendMessage(msg.chat.id, message, {
@@ -1107,21 +1108,23 @@ bot.onText(/\/planwith (.+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
 
   const projectId = match[1].trim();
-  const userId = msg.from.id;
+  const userIdStr = msg.from.id.toString();
   
-  // Get pending plan from persistent storage
-  logger.info(`[Bot] Looking for pending plan for user ${userId}`);
-  let pending = chatStorage.getPendingPlan(userId);
+  // Get pending plan from persistent storage with retries
+  logger.info(`[Bot] Looking for pending plan for user ${userIdStr}`);
+  let pending = chatStorage.getPendingPlan(userIdStr);
   
-  // Retry once if not found
-  if (!pending) {
-    logger.warn(`[Bot] No pending plan found for user ${userId}, retrying...`);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    pending = chatStorage.getPendingPlan(userId);
+  // Retry with backoff if not found
+  let retryCount = 0;
+  while (!pending && retryCount < 3) {
+    retryCount++;
+    logger.warn(`[Bot] No pending plan found for user ${userIdStr}, retry ${retryCount}/3...`);
+    await new Promise(resolve => setTimeout(resolve, 200 * retryCount));
+    pending = chatStorage.getPendingPlan(userIdStr);
   }
   
   if (!pending) {
-    logger.warn(`[Bot] No pending plan found for user ${userId} after retry`);
+    logger.warn(`[Bot] No pending plan found for user ${userIdStr} after retries`);
     await bot.sendMessage(msg.chat.id, 'No pending plan found. Please use `/plan <task>` first to create a plan.\n\nUse `/debug` to see storage status.');
     return;
   }
@@ -1138,16 +1141,16 @@ bot.onText(/\/planwith (.+)/, async (msg, match) => {
     }
     
     // Delete pending plan (we're processing it now)
-    chatStorage.deletePendingPlan(userId);
+    chatStorage.deletePendingPlan(userIdStr);
     
     await bot.sendChatAction(msg.chat.id, 'typing');
     const statusMsg = await bot.sendMessage(msg.chat.id, `Analyzing ${project.name}... This may take a moment.`);
 
     // Add to chat history
-    chatStorage.addMessage(userId, 'user', `/planwith ${projectId}`, { type: 'command' });
+    chatStorage.addMessage(userIdStr, 'user', `/planwith ${projectId}`, { type: 'command' });
 
     // Get user's preferred AI provider/model
-    const userSettings = chatStorage.getUserSettings(userId);
+    const userSettings = chatStorage.getUserSettings(userIdStr);
     const aiProvider = userSettings.preferredAI;
     
     // If preferredAI contains a model (e.g., "moonshot:moonshot-v1-32k"), parse it
@@ -1162,7 +1165,7 @@ bot.onText(/\/planwith (.+)/, async (msg, match) => {
     logger.info(`[Bot] Using AI provider for plan: ${finalProvider}${aiModel ? `, model: ${aiModel}` : ''}`);
 
     const result = await orchestrator.processCommand(`/plan ${pending.task}`, {
-      userId: userId,
+      userId: userIdStr,
       chatId: msg.chat.id,
       project: project.fullPath,
       projectInfo: project,
@@ -1595,7 +1598,8 @@ bot.on('voice', async (msg) => {
       case 'PLAN':
         if (intentResult.extracted_task) {
           // Store the pending plan persistently
-          chatStorage.setPendingPlan(userId, {
+          const userIdStrVoice = userId.toString();
+          chatStorage.setPendingPlan(userIdStrVoice, {
             task: intentResult.extracted_task,
             chatId: msg.chat.id,
             fromVoice: true,
@@ -1730,30 +1734,44 @@ bot.on('callback_query', async (query) => {
       const parts = data.split(':');
       const projectId = parts[1];
       const expectedUserId = parts[2];
+      const userIdStr = userId.toString();
+      
+      logger.info(`[Bot] Callback planwith: projectId=${projectId}, expectedUserId=${expectedUserId}, actualUserId=${userIdStr}`);
       
       // Security check
-      if (userId.toString() !== expectedUserId) {
+      if (userIdStr !== expectedUserId) {
+        logger.warn(`[Bot] Security check failed: ${userIdStr} !== ${expectedUserId}`);
         await bot.sendMessage(chatId, 'This button is not for you.');
         return;
       }
       
-      // Get pending plan with retry
-      let pending = chatStorage.getPendingPlan(userId);
+      // Get pending plan with multiple retries
+      let pending = null;
+      let retryCount = 0;
+      const maxRetries = 5;
       
-      // Retry once after short delay if not found (might be race condition)
-      if (!pending) {
-        logger.warn(`[Bot] Pending plan not found for user ${userId}, retrying...`);
-        await new Promise(resolve => setTimeout(resolve, 500));
-        pending = chatStorage.getPendingPlan(userId);
+      while (!pending && retryCount < maxRetries) {
+        pending = chatStorage.getPendingPlan(userIdStr);
+        
+        if (!pending) {
+          retryCount++;
+          logger.warn(`[Bot] Pending plan not found for user ${userIdStr}, retry ${retryCount}/${maxRetries}...`);
+          
+          if (retryCount < maxRetries) {
+            // Exponential backoff: 100ms, 200ms, 400ms, 800ms
+            const delay = 100 * Math.pow(2, retryCount - 1);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        }
       }
       
       if (!pending) {
-        logger.error(`[Bot] No pending plan found for user ${userId} after retry`);
-        await bot.sendMessage(chatId, 'No pending plan found. The plan may have expired. Please use `/plan <task>` again.');
+        logger.error(`[Bot] No pending plan found for user ${userIdStr} after ${maxRetries} retries`);
+        await bot.sendMessage(chatId, 'No pending plan found. Please use `/plan <task>` again.\n\nIf this keeps happening, use `/debug` to check storage status.');
         return;
       }
       
-      logger.info(`[Bot] Found pending plan for user ${userId}: ${pending.task}`);
+      logger.info(`[Bot] Found pending plan after ${retryCount} retries: ${pending.task}`);
       
       // Get project
       const projects = await getGitLabProjects();
@@ -1765,7 +1783,7 @@ bot.on('callback_query', async (query) => {
       }
       
       // Delete pending plan
-      chatStorage.deletePendingPlan(userId);
+      chatStorage.deletePendingPlan(userIdStr);
       
       // Update message to show selection
       await bot.editMessageText(
@@ -1781,14 +1799,14 @@ bot.on('callback_query', async (query) => {
       await bot.sendChatAction(chatId, 'typing');
       
       // Get user's preferred AI provider/model
-      const userSettings = chatStorage.getUserSettings(userId);
+      const userSettings = chatStorage.getUserSettings(userIdStr);
       const aiProvider = userSettings.preferredAI;
       const aiModel = userSettings.preferredModel;
       
       logger.info(`[Bot] Using AI provider for plan: ${aiProvider}${aiModel ? `, model: ${aiModel}` : ''}`);
       
       const result = await orchestrator.processCommand(`/plan ${pending.task}`, {
-        userId: userId,
+        userId: userIdStr,
         chatId: chatId,
         project: project.fullPath,
         projectInfo: project,
@@ -1799,8 +1817,8 @@ bot.on('callback_query', async (query) => {
       if (result.success) {
         // Show plan with approve button
         const keyboard = [[
-          { text: '✅ Approve Plan', callback_data: `approve:${result.plan?.id || 'latest'}:${userId}` },
-          { text: '❌ Cancel', callback_data: `cancelplan:${userId}` },
+          { text: '✅ Approve Plan', callback_data: `approve:${result.plan?.id || 'latest'}:${userIdStr}` },
+          { text: '❌ Cancel', callback_data: `cancelplan:${userIdStr}` },
         ]];
         
         await bot.sendMessage(chatId, result.message, {
