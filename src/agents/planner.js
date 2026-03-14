@@ -274,12 +274,30 @@ Respond with valid JSON in this format:
     }
 
     // Extract JSON from response
-    const jsonMatch = result.content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Could not parse plan JSON from response');
-    }
+    let plan;
+    try {
+      const jsonMatch = result.content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('Could not parse plan JSON from response');
+      }
 
-    const plan = JSON.parse(jsonMatch[0]);
+      plan = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      logger.error('[Planner] Failed to parse plan JSON:', parseError);
+      logger.error('[Planner] Raw response:', result.content.substring(0, 500));
+      throw new Error('Failed to parse plan: ' + parseError.message);
+    }
+    
+    // Ensure required fields exist
+    if (!plan.title) plan.title = 'Untitled Plan';
+    if (!plan.description) plan.description = 'No description provided';
+    if (!plan.complexity) plan.complexity = 'M';
+    if (!plan.estimatedHours) plan.estimatedHours = 2;
+    if (!plan.steps || !Array.isArray(plan.steps)) plan.steps = [];
+    if (!plan.filesToModify) plan.filesToModify = [];
+    if (!plan.filesToCreate) plan.filesToCreate = [];
+    if (!plan.dependencies) plan.dependencies = [];
+    if (!plan.testingNotes) plan.testingNotes = '';
     
     // Add metadata
     plan.id = `plan-${Date.now()}`;
@@ -302,18 +320,22 @@ Respond with valid JSON in this format:
     };
 
     let message = `📋 **Implementation Plan**\n\n`;
-    message += `**${plan.title}**\n`;
-    message += `${plan.description}\n\n`;
-    message += `Complexity: ${complexityEmoji[plan.complexity] || '⚪'} ${plan.complexity}\n`;
-    message += `Estimated: ${plan.estimatedHours} hours\n\n`;
+    message += `**${plan.title || 'Untitled Plan'}**\n`;
+    message += `${plan.description || 'No description provided'}\n\n`;
+    message += `Complexity: ${complexityEmoji[plan.complexity] || '⚪'} ${plan.complexity || 'Unknown'}\n`;
+    message += `Estimated: ${plan.estimatedHours || '?'} hours\n\n`;
     
-    message += `**Steps:**\n`;
-    plan.steps.forEach(step => {
-      message += `${step.order}. ${step.description}\n`;
-      if (step.files && step.files.length > 0) {
-        message += `   📁 ${step.files.join(', ')}\n`;
-      }
-    });
+    if (plan.steps && Array.isArray(plan.steps) && plan.steps.length > 0) {
+      message += `**Steps:**\n`;
+      plan.steps.forEach(step => {
+        message += `${step.order || 1}. ${step.description || 'No description'}\n`;
+        if (step.files && step.files.length > 0) {
+          message += `   📁 ${step.files.join(', ')}\n`;
+        }
+      });
+    } else {
+      message += `**Steps:** No steps defined\n`;
+    }
 
     if (plan.filesToCreate && plan.filesToCreate.length > 0) {
       message += `\n**New Files:**\n`;
