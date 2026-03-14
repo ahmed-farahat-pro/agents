@@ -186,11 +186,12 @@ class PlannerAgent extends BaseAgent {
    * Generate plan with MCP tool assistance
    */
   async generatePlanWithMCP(task, codebaseAnalysis, project, preferredProvider = null, preferredModel = null) {
-    const prompt = `
-Create a detailed implementation plan for the following task:
+    const timestamp = Date.now();
+    
+    const prompt = `You are an expert software architect. Create a detailed implementation plan.
 
 TASK: ${task}
-${project ? `PROJECT: ${project}` : ''}
+${project ? `PROJECT: ${project}` : 'Project: web application'}
 
 ${codebaseAnalysis.repoFiles ? `
 REPOSITORY STRUCTURE:
@@ -198,49 +199,22 @@ ${codebaseAnalysis.repoFiles.slice(0, 30).join('\n')}
 ` : ''}
 
 ${codebaseAnalysis.relevantFiles ? `
-RELEVANT FILES IDENTIFIED:
+RELEVANT FILES:
 ${codebaseAnalysis.relevantFiles.join('\n')}
 ` : ''}
 
-${codebaseAnalysis.fileContents ? `
-KEY FILE CONTENTS:
-${codebaseAnalysis.fileContents.map(f => `
---- ${f.path} ---
-${f.content.substring(0, 1000)}
-`).join('\n')}
-` : ''}
+CRITICAL INSTRUCTIONS:
+1. Respond ONLY with valid JSON
+2. Do NOT include markdown code blocks (no \`\`\`json)
+3. Do NOT include any explanatory text
+4. The response must be parseable by JSON.parse()
+5. Include at least 3-5 detailed steps
+6. Each step must have a clear description and relevant files
 
-Create a structured implementation plan with:
-1. Title
-2. Description
-3. Step-by-step implementation steps
-4. Files to modify/create
-5. Complexity estimate (S/M/L)
-6. Estimated time
-7. Dependencies
-8. Testing considerations
+EXAMPLE RESPONSE:
+{"title":"Implement User Login Page","description":"Create a responsive login page with form validation, error handling, and JWT token storage.","complexity":"M","estimatedHours":4,"steps":[{"order":1,"description":"Create LoginForm component with email/password inputs and validation","files":["src/components/LoginForm.jsx"],"type":"create"},{"order":2,"description":"Add login API service function to handle authentication requests","files":["src/services/auth.js"],"type":"create"},{"order":3,"description":"Implement form submission handler with error state management","files":["src/components/LoginForm.jsx"],"type":"modify"},{"order":4,"description":"Add CSS styling for responsive design and error messages","files":["src/styles/login.css"],"type":"create"},{"order":5,"description":"Write unit tests for form validation and API integration","files":["src/components/LoginForm.test.js"],"type":"create"}],"filesToModify":[],"filesToCreate":["src/components/LoginForm.jsx","src/services/auth.js","src/styles/login.css","src/components/LoginForm.test.js"],"dependencies":["react-hook-form","axios"],"testingNotes":"Test validation, API errors, and responsive layout","branch":"nigents/task-${timestamp}"}
 
-Respond with valid JSON in this format:
-{
-  "title": "Brief title",
-  "description": "Detailed description",
-  "complexity": "S|M|L",
-  "estimatedHours": number,
-  "steps": [
-    {
-      "order": 1,
-      "description": "What to do",
-      "files": ["file1.java", "file2.java"],
-      "type": "create|modify|delete"
-    }
-  ],
-  "filesToModify": ["path/to/file1", "path/to/file2"],
-  "filesToCreate": ["path/to/newfile"],
-  "dependencies": ["dep1", "dep2"],
-  "testingNotes": "What needs to be tested",
-  "branch": "nigents/task-{timestamp}"
-}
-`;
+NOW CREATE YOUR JSON RESPONSE FOR: ${task}`;
 
     // Try MCP first, fall back to direct AI call
     let result;
@@ -273,31 +247,85 @@ Respond with valid JSON in this format:
       throw new Error('Failed to generate plan: ' + result.error);
     }
 
-    // Extract JSON from response
-    let plan;
-    try {
-      const jsonMatch = result.content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('Could not parse plan JSON from response');
-      }
+    // Log the raw response for debugging
+    logger.info(`[Planner] AI response length: ${result.content.length} chars`);
+    logger.debug(`[Planner] Raw AI response preview: ${result.content.substring(0, 200)}...`);
 
-      plan = JSON.parse(jsonMatch[0]);
-    } catch (parseError) {
-      logger.error('[Planner] Failed to parse plan JSON:', parseError);
-      logger.error('[Planner] Raw response:', result.content.substring(0, 500));
-      throw new Error('Failed to parse plan: ' + parseError.message);
+    // Extract JSON from response - try multiple approaches
+    let plan = null;
+    let parseAttempts = [];
+    
+    // Attempt 1: Try to find JSON between triple backticks
+    try {
+      const codeBlockMatch = result.content.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (codeBlockMatch && codeBlockMatch[1]) {
+        plan = JSON.parse(codeBlockMatch[1].trim());
+        parseAttempts.push('code block');
+      }
+    } catch (e) {
+      logger.debug('[Planner] Code block parse failed:', e.message);
     }
     
-    // Ensure required fields exist
-    if (!plan.title) plan.title = 'Untitled Plan';
-    if (!plan.description) plan.description = 'No description provided';
-    if (!plan.complexity) plan.complexity = 'M';
-    if (!plan.estimatedHours) plan.estimatedHours = 2;
-    if (!plan.steps || !Array.isArray(plan.steps)) plan.steps = [];
-    if (!plan.filesToModify) plan.filesToModify = [];
-    if (!plan.filesToCreate) plan.filesToCreate = [];
-    if (!plan.dependencies) plan.dependencies = [];
-    if (!plan.testingNotes) plan.testingNotes = '';
+    // Attempt 2: Try to find JSON between curly braces (greedy)
+    if (!plan) {
+      try {
+        const jsonMatch = result.content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          plan = JSON.parse(jsonMatch[0]);
+          parseAttempts.push('curly braces');
+        }
+      } catch (e) {
+        logger.debug('[Planner] Curly braces parse failed:', e.message);
+      }
+    }
+    
+    // Attempt 3: Try the whole trimmed content
+    if (!plan) {
+      try {
+        plan = JSON.parse(result.content.trim());
+        parseAttempts.push('full content');
+      } catch (e) {
+        logger.debug('[Planner] Full content parse failed:', e.message);
+      }
+    }
+    
+    // If all parsing failed, create a fallback plan
+    if (!plan) {
+      logger.warn('[Planner] All JSON parsing attempts failed, creating fallback plan');
+      logger.warn('[Planner] Raw response:', result.content.substring(0, 1000));
+      
+      // Create a fallback plan based on the task
+      plan = this.createFallbackPlan(task, project);
+    } else {
+      logger.info(`[Planner] JSON parsed successfully using: ${parseAttempts.join(', ')}`);
+    }
+    
+    // Ensure required fields exist with proper defaults
+    if (!plan.title || typeof plan.title !== 'string') {
+      plan.title = task.split(' ').slice(0, 6).join(' ') + '...';
+    }
+    if (!plan.description || typeof plan.description !== 'string') {
+      plan.description = `Implementation plan for: ${task}`;
+    }
+    if (!plan.complexity || !['S', 'M', 'L'].includes(plan.complexity)) {
+      plan.complexity = 'M';
+    }
+    if (!plan.estimatedHours || typeof plan.estimatedHours !== 'number') {
+      plan.estimatedHours = 2;
+    }
+    if (!plan.steps || !Array.isArray(plan.steps) || plan.steps.length === 0) {
+      // Generate default steps if none provided
+      plan.steps = [
+        { order: 1, description: 'Analyze requirements and existing codebase', files: [], type: 'review' },
+        { order: 2, description: 'Implement core functionality for: ' + task, files: [], type: 'modify' },
+        { order: 3, description: 'Add tests and verify implementation', files: [], type: 'review' },
+        { order: 4, description: 'Code review and final testing', files: [], type: 'review' }
+      ];
+    }
+    if (!plan.filesToModify || !Array.isArray(plan.filesToModify)) plan.filesToModify = [];
+    if (!plan.filesToCreate || !Array.isArray(plan.filesToCreate)) plan.filesToCreate = [];
+    if (!plan.dependencies || !Array.isArray(plan.dependencies)) plan.dependencies = [];
+    if (!plan.testingNotes || typeof plan.testingNotes !== 'string') plan.testingNotes = 'Manual testing required';
     
     // Add metadata
     plan.id = `plan-${Date.now()}`;
@@ -307,6 +335,82 @@ Respond with valid JSON in this format:
     plan.branch = plan.branch || `nigents/task-${Date.now()}`;
 
     return plan;
+  }
+
+  /**
+   * Create a fallback plan when AI parsing fails
+   */
+  createFallbackPlan(task, project) {
+    logger.info(`[Planner] Creating fallback plan for: ${task}`);
+    
+    // Extract key terms from task
+    const taskLower = task.toLowerCase();
+    let title = task.split(' ').slice(0, 5).join(' ');
+    let estimatedHours = 2;
+    let complexity = 'M';
+    
+    // Estimate complexity based on keywords
+    if (taskLower.includes('login') || taskLower.includes('auth')) {
+      estimatedHours = 4;
+      complexity = 'M';
+    } else if (taskLower.includes('api') || taskLower.includes('endpoint')) {
+      estimatedHours = 3;
+      complexity = 'M';
+    } else if (taskLower.includes('page') || taskLower.includes('ui') || taskLower.includes('design')) {
+      estimatedHours = 2;
+      complexity = 'S';
+    } else if (taskLower.includes('database') || taskLower.includes('migration')) {
+      estimatedHours = 3;
+      complexity = 'M';
+    } else if (taskLower.includes('microservice') || taskLower.includes('architecture')) {
+      estimatedHours = 8;
+      complexity = 'L';
+    }
+    
+    return {
+      title: title,
+      description: `Implementation of: ${task}. This plan was auto-generated based on the task description.`,
+      complexity: complexity,
+      estimatedHours: estimatedHours,
+      steps: [
+        { 
+          order: 1, 
+          description: 'Analyze requirements and review existing code structure', 
+          files: [], 
+          type: 'review' 
+        },
+        { 
+          order: 2, 
+          description: `Implement ${task}`, 
+          files: [], 
+          type: 'modify' 
+        },
+        { 
+          order: 3, 
+          description: 'Write unit tests for the implementation', 
+          files: [], 
+          type: 'create' 
+        },
+        { 
+          order: 4, 
+          description: 'Run tests and fix any issues', 
+          files: [], 
+          type: 'review' 
+        },
+        { 
+          order: 5, 
+          description: 'Code review and final verification', 
+          files: [], 
+          type: 'review' 
+        }
+      ],
+      filesToModify: [],
+      filesToCreate: [],
+      dependencies: [],
+      testingNotes: 'Test the implementation thoroughly before deployment',
+      branch: `nigents/task-${Date.now()}`,
+      _isFallback: true
+    };
   }
 
   /**
