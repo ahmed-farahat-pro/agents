@@ -258,6 +258,7 @@ class ChatStorage {
         language: 'auto',
         defaultProject: null,
         preferredAI: null,
+        preferredModel: null,
       };
     } catch (error) {
       logger.error('[ChatStorage] Failed to get user settings:', error);
@@ -266,6 +267,7 @@ class ChatStorage {
         language: 'auto',
         defaultProject: null,
         preferredAI: null,
+        preferredModel: null,
       };
     }
   }

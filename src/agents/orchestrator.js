@@ -222,12 +222,20 @@ Respond with JSON only:
     }
 
     this.emit('taskStarted', { taskId, type: 'plan', task: parsed.task });
+    
+    // Set user's preferred AI provider if specified
+    if (context.aiProvider) {
+      planner.setAIProvider(context.aiProvider, context.aiModel);
+    }
 
     const result = await planner.createPlan({
       task: parsed.task,
       project: context.project,
       context: context,
     });
+    
+    // Reset to default after task
+    planner.resetAIProvider();
 
     if (result.success) {
       // Store the plan for potential approval

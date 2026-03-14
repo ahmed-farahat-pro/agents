@@ -215,9 +215,11 @@ bot.onText(/\/settings/, async (msg) => {
   message += `Voice Responses: ${settings.voiceResponse ? 'ON' : 'OFF'}\n`;
   message += `Language: ${settings.language === 'auto' ? 'Auto-detect' : settings.language.toUpperCase()}\n`;
   message += `Default Project: ${settings.defaultProject || 'Not set'}\n`;
-  message += `Preferred AI: ${settings.preferredAI || 'Auto'}\n\n`;
+  message += `Preferred AI: ${settings.preferredAI || 'Auto'}\n`;
+  message += `Preferred Model: ${settings.preferredModel || 'Default'}\n\n`;
   message += '**Commands:**\n';
   message += '/voice - Toggle voice responses\n';
+  message += '/models - Select AI provider and model\n';
   message += '/clearhistory - Clear chat history';
 
   await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
@@ -546,11 +548,28 @@ bot.onText(/\/planwith (.+)/, async (msg, match) => {
     // Add to chat history
     chatStorage.addMessage(userId, 'user', `/planwith ${projectId}`, { type: 'command' });
 
+    // Get user's preferred AI provider/model
+    const userSettings = chatStorage.getUserSettings(userId);
+    const aiProvider = userSettings.preferredAI;
+    
+    // If preferredAI contains a model (e.g., "moonshot:moonshot-v1-32k"), parse it
+    let aiModel = null;
+    let finalProvider = aiProvider;
+    if (aiProvider && aiProvider.includes(':')) {
+      const parts = aiProvider.split(':');
+      finalProvider = parts[0];
+      aiModel = parts[1];
+    }
+    
+    logger.info(`[Bot] Using AI provider for plan: ${finalProvider}${aiModel ? `, model: ${aiModel}` : ''}`);
+
     const result = await orchestrator.processCommand(`/plan ${pending.task}`, {
       userId: userId,
       chatId: msg.chat.id,
       project: project.fullPath,
       projectInfo: project,
+      aiProvider: finalProvider,
+      aiModel: aiModel,
     });
 
     await bot.deleteMessage(msg.chat.id, statusMsg.message_id);
@@ -642,7 +661,7 @@ bot.onText(/\/project (.+)/, async (msg, match) => {
   }
 });
 
-// /models command - List all AI models with inline keyboard
+// /models command - Show providers first, then models
 bot.onText(/\/models/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
@@ -652,20 +671,17 @@ bot.onText(/\/models/, async (msg) => {
     const providers = aiClient.getAvailableProviders();
     const settings = chatStorage.getUserSettings(msg.from.id);
     
-    let message = '**Available AI Models**\n\n';
-    message += 'Click a provider to select it:\n\n';
+    let message = '**Select AI Provider**\n\n';
+    message += 'Click a provider to see available models:\n';
     
     // Create keyboard for enabled providers
     const keyboard = [];
     
     for (const [key, provider] of Object.entries(providers)) {
-      const status = provider.enabled ? '✅' : '❌';
-      message += `${status} **${provider.name}**\n`;
-      
       if (provider.enabled) {
         keyboard.push([{
-          text: `Use ${provider.name}`,
-          callback_data: `setprovider:${key}:${msg.from.id}`
+          text: `${provider.name}`,
+          callback_data: `showmodels:${key}:${msg.from.id}`
         }]);
       }
     }
@@ -684,18 +700,55 @@ bot.onText(/\/models/, async (msg) => {
   }
 });
 
-// /model command - Set default AI provider
-bot.onText(/\/model (.+)/, async (msg, match) => {
+// /model command - Set default AI provider and optionally model
+// Usage: /model <provider> [model]
+// Examples: 
+//   /model moonshot        - Select moonshot provider with default model
+//   /model moonshot moonshot-v1-32k  - Select specific model
+bot.onText(/\/model(?:\s+(\S+))?(?:\s+(\S+))?/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
 
-  const providerName = match[1].trim().toLowerCase();
+  const providerName = match[1]?.trim().toLowerCase();
+  const modelName = match[2]?.trim();
   
   try {
+    // If no provider specified, show interactive selection
+    if (!providerName) {
+      const providers = aiClient.getAvailableProviders();
+      const availableProviders = Object.entries(providers)
+        .filter(([_, p]) => p.enabled)
+        .map(([name, _]) => name);
+      
+      const aiProviders = ['anthropic', 'moonshot', 'deepseek', 'zhipu'];
+      const customProviders = sharedConfig.getCustomProviders ? Object.keys(sharedConfig.getCustomProviders()) : [];
+      const allProviders = [...new Set([...aiProviders, ...customProviders])].filter(p => 
+        availableProviders.includes(p)
+      );
+      
+      const keyboard = allProviders.map(provider => ([{
+        text: provider === 'anthropic' ? '🤖 Anthropic (Claude)' :
+              provider === 'moonshot' ? '🌙 Moonshot AI' :
+              provider === 'deepseek' ? '🔍 DeepSeek' :
+              provider === 'zhipu' ? '⚡ Zhipu AI' : `🔧 ${provider}`,
+        callback_data: `showmodels:${provider}:${msg.from.id}`,
+      }]));
+      
+      await bot.sendMessage(msg.chat.id, 
+        '🤖 Select an AI provider:\n\n' +
+        'You can also use: `/model <provider> [model]`',
+        { 
+          parse_mode: 'Markdown',
+          reply_markup: { inline_keyboard: keyboard },
+        }
+      );
+      return;
+    }
+    
     const providers = aiClient.getAvailableProviders();
     
     // Check if provider exists
     if (!providers[providerName]) {
-      const available = Object.keys(providers).join(', ');
+      const available = Object.keys(providers).filter(p => providers[p].enabled).join(', ');
       await bot.sendMessage(msg.chat.id, 
         `Unknown provider "${providerName}".\n\nAvailable: ${available}`,
         { parse_mode: 'Markdown' }
@@ -712,12 +765,30 @@ bot.onText(/\/model (.+)/, async (msg, match) => {
       return;
     }
     
-    // Save preference
-    chatStorage.setUserSettings(msg.from.id, { preferredAI: providerName });
+    // If model name provided, validate it
+    if (modelName) {
+      const availableModels = aiClient.getAvailableModels ? aiClient.getAvailableModels(providerName) : [];
+      if (availableModels.length > 0 && !availableModels.includes(modelName)) {
+        await bot.sendMessage(msg.chat.id, 
+          `Unknown model "${modelName}" for ${providerName}.\n\n` +
+          `Available models: ${availableModels.join(', ')}`,
+          { parse_mode: 'Markdown' }
+        );
+        return;
+      }
+    }
     
+    // Save preference
+    const settings = { preferredAI: providerName };
+    if (modelName) {
+      settings.preferredModel = modelName;
+    }
+    chatStorage.setUserSettings(msg.from.id, settings);
+    
+    const modelDisplay = modelName || providers[providerName].defaultModel;
     await bot.sendMessage(msg.chat.id, 
       `✅ Default AI provider set to: **${providers[providerName].name}**\n` +
-      `Default model: \`${providers[providerName].defaultModel}\`\n\n` +
+      `Model: \`${modelDisplay}\`\n\n` +
       `This provider will be used for your future requests.`,
       { parse_mode: 'Markdown' }
     );
@@ -1090,11 +1161,20 @@ bot.on('callback_query', async (query) => {
       // Create the plan
       await bot.sendChatAction(chatId, 'typing');
       
+      // Get user's preferred AI provider/model
+      const userSettings = chatStorage.getUserSettings(userId);
+      const aiProvider = userSettings.preferredAI;
+      const aiModel = userSettings.preferredModel;
+      
+      logger.info(`[Bot] Using AI provider for plan: ${aiProvider}${aiModel ? `, model: ${aiModel}` : ''}`);
+      
       const result = await orchestrator.processCommand(`/plan ${pending.task}`, {
         userId: userId,
         chatId: chatId,
         project: project.fullPath,
         projectInfo: project,
+        aiProvider: aiProvider,
+        aiModel: aiModel,
       });
       
       if (result.success) {
@@ -1163,7 +1243,114 @@ bot.on('callback_query', async (query) => {
       await bot.sendMessage(chatId, '❌ Plan cancelled.');
     }
     
-    // Handle setprovider:providerName:userId
+    // Handle showmodels:providerName:userId - Show available models for a provider
+    else if (data.startsWith('showmodels:')) {
+      const parts = data.split(':');
+      const providerName = parts[1];
+      const expectedUserId = parts[2];
+      
+      if (userId.toString() !== expectedUserId) {
+        await bot.sendMessage(chatId, 'This button is not for you.');
+        return;
+      }
+      
+      // Get available models for this provider
+      const models = aiClient.getAvailableModels ? aiClient.getAvailableModels(providerName) : null;
+      
+      if (models && models.length > 0) {
+        // Show model selection keyboard
+        const keyboard = models.map(model => ([{
+          text: model,
+          callback_data: `setmodel:${providerName}:${model}:${userId}`,
+        }]));
+        
+        // Add back button
+        keyboard.push([{
+          text: '⬅️ Back to Providers',
+          callback_data: `selectprovider:${userId}`,
+        }]);
+        
+        await bot.editMessageText(
+          `🤖 Select a **${providerName}** model:`,
+          {
+            chat_id: chatId,
+            message_id: query.message.message_id,
+            parse_mode: 'Markdown',
+            reply_markup: { inline_keyboard: keyboard },
+          }
+        );
+      } else {
+        // No models available, just set the provider
+        chatStorage.setUserSettings(userId, { preferredAI: providerName });
+        
+        await bot.editMessageReplyMarkup(
+          { inline_keyboard: [] },
+          { chat_id: chatId, message_id: query.message.message_id }
+        );
+        
+        await bot.sendMessage(chatId, `✅ AI provider set to: **${providerName}**`, { parse_mode: 'Markdown' });
+      }
+    }
+    
+    // Handle setmodel:providerName:modelName:userId
+    else if (data.startsWith('setmodel:')) {
+      const parts = data.split(':');
+      const providerName = parts[1];
+      const modelName = parts[2];
+      const expectedUserId = parts[3];
+      
+      if (userId.toString() !== expectedUserId) {
+        await bot.sendMessage(chatId, 'This button is not for you.');
+        return;
+      }
+      
+      // Update user settings with both provider and model
+      chatStorage.setUserSettings(userId, { 
+        preferredAI: providerName,
+        preferredModel: modelName,
+      });
+      
+      await bot.editMessageReplyMarkup(
+        { inline_keyboard: [] },
+        { chat_id: chatId, message_id: query.message.message_id }
+      );
+      
+      await bot.sendMessage(chatId, `✅ AI model set to: **${providerName}** (${modelName})`, { parse_mode: 'Markdown' });
+    }
+    
+    // Handle selectprovider:userId - Show provider selection again
+    else if (data.startsWith('selectprovider:')) {
+      const expectedUserId = data.split(':')[1];
+      
+      if (userId.toString() !== expectedUserId) {
+        await bot.sendMessage(chatId, 'This button is not for you.');
+        return;
+      }
+      
+      // Get available providers
+      const aiProviders = ['anthropic', 'moonshot', 'deepseek', 'zhipu'];
+      const customProviders = sharedConfig.getCustomProviders ? Object.keys(sharedConfig.getCustomProviders()) : [];
+      const allProviders = [...aiProviders, ...customProviders];
+      
+      const keyboard = allProviders.map(provider => ([{
+        text: provider === 'anthropic' ? 'Anthropic (Claude)' :
+              provider === 'moonshot' ? '🌙 Moonshot AI' :
+              provider === 'deepseek' ? '🔍 DeepSeek' :
+              provider === 'zhipu' ? '⚡ Zhipu AI' : `🔧 ${provider}`,
+        callback_data: `showmodels:${provider}:${userId}`,
+      }]));
+      
+      await bot.editMessageText(
+        '🤖 Select an AI provider:',
+        {
+          chat_id: chatId,
+          message_id: query.message.message_id,
+          reply_markup: { inline_keyboard: keyboard },
+        }
+      );
+    }
+    
+    // Handle setprovider:providerName:userId (legacy - for backward compatibility)
     else if (data.startsWith('setprovider:')) {
       const parts = data.split(':');
       const providerName = parts[1];

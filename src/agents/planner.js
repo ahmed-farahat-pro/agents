@@ -21,6 +21,17 @@ class PlannerAgent extends BaseAgent {
     this.currentTask = task;
 
     try {
+      // Set user-preferred AI provider if specified in context (orchestrator may have already set it)
+      const preferredProvider = context.aiProvider || context.preferredProvider || context.preferredAI;
+      const preferredModel = context.aiModel || context.preferredModel;
+      if (preferredProvider) {
+        logger.info(`[Planner] Using user-preferred AI provider: ${preferredProvider}${preferredModel ? ` (${preferredModel})` : ''}`);
+        // Only set if different from current to avoid redundant logging
+        if (this.provider !== preferredProvider || this.model !== preferredModel) {
+          this.setAIProvider(preferredProvider, preferredModel);
+        }
+      }
+
       // Step 1: Analyze codebase if project is specified
       let codebaseAnalysis = '';
       if (project) {
@@ -33,7 +44,7 @@ class PlannerAgent extends BaseAgent {
       // Step 2: Generate implementation plan using MCP tools
       this.emit('progress', { stage: 'generating_plan', message: 'Creating implementation plan...' });
       
-      const plan = await this.generatePlanWithMCP(task, codebaseAnalysis, project);
+      const plan = await this.generatePlanWithMCP(task, codebaseAnalysis, project, preferredProvider, preferredModel);
 
       this.setStatus('done', { task: 'creating_plan' });
       this.emit('planReady', { plan });
@@ -174,7 +185,7 @@ class PlannerAgent extends BaseAgent {
   /**
    * Generate plan with MCP tool assistance
    */
-  async generatePlanWithMCP(task, codebaseAnalysis, project) {
+  async generatePlanWithMCP(task, codebaseAnalysis, project, preferredProvider = null, preferredModel = null) {
     const prompt = `
 Create a detailed implementation plan for the following task:
 
@@ -241,8 +252,9 @@ Respond with valid JSON in this format:
     } catch (mcpError) {
       logger.warn('[Planner] MCP failed, falling back to direct AI call:', mcpError.message);
       
-      // Fallback to direct AI call
+      // Fallback to direct AI call with user-preferred provider/model
       const aiResult = await this.callAI(prompt, {
+        provider: this.provider,
         model: this.model,
         maxTokens: 4096,
       });
