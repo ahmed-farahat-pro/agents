@@ -1337,6 +1337,19 @@ io.on('connection', (socket) => {
 });
 
 // ============================================================================
+// SPA Catch-all (must be AFTER all API routes)
+// ============================================================================
+
+// Serve index.html for all non-API routes (SPA support)
+app.get('*', (req, res) => {
+  // Don't interfere with API routes
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ success: false, error: 'API endpoint not found' });
+  }
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// ============================================================================
 // Start Server
 // ============================================================================
 
