@@ -27,6 +27,7 @@ class AIClient {
    */
   refreshProviders() {
     const apiKeys = sharedConfig.getApiKeys();
+    const config = sharedConfig.getFullConfig();
     
     this.providers = {
       anthropic: {
@@ -64,6 +65,23 @@ class AIClient {
         defaultModel: 'deepseek-chat',
       },
     };
+    
+    // Load custom models from shared config
+    const customModels = config.customModels || {};
+    for (const [key, model] of Object.entries(customModels)) {
+      if (model.enabled && model.apiKey) {
+        this.providers[key] = {
+          name: model.name,
+          enabled: true,
+          apiKey: model.apiKey,
+          baseUrl: model.baseUrl,
+          models: [model.model],
+          defaultModel: model.model,
+          isCustom: true,
+        };
+        logger.info(`[AIClient] Loaded custom provider: ${model.name} (${key})`);
+      }
+    }
     
     logger.info('[AIClient] Providers refreshed from shared config');
   }
@@ -527,6 +545,87 @@ class AIClient {
   }
 
   /**
+   * Call custom provider (OpenAI-compatible API)
+   */
+  async callCustom(providerKey, prompt, options = {}) {
+    this.refreshProviders();
+    
+    const provider = this.providers[providerKey];
+    if (!provider || !provider.enabled) {
+      throw new Error(`Custom provider ${providerKey} not available`);
+    }
+
+    const model = options.model || provider.defaultModel;
+    const startTime = Date.now();
+
+    logger.info(`[AIClient] Custom provider ${providerKey} REQUEST:`, {
+      model,
+      baseUrl: provider.baseUrl,
+      promptLength: prompt.length,
+    });
+
+    try {
+      const response = await axios.post(
+        `${provider.baseUrl}/chat/completions`,
+        {
+          model,
+          messages: [
+            { role: 'system', content: options.systemMessage || 'You are a helpful assistant.' },
+            { role: 'user', content: prompt },
+          ],
+          temperature: options.temperature || 0.7,
+          max_tokens: options.maxTokens || 4096,
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${provider.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const duration = Date.now() - startTime;
+      const content = response.data.choices[0].message.content;
+
+      this.logRequest({
+        provider: providerKey,
+        model,
+        operation: 'chat.completion',
+        status: 'success',
+        duration,
+        promptLength: prompt.length,
+        responseLength: content.length,
+        promptTokens: response.data.usage?.prompt_tokens || 0,
+        completionTokens: response.data.usage?.completion_tokens || 0,
+        totalTokens: response.data.usage?.total_tokens || 0,
+      });
+
+      return {
+        success: true,
+        content,
+        provider: providerKey,
+        model,
+        usage: response.data.usage,
+        duration,
+      };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      
+      this.logRequest({
+        provider: providerKey,
+        model,
+        operation: 'chat.completion',
+        status: 'error',
+        duration,
+        promptLength: prompt.length,
+        error: error.response?.data?.error?.message || error.message,
+      });
+
+      throw error;
+    }
+  }
+
+  /**
    * Call AI with specified provider or default
    */
   async call(prompt, options = {}) {
@@ -539,6 +638,11 @@ class AIClient {
       promptLength: prompt.length,
       model: options.model || 'default',
     });
+
+    // Check if it's a custom provider
+    if (this.providers[provider]?.isCustom) {
+      return this.callCustom(provider, prompt, options);
+    }
 
     switch (provider) {
       case 'anthropic':
