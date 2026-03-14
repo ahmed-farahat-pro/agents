@@ -239,13 +239,20 @@ Respond with JSON only:
 
     if (result.success) {
       // Store the plan for potential approval
-      this.taskQueue.push({
+      const taskEntry = {
         id: taskId,
         type: 'implementation',
         plan: result.plan,
         status: 'pending_approval',
         createdAt: new Date(),
-      });
+      };
+      
+      // Store userId if available for cross-referencing with persistent storage
+      if (context.userId) {
+        taskEntry.userId = context.userId.toString();
+      }
+      
+      this.taskQueue.push(taskEntry);
 
       this.emit('taskCompleted', { taskId, type: 'plan', result });
     }
@@ -300,17 +307,44 @@ Provide a helpful answer. If the question is about specific code and you don't h
    * Handle approve task - queue plan for implementation
    */
   async handleApproveTask(parsed, context, taskId) {
-    const pendingPlan = this.taskQueue.find(t => t.status === 'pending_approval');
+    // First check in-memory queue
+    let pendingPlan = this.taskQueue.find(t => t.status === 'pending_approval');
+    
+    // If not found in memory, check persistent storage
+    if (!pendingPlan && context.userId) {
+      const userIdStr = context.userId.toString();
+      const persistedPlan = this.chatStorage.getPendingPlan(userIdStr);
+      
+      if (persistedPlan) {
+        logger.info(`[Orchestrator] Found persisted plan for user ${userIdStr}: ${persistedPlan.task}`);
+        // Add to in-memory queue
+        pendingPlan = {
+          id: `plan-${Date.now()}`,
+          type: 'implementation',
+          plan: persistedPlan,
+          status: 'pending_approval',
+          createdAt: new Date(persistedPlan.createdAt || Date.now()),
+          userId: userIdStr,
+        };
+        this.taskQueue.push(pendingPlan);
+      }
+    }
     
     if (!pendingPlan) {
       return {
         success: false,
-        message: 'No pending plan to approve. Use /plan first to create a plan.',
+        message: 'No pending plan to approve. Use /plan first to create a plan.\n\nIf you just created a plan, try using the approve button in the message.',
       };
     }
 
     pendingPlan.status = 'approved';
     pendingPlan.approvedAt = new Date();
+
+    // Clean up the pending plan from persistent storage
+    if (pendingPlan.userId) {
+      this.chatStorage.deletePendingPlan(pendingPlan.userId);
+      logger.info(`[Orchestrator] Deleted pending plan for user ${pendingPlan.userId} from storage`);
+    }
 
     this.emit('planApproved', { taskId: pendingPlan.id, plan: pendingPlan.plan });
 
@@ -325,7 +359,29 @@ Provide a helpful answer. If the question is about specific code and you don't h
    * Handle run task - execute all approved tasks
    */
   async handleRunTasks(parsed, context, taskId) {
-    const approvedTasks = this.taskQueue.filter(t => t.status === 'approved');
+    let approvedTasks = this.taskQueue.filter(t => t.status === 'approved');
+    
+    // If no approved tasks in memory, check for persisted pending plans and auto-approve
+    if (approvedTasks.length === 0 && context.userId) {
+      const userIdStr = context.userId.toString();
+      const persistedPlan = this.chatStorage.getPendingPlan(userIdStr);
+      
+      if (persistedPlan) {
+        logger.info(`[Orchestrator] Found persisted plan for user ${userIdStr}, auto-approving and running`);
+        // Create and auto-approve the task
+        const newTask = {
+          id: `plan-${Date.now()}`,
+          type: 'implementation',
+          plan: persistedPlan,
+          status: 'approved',
+          createdAt: new Date(persistedPlan.createdAt || Date.now()),
+          approvedAt: new Date(),
+          userId: userIdStr,
+        };
+        this.taskQueue.push(newTask);
+        approvedTasks = [newTask];
+      }
+    }
     
     if (approvedTasks.length === 0) {
       return {
