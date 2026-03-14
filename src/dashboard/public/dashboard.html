@@ -4091,7 +4091,6 @@
         // Load GitLab config on startup
         loadGitLabConfig().then(() => {
             renderRepos();
-            updateRepoSelects();
         });
         
         // Load API keys status on startup
@@ -4107,9 +4106,12 @@
         let subscribersData = [];
         let filteredSubscribers = [];
         
+        // Admin password - in production this should be set properly
+        const ADMIN_PASSWORD = localStorage.getItem('nigents_admin_pass') || 'admin123';
+        
         async function loadSubscribersData() {
             try {
-                // Load stats
+                // Load stats (public endpoint)
                 const statsRes = await fetch('/api/materials/stats');
                 const stats = await statsRes.json();
                 
@@ -4140,11 +4142,25 @@
                     }
                 }
                 
-                // Load subscribers list
-                const subRes = await fetch('/api/materials/subscribers?password=admin123');
+                // Load subscribers list (requires password)
+                const subRes = await fetch(`/api/materials/subscribers?password=${ADMIN_PASSWORD}`);
                 const subData = await subRes.json();
                 
-                if (subData.success) {
+                if (subRes.status === 401) {
+                    // Try to get password from user
+                    const newPass = prompt('Enter admin password to view subscribers:', '');
+                    if (newPass) {
+                        localStorage.setItem('nigents_admin_pass', newPass);
+                        location.reload();
+                    }
+                    document.getElementById('subscribers-list').innerHTML = `
+                        <div class="empty">
+                            <h3>Authentication Required</h3>
+                            <p>Please enter the correct admin password to view subscribers.</p>
+                            <button class="btn btn-primary" onclick="promptPassword()" style="margin-top: 12px;">Enter Password</button>
+                        </div>
+                    `;
+                } else if (subData.success) {
                     subscribersData = subData.subscribers || [];
                     filteredSubscribers = [...subscribersData];
                     renderSubscribersList();
@@ -4249,8 +4265,15 @@ Updates Enabled: ${sub.updatesEnabled !== false ? 'Yes' : 'No'}`);
         }
         
         function exportSubscribers(format) {
-            const password = 'admin123';
-            window.open(`/api/materials/subscribers/export?password=${password}&format=${format}`, '_blank');
+            window.open(`/api/materials/subscribers/export?password=${ADMIN_PASSWORD}&format=${format}`, '_blank');
+        }
+        
+        function promptPassword() {
+            const newPass = prompt('Enter admin password:', '');
+            if (newPass) {
+                localStorage.setItem('nigents_admin_pass', newPass);
+                location.reload();
+            }
         }
         
         async function testEmailConfig() {
