@@ -106,6 +106,20 @@ class AIClient {
   }
 
   /**
+   * Get available models for a specific provider
+   */
+  getAvailableModels(providerName) {
+    this.refreshProviders();
+    
+    const provider = this.providers[providerName];
+    if (!provider || !provider.enabled) {
+      return [];
+    }
+    
+    return provider.models || [];
+  }
+
+  /**
    * Get API keys status - shows which providers are ready to use
    */
   getAPIKeysStatus() {

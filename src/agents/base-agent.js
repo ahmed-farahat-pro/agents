@@ -13,8 +13,10 @@ class BaseAgent extends EventEmitter {
     super();
     this.name = config.name;
     this.role = config.role;
-    this.provider = config.provider || process.env.DEFAULT_AI_PROVIDER || 'anthropic';
-    this.model = config.model || null; // Will use provider default if null
+    this.configProvider = config.provider || process.env.DEFAULT_AI_PROVIDER || 'anthropic';
+    this.configModel = config.model || null;
+    this.provider = this.configProvider;
+    this.model = this.configModel;
     this.systemMessage = config.systemMessage || '';
     this.tools = config.tools || [];
     this.maxTokens = config.maxTokens || 4096;
@@ -30,6 +32,29 @@ class BaseAgent extends EventEmitter {
     }
     
     logger.info(`[${this.name}] Agent initialized with provider: ${this.provider}`);
+  }
+  
+  /**
+   * Set AI provider and model for this task
+   */
+  setAIProvider(provider, model = null) {
+    if (provider) {
+      this.provider = provider;
+      logger.info(`[${this.name}] AI provider set to: ${provider}`);
+    }
+    if (model) {
+      this.model = model;
+      logger.info(`[${this.name}] AI model set to: ${model}`);
+    }
+  }
+  
+  /**
+   * Reset to default provider/model from config
+   */
+  resetAIProvider() {
+    this.provider = this.configProvider;
+    this.model = this.configModel;
+    logger.info(`[${this.name}] AI provider reset to default: ${this.provider}`);
   }
 
   /**

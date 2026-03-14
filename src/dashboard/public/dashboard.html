@@ -2512,6 +2512,18 @@
                         <option value="qa-tester">QA Tester</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label class="form-label">AI Provider (Optional)</label>
+                    <select class="form-select" id="task-provider" onchange="updateTaskModalModels()">
+                        <option value="">Use Default</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">AI Model (Optional)</label>
+                    <select class="form-select" id="task-model">
+                        <option value="">Default Model</option>
+                    </select>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeTaskModal()">Cancel</button>
@@ -2864,10 +2876,36 @@
         // Task Management
         function openTaskModal() {
             populateRepoSelect();
+            populateTaskProviderSelect();
             document.getElementById('task-title').value = '';
             document.getElementById('task-desc').value = '';
             selectPriority('medium');
             document.getElementById('task-modal').classList.add('active');
+        }
+
+        function populateTaskProviderSelect() {
+            const select = document.getElementById('task-provider');
+            select.innerHTML = '<option value="">Use Default</option>' + 
+                Object.entries(aiProviders).map(([key, provider]) => 
+                    `<option value="${key}">${provider.name}</option>`
+                ).join('');
+            updateTaskModalModels();
+        }
+
+        function updateTaskModalModels() {
+            const providerKey = document.getElementById('task-provider').value;
+            const modelSelect = document.getElementById('task-model');
+            
+            if (!providerKey || !aiProviders[providerKey]) {
+                modelSelect.innerHTML = '<option value="">Default Model</option>';
+                modelSelect.disabled = true;
+                return;
+            }
+            
+            const models = aiProviders[providerKey].models || [];
+            modelSelect.innerHTML = '<option value="">Default Model</option>' + 
+                models.map(m => `<option value="${m}">${m}</option>`).join('');
+            modelSelect.disabled = false;
         }
 
         function closeTaskModal() {
@@ -2896,6 +2934,8 @@
             const desc = document.getElementById('task-desc').value.trim();
             const repoId = document.getElementById('task-repo').value;
             const agent = document.getElementById('task-agent').value;
+            const provider = document.getElementById('task-provider').value;
+            const model = document.getElementById('task-model').value;
 
             if (!title) {
                 alert('Please enter a task title');
@@ -2909,6 +2949,8 @@
                 repo: repoId,
                 priority: selectedPriority,
                 agent: agent,
+                aiProvider: provider || null,
+                aiModel: model || null,
                 status: 'pending',
                 createdAt: new Date().toISOString()
             };
