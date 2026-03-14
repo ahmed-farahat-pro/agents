@@ -342,7 +342,12 @@ Send your API key and optionally the model:
 • glm-4v - Vision capable
 • glm-4-long - Long context
 
-Get your API key from: https://z.ai/`;
+**Get API Key & Credits:**
+• Get API key: https://z.ai/ → Profile → API Keys
+• Buy credits: https://z.ai/devpack/overview
+  - API Resource Pack: Pay-as-you-go API credits
+  - DevPack Lite ($3/mo): ~400 prompts/week
+  - DevPack Pro ($15/mo): ~2,000 prompts/week`;
     
     await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
     return;
@@ -595,7 +600,12 @@ Send your API key to test:
 You can also specify a model:
 \`/testglm your-api-key glm-5\`
 
-The default test uses glm-4.`,
+The default test uses glm-4.
+
+**Need Credits?**
+• Get API key: https://z.ai/
+• Buy DevPack: https://z.ai/devpack/overview
+• API Resource Pack: For pay-as-you-go API calls`,
       { parse_mode: 'Markdown' }
     );
     return;
@@ -655,14 +665,25 @@ ${content.substring(0, 3000)}
     const errorMsg = error.response?.data?.error?.message || error.message;
     const statusCode = error.response?.status;
     
+    let helpText = '';
+    if (statusCode === 429 && errorMsg.includes('balance')) {
+      helpText = `
+
+💡 **You need to add credits:**
+• Buy **API Resource Pack** at https://z.ai/ → Billing → Resource Pack
+• Or subscribe to **DevPack/Coding Plan** at https://z.ai/devpack/overview
+
+DevPack Plans:
+• Lite: ~400 prompts/week
+• Pro: ~2,000 prompts/week  
+• Max: ~8,000 prompts/week`;
+    }
+
     await bot.sendMessage(msg.chat.id, 
       `❌ **GLM Test Failed!**
 
 **Status:** ${statusCode || 'Network Error'}
-**Error:** ${errorMsg}
-
-Please check your API key at:
-https://z.ai/`,
+**Error:** ${errorMsg}${helpText}`,
       { parse_mode: 'Markdown' }
     );
   }
