@@ -2386,24 +2386,46 @@
                         </div>
 
                         <div class="config-card">
-                            <h3 class="config-title">API Keys</h3>
+                            <h3 class="config-title">AI API Keys</h3>
+                            <p class="text-sm text-muted" style="margin-bottom: 15px;">
+                                Add your API keys here. They will be saved and synced with the Telegram bot.
+                                Use <code>/reload</code> in Telegram to apply changes without restarting.
+                            </p>
+                            
                             <div class="form-group">
-                                <label class="form-label">Telegram Bot Token</label>
-                                <input type="password" class="form-input" placeholder="from @BotFather">
+                                <label class="form-label">Anthropic Claude API Key</label>
+                                <input type="password" class="form-input" id="api-key-anthropic" placeholder="sk-ant-api03-...">
+                                <span class="text-sm" id="status-anthropic" style="color: var(--text-muted);">Not configured</span>
                             </div>
+                            
                             <div class="form-group">
-                                <label class="form-label">Anthropic API Key</label>
-                                <input type="password" class="form-input" placeholder="sk-ant-...">
+                                <label class="form-label">Z.AI (Zhipu) API Key</label>
+                                <input type="password" class="form-input" id="api-key-zhipu" placeholder="...">
+                                <span class="text-sm" id="status-zhipu" style="color: var(--text-muted);">Not configured</span>
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">Zhipu AI API Key</label>
-                                <input type="password" class="form-input" placeholder="from open.bigmodel.cn">
-                            </div>
+                            
                             <div class="form-group">
                                 <label class="form-label">Moonshot AI API Key</label>
-                                <input type="password" class="form-input" placeholder="from platform.moonshot.cn">
+                                <input type="password" class="form-input" id="api-key-moonshot" placeholder="sk-...">
+                                <span class="text-sm" id="status-moonshot" style="color: var(--text-muted);">Not configured</span>
                             </div>
-                            <button class="btn btn-primary">Save API Keys</button>
+                            
+                            <div class="form-group">
+                                <label class="form-label">DeepSeek API Key</label>
+                                <input type="password" class="form-input" id="api-key-deepseek" placeholder="sk-...">
+                                <span class="text-sm" id="status-deepseek" style="color: var(--text-muted);">Not configured</span>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">OpenAI API Key (for voice)</label>
+                                <input type="password" class="form-input" id="api-key-openai" placeholder="sk-...">
+                                <span class="text-sm" id="status-openai" style="color: var(--text-muted);">Optional - for voice transcription</span>
+                            </div>
+                            
+                            <button class="btn btn-primary" onclick="saveApiKeys()">Save API Keys</button>
+                            <button class="btn btn-secondary" onclick="loadApiKeys()" style="margin-left: 10px;">Reload</button>
+                            
+                            <div id="api-keys-status" style="margin-top: 15px; padding: 10px; border-radius: 8px; display: none;"></div>
                         </div>
                     </div>
                 </div>
@@ -3571,6 +3593,133 @@
             window.location.href = '/login.html';
         }
         
+        // API Keys Management
+        async function loadApiKeys() {
+            try {
+                const response = await fetch('/api/config');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const config = data.config;
+                    
+                    // Update input placeholders based on current status
+                    updateApiKeyStatus('anthropic', config.apiKeys.ANTHROPIC_API_KEY);
+                    updateApiKeyStatus('zhipu', config.apiKeys.ZHIPU_API_KEY);
+                    updateApiKeyStatus('moonshot', config.apiKeys.MOONSHOT_API_KEY);
+                    updateApiKeyStatus('deepseek', config.apiKeys.DEEPSEEK_API_KEY);
+                    updateApiKeyStatus('openai', config.apiKeys.OPENAI_API_KEY);
+                    
+                    showNotification('API keys status loaded');
+                }
+            } catch (error) {
+                console.error('Failed to load API keys:', error);
+                showNotification('Failed to load API keys status');
+            }
+        }
+        
+        function updateApiKeyStatus(provider, isSet) {
+            const statusEl = document.getElementById(`status-${provider}`);
+            if (statusEl) {
+                if (isSet) {
+                    statusEl.textContent = '✅ Configured';
+                    statusEl.style.color = '#10b981';
+                } else {
+                    statusEl.textContent = '❌ Not configured';
+                    statusEl.style.color = '#ef4444';
+                }
+            }
+        }
+        
+        async function saveApiKeys() {
+            const statusDiv = document.getElementById('api-keys-status');
+            statusDiv.style.display = 'none';
+            
+            // Collect all API keys
+            const apiKeys = {};
+            
+            const anthropic = document.getElementById('api-key-anthropic').value.trim();
+            const zhipu = document.getElementById('api-key-zhipu').value.trim();
+            const moonshot = document.getElementById('api-key-moonshot').value.trim();
+            const deepseek = document.getElementById('api-key-deepseek').value.trim();
+            const openai = document.getElementById('api-key-openai').value.trim();
+            
+            if (anthropic) apiKeys.ANTHROPIC_API_KEY = anthropic;
+            if (zhipu) apiKeys.ZHIPU_API_KEY = zhipu;
+            if (moonshot) apiKeys.MOONSHOT_API_KEY = moonshot;
+            if (deepseek) apiKeys.DEEPSEEK_API_KEY = deepseek;
+            if (openai) apiKeys.OPENAI_API_KEY = openai;
+            
+            if (Object.keys(apiKeys).length === 0) {
+                showStatus('Please enter at least one API key', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/config/apikeys', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ apiKeys }),
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('API keys saved successfully! Use <code>/reload</code> in Telegram to apply.', 'success');
+                    showNotification('API keys saved');
+                    
+                    // Clear inputs
+                    document.getElementById('api-key-anthropic').value = '';
+                    document.getElementById('api-key-zhipu').value = '';
+                    document.getElementById('api-key-moonshot').value = '';
+                    document.getElementById('api-key-deepseek').value = '';
+                    document.getElementById('api-key-openai').value = '';
+                    
+                    // Reload status
+                    loadApiKeys();
+                    
+                    // Refresh providers display
+                    setTimeout(() => loadAiProviders(), 1000);
+                } else {
+                    showStatus('Failed to save: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Failed to save API keys:', error);
+                showStatus('Failed to save API keys: ' + error.message, 'error');
+            }
+        }
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('api-keys-status');
+            statusDiv.innerHTML = message;
+            statusDiv.style.display = 'block';
+            
+            if (type === 'success') {
+                statusDiv.style.background = '#d1fae5';
+                statusDiv.style.color = '#065f46';
+                statusDiv.style.border = '1px solid #10b981';
+            } else {
+                statusDiv.style.background = '#fee2e2';
+                statusDiv.style.color = '#991b1b';
+                statusDiv.style.border = '1px solid #ef4444';
+            }
+        }
+        
+        async function loadAiProviders() {
+            try {
+                const response = await fetch('/api/ai/providers');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update provider status in the UI
+                    Object.entries(data.providers).forEach(([key, provider]) => {
+                        updateApiKeyStatus(key, provider.enabled);
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load AI providers:', error);
+            }
+        }
+        
         // Init
         saveProviders();
         updateTaskCount();
@@ -3583,6 +3732,12 @@
             renderRepos();
             updateRepoSelects();
         });
+        
+        // Load API keys status on startup
+        loadApiKeys();
+        
+        // Refresh providers every 30 seconds
+        setInterval(loadAiProviders, 30000);
     </script>
 </body>
 </html>
