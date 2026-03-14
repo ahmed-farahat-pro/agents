@@ -1222,8 +1222,10 @@ app.post('/api/materials/subscribe', async (req, res) => {
         subscribers[email].roadmaps.push(roadmap);
         saveSubscribers(subscribers);
         
-        // Send email for the new roadmap
-        await sendRoadmapEmail(subscribers[email], roadmap);
+        // Send email for the new roadmap (don't block response)
+        sendRoadmapEmail(subscribers[email], roadmap).catch(err => {
+          logger.error(`[Dashboard] Email error for existing subscriber ${email}:`, err.message);
+        });
       }
       
       return res.json({
@@ -1247,8 +1249,16 @@ app.post('/api/materials/subscribe', async (req, res) => {
     
     logger.info(`[Dashboard] New subscriber: ${email} for ${roadmap}`);
     
-    // Send welcome email with roadmap
-    await sendRoadmapEmail(newSubscriber, roadmap);
+    // Send welcome email with roadmap (don't block response on email)
+    sendRoadmapEmail(newSubscriber, roadmap).then(result => {
+      if (result.success) {
+        logger.info(`[Dashboard] Email sent successfully to ${email}`);
+      } else {
+        logger.error(`[Dashboard] Email failed to ${email}:`, result.error);
+      }
+    }).catch(err => {
+      logger.error(`[Dashboard] Email error for ${email}:`, err.message);
+    });
     
     res.json({
       success: true,
@@ -1262,6 +1272,18 @@ app.post('/api/materials/subscribe', async (req, res) => {
       error: 'Failed to process subscription',
     });
   }
+});
+
+// Test email configuration
+app.get('/api/materials/email-config', (req, res) => {
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailPass = process.env.GMAIL_PASS;
+  
+  res.json({
+    success: true,
+    configured: !!(gmailUser && gmailPass),
+    user: gmailUser ? `${gmailUser.substring(0, 3)}***` : null,
+  });
 });
 
 // Track download
