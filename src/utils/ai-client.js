@@ -409,10 +409,13 @@ class AIClient {
     const startTime = Date.now();
 
     if (!provider.apiKey) {
+      logger.error('[AIClient] Moonshot API key is empty!');
       throw new Error('Moonshot API key not configured');
     }
 
-    logger.info(`[AIClient] Moonshot REQUEST:`, {
+    // Debug: log first/last 4 chars of key to verify it's loaded
+    const keyPreview = `${provider.apiKey.substring(0, 4)}...${provider.apiKey.substring(provider.apiKey.length - 4)}`;
+    logger.info(`[AIClient] Moonshot REQUEST (key: ${keyPreview}):`, {
       model,
       promptLength: prompt.length,
     });

@@ -12,6 +12,33 @@ if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true });
 }
 
+/**
+ * Safe JSON stringify that handles circular references
+ */
+function safeStringify(obj, space = 0) {
+  const seen = new WeakSet();
+  return JSON.stringify(obj, (key, value) => {
+    // Skip internal Winston properties
+    if (key === 'service' && value === 'nigents') return undefined;
+    // Handle circular references
+    if (typeof value === 'object' && value !== null) {
+      if (seen.has(value)) {
+        return '[Circular]';
+      }
+      seen.add(value);
+    }
+    // Handle error objects
+    if (value instanceof Error) {
+      return {
+        message: value.message,
+        name: value.name,
+        stack: value.stack,
+      };
+    }
+    return value;
+  }, space);
+}
+
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: winston.format.combine(
@@ -27,8 +54,13 @@ const logger = winston.createLogger({
         winston.format.colorize(),
         winston.format.printf(({ level, message, timestamp, ...metadata }) => {
           let msg = `${timestamp} [${level}]: ${message}`;
-          if (Object.keys(metadata).length > 0 && metadata.service !== 'nightowl') {
-            msg += ` ${JSON.stringify(metadata)}`;
+          // Filter out default service metadata
+          const filteredMeta = Object.keys(metadata).reduce((acc, key) => {
+            if (key !== 'service') acc[key] = metadata[key];
+            return acc;
+          }, {});
+          if (Object.keys(filteredMeta).length > 0) {
+            msg += ` ${safeStringify(filteredMeta)}`;
           }
           return msg;
         })
