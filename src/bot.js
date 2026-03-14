@@ -1,5 +1,5 @@
 /**
- * Nigents - Telegram Bot
+ * Nigents - Telegram Bot with Persistent Chat & Voice AI
  * Main entry point for the AI agent team
  */
 
@@ -7,7 +7,8 @@ require('dotenv').config();
 
 const TelegramBot = require('node-telegram-bot-api');
 const logger = require('./utils/logger');
-const voice = require('./tools/voice');
+const chatStorage = require('./utils/chat-storage');
+const voiceProcessor = require('./utils/voice-processor');
 const gitlab = require('./tools/gitlab');
 const path = require('path');
 const fs = require('fs');
@@ -54,21 +55,63 @@ const botState = {
   activeChats: new Map(),
 };
 
-// Store pending plan selections
-const pendingPlanSelections = new Map();
-
-// Helper: Get active project from GitLab cache
-async function getActiveProject() {
-  const projects = await getGitLabProjects();
-  // Return first project as default, or null if none
-  return projects[0] || null;
-}
+// Cache for GitLab projects
+let cachedProjects = [];
+let lastFetchTime = 0;
 
 logger.info('Nigents Bot starting...');
 
 // Helper function to check authorization
 function isAuthorized(userChatId) {
   return botState.authorizedUsers.has(userChatId.toString());
+}
+
+// Helper: Get projects from GitLab (with cache)
+async function getGitLabProjects(forceRefresh = false) {
+  const now = Date.now();
+  // Cache for 5 minutes
+  if (!forceRefresh && cachedProjects.length > 0 && (now - lastFetchTime) < 300000) {
+    return cachedProjects;
+  }
+  
+  try {
+    const projects = await gitlab.listProjects(20);
+    cachedProjects = projects;
+    lastFetchTime = now;
+    return projects;
+  } catch (error) {
+    logger.error('Failed to fetch GitLab projects:', error);
+    return cachedProjects; // Return cached if available
+  }
+}
+
+// Helper: Get active project from GitLab cache
+async function getActiveProject() {
+  const projects = await getGitLabProjects();
+  return projects[0] || null;
+}
+
+// Helper: Send message with voice option
+async function sendMessageWithVoice(userId, chatId, text, options = {}) {
+  const settings = chatStorage.getUserSettings(userId);
+  
+  // Always send text first
+  await bot.sendMessage(chatId, text, { parse_mode: 'Markdown', ...options });
+  
+  // Add to chat history
+  chatStorage.addMessage(userId, 'assistant', text, { type: 'text' });
+  
+  // Send voice if enabled and not disabled for this message
+  if (settings.voiceResponse && options.voice !== false) {
+    try {
+      const lang = options.language || settings.language || 'en';
+      const voiceFile = await voiceProcessor.textToSpeech(text.replace(/[*_`]/g, ''), lang);
+      await bot.sendVoice(chatId, voiceFile);
+      voiceProcessor.cleanup(voiceFile);
+    } catch (error) {
+      logger.warn('[Bot] Voice send failed:', error.message);
+    }
+  }
 }
 
 // ============================================================================
@@ -79,8 +122,7 @@ function isAuthorized(userChatId) {
 bot.onText(/\/start/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
-  const welcomeMessage = `
-**Welcome to Nigents!**
+  const welcomeMessage = `**Welcome to Nigents!**
 
 Your AI development team. Send tasks via voice or text, and I'll handle the rest.
 
@@ -114,43 +156,57 @@ Send voice notes or text naturally:
 • /remove <id> — Remove a pending plan
 • /clear — Clear all completed/cancelled tasks
 
-I understand Arabic and English voice messages!
-`;
+**Settings:**
+• /voice — Toggle voice responses on/off
+• /settings — View your settings
 
-  await bot.sendMessage(msg.chat.id, welcomeMessage, { parse_mode: 'Markdown' });
-  
-  // Send voice welcome
-  await reporter.sendVoice('Welcome to Nigents! I am your AI development team. How can I help you today?', 'en');
+I understand Arabic and English voice messages!`;
+
+  await sendMessageWithVoice(msg.from.id, msg.chat.id, welcomeMessage, { voice: false });
 });
 
-// Cache for GitLab projects
-let cachedProjects = [];
-let lastFetchTime = 0;
+// /settings command - Show user settings
+bot.onText(/\/settings/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
 
-// Helper: Get projects from GitLab (with cache)
-async function getGitLabProjects(forceRefresh = false) {
-  const now = Date.now();
-  // Cache for 5 minutes
-  if (!forceRefresh && cachedProjects.length > 0 && (now - lastFetchTime) < 300000) {
-    return cachedProjects;
-  }
+  const settings = chatStorage.getUserSettings(msg.from.id);
   
-  try {
-    const projects = await gitlab.listProjects(20);
-    cachedProjects = projects;
-    lastFetchTime = now;
-    return projects;
-  } catch (error) {
-    logger.error('Failed to fetch GitLab projects:', error);
-    return cachedProjects; // Return cached if available
-  }
-}
+  let message = '**Your Settings**\n\n';
+  message += `Voice Responses: ${settings.voiceResponse ? 'ON' : 'OFF'}\n`;
+  message += `Language: ${settings.language === 'auto' ? 'Auto-detect' : settings.language.toUpperCase()}\n`;
+  message += `Default Project: ${settings.defaultProject || 'Not set'}\n`;
+  message += `Preferred AI: ${settings.preferredAI || 'Auto'}\n\n`;
+  message += '**Commands:**\n';
+  message += '/voice - Toggle voice responses\n';
+  message += '/clearhistory - Clear chat history';
+
+  await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+});
+
+// /voice command - Toggle voice responses
+bot.onText(/\/voice/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const newValue = chatStorage.toggleVoiceResponse(msg.from.id);
+  const status = newValue ? 'ON' : 'OFF';
+  
+  await bot.sendMessage(msg.chat.id, `Voice responses are now **${status}**.\n\nI will ${newValue ? 'send voice messages' : 'only send text messages'} in response to your commands.`, { parse_mode: 'Markdown' });
+});
+
+// /clearhistory command - Clear chat history
+bot.onText(/\/clearhistory/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  chatStorage.clearChatHistory(msg.from.id);
+  await bot.sendMessage(msg.chat.id, 'Chat history cleared.');
+});
 
 // /plan command - Shows project selection from GitLab
 bot.onText(/\/plan (.+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
 
-  const task = match[1];
+  const task = match[1].trim();
+  const userId = msg.from.id;
   
   await bot.sendChatAction(msg.chat.id, 'typing');
   
@@ -162,27 +218,32 @@ bot.onText(/\/plan (.+)/, async (msg, match) => {
       return;
     }
     
-    // Store pending plan
-    pendingPlanSelections.set(msg.from.id, {
+    // Store pending plan persistently
+    chatStorage.setPendingPlan(userId, {
       task,
-      timestamp: Date.now(),
+      chatId: msg.chat.id,
+      username: msg.from.username || msg.from.first_name,
     });
     
-    // Show compact project selection
+    // Show project selection
     let message = `**Task:** ${task}\n\n`;
-    message += '**Select a project from your GitLab:**\n';
+    message += '**Select a project by typing:**\n';
+    message += '`/planwith <project-id>`\n\n';
+    message += '**Your GitLab Projects:**\n';
     
-    projects.forEach((project, index) => {
-      message += `${index + 1}. ${project.name} (\`${project.id}\`)\n`;
+    projects.slice(0, 10).forEach((project, index) => {
+      message += `${index + 1}. **${project.name}**\n   ID: \`${project.id}\`\n`;
     });
-    
-    message += '\n**Use:** `/planwith <project-id>`';
     
     await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
     
+    // Add to chat history
+    chatStorage.addMessage(userId, 'user', `/plan ${task}`, { type: 'command' });
+    chatStorage.addMessage(userId, 'assistant', message, { type: 'project_selection' });
+    
   } catch (error) {
     logger.error('Failed to load projects for plan:', error);
-    await bot.sendMessage(msg.chat.id, 'Error loading projects from GitLab');
+    await bot.sendMessage(msg.chat.id, 'Error loading projects from GitLab. Please check your configuration.');
   }
 });
 
@@ -191,10 +252,13 @@ bot.onText(/\/planwith (.+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
 
   const projectId = match[1].trim();
-  const pending = pendingPlanSelections.get(msg.from.id);
+  const userId = msg.from.id;
+  
+  // Get pending plan from persistent storage
+  const pending = chatStorage.getPendingPlan(userId);
   
   if (!pending) {
-    await bot.sendMessage(msg.chat.id, 'No pending plan. Use `/plan <task>` first.');
+    await bot.sendMessage(msg.chat.id, 'No pending plan found. Please use `/plan <task>` first to create a plan.');
     return;
   }
   
@@ -207,13 +271,17 @@ bot.onText(/\/planwith (.+)/, async (msg, match) => {
       return;
     }
     
-    pendingPlanSelections.delete(msg.from.id);
+    // Delete pending plan (we're processing it now)
+    chatStorage.deletePendingPlan(userId);
     
     await bot.sendChatAction(msg.chat.id, 'typing');
-    const statusMsg = await bot.sendMessage(msg.chat.id, `Analyzing ${project.name}...`);
+    const statusMsg = await bot.sendMessage(msg.chat.id, `Analyzing ${project.name}... This may take a moment.`);
+
+    // Add to chat history
+    chatStorage.addMessage(userId, 'user', `/planwith ${projectId}`, { type: 'command' });
 
     const result = await orchestrator.processCommand(`/plan ${pending.task}`, {
-      userId: msg.from.id,
+      userId: userId,
       chatId: msg.chat.id,
       project: project.fullPath,
       projectInfo: project,
@@ -224,15 +292,23 @@ bot.onText(/\/planwith (.+)/, async (msg, match) => {
     if (result.success) {
       await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
       
+      // Add to chat history
+      chatStorage.addMessage(userId, 'assistant', result.message, { 
+        type: 'plan',
+        planId: result.plan?.id,
+      });
+      
+      // Send voice confirmation
       const voiceText = `Plan created for ${pending.task}. Complexity: ${result.plan.complexity}, estimated ${result.plan.estimatedHours} hours. Reply with /approve to start.`;
-      await reporter.sendVoice(voiceText, 'en');
+      await sendMessageWithVoice(userId, msg.chat.id, voiceText, { voice: true, language: 'en' });
     } else {
       await bot.sendMessage(msg.chat.id, `Error: ${result.message}`);
+      chatStorage.addMessage(userId, 'assistant', `Error: ${result.message}`, { type: 'error' });
     }
     
   } catch (error) {
     logger.error('Failed to create plan:', error);
-    await bot.sendMessage(msg.chat.id, 'Error creating plan');
+    await bot.sendMessage(msg.chat.id, 'Error creating plan. Please try again.');
   }
 });
 
@@ -265,13 +341,14 @@ bot.onText(/\/projects/, async (msg) => {
     message += '**To switch default:** `/project <project-id>`';
     
     await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+    chatStorage.addMessage(msg.from.id, 'assistant', message, { type: 'projects_list' });
   } catch (error) {
     logger.error('Failed to load projects:', error);
     await bot.sendMessage(msg.chat.id, 'Error loading projects from GitLab. Check your GITLAB_TOKEN.');
   }
 });
 
-// /project command - Set default project (from GitLab)
+// /project command - Set default project
 bot.onText(/\/project (.+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
 
@@ -282,13 +359,12 @@ bot.onText(/\/project (.+)/, async (msg, match) => {
     const project = projects.find(p => p.id === projectId || p.fullPath === projectId);
     
     if (!project) {
-      await bot.sendMessage(msg.chat.id, `Project "${projectId}" not found in your GitLab. Use /projects to see available projects.`);
+      await bot.sendMessage(msg.chat.id, `Project "${projectId}" not found. Use /projects to see available projects.`);
       return;
     }
     
-    // Store as default in a simple cache file
-    const defaultProjectFile = path.join(__dirname, '..', '.default-project');
-    fs.writeFileSync(defaultProjectFile, project.fullPath);
+    // Save as default in user settings
+    chatStorage.setUserSettings(msg.from.id, { defaultProject: project.fullPath });
     
     await bot.sendMessage(msg.chat.id, 
       `Default project set to: **${project.name}**\nRepo: \`${project.fullPath}\``,
@@ -309,7 +385,7 @@ bot.onText(/\/approve/, async (msg) => {
     chatId: msg.chat.id,
   });
 
-  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+  await sendMessageWithVoice(msg.from.id, msg.chat.id, result.message, { parse_mode: 'Markdown' });
 });
 
 // /status command
@@ -331,7 +407,7 @@ bot.onText(/\/run/, async (msg) => {
     chatId: msg.chat.id,
   });
 
-  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+  await sendMessageWithVoice(msg.from.id, msg.chat.id, result.message, { parse_mode: 'Markdown' });
 });
 
 // /ask command
@@ -353,7 +429,7 @@ bot.onText(/\/ask (.+)/, async (msg, match) => {
   }
 });
 
-// /queue command - List all tasks with their IDs
+// /queue command
 bot.onText(/\/queue/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
@@ -363,7 +439,7 @@ bot.onText(/\/queue/, async (msg) => {
   await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
 });
 
-// /cancel command - Cancel a queued or approved task
+// /cancel command
 bot.onText(/\/cancel (.+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
 
@@ -378,7 +454,7 @@ bot.onText(/\/cancel (.+)/, async (msg, match) => {
   await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
 });
 
-// /stop command - Stop a running task
+// /stop command
 bot.onText(/\/stop (.+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
 
@@ -393,7 +469,7 @@ bot.onText(/\/stop (.+)/, async (msg, match) => {
   await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
 });
 
-// /remove command - Remove a pending plan (waiting for approval)
+// /remove command
 bot.onText(/\/remove (.+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
 
@@ -408,7 +484,7 @@ bot.onText(/\/remove (.+)/, async (msg, match) => {
   await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
 });
 
-// /clear command - Clear all completed and cancelled tasks
+// /clear command
 bot.onText(/\/clear/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
@@ -423,31 +499,45 @@ bot.onText(/\/clear/, async (msg) => {
 });
 
 // ============================================================================
-// VOICE MESSAGE HANDLER
+// VOICE MESSAGE HANDLER WITH AI
 // ============================================================================
 
 bot.on('voice', async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
+  const userId = msg.from.id;
+  const settings = chatStorage.getUserSettings(userId);
+  
   await bot.sendChatAction(msg.chat.id, 'typing');
 
   try {
-    const voiceFile = await voice.downloadVoiceFile(bot, msg.voice.file_id);
+    // Download voice file
+    const voiceFile = await voiceProcessor.downloadVoiceFile(bot, msg.voice.file_id);
     
-    const transcription = await voice.speechToText(voiceFile);
-    voice.cleanup(voiceFile);
+    // Transcribe with AI
+    const transcription = await voiceProcessor.transcribe(voiceFile, settings.language !== 'auto' ? settings.language : null);
+    voiceProcessor.cleanup(voiceFile);
 
     if (!transcription.success) {
-      await bot.sendMessage(msg.chat.id, 'Failed to transcribe voice message. Please try again or use text.');
+      await bot.sendMessage(msg.chat.id, `Failed to transcribe voice: ${transcription.error}. Please try again or use text.`);
       return;
     }
 
+    const transcribedText = transcription.text;
+    const language = transcription.language;
+    
     // Show transcribed text
-    await bot.sendMessage(msg.chat.id, `You said: "${transcription.text}"`);
+    await bot.sendMessage(msg.chat.id, `You said: "${transcribedText}"`);
+    
+    // Add to chat history
+    chatStorage.addMessage(userId, 'user', transcribedText, { type: 'voice', language });
+    
+    // Get chat history for context
+    const chatHistory = chatStorage.getChatHistory(userId, 10);
 
     // Route via intent router
     await bot.sendChatAction(msg.chat.id, 'typing');
-    const intentResult = await intentRouter.detectIntent(transcription.text);
+    const intentResult = await intentRouter.detectIntent(transcribedText);
 
     if (!intentResult.success) {
       const errorMsg = 'Sorry, I did not understand. Try saying things like:\n\n• "Create a plan for adding login"\n• "Show my projects"\n• "What is the status?"';
@@ -455,21 +545,23 @@ bot.on('voice', async (msg) => {
       return;
     }
 
-    const response = await intentRouter.generateResponse(intentResult);
-    
-    // Send text response
-    await bot.sendMessage(msg.chat.id, response.message);
+    // Generate AI response based on context
+    const aiResponse = await voiceProcessor.generateResponse(
+      transcription,
+      chatHistory,
+      settings
+    );
 
     // Handle specific intents
     switch (intentResult.intent) {
       case 'PLAN':
         if (intentResult.extracted_task) {
-          // Store the pending plan
-          pendingPlanSelections.set(msg.from.id, {
+          // Store the pending plan persistently
+          chatStorage.setPendingPlan(userId, {
             task: intentResult.extracted_task,
-            timestamp: Date.now(),
+            chatId: msg.chat.id,
             fromVoice: true,
-            language: intentResult.language,
+            language: language,
           });
           
           // Get projects and show selection
@@ -492,17 +584,22 @@ bot.on('voice', async (msg) => {
           });
           
           await bot.sendMessage(msg.chat.id, projectMsg, { parse_mode: 'Markdown' });
+          chatStorage.addMessage(userId, 'assistant', projectMsg, { type: 'project_selection' });
           
-          // Send voice confirmation
-          const voiceResponse = intentResult.language === 'ar' 
+          // Send voice confirmation if enabled
+          const voiceResponse = language === 'ar' 
             ? `تم استلام طلبك: ${intentResult.extracted_task}. اختر مشروعاً من القائمة.`
             : `I received your request: ${intentResult.extracted_task}. Please select a project from the list.`;
-          await reporter.sendVoice(voiceResponse, intentResult.language === 'ar' ? 'ar' : 'en');
+          
+          if (settings.voiceResponse) {
+            const voiceFile = await voiceProcessor.textToSpeech(voiceResponse, language);
+            await bot.sendVoice(msg.chat.id, voiceFile);
+            voiceProcessor.cleanup(voiceFile);
+          }
         }
         break;
         
       case 'PROJECT_LIST':
-        // Trigger projects command
         bot.emitText(msg, '/projects');
         break;
         
@@ -548,11 +645,25 @@ bot.on('voice', async (msg) => {
         
       case 'GREETING':
         // Send voice greeting back
-        const greetingVoice = intentResult.language === 'ar'
+        const greetingVoice = language === 'ar'
           ? 'أهلاً بك! أنا نايت أوول، فريق التطوير الذكي. يمكنك إرسال مهامك بالصوت وسأقوم بإنشاء خطط التنفيذ والتنفيذ لك.'
           : 'Hello! I am NightOwl, your AI development team. You can send me tasks by voice and I will create implementation plans and execute them for you.';
-        await reporter.sendVoice(greetingVoice, intentResult.language === 'ar' ? 'ar' : 'en');
+        
+        if (settings.voiceResponse) {
+          const voiceFile = await voiceProcessor.textToSpeech(greetingVoice, language);
+          await bot.sendVoice(msg.chat.id, voiceFile);
+          voiceProcessor.cleanup(voiceFile);
+        } else {
+          await bot.sendMessage(msg.chat.id, greetingVoice);
+        }
         break;
+        
+      default:
+        // For other intents, send the AI-generated response
+        if (aiResponse.success) {
+          await bot.sendMessage(msg.chat.id, aiResponse.response);
+          chatStorage.addMessage(userId, 'assistant', aiResponse.response, { type: 'ai_response' });
+        }
     }
 
   } catch (error) {
@@ -566,5 +677,6 @@ bot.on('voice', async (msg) => {
 // ============================================================================
 
 logger.info('Nigents Bot is running!');
+logger.info('Features: Persistent chat history, AI voice processing, voice/text toggle');
 
-module.exports = { bot, orchestrator };
+module.exports = { bot, orchestrator, chatStorage };
