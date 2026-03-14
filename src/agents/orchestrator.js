@@ -278,7 +278,16 @@ ${codeContext}
 Provide a helpful answer. If the question is about specific code and you don't have the full context, suggest using /plan to analyze the codebase.
 `;
 
-    const result = await this.callClaude(prompt);
+    // Use user's preferred AI provider if available
+    const provider = context.aiProvider || this.provider;
+    const model = context.aiModel || this.model;
+    
+    logger.info(`[Orchestrator] /ask using provider: ${provider}${model ? ` (${model})` : ''}`);
+
+    const result = await this.callAI(prompt, {
+      provider: provider,
+      model: model,
+    });
     
     return {
       success: result.success,

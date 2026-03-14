@@ -1414,11 +1414,21 @@ bot.onText(/\/ask (.+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
 
   const question = match[1];
+  const userId = msg.from.id;
   await bot.sendChatAction(msg.chat.id, 'typing');
 
+  // Get user's preferred AI provider/model
+  const userSettings = chatStorage.getUserSettings(userId);
+  const aiProvider = userSettings.preferredAI;
+  const aiModel = userSettings.preferredModel;
+  
+  logger.info(`[Bot] /ask using AI provider: ${aiProvider || 'default'}${aiModel ? ` (${aiModel})` : ''}`);
+
   const result = await orchestrator.processCommand(`/ask ${question}`, {
-    userId: msg.from.id,
+    userId: userId,
     chatId: msg.chat.id,
+    aiProvider: aiProvider,
+    aiModel: aiModel,
   });
 
   if (result.success) {
