@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - Voice Tool
+ * 🦉 Nigents - Voice Tool
  * Whisper for voice input, gTTS for voice output
  */
 

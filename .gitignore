@@ -13,10 +13,12 @@ yarn-error.log*
 logs/
 *.log
 
-# Data
-data/queue.json
-data/*.json
-data/reports/*.json
+# Data - PRESERVE ALL DATA BETWEEN DEPLOYMENTS
+data/
+!data/.gitkeep
+.cache/
+*.backup.*
+backups/
 
 # Runtime
 pids/

@@ -1,9 +1,9 @@
 /**
- * 🦉 NightOwl - AutoGen Module Exports
+ * 🦉 Nigents - AutoGen Module Exports
  */
 
-const NightOwlGroupChat = require('./group-chat');
+const NigentsGroupChat = require('./group-chat');
 
 module.exports = {
-  NightOwlGroupChat,
+  NigentsGroupChat,
 };

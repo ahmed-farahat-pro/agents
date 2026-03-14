@@ -1,7 +1,7 @@
 {
-  "name": "nightowl",
+  "name": "nigents",
   "version": "1.0.0",
-  "description": "NightOwl — AI Agent Development Team for GitLab. Send a task before you sleep, wake up to a finished Merge Request.",
+  "description": "Nigents — Night Agents for GitLab. Send a task before you sleep, wake up to a finished Merge Request.",
   "main": "src/bot.js",
   "scripts": {
     "start": "node src/bot.js",
@@ -10,7 +10,12 @@
     "health-check": "node scripts/health-check.js",
     "test": "jest",
     "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix"
+    "lint:fix": "eslint src/ --fix",
+    "local": "concurrently \"npm run dashboard\" \"npm run dev\"",
+    "build:mcp": "cd mcp-servers/arabic-rtl-auditor && npm run build && cd ../task-splitter && npm run build && cd ../smart-code-search && npm run build",
+    "install:mcp": "cd mcp-servers/arabic-rtl-auditor && npm install && cd ../task-splitter && npm install && cd ../smart-code-search && npm install",
+    "setup:local": "npm install && npm run install:mcp && npm run build:mcp && echo '✅ Local setup complete!'",
+    "clean": "rm -rf node_modules mcp-servers/*/node_modules mcp-servers/*/dist logs/*.log"
   },
   "keywords": [
     "ai-agents",
@@ -22,33 +27,33 @@
     "code-generation",
     "devops"
   ],
-  "author": "NightOwl Team",
+  "author": "Nigents Team",
   "license": "MIT",
   "dependencies": {
-    "node-telegram-bot-api": "^0.66.0",
-    "express": "^4.18.2",
-    "socket.io": "^4.7.4",
-    "axios": "^1.6.7",
-    "dotenv": "^16.4.5",
-    "winston": "^3.11.0",
-    "node-cron": "^3.0.3",
-    "form-data": "^4.0.0",
     "@anthropic-ai/sdk": "^0.17.1",
     "@modelcontextprotocol/sdk": "^0.4.0",
+    "axios": "^1.13.6",
+    "date-fns": "^3.3.1",
+    "dockerode": "^4.0.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2",
+    "form-data": "^4.0.0",
+    "fs-extra": "^11.2.0",
+    "gtts": "^0.2.1",
+    "lodash": "^4.17.21",
+    "node-cron": "^3.0.3",
+    "node-telegram-bot-api": "^0.66.0",
     "openai": "^4.28.0",
     "simple-git": "^3.22.0",
-    "dockerode": "^4.0.2",
+    "socket.io": "^4.7.4",
     "uuid": "^9.0.1",
-    "date-fns": "^3.3.1",
-    "lodash": "^4.17.21",
-    "fs-extra": "^11.2.0",
-    "autogen": "^0.3.0",
-    "gtts": "^0.2.1"
+    "winston": "^3.11.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.3",
+    "concurrently": "^8.2.2",
     "eslint": "^8.57.0",
-    "jest": "^29.7.0"
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.3"
   },
   "engines": {
     "node": ">=20.0.0"

@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - Agent Exports
+ * 🦉 Nigents - Agent Exports
  */
 
 const OrchestratorAgent = require('./orchestrator');

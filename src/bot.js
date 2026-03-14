@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - Telegram Bot
+ * Nigents - Telegram Bot
  * Main entry point for the AI agent team
  */
 
@@ -9,6 +9,9 @@ const TelegramBot = require('node-telegram-bot-api');
 const logger = require('./utils/logger');
 const voice = require('./tools/voice');
 const gitlab = require('./tools/gitlab');
+const path = require('path');
+const fs = require('fs');
+const intentRouter = require('./utils/intent-router');
 
 // Import agents
 const {
@@ -48,10 +51,25 @@ orchestrator.registerAgent(reporter);
 // Bot state
 const botState = {
   authorizedUsers: new Set([chatId]),
-  activeChats: new Map(), // userId -> agentName for direct chat
+  activeChats: new Map(),
 };
 
-logger.info('🦉 NightOwl Bot starting...');
+// Store pending plan selections
+const pendingPlanSelections = new Map();
+
+// Helper: Get active project from GitLab cache
+async function getActiveProject() {
+  const projects = await getGitLabProjects();
+  // Return first project as default, or null if none
+  return projects[0] || null;
+}
+
+logger.info('Nigents Bot starting...');
+
+// Helper function to check authorization
+function isAuthorized(userChatId) {
+  return botState.authorizedUsers.has(userChatId.toString());
+}
 
 // ============================================================================
 // COMMAND HANDLERS
@@ -62,72 +80,255 @@ bot.onText(/\/start/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
   const welcomeMessage = `
-🦉 **Welcome to NightOwl!**
+**Welcome to Nigents!**
 
-Your personal AI development team. Send a task before you sleep, wake up to a finished Merge Request.
+Your AI development team. Send tasks via voice or text, and I'll handle the rest.
 
-**Available Commands:**
+**Just Talk To Me!**
+Send voice notes or text naturally:
+• "Add login feature with JWT"
+• "Switch to the frontend project"  
+• "Use Moonshot AI instead"
+• "What's the status?"
+• "I want to talk to the backend developer"
 
-📋 **Planning**
+**Quick Commands:**
 • /plan <task> — Create implementation plan
-• /approve — Approve plan for implementation
-• /run — Start implementing queued tasks
+• /approve — Approve plan
+• /projects — List projects
+• /project <id> — Switch project
+• /models — List AI models
+• /model <id> — Switch AI model
+• /status — Check status
+• /ask <question> — Ask about code
 
-💬 **Questions**
-• /ask <question> — Ask about your code
-
-📊 **Status**
-• /status — View task queue status
-• /queue — List queued tasks
-• /standup — Daily agent standup
-• /costs — API cost summary
-
-👥 **Agent Chat**
+**Agent Chat:**
 • /meet <agent> — Chat with specific agent
   (planner, backend, frontend, qa, reviewer)
 
-⚙️ **Management**
-• /repos — List your GitLab repositories
-• /cancel <id> — Cancel a task
-• /logs <agent> — View agent logs
+**Management:**
+• /run — Start implementation now
+• /queue — List queued tasks
+• /cancel <id> — Cancel task
 
-🎙️ **Voice Support**
-Send voice notes in Arabic or English!
-
-Sleep well! 🌙
+I understand Arabic and English voice messages!
 `;
 
   await bot.sendMessage(msg.chat.id, welcomeMessage, { parse_mode: 'Markdown' });
   
   // Send voice welcome
-  await reporter.sendVoice('Welcome to NightOwl! I am your AI development team. How can I help you today?', 'en');
+  await reporter.sendVoice('Welcome to Nigents! I am your AI development team. How can I help you today?', 'en');
 });
 
-// /plan command
+// Cache for GitLab projects
+let cachedProjects = [];
+let lastFetchTime = 0;
+
+// Helper: Get projects from GitLab (with cache)
+async function getGitLabProjects(forceRefresh = false) {
+  const now = Date.now();
+  // Cache for 5 minutes
+  if (!forceRefresh && cachedProjects.length > 0 && (now - lastFetchTime) < 300000) {
+    return cachedProjects;
+  }
+  
+  try {
+    const projects = await gitlab.listProjects(20);
+    cachedProjects = projects;
+    lastFetchTime = now;
+    return projects;
+  } catch (error) {
+    logger.error('Failed to fetch GitLab projects:', error);
+    return cachedProjects; // Return cached if available
+  }
+}
+
+// /plan command - Shows project selection from GitLab
 bot.onText(/\/plan (.+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
 
   const task = match[1];
+  
+  await bot.sendChatAction(msg.chat.id, 'typing');
+  
+  try {
+    const projects = await getGitLabProjects();
+    
+    if (projects.length === 0) {
+      await bot.sendMessage(msg.chat.id, 'No projects found in your GitLab account. Please check your GITLAB_TOKEN and GITLAB_NAMESPACE.');
+      return;
+    }
+    
+    // Store pending plan
+    pendingPlanSelections.set(msg.from.id, {
+      task,
+      timestamp: Date.now(),
+    });
+    
+    // Show compact project selection
+    let message = `**Task:** ${task}\n\n`;
+    message += '**Select a project from your GitLab:**\n';
+    
+    projects.forEach((project, index) => {
+      message += `${index + 1}. ${project.name} (\`${project.id}\`)\n`;
+    });
+    
+    message += '\n**Use:** `/planwith <project-id>`';
+    
+    await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+    
+  } catch (error) {
+    logger.error('Failed to load projects for plan:', error);
+    await bot.sendMessage(msg.chat.id, 'Error loading projects from GitLab');
+  }
+});
+
+// /planwith command - Create plan with selected project
+bot.onText(/\/planwith (.+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const projectId = match[1].trim();
+  const pending = pendingPlanSelections.get(msg.from.id);
+  
+  if (!pending) {
+    await bot.sendMessage(msg.chat.id, 'No pending plan. Use `/plan <task>` first.');
+    return;
+  }
+  
+  try {
+    const projects = await getGitLabProjects();
+    const project = projects.find(p => p.id === projectId || p.fullPath === projectId);
+    
+    if (!project) {
+      await bot.sendMessage(msg.chat.id, `Project "${projectId}" not found. Use /projects to see available projects.`);
+      return;
+    }
+    
+    pendingPlanSelections.delete(msg.from.id);
+    
+    await bot.sendChatAction(msg.chat.id, 'typing');
+    const statusMsg = await bot.sendMessage(msg.chat.id, `Analyzing ${project.name}...`);
+
+    const result = await orchestrator.processCommand(`/plan ${pending.task}`, {
+      userId: msg.from.id,
+      chatId: msg.chat.id,
+      project: project.fullPath,
+      projectInfo: project,
+    });
+
+    await bot.deleteMessage(msg.chat.id, statusMsg.message_id);
+
+    if (result.success) {
+      await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+      
+      const voiceText = `Plan created for ${pending.task}. Complexity: ${result.plan.complexity}, estimated ${result.plan.estimatedHours} hours. Reply with /approve to start.`;
+      await reporter.sendVoice(voiceText, 'en');
+    } else {
+      await bot.sendMessage(msg.chat.id, `Error: ${result.message}`);
+    }
+    
+  } catch (error) {
+    logger.error('Failed to create plan:', error);
+    await bot.sendMessage(msg.chat.id, 'Error creating plan');
+  }
+});
+
+// /projects command - List from GitLab
+bot.onText(/\/projects/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
   await bot.sendChatAction(msg.chat.id, 'typing');
 
-  const statusMsg = await bot.sendMessage(msg.chat.id, '📋 Planner is analyzing your request...');
+  try {
+    const projects = await getGitLabProjects(true); // Force refresh
+    
+    if (projects.length === 0) {
+      await bot.sendMessage(msg.chat.id, 'No projects found. Please check your GITLAB_TOKEN and GITLAB_NAMESPACE in .env file.');
+      return;
+    }
+    
+    let message = '**Your GitLab Projects:**\n\n';
+    projects.forEach((project, index) => {
+      message += `${index + 1}. **${project.name}**\n`;
+      message += `   ID: \`${project.id}\`\n`;
+      message += `   Repo: \`${project.fullPath}\`\n`;
+      if (project.description) {
+        message += `   ${project.description.substring(0, 50)}${project.description.length > 50 ? '...' : ''}\n`;
+      }
+      message += '\n';
+    });
+    
+    message += '**To create a plan:** `/plan <task>` then select project\n';
+    message += '**To switch default:** `/project <project-id>`';
+    
+    await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+  } catch (error) {
+    logger.error('Failed to load projects:', error);
+    await bot.sendMessage(msg.chat.id, 'Error loading projects from GitLab. Check your GITLAB_TOKEN.');
+  }
+});
 
-  const result = await orchestrator.processCommand(`/plan ${task}`, {
+// /project command - Set default project (from GitLab)
+bot.onText(/\/project (.+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const projectId = match[1].trim();
+  
+  try {
+    const projects = await getGitLabProjects();
+    const project = projects.find(p => p.id === projectId || p.fullPath === projectId);
+    
+    if (!project) {
+      await bot.sendMessage(msg.chat.id, `Project "${projectId}" not found in your GitLab. Use /projects to see available projects.`);
+      return;
+    }
+    
+    // Store as default in a simple cache file
+    const defaultProjectFile = path.join(__dirname, '..', '.default-project');
+    fs.writeFileSync(defaultProjectFile, project.fullPath);
+    
+    await bot.sendMessage(msg.chat.id, 
+      `Default project set to: **${project.name}**\nRepo: \`${project.fullPath}\``,
+      { parse_mode: 'Markdown' }
+    );
+  } catch (error) {
+    logger.error('Failed to switch project:', error);
+    await bot.sendMessage(msg.chat.id, 'Error switching project');
+  }
+});
+
+// /approve command
+bot.onText(/\/approve/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const result = await orchestrator.processCommand('/approve', {
     userId: msg.from.id,
     chatId: msg.chat.id,
   });
 
-  await bot.deleteMessage(msg.chat.id, statusMsg.message_id);
+  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+});
 
-  if (result.success) {
-    await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
-    
-    // Send voice summary
-    const voiceText = `I've created a plan for: ${task}. It has ${result.plan.complexity} complexity and will take about ${result.plan.estimatedHours} hours. Reply with approve to start implementation.`;
-    await reporter.sendVoice(voiceText, 'en');
-  } else {
-    await bot.sendMessage(msg.chat.id, `❌ Error: ${result.message}`);
-  }
+// /status command
+bot.onText(/\/status/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const result = await orchestrator.processCommand('/status', {});
+  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+});
+
+// /run command
+bot.onText(/\/run/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  await bot.sendMessage(msg.chat.id, 'Starting implementation...');
+
+  const result = await orchestrator.processCommand('/run', {
+    userId: msg.from.id,
+    chatId: msg.chat.id,
+  });
+
+  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
 });
 
 // /ask command
@@ -145,104 +346,8 @@ bot.onText(/\/ask (.+)/, async (msg, match) => {
   if (result.success) {
     await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
   } else {
-    await bot.sendMessage(msg.chat.id, `❌ Error: ${result.message}`);
+    await bot.sendMessage(msg.chat.id, `Error: ${result.message}`);
   }
-});
-
-// /approve command
-bot.onText(/\/approve/, async (msg) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  const result = await orchestrator.processCommand('/approve', {
-    userId: msg.from.id,
-    chatId: msg.chat.id,
-  });
-
-  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
-});
-
-// /run command
-bot.onText(/\/run/, async (msg) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  await bot.sendMessage(msg.chat.id, '🚀 Starting implementation...');
-
-  const result = await orchestrator.processCommand('/run', {
-    userId: msg.from.id,
-    chatId: msg.chat.id,
-  });
-
-  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
-});
-
-// /status command
-bot.onText(/\/status/, async (msg) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  const result = await orchestrator.processCommand('/status', {});
-  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
-});
-
-// /queue command
-bot.onText(/\/queue/, async (msg) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  const result = await orchestrator.processCommand('/queue', {});
-  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
-});
-
-// /standup command
-bot.onText(/\/standup/, async (msg) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  const result = await orchestrator.processCommand('/standup', {});
-  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
-});
-
-// /meet command
-bot.onText(/\/meet (.+)/, async (msg, match) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  const agentName = match[1].toLowerCase();
-  const result = await orchestrator.processCommand(`/meet ${agentName}`, {});
-
-  if (result.success) {
-    botState.activeChats.set(msg.from.id, agentName);
-  }
-
-  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
-});
-
-// /repos command
-bot.onText(/\/repos/, async (msg) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  try {
-    const connection = await gitlab.testConnection();
-    if (connection.success) {
-      await bot.sendMessage(msg.chat.id, `✅ Connected to GitLab as ${connection.name} (@${connection.user})`);
-    } else {
-      await bot.sendMessage(msg.chat.id, `❌ GitLab connection failed: ${connection.error}`);
-    }
-  } catch (error) {
-    await bot.sendMessage(msg.chat.id, `❌ Error: ${error.message}`);
-  }
-});
-
-// /costs command
-bot.onText(/\/costs/, async (msg) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  await reporter.sendCostReport();
-});
-
-// /cancel command
-bot.onText(/\/cancel (.+)/, async (msg, match) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  const taskId = match[1];
-  const result = await orchestrator.processCommand(`/cancel ${taskId}`, {});
-  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
 });
 
 // ============================================================================
@@ -255,125 +360,54 @@ bot.on('voice', async (msg) => {
   await bot.sendChatAction(msg.chat.id, 'typing');
 
   try {
-    // Download voice file
     const voiceFile = await voice.downloadVoiceFile(bot, msg.voice.file_id);
-    
-    // Transcribe
-    await bot.sendMessage(msg.chat.id, '🎙️ Transcribing voice message...');
+    await bot.sendMessage(msg.chat.id, 'Transcribing voice...');
     
     const transcription = await voice.speechToText(voiceFile);
-    
-    // Cleanup
     voice.cleanup(voiceFile);
 
     if (!transcription.success) {
-      await bot.sendMessage(msg.chat.id, '❌ Failed to transcribe voice message');
+      await bot.sendMessage(msg.chat.id, 'Failed to transcribe voice message');
       return;
     }
 
-    // Show transcription
-    await bot.sendMessage(msg.chat.id, `📝 Transcribed: "${transcription.text}"`);
+    await bot.sendMessage(msg.chat.id, `Transcribed: "${transcription.text}"`);
 
-    // Process as command
-    const result = await orchestrator.processCommand(transcription.text, {
-      userId: msg.from.id,
-      chatId: msg.chat.id,
-      isVoice: true,
-      detectedLanguage: transcription.language,
-    });
+    // Route via intent router
+    await bot.sendChatAction(msg.chat.id, 'typing');
+    const intentResult = await intentRouter.detectIntent(transcription.text);
 
-    if (result.message) {
-      await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+    if (!intentResult.success) {
+      await bot.sendMessage(msg.chat.id, 'Sorry, I did not understand. Try /plan, /projects, etc.');
+      return;
+    }
+
+    const response = await intentRouter.generateResponse(intentResult);
+    await bot.sendMessage(msg.chat.id, response.message);
+
+    // Handle project selection for plan intent
+    if (intentResult.intent === 'PLAN' && intentResult.extracted_task) {
+      // Store and show project selection
+      pendingPlanSelections.set(msg.from.id, {
+        task: intentResult.extracted_task,
+        timestamp: Date.now(),
+      });
+      
+      // Trigger project selection
+      bot.emitText(msg, '/projects');
+      await bot.sendMessage(msg.chat.id, 'Reply with: `/planwith <project-id>` to create the plan.');
     }
 
   } catch (error) {
     logger.error('Voice processing error:', error);
-    await bot.sendMessage(msg.chat.id, '❌ Error processing voice message');
+    await bot.sendMessage(msg.chat.id, 'Error processing voice message');
   }
 });
 
 // ============================================================================
-// GENERAL MESSAGE HANDLER (for agent chat)
+// START SERVER
 // ============================================================================
 
-bot.on('message', async (msg) => {
-  // Skip commands and voice
-  if (msg.text?.startsWith('/') || msg.voice) return;
-  if (!isAuthorized(msg.chat.id)) return;
+logger.info('Nigents Bot is running!');
 
-  // Check if user is in direct chat with an agent
-  const activeAgent = botState.activeChats.get(msg.from.id);
-  if (activeAgent) {
-    await bot.sendChatAction(msg.chat.id, 'typing');
-    
-    // Route to specific agent
-    const agent = orchestrator.agents.get(activeAgent);
-    if (agent) {
-      const result = await agent.callClaude(msg.text);
-      await bot.sendMessage(msg.chat.id, result.content, { parse_mode: 'Markdown' });
-    }
-  }
-});
-
-// ============================================================================
-// ORCHESTRATOR EVENT LISTENERS
-// ============================================================================
-
-orchestrator.on('taskStarted', (data) => {
-  logger.info('Task started:', data);
-});
-
-orchestrator.on('taskCompleted', (data) => {
-  logger.info('Task completed:', data);
-});
-
-orchestrator.on('planApproved', (data) => {
-  reporter.sendMessage(`✅ Plan approved: ${data.plan.title}`);
-});
-
-orchestrator.on('implementationStarted', (data) => {
-  reporter.sendMessage('🚀 Starting overnight implementation. Sleep well! 🌙');
-});
-
-orchestrator.on('implementationCompleted', (data) => {
-  reporter.sendCompletionReport(data.task);
-});
-
-orchestrator.on('agentStatusChange', (data) => {
-  logger.info(`Agent ${data.agent} status: ${data.status}`);
-});
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-function isAuthorized(chatId) {
-  return botState.authorizedUsers.has(String(chatId));
-}
-
-// Error handling
-bot.on('polling_error', (error) => {
-  logger.error('Telegram polling error:', error);
-});
-
-bot.on('error', (error) => {
-  logger.error('Telegram bot error:', error);
-});
-
-// Graceful shutdown
-process.on('SIGINT', () => {
-  logger.info('Shutting down NightOwl...');
-  bot.stopPolling();
-  process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-  logger.info('Shutting down NightOwl...');
-  bot.stopPolling();
-  process.exit(0);
-});
-
-logger.info('🦉 NightOwl Bot is running!');
-
-// Export for testing
-module.exports = { bot, orchestrator, reporter };
+module.exports = { bot, orchestrator };

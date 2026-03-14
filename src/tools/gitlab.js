@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - GitLab API Tool
+ * 🦉 Nigents - GitLab API Tool
  * Interacts with GitLab for repo access and MR creation
  */
 
@@ -19,6 +19,36 @@ class GitLabAPI {
         'Content-Type': 'application/json',
       },
     });
+  }
+
+  /**
+   * List all projects for the user
+   */
+  async listProjects(limit = 20) {
+    try {
+      const response = await this.client.get('/projects', {
+        params: {
+          membership: true,
+          per_page: limit,
+          order_by: 'last_activity_at',
+          sort: 'desc',
+        },
+      });
+      
+      return response.data.map(project => ({
+        id: project.path,
+        name: project.name,
+        fullPath: project.path_with_namespace,
+        description: project.description,
+        url: project.web_url,
+        defaultBranch: project.default_branch || 'main',
+        lastActivity: project.last_activity_at,
+        visibility: project.visibility,
+      }));
+    } catch (error) {
+      logger.error('[GitLab] Failed to list projects:', error.message);
+      return [];
+    }
   }
 
   /**
