@@ -650,6 +650,162 @@ app.post('/api/logs/stream', (req, res) => {
 });
 
 // ============================================================================
+// Chat History API
+// ============================================================================
+
+const chatHistory = require('../utils/chat-history');
+
+// Get all chat sessions
+app.get('/api/chats/sessions', (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    const result = chatHistory.getAllSessions(parseInt(page), parseInt(limit));
+    
+    res.json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to get chat sessions:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Get chat by session ID
+app.get('/api/chats/:sessionId', (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const chat = chatHistory.getChat(sessionId);
+    
+    if (!chat) {
+      return res.status(404).json({
+        success: false,
+        error: 'Chat not found',
+      });
+    }
+    
+    res.json({
+      success: true,
+      chat,
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to get chat:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Get user sessions
+app.get('/api/chats/user/:userId', (req, res) => {
+  try {
+    const { userId } = req.params;
+    const sessions = chatHistory.getUserSessions(userId);
+    
+    res.json({
+      success: true,
+      sessions,
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to get user sessions:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Search chats
+app.get('/api/chats/search', (req, res) => {
+  try {
+    const { query, userId } = req.query;
+    
+    if (!query) {
+      return res.status(400).json({
+        success: false,
+        error: 'Query parameter required',
+      });
+    }
+    
+    const results = chatHistory.searchChats(query, userId);
+    
+    res.json({
+      success: true,
+      query,
+      results,
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to search chats:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Export chat
+app.get('/api/chats/:sessionId/export', (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const result = chatHistory.exportChat(sessionId);
+    
+    if (result.success) {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="chat-${sessionId}.json"`);
+      res.send(JSON.stringify(result.data, null, 2));
+    } else {
+      res.status(404).json(result);
+    }
+  } catch (error) {
+    logger.error('[Dashboard] Failed to export chat:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Get chat stats
+app.get('/api/chats/stats', (req, res) => {
+  try {
+    const stats = chatHistory.getStats();
+    
+    res.json({
+      success: true,
+      stats,
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to get chat stats:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// List all chat files
+app.get('/api/chats/files/list', (req, res) => {
+  try {
+    const files = chatHistory.listChatFiles();
+    
+    res.json({
+      success: true,
+      files,
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to list chat files:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// ============================================================================
 // Socket.IO
 // ============================================================================
 

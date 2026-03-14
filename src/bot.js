@@ -8,6 +8,7 @@ require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const logger = require('./utils/logger');
 const chatStorage = require('./utils/chat-storage');
+const chatHistory = require('./utils/chat-history');
 const voiceProcessor = require('./utils/voice-processor');
 const gitlab = require('./tools/gitlab');
 const path = require('path');
@@ -97,6 +98,30 @@ async function getActiveProject() {
   return projects[0] || null;
 }
 
+// Helper: Log user message to chat history
+function logUserMessage(userId, text, type = 'text', metadata = {}) {
+  // Start session if not exists
+  chatHistory.startSession(userId, metadata.userInfo || {});
+  
+  // Add message
+  chatHistory.addMessage(userId, {
+    role: 'user',
+    text,
+    type,
+    ...metadata,
+  });
+}
+
+// Helper: Log bot message to chat history
+function logBotMessage(userId, text, type = 'text', metadata = {}) {
+  chatHistory.addMessage(userId, {
+    role: 'assistant',
+    text,
+    type,
+    ...metadata,
+  });
+}
+
 // Helper: Send message with voice option
 async function sendMessageWithVoice(userId, chatId, text, options = {}) {
   const settings = chatStorage.getUserSettings(userId);
@@ -104,8 +129,12 @@ async function sendMessageWithVoice(userId, chatId, text, options = {}) {
   // Always send text first
   await bot.sendMessage(chatId, text, { parse_mode: 'Markdown', ...options });
   
-  // Add to chat history
+  // Add to chat history (both systems)
   chatStorage.addMessage(userId, 'assistant', text, { type: 'text' });
+  logBotMessage(userId, text, options.type || 'text', { 
+    voice: settings.voiceResponse && options.voice !== false,
+    ...options.metadata,
+  });
   
   // Send voice if enabled and not disabled for this message
   if (settings.voiceResponse && options.voice !== false) {
@@ -302,6 +331,15 @@ bot.onText(/\/plan (.+)/, async (msg, match) => {
 
   const task = match[1].trim();
   const userId = msg.from.id;
+  
+  // Log user message
+  logUserMessage(userId, `/plan ${task}`, 'command', {
+    userInfo: {
+      username: msg.from.username,
+      firstName: msg.from.first_name,
+      lastName: msg.from.last_name,
+    },
+  });
   
   await bot.sendChatAction(msg.chat.id, 'typing');
   
@@ -714,8 +752,16 @@ bot.on('voice', async (msg) => {
     // Show transcribed text
     await bot.sendMessage(msg.chat.id, `You said: "${transcribedText}"`);
     
-    // Add to chat history
+    // Add to chat history (both systems)
     chatStorage.addMessage(userId, 'user', transcribedText, { type: 'voice', language });
+    logUserMessage(userId, transcribedText, 'voice', {
+      language,
+      userInfo: {
+        username: msg.from.username,
+        firstName: msg.from.first_name,
+        lastName: msg.from.last_name,
+      },
+    });
     
     // Get chat history for context
     const chatHistory = chatStorage.getChatHistory(userId, 10);
