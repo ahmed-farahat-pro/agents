@@ -201,6 +201,32 @@ bot.onText(/\/clearhistory/, async (msg) => {
   await bot.sendMessage(msg.chat.id, 'Chat history cleared.');
 });
 
+// /debug command - Show debug info
+bot.onText(/\/debug/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const stats = chatStorage.getStats();
+  const pending = chatStorage.getPendingPlan(msg.from.id);
+  
+  let message = '**Debug Info**\n\n';
+  message += `Data Directory: \`${stats.dataDir}\`\n`;
+  message += `Pending Plans: ${stats.pendingPlansCount}\n`;
+  message += `Chat Histories: ${stats.chatHistoryCount}\n`;
+  message += `User Settings: ${stats.userSettingsCount}\n\n`;
+  
+  if (pending) {
+    message += `**Your Pending Plan:**\n`;
+    message += `Task: ${pending.task}\n`;
+    message += `Created: ${new Date(pending.createdAt).toLocaleString()}\n`;
+  } else {
+    message += `**Your Pending Plan:** None\n`;
+  }
+  
+  message += `\nAll Pending Users: ${stats.pendingPlans.join(', ') || 'None'}`;
+  
+  await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+});
+
 // /plan command - Shows project selection from GitLab
 bot.onText(/\/plan (.+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
@@ -219,11 +245,16 @@ bot.onText(/\/plan (.+)/, async (msg, match) => {
     }
     
     // Store pending plan persistently
+    logger.info(`[Bot] Storing pending plan for user ${userId}: ${task}`);
     chatStorage.setPendingPlan(userId, {
       task,
       chatId: msg.chat.id,
       username: msg.from.username || msg.from.first_name,
     });
+    
+    // Verify it was saved
+    const verify = chatStorage.getPendingPlan(userId);
+    logger.info(`[Bot] Verified pending plan: ${verify ? 'FOUND' : 'NOT FOUND'}`);
     
     // Show project selection
     let message = `**Task:** ${task}\n\n`;
@@ -255,12 +286,16 @@ bot.onText(/\/planwith (.+)/, async (msg, match) => {
   const userId = msg.from.id;
   
   // Get pending plan from persistent storage
+  logger.info(`[Bot] Looking for pending plan for user ${userId}`);
   const pending = chatStorage.getPendingPlan(userId);
   
   if (!pending) {
-    await bot.sendMessage(msg.chat.id, 'No pending plan found. Please use `/plan <task>` first to create a plan.');
+    logger.warn(`[Bot] No pending plan found for user ${userId}`);
+    await bot.sendMessage(msg.chat.id, 'No pending plan found. Please use `/plan <task>` first to create a plan.\n\nUse `/debug` to see storage status.');
     return;
   }
+  
+  logger.info(`[Bot] Found pending plan: ${pending.task}`);
   
   try {
     const projects = await getGitLabProjects();
