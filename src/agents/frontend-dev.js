@@ -208,6 +208,13 @@ Return the complete updated code.
 
     return this.callClaude(prompt);
   }
+
+  /**
+   * Execute task - required by BaseAgent
+   */
+  async execute(task) {
+    return this.implementFrontend(task);
+  }
 }
 
 module.exports = FrontendDevAgent;

@@ -267,6 +267,13 @@ ${Object.entries(this.costTracking.tasks)
     };
     return emojis[status] || '⚪';
   }
+
+  /**
+   * Execute task - required by BaseAgent
+   */
+  async execute(task) {
+    return this.sendReport(task);
+  }
 }
 
 module.exports = ReporterAgent;

@@ -321,6 +321,13 @@ Respond with valid JSON in this format:
       return null;
     }
   }
+
+  /**
+   * Execute task - required by BaseAgent
+   */
+  async execute(task) {
+    return this.createPlan(task);
+  }
 }
 
 module.exports = PlannerAgent;

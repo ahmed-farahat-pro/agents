@@ -216,6 +216,13 @@ Requirements:
 `;
     return this.callClaude(prompt);
   }
+
+  /**
+   * Execute task - required by BaseAgent
+   */
+  async execute(task) {
+    return this.implementBackend(task);
+  }
 }
 
 module.exports = BackendDevAgent;

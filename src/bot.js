@@ -51,8 +51,11 @@ orchestrator.registerAgent(reporter);
 // Bot state
 const botState = {
   authorizedUsers: new Set([chatId]),
-  activeChats: new Map(), // userId -> agentName for direct chat
+  activeChats: new Map(),
 };
+
+// Store pending plan selections
+const pendingPlanSelections = new Map();
 
 // Helper: Get active project from config
 function getActiveProject() {
@@ -72,6 +75,11 @@ function getActiveProject() {
 }
 
 logger.info('Nigents Bot starting...');
+
+// Helper function to check authorization
+function isAuthorized(userChatId) {
+  return botState.authorizedUsers.has(userChatId.toString());
+}
 
 // ============================================================================
 // COMMAND HANDLERS
@@ -122,35 +130,176 @@ I understand Arabic and English voice messages!
   await reporter.sendVoice('Welcome to Nigents! I am your AI development team. How can I help you today?', 'en');
 });
 
-// /plan command
+// /plan command - Shows project selection
 bot.onText(/\/plan (.+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
 
   const task = match[1];
-  const activeProject = getActiveProject();
   
-  await bot.sendChatAction(msg.chat.id, 'typing');
+  try {
+    const projectsPath = path.join(__dirname, '..', 'config', 'projects.json');
+    const projectsConfig = JSON.parse(fs.readFileSync(projectsPath, 'utf8'));
+    
+    // Store pending plan
+    pendingPlanSelections.set(msg.from.id, {
+      task,
+      timestamp: Date.now(),
+    });
+    
+    // Show compact project selection
+    let message = `**Task:** ${task}\n\n`;
+    message += '**Select project:**\n';
+    
+    projectsConfig.projects.forEach((project, index) => {
+      message += `${index + 1}. ${project.name} (\`${project.id}\`)\n`;
+    });
+    
+    message += '\n**Use:** `/planwith <project-id>`';
+    
+    await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+    
+  } catch (error) {
+    logger.error('Failed to load projects for plan:', error);
+    await bot.sendMessage(msg.chat.id, 'Error loading projects');
+  }
+});
 
-  const statusMsg = await bot.sendMessage(msg.chat.id, 'Planner is analyzing your request...');
+// /planwith command - Create plan with selected project
+bot.onText(/\/planwith (.+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
 
-  const result = await orchestrator.processCommand(`/plan ${task}`, {
+  const projectId = match[1].trim();
+  const pending = pendingPlanSelections.get(msg.from.id);
+  
+  if (!pending) {
+    await bot.sendMessage(msg.chat.id, 'No pending plan. Use `/plan <task>` first.');
+    return;
+  }
+  
+  try {
+    const projectsPath = path.join(__dirname, '..', 'config', 'projects.json');
+    const projectsConfig = JSON.parse(fs.readFileSync(projectsPath, 'utf8'));
+    const project = projectsConfig.projects.find(p => p.id === projectId);
+    
+    if (!project) {
+      await bot.sendMessage(msg.chat.id, `Project "${projectId}" not found.`);
+      return;
+    }
+    
+    pendingPlanSelections.delete(msg.from.id);
+    
+    await bot.sendChatAction(msg.chat.id, 'typing');
+    const statusMsg = await bot.sendMessage(msg.chat.id, `Analyzing ${project.name}...`);
+
+    const result = await orchestrator.processCommand(`/plan ${pending.task}`, {
+      userId: msg.from.id,
+      chatId: msg.chat.id,
+      project: project.gitlabRepo,
+      projectInfo: project,
+    });
+
+    await bot.deleteMessage(msg.chat.id, statusMsg.message_id);
+
+    if (result.success) {
+      await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+      
+      const voiceText = `Plan created for ${pending.task}. Complexity: ${result.plan.complexity}, estimated ${result.plan.estimatedHours} hours. Reply with /approve to start.`;
+      await reporter.sendVoice(voiceText, 'en');
+    } else {
+      await bot.sendMessage(msg.chat.id, `Error: ${result.message}`);
+    }
+    
+  } catch (error) {
+    logger.error('Failed to create plan:', error);
+    await bot.sendMessage(msg.chat.id, 'Error creating plan');
+  }
+});
+
+// /projects command - Compact list
+bot.onText(/\/projects/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  try {
+    const projectsPath = path.join(__dirname, '..', 'config', 'projects.json');
+    const projectsConfig = JSON.parse(fs.readFileSync(projectsPath, 'utf8'));
+    const activeProject = projectsConfig.defaultProject;
+    
+    let message = '**Your Projects:**\n';
+    projectsConfig.projects.forEach((project, index) => {
+      const isActive = project.id === activeProject ? ' [ACTIVE]' : '';
+      message += `${index + 1}. ${project.name}${isActive} (\`${project.id}\`)\n`;
+    });
+    message += '\nSwitch: `/project <id>`';
+    
+    await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+  } catch (error) {
+    logger.error('Failed to load projects:', error);
+    await bot.sendMessage(msg.chat.id, 'Error loading projects');
+  }
+});
+
+// /project command - Switch project
+bot.onText(/\/project (.+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const projectId = match[1].trim();
+  
+  try {
+    const projectsPath = path.join(__dirname, '..', 'config', 'projects.json');
+    const projectsConfig = JSON.parse(fs.readFileSync(projectsPath, 'utf8'));
+    const project = projectsConfig.projects.find(p => p.id === projectId);
+    
+    if (!project) {
+      await bot.sendMessage(msg.chat.id, `Project "${projectId}" not found.`);
+      return;
+    }
+    
+    projectsConfig.defaultProject = projectId;
+    fs.writeFileSync(projectsPath, JSON.stringify(projectsConfig, null, 2));
+    orchestrator.activeProject = projectId;
+    
+    await bot.sendMessage(msg.chat.id, 
+      `Switched to: **${project.name}**\nRepo: \`${project.gitlabRepo}\``,
+      { parse_mode: 'Markdown' }
+    );
+  } catch (error) {
+    logger.error('Failed to switch project:', error);
+    await bot.sendMessage(msg.chat.id, 'Error switching project');
+  }
+});
+
+// /approve command
+bot.onText(/\/approve/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const result = await orchestrator.processCommand('/approve', {
     userId: msg.from.id,
     chatId: msg.chat.id,
-    project: activeProject?.gitlabRepo,
-    projectInfo: activeProject,
   });
 
-  await bot.deleteMessage(msg.chat.id, statusMsg.message_id);
+  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+});
 
-  if (result.success) {
-    await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
-    
-    // Send voice summary
-    const voiceText = `I've created a plan for: ${task}. It has ${result.plan.complexity} complexity and will take about ${result.plan.estimatedHours} hours. Reply with approve to start implementation.`;
-    await reporter.sendVoice(voiceText, 'en');
-  } else {
-    await bot.sendMessage(msg.chat.id, `Error: ${result.message}`);
-  }
+// /status command
+bot.onText(/\/status/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const result = await orchestrator.processCommand('/status', {});
+  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+});
+
+// /run command
+bot.onText(/\/run/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  await bot.sendMessage(msg.chat.id, 'Starting implementation...');
+
+  const result = await orchestrator.processCommand('/run', {
+    userId: msg.from.id,
+    chatId: msg.chat.id,
+  });
+
+  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
 });
 
 // /ask command
@@ -172,265 +321,6 @@ bot.onText(/\/ask (.+)/, async (msg, match) => {
   }
 });
 
-// /approve command
-bot.onText(/\/approve/, async (msg) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  const result = await orchestrator.processCommand('/approve', {
-    userId: msg.from.id,
-    chatId: msg.chat.id,
-  });
-
-  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
-});
-
-// /run command
-bot.onText(/\/run/, async (msg) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  await bot.sendMessage(msg.chat.id, 'Starting implementation...');
-
-  const result = await orchestrator.processCommand('/run', {
-    userId: msg.from.id,
-    chatId: msg.chat.id,
-  });
-
-  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
-});
-
-// /status command
-bot.onText(/\/status/, async (msg) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  const result = await orchestrator.processCommand('/status', {});
-  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
-});
-
-// /queue command
-bot.onText(/\/queue/, async (msg) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  const result = await orchestrator.processCommand('/queue', {});
-  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
-});
-
-// /standup command
-bot.onText(/\/standup/, async (msg) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  const result = await orchestrator.processCommand('/standup', {});
-  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
-});
-
-// /meet command
-bot.onText(/\/meet (.+)/, async (msg, match) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  const agentName = match[1].toLowerCase();
-  const result = await orchestrator.processCommand(`/meet ${agentName}`, {});
-
-  if (result.success) {
-    botState.activeChats.set(msg.from.id, agentName);
-  }
-
-  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
-});
-
-// /repos command
-bot.onText(/\/repos/, async (msg) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  try {
-    const connection = await gitlab.testConnection();
-    if (connection.success) {
-      await bot.sendMessage(msg.chat.id, `Connected to GitLab as ${connection.name} (@${connection.user})`);
-    } else {
-      await bot.sendMessage(msg.chat.id, `GitLab connection failed: ${connection.error}`);
-    }
-  } catch (error) {
-    await bot.sendMessage(msg.chat.id, `Error: ${error.message}`);
-  }
-});
-
-// /costs command
-bot.onText(/\/costs/, async (msg) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  await reporter.sendCostReport();
-});
-
-// /cancel command
-bot.onText(/\/cancel (.+)/, async (msg, match) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  const taskId = match[1];
-  const result = await orchestrator.processCommand(`/cancel ${taskId}`, {});
-  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
-});
-
-// /projects command - List available projects
-bot.onText(/\/projects/, async (msg) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  try {
-    const projectsPath = path.join(__dirname, '..', 'config', 'projects.json');
-    const projectsConfig = JSON.parse(fs.readFileSync(projectsPath, 'utf8'));
-    
-    const activeProject = projectsConfig.defaultProject;
-    
-    let message = '**Available Projects**\n\n';
-    
-    projectsConfig.projects.forEach(project => {
-      const isActive = project.id === activeProject ? ' ✅' : '';
-      message += `**${project.name}**${isActive}\n`;
-      message += `  ID: \`${project.id}\`\n`;
-      message += `  Repo: \`${project.gitlabRepo}\`\n`;
-      message += `  Stack: ${Object.values(project.stack).flat().slice(0, 3).join(', ')}\n\n`;
-    });
-    
-    message += `Active project: **${activeProject}**\n\n`;
-    message += `To switch project, use:\n`;
-    message += '`/project <project-id>`';
-    
-    await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
-  } catch (error) {
-    logger.error('Failed to load projects:', error);
-    await bot.sendMessage(msg.chat.id, 'Error loading projects list');
-  }
-});
-
-// /project command - Switch active project
-bot.onText(/\/project (.+)/, async (msg, match) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  const projectId = match[1].trim();
-  
-  try {
-    const projectsPath = path.join(__dirname, '..', 'config', 'projects.json');
-    const projectsConfig = JSON.parse(fs.readFileSync(projectsPath, 'utf8'));
-    
-    const project = projectsConfig.projects.find(p => p.id === projectId);
-    
-    if (!project) {
-      await bot.sendMessage(msg.chat.id, `Project "${projectId}" not found. Use /projects to see available projects.`);
-      return;
-    }
-    
-    // Update default project
-    projectsConfig.defaultProject = projectId;
-    fs.writeFileSync(projectsPath, JSON.stringify(projectsConfig, null, 2));
-    
-    // Update orchestrator context
-    orchestrator.activeProject = projectId;
-    
-    await bot.sendMessage(msg.chat.id, 
-      `**Switched to project: ${project.name}**\n\n` +
-      `Repository: \`${project.gitlabRepo}\`\n` +
-      `Stack: ${Object.keys(project.stack).join(', ')}\n\n` +
-      `All future tasks will target this project.`,
-      { parse_mode: 'Markdown' }
-    );
-  } catch (error) {
-    logger.error('Failed to switch project:', error);
-    await bot.sendMessage(msg.chat.id, 'Error switching project');
-  }
-});
-
-// ============================================================================
-// AI MODEL COMMANDS
-// ============================================================================
-
-// /models command - List available AI models
-bot.onText(/\/models/, async (msg) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  try {
-    const aiClient = require('./utils/ai-client');
-    const providers = aiClient.getAvailableProviders();
-    const currentProvider = aiClient.defaultProvider;
-    
-    let message = '**Available AI Models**\n\n';
-    
-    Object.entries(providers).forEach(([key, provider]) => {
-      const isActive = key === currentProvider ? ' ✅' : '';
-      const status = provider.enabled ? 'Active' : 'Inactive';
-      
-      message += `${status} **${provider.name}**${isActive}\n`;
-      message += `  ID: \`${key}\`\n`;
-      message += `  Models: ${provider.models.slice(0, 3).join(', ')}${provider.models.length > 3 ? '...' : ''}\n`;
-      message += `  Status: ${provider.enabled ? 'Available' : 'Not configured'}\n\n`;
-    });
-    
-    message += `Current provider: **${providers[currentProvider]?.name || currentProvider}**\n\n`;
-    message += `To switch provider, use:\n`;
-    message += '`/model <provider-id>`\n\n';
-    message += `Examples:\n`;
-    message += '`/model anthropic` - Use Claude\n';
-    message += '`/model moonshot` - Use Moonshot AI\n';
-    message += '`/model zhipu` - Use Zhipu GLM\n';
-    message += '`/model deepseek` - Use DeepSeek';
-    
-    await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
-  } catch (error) {
-    logger.error('Failed to get AI models:', error);
-    await bot.sendMessage(msg.chat.id, 'Error loading AI models');
-  }
-});
-
-// /model command - Switch AI provider
-bot.onText(/\/model (.+)/, async (msg, match) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  const providerId = match[1].trim().toLowerCase();
-  
-  try {
-    const aiClient = require('./utils/ai-client');
-    const providers = aiClient.getAvailableProviders();
-    
-    const provider = providers[providerId];
-    
-    if (!provider) {
-      await bot.sendMessage(msg.chat.id, 
-        `Provider "${providerId}" not found.\n\nUse /models to see available providers.`
-      );
-      return;
-    }
-    
-    if (!provider.enabled) {
-      await bot.sendMessage(msg.chat.id, 
-        `Provider "${provider.name}" is not configured.\n\n` +
-        `Please add the API key to your .env file:\n` +
-        `${providerId.toUpperCase()}_API_KEY=your_key_here`
-      );
-      return;
-    }
-    
-    // Update default provider
-    aiClient.defaultProvider = providerId;
-    
-    // Also update orchestrator's default
-    orchestrator.provider = providerId;
-    
-    await bot.sendMessage(msg.chat.id, 
-      `**Switched to AI Provider: ${provider.name}**\n\n` +
-      `Default model: \`${provider.defaultModel}\`\n` +
-      `Available models: ${provider.models.length}\n\n` +
-      `All future tasks will use this provider.`,
-      { parse_mode: 'Markdown' }
-    );
-    
-    // Send voice confirmation
-    await reporter.sendVoice(
-      `Switched to ${provider.name}. This model will be used for all future tasks.`,
-      'en'
-    );
-    
-  } catch (error) {
-    logger.error('Failed to switch AI provider:', error);
-    await bot.sendMessage(msg.chat.id, 'Error switching AI provider');
-  }
-});
-
 // ============================================================================
 // VOICE MESSAGE HANDLER
 // ============================================================================
@@ -441,15 +331,10 @@ bot.on('voice', async (msg) => {
   await bot.sendChatAction(msg.chat.id, 'typing');
 
   try {
-    // Download voice file
     const voiceFile = await voice.downloadVoiceFile(bot, msg.voice.file_id);
-    
-    // Transcribe
-    await bot.sendMessage(msg.chat.id, 'Transcribing voice message...');
+    await bot.sendMessage(msg.chat.id, 'Transcribing voice...');
     
     const transcription = await voice.speechToText(voiceFile);
-    
-    // Cleanup
     voice.cleanup(voiceFile);
 
     if (!transcription.success) {
@@ -457,32 +342,32 @@ bot.on('voice', async (msg) => {
       return;
     }
 
-    // Show transcription
     await bot.sendMessage(msg.chat.id, `Transcribed: "${transcription.text}"`);
 
-    // Use intent router to understand what user wants
+    // Route via intent router
     await bot.sendChatAction(msg.chat.id, 'typing');
-    const intentResult = await intentRouter.detectIntent(transcription.text, {
-      userId: msg.from.id,
-      isVoice: true,
-    });
+    const intentResult = await intentRouter.detectIntent(transcription.text);
 
     if (!intentResult.success) {
-      await bot.sendMessage(msg.chat.id, 'Sorry, I had trouble understanding. Please try again or use commands like /plan, /projects, etc.');
+      await bot.sendMessage(msg.chat.id, 'Sorry, I did not understand. Try /plan, /projects, etc.');
       return;
     }
 
-    // Generate response based on intent
     const response = await intentRouter.generateResponse(intentResult);
-    
-    // Acknowledge understanding
     await bot.sendMessage(msg.chat.id, response.message);
 
-    // Execute the appropriate action
-    await executeIntent(msg, intentResult, response, {
-      isVoice: true,
-      detectedLanguage: transcription.language,
-    });
+    // Handle project selection for plan intent
+    if (intentResult.intent === 'PLAN' && intentResult.extracted_task) {
+      // Store and show project selection
+      pendingPlanSelections.set(msg.from.id, {
+        task: intentResult.extracted_task,
+        timestamp: Date.now(),
+      });
+      
+      // Trigger project selection
+      bot.emitText(msg, '/projects');
+      await bot.sendMessage(msg.chat.id, 'Reply with: `/planwith <project-id>` to create the plan.');
+    }
 
   } catch (error) {
     logger.error('Voice processing error:', error);
@@ -491,263 +376,9 @@ bot.on('voice', async (msg) => {
 });
 
 // ============================================================================
-// GENERAL MESSAGE HANDLER (for natural language and agent chat)
+// START SERVER
 // ============================================================================
-
-bot.on('message', async (msg) => {
-  // Skip commands and voice
-  if (msg.text?.startsWith('/') || msg.voice) return;
-  if (!isAuthorized(msg.chat.id)) return;
-
-  // Check if user is in direct chat with an agent
-  const activeAgent = botState.activeChats.get(msg.from.id);
-  if (activeAgent) {
-    await bot.sendChatAction(msg.chat.id, 'typing');
-    
-    // Route to specific agent
-    const agent = orchestrator.agents.get(activeAgent);
-    if (agent) {
-      const result = await agent.callAI(msg.text);
-      await bot.sendMessage(msg.chat.id, result.content, { parse_mode: 'Markdown' });
-    }
-    return;
-  }
-
-  // Natural language handling with intent router
-  await bot.sendChatAction(msg.chat.id, 'typing');
-  
-  try {
-    const intentResult = await intentRouter.detectIntent(msg.text, {
-      userId: msg.from.id,
-      isVoice: false,
-    });
-
-    if (!intentResult.success) {
-      await bot.sendMessage(msg.chat.id, 'I\'m not sure what you want to do. Try:\n• /plan <task>\n• /projects\n• /models\n• Or send "help" for more options.');
-      return;
-    }
-
-    // Generate and send response
-    const response = await intentRouter.generateResponse(intentResult);
-    await bot.sendMessage(msg.chat.id, response.message);
-
-    // Execute the action
-    await executeIntent(msg, intentResult, response, {
-      isVoice: false,
-    });
-
-  } catch (error) {
-    logger.error('Message processing error:', error);
-    await bot.sendMessage(msg.chat.id, 'Error processing your message');
-  }
-});
-
-// ============================================================================
-// INTENT EXECUTION HELPER
-// ============================================================================
-
-async function executeIntent(msg, intent, response, context = {}) {
-  const activeProject = getActiveProject();
-  
-  switch (response.type) {
-    case 'PLAN':
-      if (response.task) {
-        await bot.sendChatAction(msg.chat.id, 'typing');
-        const result = await orchestrator.processCommand(`/plan ${response.task}`, {
-          userId: msg.from.id,
-          chatId: msg.chat.id,
-          project: activeProject?.gitlabRepo,
-          projectInfo: activeProject,
-          ...context,
-        });
-        await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
-      }
-      break;
-
-    case 'PROJECT_SWITCH':
-      // Try to find matching project
-      try {
-        const projectsPath = path.join(__dirname, '..', 'config', 'projects.json');
-        const projectsConfig = JSON.parse(fs.readFileSync(projectsPath, 'utf8'));
-        
-        const matchedProject = projectsConfig.projects.find(p => 
-          p.id.toLowerCase() === intent.extracted_project?.toLowerCase() ||
-          p.name.toLowerCase().includes(intent.extracted_project?.toLowerCase())
-        );
-        
-        if (matchedProject) {
-          projectsConfig.defaultProject = matchedProject.id;
-          fs.writeFileSync(projectsPath, JSON.stringify(projectsConfig, null, 2));
-          orchestrator.activeProject = matchedProject.id;
-          
-          await bot.sendMessage(msg.chat.id, 
-            `Switched to project: ${matchedProject.name}\nRepository: ${matchedProject.gitlabRepo}`
-          );
-        } else {
-          await bot.sendMessage(msg.chat.id, 
-            `Project "${intent.extracted_project}" not found. Use /projects to see available projects.`
-          );
-        }
-      } catch (error) {
-        await bot.sendMessage(msg.chat.id, 'Error switching project');
-      }
-      break;
-
-    case 'PROJECT_LIST':
-      bot.emitText(msg, '/projects');
-      break;
-
-    case 'MODEL_SWITCH':
-      const aiClient = require('./utils/ai-client');
-      const providers = aiClient.getAvailableProviders();
-      
-      const matchedProvider = Object.entries(providers).find(([key, p]) => 
-        key.toLowerCase() === intent.extracted_model?.toLowerCase() ||
-        p.name.toLowerCase().includes(intent.extracted_model?.toLowerCase())
-      );
-      
-      if (matchedProvider && matchedProvider[1].enabled) {
-        aiClient.defaultProvider = matchedProvider[0];
-        orchestrator.provider = matchedProvider[0];
-        await bot.sendMessage(msg.chat.id, 
-          `Switched to ${matchedProvider[1].name}`
-        );
-      } else {
-        await bot.sendMessage(msg.chat.id, 
-          `Model "${intent.extracted_model}" not found or not configured. Use /models to see available models.`
-        );
-      }
-      break;
-
-    case 'MODEL_LIST':
-      bot.emitText(msg, '/models');
-      break;
-
-    case 'STATUS':
-      const statusResult = await orchestrator.processCommand('/status', {});
-      await bot.sendMessage(msg.chat.id, statusResult.message, { parse_mode: 'Markdown' });
-      break;
-
-    case 'APPROVE':
-      const approveResult = await orchestrator.processCommand('/approve', {
-        userId: msg.from.id,
-        chatId: msg.chat.id,
-      });
-      await bot.sendMessage(msg.chat.id, approveResult.message, { parse_mode: 'Markdown' });
-      break;
-
-    case 'ASK':
-      if (response.question) {
-        await bot.sendChatAction(msg.chat.id, 'typing');
-        const askResult = await orchestrator.processCommand(`/ask ${response.question}`, {
-          userId: msg.from.id,
-          chatId: msg.chat.id,
-        });
-        await bot.sendMessage(msg.chat.id, askResult.message, { parse_mode: 'Markdown' });
-      }
-      break;
-
-    case 'CHAT':
-      if (intent.extracted_agent) {
-        const agentMap = {
-          'planner': 'planner',
-          'backend': 'backend',
-          'frontend': 'frontend',
-          'qa': 'qa',
-          'reviewer': 'reviewer',
-          'dev': 'backend',
-          'developer': 'backend',
-        };
-        
-        const agentName = agentMap[intent.extracted_agent.toLowerCase()];
-        if (agentName) {
-          botState.activeChats.set(msg.from.id, agentName);
-          await bot.sendMessage(msg.chat.id, 
-            `Now chatting with ${agentName} agent. Send your message or /exit to stop.`
-          );
-        } else {
-          await bot.sendMessage(msg.chat.id, 
-            `Agent "${intent.extracted_agent}" not found. Available: planner, backend, frontend, qa, reviewer`
-          );
-        }
-      }
-      break;
-
-    case 'HELP':
-      bot.emitText(msg, '/start');
-      break;
-
-    case 'GREETING':
-      // Already sent greeting, nothing more to do
-      break;
-
-    case 'CLARIFY':
-    case 'UNKNOWN':
-    default:
-      // Already sent clarification message
-      break;
-  }
-}
-
-// ============================================================================
-// ORCHESTRATOR EVENT LISTENERS
-// ============================================================================
-
-orchestrator.on('taskStarted', (data) => {
-  logger.info('Task started:', data);
-});
-
-orchestrator.on('taskCompleted', (data) => {
-  logger.info('Task completed:', data);
-});
-
-orchestrator.on('planApproved', (data) => {
-  reporter.sendMessage(`Plan approved: ${data.plan.title}`);
-});
-
-orchestrator.on('implementationStarted', (data) => {
-  reporter.sendMessage('Starting overnight implementation. Sleep well!');
-});
-
-orchestrator.on('implementationCompleted', (data) => {
-  reporter.sendCompletionReport(data.task);
-});
-
-orchestrator.on('agentStatusChange', (data) => {
-  logger.info(`Agent ${data.agent} status: ${data.status}`);
-});
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-function isAuthorized(chatId) {
-  return botState.authorizedUsers.has(String(chatId));
-}
-
-// Error handling
-bot.on('polling_error', (error) => {
-  logger.error('Telegram polling error:', error);
-});
-
-bot.on('error', (error) => {
-  logger.error('Telegram bot error:', error);
-});
-
-// Graceful shutdown
-process.on('SIGINT', () => {
-  logger.info('Shutting down Nigents...');
-  bot.stopPolling();
-  process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-  logger.info('Shutting down Nigents...');
-  bot.stopPolling();
-  process.exit(0);
-});
 
 logger.info('Nigents Bot is running!');
 
-// Export for testing
-module.exports = { bot, orchestrator, reporter };
+module.exports = { bot, orchestrator };

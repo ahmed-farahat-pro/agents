@@ -496,6 +496,13 @@ Provide a helpful answer. If the question is about specific code and you don't h
       },
     };
   }
+
+  /**
+   * Execute task - required by BaseAgent
+   */
+  async execute(task) {
+    return this.processCommand(task.command, task.context);
+  }
 }
 
 module.exports = OrchestratorAgent;

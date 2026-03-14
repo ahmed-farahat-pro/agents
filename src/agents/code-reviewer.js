@@ -311,6 +311,13 @@ Provide a detailed code review with specific line references.
 
     return this.callClaude(prompt);
   }
+
+  /**
+   * Execute task - required by BaseAgent
+   */
+  async execute(task) {
+    return this.reviewCode(task);
+  }
 }
 
 module.exports = CodeReviewerAgent;
