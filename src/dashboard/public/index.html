@@ -517,26 +517,152 @@
             font-size: 14px;
         }
         
+        /* Materials Cards */
+        .materials-grid {
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        }
+        
+        .material-card {
+            text-align: center;
+            padding: 40px 24px;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .material-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        
+        .material-card h4 {
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+        
+        .material-card p {
+            margin: 12px 0;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        /* Tablet */
+        @media (max-width: 1024px) {
+            .hero h1 {
+                font-size: 42px;
+            }
+            
+            .features-grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            }
+            
+            .agents-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+            
+            .materials-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
         /* Mobile */
         @media (max-width: 768px) {
             .nav-links {
                 display: none;
             }
             
+            .nav-container {
+                padding: 0 16px;
+            }
+            
+            .hero {
+                padding: 120px 16px 60px;
+            }
+            
             .hero h1 {
-                font-size: 36px;
+                font-size: 32px;
+                line-height: 1.2;
             }
             
             .hero p {
                 font-size: 16px;
             }
             
+            .hero-cta {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn-primary, .btn-secondary {
+                width: 100%;
+                max-width: 280px;
+            }
+            
+            .features, .agents, .providers, .pricing, .cta {
+                padding: 60px 16px;
+            }
+            
             .section-header h2 {
-                font-size: 28px;
+                font-size: 24px;
+            }
+            
+            .section-header p {
+                font-size: 14px;
+            }
+            
+            .features-grid,
+            .agents-grid,
+            .providers-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            
+            .materials-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .material-card {
+                padding: 30px 20px;
+            }
+            
+            .pricing-card {
+                padding: 30px 20px;
             }
             
             .pricing-card .price {
                 font-size: 36px;
+            }
+            
+            .footer {
+                padding: 30px 16px;
+            }
+        }
+        
+        /* Small Mobile */
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 28px;
+            }
+            
+            .hero-badge {
+                font-size: 11px;
+                padding: 6px 12px;
+            }
+            
+            .section-header h2 {
+                font-size: 22px;
+            }
+            
+            .provider-card {
+                padding: 24px 16px;
+            }
+            
+            .agent-card {
+                padding: 20px;
+            }
+            
+            .feature-card {
+                padding: 24px;
             }
         }
     </style>
@@ -619,49 +745,42 @@
             </div>
             <div class="agents-grid">
                 <div class="agent-card">
-                    <div class="agent-avatar orchestrator">O</div>
                     <div class="agent-info">
                         <h4>Orchestrator</h4>
                         <p>Coordinates the team and manages workflow</p>
                     </div>
                 </div>
                 <div class="agent-card">
-                    <div class="agent-avatar planner">P</div>
                     <div class="agent-info">
                         <h4>Planner</h4>
                         <p>Creates detailed implementation plans</p>
                     </div>
                 </div>
                 <div class="agent-card">
-                    <div class="agent-avatar backend">B</div>
                     <div class="agent-info">
                         <h4>Backend Dev</h4>
                         <p>Builds APIs, databases, and server logic</p>
                     </div>
                 </div>
                 <div class="agent-card">
-                    <div class="agent-avatar frontend">F</div>
                     <div class="agent-info">
                         <h4>Frontend Dev</h4>
                         <p>Creates UIs and client-side code</p>
                     </div>
                 </div>
                 <div class="agent-card">
-                    <div class="agent-avatar qa">Q</div>
                     <div class="agent-info">
                         <h4>QA Tester</h4>
                         <p>Writes and runs tests</p>
                     </div>
                 </div>
                 <div class="agent-card">
-                    <div class="agent-avatar reviewer">C</div>
                     <div class="agent-info">
                         <h4>Code Reviewer</h4>
                         <p>Reviews code for quality and security</p>
                     </div>
                 </div>
                 <div class="agent-card">
-                    <div class="agent-avatar reporter">R</div>
                     <div class="agent-info">
                         <h4>Reporter</h4>
                         <p>Summarizes work and sends updates</p>
@@ -680,25 +799,21 @@
             </div>
             <div class="providers-grid">
                 <div class="provider-card available">
-                    <div class="provider-icon claude">A</div>
                     <h4>Anthropic Claude</h4>
                     <p>Claude 3.5 Sonnet & Opus</p>
                     <span class="provider-status active">Available</span>
                 </div>
                 <div class="provider-card available">
-                    <div class="provider-icon zhipu">Z</div>
                     <h4>Zhipu AI</h4>
                     <p>GLM-4 & GLM-4-Flash</p>
                     <span class="provider-status active">Available</span>
                 </div>
                 <div class="provider-card available">
-                    <div class="provider-icon moonshot">M</div>
                     <h4>Moonshot AI</h4>
                     <p>Kimi K2 & K1.5</p>
                     <span class="provider-status active">Available</span>
                 </div>
                 <div class="provider-card available">
-                    <div class="provider-icon deepseek">D</div>
                     <h4>DeepSeek</h4>
                     <p>DeepSeek Coder & Chat</p>
                     <span class="provider-status active">Available</span>
@@ -715,36 +830,32 @@
                 <p>Download professional 30-day learning roadmaps. 100% free - just enter your email!</p>
             </div>
             
-            <div class="providers-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
+            <div class="providers-grid materials-grid">
                 <!-- Fullstack -->
-                <div class="provider-card available" style="text-align: center; padding: 40px 24px; cursor: pointer;" onclick="showMaterialModal('fullstack')">
-                    <div style="font-size: 48px; margin-bottom: 16px;">💻</div>
+                <div class="provider-card available material-card" onclick="showMaterialModal('fullstack')">
                     <h4>Fullstack Developer</h4>
-                    <p style="margin: 12px 0;">Complete 30-day roadmap covering frontend, backend, databases & deployment</p>
+                    <p>Complete 30-day roadmap covering frontend, backend, databases & deployment</p>
                     <span class="provider-status active" style="background: #10b981;">Free Download</span>
                 </div>
                 
                 <!-- Backend -->
-                <div class="provider-card available" style="text-align: center; padding: 40px 24px; cursor: pointer;" onclick="showMaterialModal('backend')">
-                    <div style="font-size: 48px; margin-bottom: 16px;">⚙️</div>
+                <div class="provider-card available material-card" onclick="showMaterialModal('backend')">
                     <h4>Backend Developer</h4>
-                    <p style="margin: 12px 0;">Master server-side development with APIs, databases & microservices</p>
+                    <p>Master server-side development with APIs, databases & microservices</p>
                     <span class="provider-status active" style="background: #3b82f6;">Free Download</span>
                 </div>
                 
                 <!-- Frontend -->
-                <div class="provider-card available" style="text-align: center; padding: 40px 24px; cursor: pointer;" onclick="showMaterialModal('frontend')">
-                    <div style="font-size: 48px; margin-bottom: 16px;">🎨</div>
+                <div class="provider-card available material-card" onclick="showMaterialModal('frontend')">
                     <h4>Frontend Developer</h4>
-                    <p style="margin: 12px 0;">Learn React, CSS, responsive design & performance optimization</p>
+                    <p>Learn React, CSS, responsive design & performance optimization</p>
                     <span class="provider-status active" style="background: #8b5cf6;">Free Download</span>
                 </div>
                 
                 <!-- QA -->
-                <div class="provider-card available" style="text-align: center; padding: 40px 24px; cursor: pointer;" onclick="showMaterialModal('qa')">
-                    <div style="font-size: 48px; margin-bottom: 16px;">🧪</div>
+                <div class="provider-card available material-card" onclick="showMaterialModal('qa')">
                     <h4>QA Engineer</h4>
-                    <p style="margin: 12px 0;">Become a testing expert with automation & CI/CD integration</p>
+                    <p>Become a testing expert with automation & CI/CD integration</p>
                     <span class="provider-status active" style="background: #f59e0b;">Free Download</span>
                 </div>
             </div>
