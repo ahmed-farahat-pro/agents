@@ -14,6 +14,11 @@ const path = require('path');
 const fs = require('fs');
 const intentRouter = require('./utils/intent-router');
 const aiClient = require('./utils/ai-client');
+const sharedConfig = require('./utils/shared-config');
+
+// Reload shared config to get latest API keys from file
+sharedConfig.applyToEnv();
+logger.info('[Bot] Shared config applied, API keys reloaded');
 
 // Import agents
 const {
@@ -160,6 +165,8 @@ Send voice notes or text naturally:
 **Settings:**
 • /voice — Toggle voice responses on/off
 • /settings — View your settings
+• /reload — Reload configuration and API keys
+• /debug — Show debug information
 
 I understand Arabic and English voice messages!`;
 
@@ -208,12 +215,19 @@ bot.onText(/\/debug/, async (msg) => {
 
   const stats = chatStorage.getStats();
   const pending = chatStorage.getPendingPlan(msg.from.id);
+  const providers = aiClient.getAvailableProviders();
   
   let message = '**Debug Info**\n\n';
   message += `Data Directory: \`${stats.dataDir}\`\n`;
   message += `Pending Plans: ${stats.pendingPlansCount}\n`;
   message += `Chat Histories: ${stats.chatHistoryCount}\n`;
   message += `User Settings: ${stats.userSettingsCount}\n\n`;
+  
+  message += `**AI Providers:**\n`;
+  Object.entries(providers).forEach(([key, p]) => {
+    message += `${p.enabled ? '✅' : '❌'} ${p.name}\n`;
+  });
+  message += '\n';
   
   if (pending) {
     message += `**Your Pending Plan:**\n`;
@@ -226,6 +240,32 @@ bot.onText(/\/debug/, async (msg) => {
   message += `\nAll Pending Users: ${stats.pendingPlans.join(', ') || 'None'}`;
   
   await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+});
+
+// /reload command - Reload config and API keys
+bot.onText(/\/reload/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  await bot.sendMessage(msg.chat.id, 'Reloading configuration...');
+  
+  try {
+    // Reload shared config
+    sharedConfig.applyToEnv();
+    
+    // Get updated provider status
+    const providers = aiClient.getAvailableProviders();
+    
+    let message = '**Configuration Reloaded**\n\n';
+    message += '**AI Providers:**\n';
+    Object.entries(providers).forEach(([key, p]) => {
+      message += `${p.enabled ? '✅' : '❌'} ${p.name}\n`;
+    });
+    
+    await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+  } catch (error) {
+    logger.error('[Bot] Reload failed:', error);
+    await bot.sendMessage(msg.chat.id, `Error reloading: ${error.message}`);
+  }
 });
 
 // /plan command - Shows project selection from GitLab

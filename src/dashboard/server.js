@@ -409,6 +409,10 @@ app.get('/api/gitlab/repos/:projectPath', async (req, res) => {
 // Get available AI providers
 app.get('/api/ai/providers', (req, res) => {
   try {
+    // Reload shared config to get latest API keys
+    const sharedConfig = require('../utils/shared-config');
+    sharedConfig.applyToEnv();
+    
     // Debug: log env vars (masked)
     logger.info('[Dashboard] AI Provider env check:', {
       ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ? 'SET' : 'NOT SET',
@@ -422,9 +426,55 @@ app.get('/api/ai/providers', (req, res) => {
       success: true,
       defaultProvider: aiClient.defaultProvider,
       providers,
+      config: sharedConfig.getSanitizedConfig(),
     });
   } catch (error) {
     logger.error('[Dashboard] Failed to get AI providers:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Update API keys
+app.post('/api/config/apikeys', (req, res) => {
+  try {
+    const { apiKeys } = req.body;
+    const sharedConfig = require('../utils/shared-config');
+    
+    // Update the shared config
+    sharedConfig.updateApiKeys(apiKeys);
+    
+    // Apply to environment
+    sharedConfig.applyToEnv();
+    
+    logger.info('[Dashboard] API keys updated via dashboard');
+    
+    res.json({
+      success: true,
+      message: 'API keys updated successfully',
+      config: sharedConfig.getSanitizedConfig(),
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to update API keys:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Get shared config (sanitized)
+app.get('/api/config', (req, res) => {
+  try {
+    const sharedConfig = require('../utils/shared-config');
+    res.json({
+      success: true,
+      config: sharedConfig.getSanitizedConfig(),
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to get config:', error);
     res.status(500).json({
       success: false,
       error: error.message,
