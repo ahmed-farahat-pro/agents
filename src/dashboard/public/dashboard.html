@@ -2551,7 +2551,8 @@
                                         <div style="width: 12px; height: 12px; border-radius: 50%; background: var(--text-dim);"></div>
                                         <span style="font-size: 14px;">Checking...</span>
                                     </div>
-                                    <button class="btn btn-primary" onclick="testEmailConfig()" style="width: 100%;">Test Email</button>
+                                    <button class="btn btn-primary" onclick="testEmailConfig()" style="width: 100%; margin-bottom: 10px;">Test Config</button>
+                                    <button class="btn btn-secondary" onclick="sendTestEmail()" style="width: 100%;">📧 Send Test Email</button>
                                 </div>
                             </div>
 
@@ -4283,17 +4284,49 @@ Updates Enabled: ${sub.updatesEnabled !== false ? 'Yes' : 'No'}`);
             btn.disabled = true;
             
             try {
-                // Just verify the config is set
-                const res = await fetch('/api/materials/email-config');
+                // Verify the config is set and working
+                const res = await fetch('/api/materials/email-debug');
                 const data = await res.json();
                 
-                if (data.configured) {
-                    alert('✓ Email is configured correctly!\n\nUser: ' + data.user + '***\n\nEmails will be sent when users subscribe.');
+                if (data.verified) {
+                    alert('✓ Email is verified and working!\n\nGmail: ' + data.env.GMAIL_USER + '***\n\nEmails will be sent when users subscribe.');
+                } else if (data.success === false) {
+                    alert('✗ Email configuration error:\n\n' + (data.error || 'Unknown error') + '\n\nPlease check GMAIL_USER and GMAIL_PASS in .env file.');
                 } else {
-                    alert('✗ Email is NOT configured.\n\nPlease set GMAIL_USER and GMAIL_PASS in the .env file.');
+                    alert('⚠ Email config: ' + JSON.stringify(data, null, 2));
                 }
             } catch (error) {
                 alert('Error testing email: ' + error.message);
+            }
+            
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+        
+        async function sendTestEmail() {
+            const email = prompt('Enter email address to send test to:', '');
+            if (!email) return;
+            
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'Sending...';
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch('/api/materials/test-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ to: email })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    alert('✓ Test email sent!\n\nCheck your inbox (and spam folder).\nMessage ID: ' + data.messageId);
+                } else {
+                    alert('✗ Failed to send test email:\n\n' + (data.error || 'Unknown error') + '\n\nCheck server logs for details.');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
             }
             
             btn.textContent = originalText;

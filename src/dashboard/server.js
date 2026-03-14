@@ -1320,6 +1320,70 @@ app.get('/api/materials/email-config', (req, res) => {
   });
 });
 
+// Test email sending - send a test email
+app.post('/api/materials/test-email', async (req, res) => {
+  try {
+    const { to } = req.body;
+    
+    if (!to) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email address required',
+      });
+    }
+    
+    logger.info(`[TestEmail] Sending test email to ${to}`);
+    
+    const transporter = createEmailTransporter();
+    if (!transporter) {
+      return res.status(500).json({
+        success: false,
+        error: 'Email not configured - GMAIL_USER or GMAIL_PASS missing',
+        env: {
+          GMAIL_USER: process.env.GMAIL_USER ? 'SET' : 'NOT SET',
+          GMAIL_PASS: process.env.GMAIL_PASS ? 'SET' : 'NOT SET',
+        },
+      });
+    }
+    
+    const gmailUser = process.env.GMAIL_USER;
+    
+    const result = await transporter.sendMail({
+      from: `"Nigents Test" <${gmailUser}>`,
+      to: to,
+      subject: '🧪 Test Email from Nigents',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #6366f1;">🧪 Test Email</h2>
+          <p>This is a test email from your Nigents server.</p>
+          <p>If you're receiving this, email configuration is working correctly!</p>
+          <p>Time sent: ${new Date().toISOString()}</p>
+          <hr style="margin: 30px 0;">
+          <p style="color: #6b7280; font-size: 12px;">Sent from Nigents Dashboard</p>
+        </div>
+      `,
+      text: `🧪 Test Email\n\nThis is a test email from your Nigents server.\nIf you're receiving this, email configuration is working correctly!\n\nTime sent: ${new Date().toISOString()}`,
+    });
+    
+    logger.info(`[TestEmail] Test email sent successfully to ${to}`);
+    
+    res.json({
+      success: true,
+      message: `Test email sent to ${to}`,
+      messageId: result.messageId,
+    });
+    
+  } catch (error) {
+    logger.error('[TestEmail] Failed to send test email:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      code: error.code,
+      response: error.response,
+    });
+  }
+});
+
 // List available PDF files
 app.get('/api/materials/pdfs', (req, res) => {
   try {
@@ -1348,6 +1412,64 @@ app.get('/api/materials/pdfs', (req, res) => {
   } catch (error) {
     logger.error('[Materials] Error listing PDFs:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Debug email configuration
+app.get('/api/materials/email-debug', (req, res) => {
+  try {
+    const gmailUser = process.env.GMAIL_USER;
+    const gmailPass = process.env.GMAIL_PASS;
+    
+    // Create transporter and verify
+    if (!gmailUser || !gmailPass) {
+      return res.json({
+        success: false,
+        error: 'Email not configured',
+        env: {
+          GMAIL_USER: gmailUser ? 'SET' : 'NOT SET',
+          GMAIL_PASS: gmailPass ? 'SET' : 'NOT SET',
+        },
+      });
+    }
+    
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: gmailUser,
+        pass: gmailPass,
+      },
+    });
+    
+    transporter.verify((error, success) => {
+      if (error) {
+        res.json({
+          success: false,
+          verified: false,
+          error: error.message,
+          code: error.code,
+          env: {
+            GMAIL_USER: gmailUser.substring(0, 3) + '***',
+            GMAIL_PASS_LENGTH: gmailPass ? gmailPass.length : 0,
+          },
+        });
+      } else {
+        res.json({
+          success: true,
+          verified: true,
+          message: 'Email transporter verified successfully',
+          env: {
+            GMAIL_USER: gmailUser.substring(0, 3) + '***',
+          },
+        });
+      }
+    });
+    
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
 });
 
