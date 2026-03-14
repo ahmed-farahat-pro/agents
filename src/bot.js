@@ -13,6 +13,7 @@ const gitlab = require('./tools/gitlab');
 const path = require('path');
 const fs = require('fs');
 const intentRouter = require('./utils/intent-router');
+const aiClient = require('./utils/ai-client');
 
 // Import agents
 const {
@@ -408,6 +409,87 @@ bot.onText(/\/project (.+)/, async (msg, match) => {
   } catch (error) {
     logger.error('Failed to switch project:', error);
     await bot.sendMessage(msg.chat.id, 'Error switching project');
+  }
+});
+
+// /models command - List all AI models
+bot.onText(/\/models/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  await bot.sendChatAction(msg.chat.id, 'typing');
+
+  try {
+    const providers = aiClient.getAvailableProviders();
+    const settings = chatStorage.getUserSettings(msg.from.id);
+    
+    let message = '**Available AI Models**\n\n';
+    
+    for (const [key, provider] of Object.entries(providers)) {
+      const status = provider.enabled ? '✅' : '❌';
+      message += `${status} **${provider.name}** (${key})\n`;
+      
+      if (provider.enabled) {
+        message += `   Models: ${provider.models.join(', ')}\n`;
+        message += `   Default: \`${provider.defaultModel}\`\n`;
+      } else {
+        message += `   (API key not configured)\n`;
+      }
+      message += '\n';
+    }
+    
+    message += '**Usage:**\n';
+    message += '`/model <provider>` - Set default provider\n';
+    message += 'Example: `/model anthropic` or `/model moonshot`\n\n';
+    message += `Your current preference: ${settings.preferredAI || 'Auto (Cheapest)'}`;
+    
+    await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+    chatStorage.addMessage(msg.from.id, 'assistant', message, { type: 'models_list' });
+  } catch (error) {
+    logger.error('Failed to load models:', error);
+    await bot.sendMessage(msg.chat.id, 'Error loading AI models.');
+  }
+});
+
+// /model command - Set default AI provider
+bot.onText(/\/model (.+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const providerName = match[1].trim().toLowerCase();
+  
+  try {
+    const providers = aiClient.getAvailableProviders();
+    
+    // Check if provider exists
+    if (!providers[providerName]) {
+      const available = Object.keys(providers).join(', ');
+      await bot.sendMessage(msg.chat.id, 
+        `Unknown provider "${providerName}".\n\nAvailable: ${available}`,
+        { parse_mode: 'Markdown' }
+      );
+      return;
+    }
+    
+    // Check if provider is enabled
+    if (!providers[providerName].enabled) {
+      await bot.sendMessage(msg.chat.id, 
+        `Provider "${providerName}" is not available. API key not configured.`,
+        { parse_mode: 'Markdown' }
+      );
+      return;
+    }
+    
+    // Save preference
+    chatStorage.setUserSettings(msg.from.id, { preferredAI: providerName });
+    
+    await bot.sendMessage(msg.chat.id, 
+      `✅ Default AI provider set to: **${providers[providerName].name}**\n` +
+      `Default model: \`${providers[providerName].defaultModel}\`\n\n` +
+      `This provider will be used for your future requests.`,
+      { parse_mode: 'Markdown' }
+    );
+  } catch (error) {
+    logger.error('Failed to set model:', error);
+    await bot.sendMessage(msg.chat.id, 'Error setting AI provider.');
   }
 });
 
