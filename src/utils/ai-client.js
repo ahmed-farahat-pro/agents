@@ -41,13 +41,14 @@ class AIClient {
         defaultModel: 'claude-3-5-sonnet-20241022',
       },
       zhipu: {
-        name: 'Zhipu AI (GLM)',
+        name: 'Zhipu AI (GLM) - Coding',
         enabled: !!apiKeys.ZHIPU_API_KEY,
         apiKey: apiKeys.ZHIPU_API_KEY,
-        baseUrl: 'https://api.z.ai/api/paas/v4',
+        baseUrl: 'https://api.z.ai/api/coding/paas/v4',
         models: ['glm-5', 'glm-4.5', 'glm-4', 'glm-4-plus', 'glm-4-flash', 'glm-4v', 'glm-4-long', 'glm-4-air', 'glm-4-airx'],
-        defaultModel: 'glm-4',
+        defaultModel: 'glm-5',
         docsUrl: 'https://docs.z.ai/',
+        isCodingEndpoint: true,
       },
       moonshot: {
         name: 'Moonshot AI',

@@ -305,7 +305,7 @@ To add a custom AI model, please send:
 • /addmoonshot - Add Moonshot model (easier)
 
 **Popular presets:**
-• **Zhipu GLM:** base_url=\`https://api.z.ai/api/paas/v4\`
+• **Zhipu GLM (Coding):** base_url=\`https://api.z.ai/api/coding/paas/v4\`
   Models: glm-5, glm-4.5, glm-4, glm-4-plus, glm-4-flash
 • **Moonshot:** base_url=\`https://api.moonshot.cn/v1\`
   Models: moonshot-v1-8k, moonshot-v1-32k, moonshot-v1-128k
@@ -329,14 +329,14 @@ Send your API key and optionally the model:
 \`/addglm <api_key> [model]\`
 
 **Examples:**
-\`/addglm your-api-key-here\` (uses glm-4)
-\`/addglm your-api-key-here glm-5\`
+\`/addglm your-api-key-here\` (uses glm-5)
+\`/addglm your-api-key-here glm-4\`
 \`/addglm your-api-key-here glm-4-plus\`
 
 **Available Models:**
-• glm-5 - Latest, best performance
+• glm-5 - Best for coding (default)
 • glm-4.5 - Advanced reasoning
-• glm-4 - Balanced (default)
+• glm-4 - Balanced
 • glm-4-plus - Enhanced version
 • glm-4-flash - Fast, cheaper
 • glm-4v - Vision capable
@@ -356,7 +356,7 @@ Send your API key and optionally the model:
   // Parse: api_key [model]
   const parts = args.trim().split(/\s+/);
   const apiKey = parts[0];
-  const modelName = parts[1] || 'glm-4';
+  const modelName = parts[1] || 'glm-5';
   
   if (!apiKey || apiKey.length < 10) {
     await bot.sendMessage(msg.chat.id, '❌ Invalid API key. Please provide a valid Zhipu API key.');
@@ -364,7 +364,7 @@ Send your API key and optionally the model:
   }
 
   try {
-    const baseUrl = 'https://api.z.ai/api/paas/v4';
+    const baseUrl = 'https://api.z.ai/api/coding/paas/v4';
     const name = `GLM ${modelName.toUpperCase()}`;
     const providerKey = `zhipu_${modelName.replace(/[^a-z0-9]/g, '_')}`;
 
@@ -600,7 +600,7 @@ Send your API key to test:
 You can also specify a model:
 \`/testglm your-api-key glm-5\`
 
-The default test uses glm-4.
+The default test uses glm-5 (best for coding).
 
 **Need Credits?**
 • Get API key: https://z.ai/
@@ -613,13 +613,13 @@ The default test uses glm-4.
 
   const parts = apiKey.trim().split(/\s+/);
   const key = parts[0];
-  const modelName = parts[1] || 'glm-4';
+  const modelName = parts[1] || 'glm-5';
   
   await bot.sendChatAction(msg.chat.id, 'typing');
 
   try {
     const startTime = Date.now();
-    const baseUrl = 'https://api.z.ai/api/paas/v4';
+    const baseUrl = 'https://api.z.ai/api/coding/paas/v4';
     
     const response = await axios.post(
       `${baseUrl}/chat/completions`,
