@@ -87,6 +87,14 @@ app.get('/dashboard.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
+app.get('/overview', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'overview.html'));
+});
+
+app.get('/overview.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'overview.html'));
+});
+
 app.get('/logs', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'logs.html'));
 });
