@@ -3,57 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nigents Overview</title>
-    <script src="/socket.io/socket.io.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Nigents - AI Development Team for GitLab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* CodeRabbit-inspired light theme */
-            --bg: #fafafa;
-            --bg-elevated: #ffffff;
-            --bg-card: #ffffff;
-            --bg-hover: #f5f5f7;
-            
-            /* Primary gradient colors (purple to orange like CodeRabbit) */
-            --primary-500: #7c3aed;
-            --primary-600: #6d28d9;
-            --accent-orange: #f97316;
-            --accent-pink: #ec4899;
-            
-            /* Gradients */
-            --gradient-primary: linear-gradient(135deg, #7c3aed 0%, #ec4899 50%, #f97316 100%);
-            --gradient-soft: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(236, 72, 153, 0.1) 50%, rgba(249, 115, 22, 0.1) 100%);
-            --gradient-card: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
-            
-            /* Text colors */
-            --text-primary: #111827;
-            --text-secondary: #6b7280;
-            --text-muted: #9ca3af;
-            --text-inverse: #ffffff;
-            
-            /* Status colors */
-            --success: #10b981;
-            --success-light: #d1fae5;
-            --warning: #f59e0b;
-            --warning-light: #fef3c7;
-            --error: #ef4444;
-            --error-light: #fee2e2;
-            --info: #3b82f6;
-            --info-light: #dbeafe;
-            
-            /* Borders and shadows */
-            --border: #e5e7eb;
-            --border-light: #f3f4f6;
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            
-            /* Radius */
-            --radius-sm: 6px;
-            --radius: 12px;
-            --radius-lg: 16px;
-            --radius-xl: 24px;
+            --bg-primary: #09080c;
+            --bg-secondary: #141116;
+            --bg-tertiary: #1a181f;
+            --bg-card: #111111;
+            --border: #2a2a35;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            --accent-orange: #ff570a;
+            --accent-green: #19d59e;
+            --accent-purple: #8b5cf6;
+            --font-mono: 'IBM Plex Mono', monospace;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         * {
@@ -62,12 +30,33 @@
             box-sizing: border-box;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg);
+            font-family: var(--font-mono);
+            background: var(--bg-primary);
             color: var(--text-primary);
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* Background Grid Pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(255, 87, 10, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 87, 10, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
         }
 
         /* Navigation */
@@ -76,124 +65,86 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 72px;
-            background: var(--bg-elevated);
-            border-bottom: 1px solid var(--border-light);
-            z-index: 100;
+            z-index: 1000;
+            padding: 20px 40px;
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            padding: 0 32px;
+            align-items: center;
+            background: linear-gradient(to bottom, var(--bg-primary) 0%, transparent 100%);
         }
 
         .nav-brand {
             display: flex;
             align-items: center;
             gap: 12px;
+            text-decoration: none;
         }
 
         .nav-logo {
             width: 40px;
             height: 40px;
-            background: var(--gradient-primary);
-            border-radius: var(--radius);
+            background: var(--accent-orange);
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 800;
-            font-size: 18px;
-            color: var(--text-inverse);
+            font-weight: 700;
+            font-size: 20px;
+            color: var(--bg-primary);
         }
 
         .nav-title {
-            font-size: 20px;
+            font-family: var(--font-sans);
+            font-size: 22px;
             font-weight: 700;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
         }
 
         .nav-links {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 32px;
         }
 
         .nav-link {
-            padding: 10px 16px;
-            border-radius: var(--radius);
             color: var(--text-secondary);
+            text-decoration: none;
             font-size: 14px;
             font-weight: 500;
-            text-decoration: none;
-            transition: all 0.2s;
+            transition: color 0.2s;
         }
 
         .nav-link:hover {
-            background: var(--bg-hover);
             color: var(--text-primary);
-        }
-
-        .nav-link.active {
-            background: var(--gradient-soft);
-            color: var(--primary-600);
         }
 
         .nav-cta {
             padding: 10px 20px;
-            background: var(--gradient-primary);
-            color: var(--text-inverse);
-            border-radius: var(--radius);
+            border: 1px solid var(--accent-orange);
+            color: var(--accent-orange);
+            text-decoration: none;
             font-size: 14px;
             font-weight: 600;
-            text-decoration: none;
             transition: all 0.2s;
-            box-shadow: var(--shadow);
         }
 
         .nav-cta:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        /* Main Layout */
-        .main {
-            padding-top: 72px;
-            min-height: 100vh;
+            background: var(--accent-orange);
+            color: var(--bg-primary);
         }
 
         /* Hero Section */
         .hero {
-            background: var(--gradient-soft);
-            padding: 64px 32px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            right: -50%;
-            bottom: -50%;
-            background: radial-gradient(circle at 30% 30%, rgba(124, 58, 237, 0.15) 0%, transparent 50%),
-                        radial-gradient(circle at 70% 70%, rgba(249, 115, 22, 0.1) 0%, transparent 50%);
-            animation: float 20s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            50% { transform: translate(-20px, -20px) rotate(5deg); }
-        }
-
-        .hero-content {
+            padding: 120px 40px 80px;
             position: relative;
             z-index: 1;
-            max-width: 800px;
-            margin: 0 auto;
         }
 
         .hero-badge {
@@ -201,56 +152,54 @@
             align-items: center;
             gap: 8px;
             padding: 8px 16px;
-            background: var(--bg-elevated);
-            border: 1px solid var(--border);
-            border-radius: 100px;
+            background: rgba(255, 87, 10, 0.1);
+            border: 1px solid rgba(255, 87, 10, 0.3);
+            color: var(--accent-orange);
             font-size: 13px;
             font-weight: 500;
-            color: var(--text-secondary);
-            margin-bottom: 24px;
+            margin-bottom: 32px;
         }
 
         .hero-badge-dot {
             width: 8px;
             height: 8px;
-            background: var(--success);
+            background: var(--accent-green);
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-            50% { opacity: 0.8; box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
         .hero-title {
-            font-size: 56px;
-            font-weight: 800;
+            font-family: var(--font-sans);
+            font-size: 64px;
+            font-weight: 500;
             line-height: 1.1;
-            margin-bottom: 20px;
-            letter-spacing: -0.03em;
+            max-width: 900px;
+            margin-bottom: 24px;
+            letter-spacing: -2px;
         }
 
         .hero-title span {
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--accent-orange);
         }
 
         .hero-subtitle {
-            font-size: 20px;
+            font-size: 18px;
             color: var(--text-secondary);
             max-width: 600px;
-            margin: 0 auto 32px;
+            margin-bottom: 40px;
             line-height: 1.6;
         }
 
         .hero-actions {
             display: flex;
-            gap: 12px;
-            justify-content: center;
+            gap: 16px;
             flex-wrap: wrap;
+            justify-content: center;
         }
 
         .btn {
@@ -258,216 +207,163 @@
             align-items: center;
             gap: 8px;
             padding: 14px 28px;
-            border-radius: var(--radius);
-            font-size: 15px;
+            font-family: var(--font-mono);
+            font-size: 14px;
             font-weight: 600;
             text-decoration: none;
-            transition: all 0.2s;
             cursor: pointer;
+            transition: all 0.2s;
             border: none;
         }
 
         .btn-primary {
-            background: var(--gradient-primary);
-            color: var(--text-inverse);
-            box-shadow: var(--shadow);
+            background: transparent;
+            border: 1px solid var(--accent-orange);
+            color: var(--accent-orange);
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+            background: var(--accent-orange);
+            color: var(--bg-primary);
         }
 
         .btn-secondary {
-            background: var(--bg-elevated);
-            color: var(--text-primary);
+            background: transparent;
             border: 1px solid var(--border);
+            color: var(--text-secondary);
         }
 
         .btn-secondary:hover {
-            background: var(--bg-hover);
-            border-color: var(--border);
+            border-color: var(--text-primary);
+            color: var(--text-primary);
         }
 
-        /* Container */
-        .container {
-            max-width: 1400px;
+        .hero-meta {
+            margin-top: 48px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .hero-meta-icons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .hero-meta-icon {
+            width: 24px;
+            height: 24px;
+            opacity: 0.6;
+        }
+
+        /* Stats Section */
+        .stats {
+            padding: 80px 40px;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            position: relative;
+            z-index: 1;
+        }
+
+        .stats-grid {
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 0 32px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            text-align: center;
         }
 
-        /* Section */
-        .section {
-            padding: 64px 0;
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-value {
+            font-family: var(--font-sans);
+            font-size: 48px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 120px 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .section-header {
             text-align: center;
-            margin-bottom: 48px;
+            margin-bottom: 64px;
         }
 
         .section-label {
             display: inline-block;
             padding: 6px 12px;
-            background: var(--gradient-soft);
-            color: var(--primary-600);
+            background: rgba(255, 87, 10, 0.1);
+            border: 1px solid rgba(255, 87, 10, 0.3);
+            color: var(--accent-orange);
             font-size: 12px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1px;
-            border-radius: 100px;
             margin-bottom: 16px;
         }
 
         .section-title {
-            font-size: 36px;
-            font-weight: 700;
-            margin-bottom: 12px;
+            font-family: var(--font-sans);
+            font-size: 40px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
         }
 
         .section-subtitle {
-            font-size: 18px;
+            font-size: 16px;
             color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
         }
 
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 24px;
-            margin-bottom: 48px;
-        }
-
-        .stat-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 24px;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: var(--gradient-primary);
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-lg);
-            border-color: transparent;
-        }
-
-        .stat-card:hover::before {
-            opacity: 1;
-        }
-
-        .stat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 16px;
-        }
-
-        .stat-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: var(--radius);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-
-        .stat-icon.purple {
-            background: rgba(124, 58, 237, 0.1);
-            color: var(--primary-500);
-        }
-
-        .stat-icon.green {
-            background: var(--success-light);
-            color: var(--success);
-        }
-
-        .stat-icon.orange {
-            background: var(--warning-light);
-            color: var(--warning);
-        }
-
-        .stat-icon.blue {
-            background: var(--info-light);
-            color: var(--info);
-        }
-
-        .stat-label {
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .stat-value {
-            font-size: 36px;
-            font-weight: 800;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-        }
-
-        .stat-change {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 13px;
-            font-weight: 500;
-            padding: 4px 10px;
-            border-radius: 100px;
-        }
-
-        .stat-change.positive {
-            background: var(--success-light);
-            color: var(--success);
-        }
-
-        .stat-change.neutral {
-            background: var(--border-light);
-            color: var(--text-secondary);
-        }
-
-        /* Features Grid */
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 24px;
         }
 
         .feature-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
             padding: 32px;
             transition: all 0.3s;
         }
 
         .feature-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-lg);
-            border-color: transparent;
+            border-color: rgba(255, 87, 10, 0.5);
         }
 
         .feature-icon {
-            width: 56px;
-            height: 56px;
-            background: var(--gradient-soft);
-            border-radius: var(--radius);
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 87, 10, 0.1);
+            border: 1px solid rgba(255, 87, 10, 0.3);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -476,28 +372,37 @@
         }
 
         .feature-title {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 8px;
+            font-family: var(--font-sans);
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
         }
 
         .feature-desc {
-            font-size: 15px;
+            font-size: 14px;
             color: var(--text-secondary);
             line-height: 1.6;
         }
 
         /* Agents Section */
+        .agents {
+            padding: 120px 40px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            position: relative;
+            z-index: 1;
+        }
+
         .agents-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
+            gap: 16px;
         }
 
         .agent-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
             padding: 24px;
             display: flex;
             align-items: center;
@@ -506,20 +411,17 @@
         }
 
         .agent-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow);
-            border-color: var(--primary-500);
+            border-color: var(--accent-orange);
         }
 
         .agent-avatar {
-            width: 56px;
-            height: 56px;
-            background: var(--gradient-primary);
-            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            background: var(--accent-orange);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
+            font-size: 20px;
             flex-shrink: 0;
         }
 
@@ -528,8 +430,9 @@
         }
 
         .agent-name {
+            font-family: var(--font-sans);
             font-size: 16px;
-            font-weight: 700;
+            font-weight: 600;
             margin-bottom: 4px;
         }
 
@@ -540,92 +443,47 @@
         }
 
         .agent-model {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 10px;
-            background: var(--gradient-soft);
-            color: var(--primary-600);
-            font-size: 12px;
+            display: inline-block;
+            padding: 4px 8px;
+            background: rgba(255, 87, 10, 0.1);
+            color: var(--accent-orange);
+            font-size: 11px;
             font-weight: 600;
-            border-radius: 100px;
-        }
-
-        .agent-status {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--success);
-            box-shadow: 0 0 0 3px var(--success-light);
-        }
-
-        .agent-status.busy {
-            background: var(--warning);
-            box-shadow: 0 0 0 3px var(--warning-light);
-        }
-
-        .agent-status.offline {
-            background: var(--text-muted);
-            box-shadow: none;
+            text-transform: uppercase;
         }
 
         /* CTA Section */
-        .cta-section {
-            background: var(--gradient-primary);
-            padding: 80px 32px;
+        .cta {
+            padding: 120px 40px;
             text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .cta-section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-        }
-
-        .cta-content {
             position: relative;
             z-index: 1;
         }
 
         .cta-title {
-            font-size: 40px;
-            font-weight: 800;
-            color: var(--text-inverse);
+            font-family: var(--font-sans);
+            font-size: 48px;
+            font-weight: 500;
             margin-bottom: 16px;
+            letter-spacing: -1px;
         }
 
         .cta-subtitle {
-            font-size: 18px;
-            color: rgba(255, 255, 255, 0.8);
+            font-size: 16px;
+            color: var(--text-secondary);
             margin-bottom: 32px;
-        }
-
-        .btn-white {
-            background: white;
-            color: var(--primary-600);
-            box-shadow: var(--shadow);
-        }
-
-        .btn-white:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
         }
 
         /* Footer */
         .footer {
-            background: var(--bg-elevated);
+            padding: 60px 40px;
             border-top: 1px solid var(--border);
-            padding: 48px 32px;
+            position: relative;
+            z-index: 1;
         }
 
         .footer-content {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             display: flex;
             justify-content: space-between;
@@ -643,19 +501,18 @@
         .footer-logo {
             width: 32px;
             height: 32px;
-            background: var(--gradient-primary);
-            border-radius: var(--radius-sm);
+            background: var(--accent-orange);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 700;
             font-size: 14px;
-            color: var(--text-inverse);
+            font-weight: 700;
+            color: var(--bg-primary);
         }
 
         .footer-text {
-            font-size: 14px;
-            color: var(--text-secondary);
+            font-size: 13px;
+            color: var(--text-muted);
         }
 
         .footer-links {
@@ -664,20 +521,20 @@
         }
 
         .footer-link {
-            font-size: 14px;
-            color: var(--text-secondary);
+            font-size: 13px;
+            color: var(--text-muted);
             text-decoration: none;
             transition: color 0.2s;
         }
 
         .footer-link:hover {
-            color: var(--primary-500);
+            color: var(--accent-orange);
         }
 
         /* Responsive */
         @media (max-width: 768px) {
             .nav {
-                padding: 0 16px;
+                padding: 16px 20px;
             }
 
             .nav-links {
@@ -685,37 +542,38 @@
             }
 
             .hero {
-                padding: 48px 16px;
+                padding: 100px 20px 60px;
             }
 
             .hero-title {
                 font-size: 36px;
+                letter-spacing: -1px;
             }
 
             .hero-subtitle {
-                font-size: 16px;
+                font-size: 15px;
             }
 
-            .container {
-                padding: 0 16px;
-            }
-
-            .section {
-                padding: 48px 0;
+            .features,
+            .agents,
+            .cta {
+                padding: 80px 20px;
             }
 
             .section-title {
                 font-size: 28px;
             }
 
-            .stats-grid,
-            .features-grid,
-            .agents-grid {
+            .features-grid {
                 grid-template-columns: 1fr;
             }
 
-            .cta-title {
-                font-size: 28px;
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stat-value {
+                font-size: 32px;
             }
 
             .footer-content {
@@ -728,210 +586,200 @@
 <body>
     <!-- Navigation -->
     <nav class="nav">
-        <div class="nav-brand">
+        <a href="/" class="nav-brand">
             <div class="nav-logo">N</div>
-            <div class="nav-title">Nigents</div>
-        </div>
+            <span class="nav-title">Nigents</span>
+        </a>
         <div class="nav-links">
-            <a href="#overview" class="nav-link active">Overview</a>
-            <a href="#agents" class="nav-link">Agents</a>
             <a href="#features" class="nav-link">Features</a>
+            <a href="#agents" class="nav-link">Agents</a>
             <a href="/login.html" class="nav-cta">Login →</a>
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <main class="main">
-        <!-- Hero Section -->
-        <section class="hero" id="overview">
-            <div class="hero-content">
-                <div class="hero-badge">
-                    <div class="hero-badge-dot"></div>
-                    <span>System Online</span>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-badge">
+            <div class="hero-badge-dot"></div>
+            <span>System Online</span>
+        </div>
+        <h1 class="hero-title">
+            Ship code overnight.<br>
+            <span>Wake up to merge requests.</span>
+        </h1>
+        <p class="hero-subtitle">
+            7 AI agents working together to plan, code, test, and review — 
+            while you sleep. Integrated with GitLab.
+        </p>
+        <div class="hero-actions">
+            <a href="/login.html" class="btn btn-primary">Get Started →</a>
+            <a href="#features" class="btn btn-secondary">See How It Works</a>
+        </div>
+        <div class="hero-meta">
+            <span>Works with</span>
+            <div class="hero-meta-icons">
+                <span>GitLab</span>
+                <span>•</span>
+                <span>Telegram</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value">7</div>
+                <div class="stat-label">AI Agents</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">24/7</div>
+                <div class="stat-label">Operation</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">4</div>
+                <div class="stat-label">AI Providers</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">38</div>
+                <div class="stat-label">MCP Tools</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-label">Features</div>
+                <h2 class="section-title">Everything you need to ship faster</h2>
+                <p class="section-subtitle">A complete AI development team that works while you sleep</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🌙</div>
+                    <h3 class="feature-title">24/7 Operation</h3>
+                    <p class="feature-desc">Agents work overnight on feature branches. Wake up to completed merge requests ready for review.</p>
                 </div>
-                <h1 class="hero-title">
-                    Your AI <span>Development Team</span>
-                </h1>
-                <p class="hero-subtitle">
-                    7 specialized AI agents working together to plan, code, test, and ship features to GitLab while you sleep.
-                </p>
-                <div class="hero-actions">
-                    <a href="/login.html" class="btn btn-primary">Get Started</a>
-                    <a href="#agents" class="btn btn-secondary">Meet the Agents</a>
+                <div class="feature-card">
+                    <div class="feature-icon">💬</div>
+                    <h3 class="feature-title">Telegram Control</h3>
+                    <p class="feature-desc">Send voice or text commands from anywhere. Get notified when work is done — in Arabic or English.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔀</div>
+                    <h3 class="feature-title">GitLab Integration</h3>
+                    <p class="feature-desc">Automatic branch creation, commits, and merge requests. Works seamlessly with your existing workflow.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🧠</div>
+                    <h3 class="feature-title">Multi-Model AI</h3>
+                    <p class="feature-desc">Use Claude, GLM, Kimi, or DeepSeek. Different models for different tasks — all configurable.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🛠️</div>
+                    <h3 class="feature-title">38 MCP Tools</h3>
+                    <p class="feature-desc">Filesystem, git, databases, search, and custom MCP tools give your agents superpowers.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3 class="feature-title">Live Dashboard</h3>
+                    <p class="feature-desc">Watch agents work in real-time. See code edits, conversations, and progress as it happens.</p>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <!-- Stats Section -->
-        <section class="section">
-            <div class="container">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <span class="stat-label">Active Agents</span>
-                            <div class="stat-icon purple">🤖</div>
-                        </div>
-                        <div class="stat-value" id="stat-agents">7</div>
-                        <span class="stat-change positive">All Online</span>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <span class="stat-label">Tasks Completed</span>
-                            <div class="stat-icon green">✓</div>
-                        </div>
-                        <div class="stat-value" id="stat-tasks">0</div>
-                        <span class="stat-change neutral">This Session</span>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <span class="stat-label">AI Providers</span>
-                            <div class="stat-icon orange">⚡</div>
-                        </div>
-                        <div class="stat-value" id="stat-providers">4</div>
-                        <span class="stat-change positive">Configured</span>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <span class="stat-label">MCP Tools</span>
-                            <div class="stat-icon blue">🔧</div>
-                        </div>
-                        <div class="stat-value">38</div>
-                        <span class="stat-change positive">Available</span>
-                    </div>
-                </div>
+    <!-- Agents Section -->
+    <section class="agents" id="agents">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-label">The Team</div>
+                <h2 class="section-title">7 Specialized Agents</h2>
+                <p class="section-subtitle">Each agent has a unique role and expertise</p>
             </div>
-        </section>
-
-        <!-- Features Section -->
-        <section class="section" id="features" style="background: var(--bg-elevated);">
-            <div class="container">
-                <div class="section-header">
-                    <div class="section-label">Features</div>
-                    <h2 class="section-title">Everything You Need</h2>
-                    <p class="section-subtitle">A complete AI development team at your fingertips</p>
-                </div>
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <div class="feature-icon">🌙</div>
-                        <h3 class="feature-title">24/7 Operation</h3>
-                        <p class="feature-desc">Agents work overnight while you sleep. Wake up to completed merge requests.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">💬</div>
-                        <h3 class="feature-title">Telegram Control</h3>
-                        <p class="feature-desc">Send voice or text commands from anywhere. Get notified when work is done.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">🔀</div>
-                        <h3 class="feature-title">GitLab Integration</h3>
-                        <p class="feature-desc">Automatic branch creation, commits, and merge requests. Works with your existing workflow.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">🧠</div>
-                        <h3 class="feature-title">Multi-Model AI</h3>
-                        <p class="feature-desc">Use Claude, GLM, Kimi, or DeepSeek. Different models for different tasks.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">🛠️</div>
-                        <h3 class="feature-title">38 MCP Tools</h3>
-                        <p class="feature-desc">Filesystem, git, databases, search, and custom tools give agents superpowers.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">📊</div>
-                        <h3 class="feature-title">Live Dashboard</h3>
-                        <p class="feature-desc">Watch agents work in real-time. See code edits, conversations, and progress.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Agents Section -->
-        <section class="section" id="agents">
-            <div class="container">
-                <div class="section-header">
-                    <div class="section-label">The Team</div>
-                    <h2 class="section-title">7 Specialized Agents</h2>
-                    <p class="section-subtitle">Each agent has a unique role and expertise</p>
-                </div>
-                <div class="agents-grid" id="agents-list">
-                    <!-- Agents populated dynamically -->
-                </div>
-            </div>
-        </section>
-
-        <!-- CTA Section -->
-        <section class="cta-section">
-            <div class="cta-content">
-                <h2 class="cta-title">Ready to Ship Code Overnight?</h2>
-                <p class="cta-subtitle">Start using Nigents today and wake up to finished features.</p>
-                <a href="/login.html" class="btn btn-white">Get Started Now →</a>
-            </div>
-        </section>
-
-        <!-- Footer -->
-        <footer class="footer">
-            <div class="footer-content">
-                <div class="footer-brand">
-                    <div class="footer-logo">N</div>
-                    <span class="footer-text">© 2025 Nigents. All rights reserved.</span>
-                </div>
-                <div class="footer-links">
-                    <a href="https://gitlab.com/bonyad-tech/nigents" class="footer-link" target="_blank">GitLab</a>
-                    <a href="/login.html" class="footer-link">Login</a>
-                </div>
-            </div>
-        </footer>
-    </main>
-
-    <script>
-        // Socket.io connection
-        const socket = io();
-        
-        // Agent data
-        const agents = [
-            { name: 'Orchestrator', role: 'Team Lead & Router', icon: '🎯', model: 'GLM-5' },
-            { name: 'Planner', role: 'Architecture & Planning', icon: '📋', model: 'GLM-5' },
-            { name: 'Backend Dev', role: 'Backend Developer', icon: '⚙️', model: 'GLM-5' },
-            { name: 'Frontend Dev', role: 'Frontend Developer', icon: '🎨', model: 'GLM-4 Plus' },
-            { name: 'QA Tester', role: 'Quality Assurance', icon: '🧪', model: 'GLM-4' },
-            { name: 'Code Reviewer', role: 'Code Reviewer', icon: '🔍', model: 'GLM-5' },
-            { name: 'Reporter', role: 'Reporter & Communicator', icon: '📢', model: 'GLM-4' },
-        ];
-
-        // Render agents
-        function renderAgents() {
-            const container = document.getElementById('agents-list');
-            container.innerHTML = agents.map(agent => `
+            <div class="agents-grid">
                 <div class="agent-card">
-                    <div class="agent-avatar">${agent.icon}</div>
+                    <div class="agent-avatar">🎯</div>
                     <div class="agent-info">
-                        <div class="agent-name">${agent.name}</div>
-                        <div class="agent-role">${agent.role}</div>
-                        <span class="agent-model">⚡ ${agent.model}</span>
+                        <div class="agent-name">Orchestrator</div>
+                        <div class="agent-role">Team Lead & Router</div>
+                        <span class="agent-model">GLM-5</span>
                     </div>
-                    <div class="agent-status"></div>
                 </div>
-            `).join('');
-        }
+                <div class="agent-card">
+                    <div class="agent-avatar">📋</div>
+                    <div class="agent-info">
+                        <div class="agent-name">Planner</div>
+                        <div class="agent-role">Architecture & Planning</div>
+                        <span class="agent-model">GLM-5</span>
+                    </div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-avatar">⚙️</div>
+                    <div class="agent-info">
+                        <div class="agent-name">Backend Dev</div>
+                        <div class="agent-role">Backend Developer</div>
+                        <span class="agent-model">GLM-5</span>
+                    </div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-avatar">🎨</div>
+                    <div class="agent-info">
+                        <div class="agent-name">Frontend Dev</div>
+                        <div class="agent-role">Frontend Developer</div>
+                        <span class="agent-model">GLM-4 Plus</span>
+                    </div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-avatar">🧪</div>
+                    <div class="agent-info">
+                        <div class="agent-name">QA Tester</div>
+                        <div class="agent-role">Quality Assurance</div>
+                        <span class="agent-model">GLM-4</span>
+                    </div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-avatar">🔍</div>
+                    <div class="agent-info">
+                        <div class="agent-name">Code Reviewer</div>
+                        <div class="agent-role">Security & Quality</div>
+                        <span class="agent-model">GLM-5</span>
+                    </div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-avatar">📢</div>
+                    <div class="agent-info">
+                        <div class="agent-name">Reporter</div>
+                        <div class="agent-role">Updates & Reports</div>
+                        <span class="agent-model">GLM-4</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-        // Update stats from socket
-        socket.on('stats', (data) => {
-            if (data.agents) document.getElementById('stat-agents').textContent = data.agents;
-            if (data.tasks) document.getElementById('stat-tasks').textContent = data.tasks;
-        });
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <h2 class="cta-title">Ready to ship overnight?</h2>
+            <p class="cta-subtitle">Start using Nigents today and wake up to finished features.</p>
+            <a href="/login.html" class="btn btn-primary">Get Started Now →</a>
+        </div>
+    </section>
 
-        // Initialize
-        renderAgents();
-
-        // Smooth scroll for nav links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                document.querySelector(this.getAttribute('href')).scrollIntoView({
-                    behavior: 'smooth'
-                });
-            });
-        });
-    </script>
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <div class="footer-logo">N</div>
+                <span class="footer-text">© 2025 Nigents. All rights reserved.</span>
+            </div>
+            <div class="footer-links">
+                <a href="https://gitlab.com/bonyad-tech/nigents" class="footer-link" target="_blank">GitLab</a>
+                <a href="/login.html" class="footer-link">Login</a>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>
