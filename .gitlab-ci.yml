@@ -166,31 +166,8 @@ deploy-to-ec2:
       cd mcp-servers/task-splitter && npm ci && npm run build && cd ../..
       cd mcp-servers/smart-code-search && npm ci && npm run build && cd ../..
 
-      echo "=========================================="
-      echo "  DATABASE SETUP"
-      echo "=========================================="
-      
-      # Check if MySQL is installed
-      if ! command -v mysql &> /dev/null; then
-        echo "Installing MySQL..."
-        sudo apt-get update
-        sudo apt-get install -y mysql-server
-        sudo systemctl start mysql
-        sudo systemctl enable mysql
-      fi
-      
-      # Create database and user if not exists
-      echo "Setting up database..."
-      sudo mysql -e "CREATE DATABASE IF NOT EXISTS nigents CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-      sudo mysql -e "CREATE USER IF NOT EXISTS 'nigents'@'localhost' IDENTIFIED BY 'nigents_password';"
-      sudo mysql -e "GRANT ALL PRIVILEGES ON nigents.* TO 'nigents'@'localhost';"
-      sudo mysql -e "FLUSH PRIVILEGES;"
-      
-      # Run schema
-      echo "Running database schema..."
-      sudo mysql nigents < src/database/schema.sql
-      
-      echo "Database setup complete!"
+      # Note: Database should already be set up. If schema changes needed:
+      # sudo mysql nigents < src/database/schema.sql
 
       echo "Stopping all PM2 services..."
       pm2 stop all 2>/dev/null || true
