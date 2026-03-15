@@ -75,6 +75,7 @@ git push gitlab main
 
 ### What Gets Installed?
 
+
 | Component | Version | Purpose |
 |-----------|---------|---------|
 | Node.js | 20.x | Runtime |

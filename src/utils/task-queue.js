@@ -1,6 +1,6 @@
 /**
- * Task Queue - Hybrid Implementation (MySQL + Memory fallback)
- * Uses MySQL if available, falls back to in-memory storage
+ * Task Queue - MySQL Implementation Only
+ * Uses MySQL database for persistent task queue
  */
 
 const logger = require('./logger');
@@ -8,20 +8,12 @@ const logger = require('./logger');
 // Check if MySQL is enabled
 const useMySQL = process.env.DB_HOST && process.env.DB_USER && process.env.DB_PASSWORD;
 
-let taskQueue;
-
-if (useMySQL) {
-  try {
-    const mysqlQueue = require('../database/task-queue-mysql');
-    taskQueue = mysqlQueue;
-    logger.info('[TaskQueue] Using MySQL backend');
-  } catch (error) {
-    logger.error('[TaskQueue] Failed to load MySQL backend:', error.message);
-    taskQueue = null;
-  }
-} else {
-  logger.info('[TaskQueue] MySQL not configured, using memory-only queue');
-  taskQueue = null;
+if (!useMySQL) {
+  logger.error('[TaskQueue] MySQL is not configured! Set DB_HOST, DB_USER, DB_PASSWORD env vars.');
+  throw new Error('MySQL is required but not configured');
 }
 
-module.exports = taskQueue;
+const mysqlQueue = require('../database/task-queue-mysql');
+logger.info('[TaskQueue] Using MySQL backend');
+
+module.exports = mysqlQueue;
