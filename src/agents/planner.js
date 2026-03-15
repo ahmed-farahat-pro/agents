@@ -94,15 +94,15 @@ class PlannerAgent extends BaseAgent {
    * Analyze codebase using MCP filesystem and git tools
    */
   async analyzeCodebaseWithMCP(project, task) {
+    // Initialize with empty analysis - we'll populate if we can
+    const analysis = {
+      repoFiles: [],
+      relevantFiles: [],
+      fileContents: [],
+    };
+
     try {
       const workspacePath = `/workspace/${project}`;
-      
-      // Use MCP to list and read files
-      const analysis = {
-        repoFiles: [],
-        relevantFiles: [],
-        fileContents: [],
-      };
 
       // Try to get directory structure via MCP
       try {
@@ -111,53 +111,59 @@ class PlannerAgent extends BaseAgent {
         });
         analysis.repoFiles = this.parseDirectoryListing(dirResult);
       } catch (e) {
-        logger.warn('[Planner] MCP directory listing failed, using GitLab API:', e.message);
+        logger.debug('[Planner] MCP directory listing failed, trying GitLab API...');
         // Fall back to GitLab API
-        const repoFiles = await gitlab.getRepositoryFiles(project, 50);
-        analysis.repoFiles = repoFiles.map(f => f.path);
-      }
-
-      // Identify relevant files based on task keywords
-      const taskKeywords = task.toLowerCase().split(' ');
-      analysis.relevantFiles = analysis.repoFiles.filter(file => {
-        const path = file.toLowerCase();
-        return taskKeywords.some(keyword => 
-          path.includes(keyword) && keyword.length > 3
-        );
-      }).slice(0, 10);
-
-      // Read relevant file contents via MCP
-      for (const filePath of analysis.relevantFiles.slice(0, 5)) {
         try {
-          const fullPath = `${workspacePath}/${filePath}`;
-          const content = await this.mcpWrapper.quickTool('read_file', {
-            path: fullPath,
-          });
-          analysis.fileContents.push({
-            path: filePath,
-            content: typeof content === 'string' 
-              ? content.substring(0, 2000) 
-              : JSON.stringify(content).substring(0, 2000),
-          });
-        } catch (e) {
-          logger.warn(`[Planner] Could not read ${filePath} via MCP:`, e.message);
+          const repoFiles = await gitlab.getRepositoryFiles(project, 50);
+          analysis.repoFiles = repoFiles.map(f => f.path);
+        } catch (gitlabErr) {
+          logger.debug('[Planner] GitLab API also failed - will create plan without codebase context');
         }
       }
 
-      // Get git status via MCP
-      try {
-        const gitStatus = await this.mcpWrapper.quickTool('git_status', {
-          repo_path: workspacePath,
-        });
-        analysis.gitStatus = gitStatus;
-      } catch (e) {
-        logger.warn('[Planner] Could not get git status via MCP:', e.message);
+      // Identify relevant files based on task keywords (only if we have repo files)
+      if (analysis.repoFiles.length > 0) {
+        const taskKeywords = task.toLowerCase().split(' ');
+        analysis.relevantFiles = analysis.repoFiles.filter(file => {
+          const path = file.toLowerCase();
+          return taskKeywords.some(keyword => 
+            path.includes(keyword) && keyword.length > 3
+          );
+        }).slice(0, 10);
+
+        // Read relevant file contents via MCP
+        for (const filePath of analysis.relevantFiles.slice(0, 5)) {
+          try {
+            const fullPath = `${workspacePath}/${filePath}`;
+            const content = await this.mcpWrapper.quickTool('read_file', {
+              path: fullPath,
+            });
+            analysis.fileContents.push({
+              path: filePath,
+              content: typeof content === 'string' 
+                ? content.substring(0, 2000) 
+                : JSON.stringify(content).substring(0, 2000),
+            });
+          } catch (e) {
+            logger.debug(`[Planner] Could not read ${filePath} via MCP`);
+          }
+        }
+
+        // Get git status via MCP
+        try {
+          const gitStatus = await this.mcpWrapper.quickTool('git_status', {
+            repo_path: workspacePath,
+          });
+          analysis.gitStatus = gitStatus;
+        } catch (e) {
+          // Silent fail - git status is optional
+        }
       }
 
       return analysis;
     } catch (error) {
-      logger.warn('[Planner] MCP codebase analysis failed:', error.message);
-      return this.analyzeCodebaseGitLab(project, task);
+      logger.debug('[Planner] Codebase analysis not available:', error.message);
+      return analysis; // Return empty analysis so plan can still be created
     }
   }
 

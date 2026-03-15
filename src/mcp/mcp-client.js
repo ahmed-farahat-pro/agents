@@ -29,13 +29,17 @@ class MCPClientManager {
           await this.connectServer(name, serverConfig);
           logger.info(`[MCP] Connected: ${name}`);
         } catch (error) {
-          logger.error(`[MCP] Failed to connect ${name}:`, error.message);
+          logger.debug(`[MCP] Server ${name} not available:`, error.message);
         }
       }
     }
 
     this.isInitialized = true;
-    logger.info(`[MCP] Initialization complete. ${this.clients.size} servers connected.`);
+    if (this.clients.size > 0) {
+      logger.info(`[MCP] ${this.clients.size} servers connected.`);
+    } else {
+      logger.info('[MCP] No MCP servers connected - running in standalone mode.');
+    }
   }
 
   /**

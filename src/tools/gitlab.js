@@ -56,12 +56,25 @@ class GitLabAPI {
    */
   async getProjectId(projectPath) {
     try {
-      const encodedPath = encodeURIComponent(`${this.namespace}/${projectPath}`);
-      const response = await this.client.get(`/projects/${encodedPath}`);
-      return response.data.id;
+      if (!this.token) {
+        logger.warn('[GitLab] No GITLAB_TOKEN configured');
+        return null;
+      }
+      
+      // Try with namespace first
+      let encodedPath = encodeURIComponent(`${this.namespace}/${projectPath}`);
+      try {
+        const response = await this.client.get(`/projects/${encodedPath}`);
+        return response.data.id;
+      } catch (nsError) {
+        // If namespace fails, try direct path (project might be in different namespace)
+        encodedPath = encodeURIComponent(projectPath);
+        const response = await this.client.get(`/projects/${encodedPath}`);
+        return response.data.id;
+      }
     } catch (error) {
-      logger.error('[GitLab] Failed to get project ID:', error.message);
-      throw error;
+      logger.warn(`[GitLab] Project not found: ${projectPath} - ${error.message}`);
+      return null;
     }
   }
 
@@ -71,6 +84,11 @@ class GitLabAPI {
   async getRepositoryFiles(projectPath, limit = 100) {
     try {
       const projectId = await this.getProjectId(projectPath);
+      if (!projectId) {
+        logger.warn(`[GitLab] Cannot get files for ${projectPath}: project not found`);
+        return [];
+      }
+      
       const response = await this.client.get(`/projects/${projectId}/repository/tree`, {
         params: {
           recursive: true,
@@ -79,7 +97,7 @@ class GitLabAPI {
       });
       return response.data;
     } catch (error) {
-      logger.error('[GitLab] Failed to get repository files:', error.message);
+      logger.warn(`[GitLab] Failed to get repository files for ${projectPath}:`, error.message);
       return [];
     }
   }
