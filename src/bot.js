@@ -1677,12 +1677,13 @@ bot.onText(/\/agentmodels/, async (msg) => {
 // /setagent command - Set AI model for a specific agent
 // Usage: /setagent <agent> <provider> <model>
 // Example: /setagent planner zhipu glm-5
+// For custom models: /setagent <agent> custom <custom_key>
 bot.onText(/\/setagent\s+(\S+)\s+(\S+)\s+(\S+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
 
   const agentName = match[1].trim().toLowerCase();
   const provider = match[2].trim().toLowerCase();
-  const model = match[3].trim();
+  const modelOrKey = match[3].trim();
 
   // Validate agent name
   const validAgents = ['orchestrator', 'planner', 'backend-dev', 'frontend-dev', 'qa-tester', 'code-reviewer', 'reporter'];
@@ -1696,47 +1697,92 @@ bot.onText(/\/setagent\s+(\S+)\s+(\S+)\s+(\S+)/, async (msg, match) => {
     return;
   }
 
-  // Validate provider
-  const providers = await agentConfig.getAvailableProviders();
-  if (!providers[provider]) {
-    await bot.sendMessage(msg.chat.id, 
-      `❌ Invalid provider: ${provider}\n\n` +
-      `Available providers:\n` +
-      Object.keys(providers).map(p => `• ${p}`).join('\n'),
-      { parse_mode: 'Markdown' }
-    );
-    return;
-  }
+  let targetProvider = provider;
+  let targetModel = modelOrKey;
+  let isCustomModel = false;
+  let customModelInfo = null;
 
-  // Validate model
-  const validModels = providers[provider].models;
-  if (!validModels.includes(model)) {
-    await bot.sendMessage(msg.chat.id, 
-      `⚠️ Warning: ${model} is not a standard model for ${provider}.\n\n` +
-      `Standard models:\n` +
-      validModels.map(m => `• ${m}`).join('\n') + `\n\n` +
-      `Continuing anyway...`,
-      { parse_mode: 'Markdown' }
-    );
+  // Check if using custom model syntax: /setagent <agent> custom <custom_key>
+  if (provider === 'custom') {
+    const customKey = modelOrKey.toLowerCase();
+    const config = sharedConfig.getFullConfig();
+    const customModels = config.customModels || {};
+    
+    // Find custom model (case-insensitive)
+    const foundKey = Object.keys(customModels).find(k => k.toLowerCase() === customKey);
+    
+    if (!foundKey) {
+      const availableKeys = Object.keys(customModels);
+      await bot.sendMessage(msg.chat.id, 
+        `❌ Custom model "${modelOrKey}" not found.\n\n` +
+        `Available custom models:\n` +
+        (availableKeys.length > 0 
+          ? availableKeys.map(k => `• ${k}`).join('\n')
+          : 'No custom models configured. Use /addmodel or /addglm'),
+        { parse_mode: 'Markdown' }
+      );
+      return;
+    }
+    
+    const customModel = customModels[foundKey];
+    isCustomModel = true;
+    customModelInfo = customModel;
+    
+    // For custom models, we use the provider key as provider and the model ID as model
+    targetProvider = foundKey;
+    targetModel = customModel.model;
+  } else {
+    // Validate built-in provider
+    const providers = await agentConfig.getAvailableProviders();
+    if (!providers[provider]) {
+      await bot.sendMessage(msg.chat.id, 
+        `❌ Invalid provider: ${provider}\n\n` +
+        `Available providers:\n` +
+        Object.keys(providers).map(p => `• ${p}`).join('\n') + '\n\n' +
+        `For custom models, use:\n` +
+        '`/setagent ' + agentName + ' custom <model_key>`',
+        { parse_mode: 'Markdown' }
+      );
+      return;
+    }
+
+    // Validate model for built-in providers
+    const validModels = providers[provider].models;
+    if (!validModels.includes(targetModel)) {
+      await bot.sendMessage(msg.chat.id, 
+        `⚠️ Warning: ${targetModel} is not a standard model for ${provider}.\n\n` +
+        `Standard models:\n` +
+        validModels.map(m => `• ${m}`).join('\n') + `\n\n` +
+        `Continuing anyway...`,
+        { parse_mode: 'Markdown' }
+      );
+    }
   }
 
   // Update the agent config
-  const success = await agentConfig.setAgentModel(agentName, provider, model);
+  const success = await agentConfig.setAgentModel(agentName, targetProvider, targetModel);
   
   if (success) {
     // Reload orchestrator agents with new config
     orchestrator.reloadAgentConfigs();
     
-    await bot.sendMessage(msg.chat.id, 
-      `✅ **Agent Model Updated**\n\n` +
-      `**${agentName}** will now use:\n` +
-      `Provider: ${provider}\n` +
-      `Model: ${model}\n\n` +
-      `Changes are active immediately!`,
-      { parse_mode: 'Markdown' }
-    );
+    let message = `✅ **Agent Model Updated**\n\n`;
+    message += `**${agentName}** will now use:\n`;
     
-    logger.info(`[Bot] User ${msg.from.id} set ${agentName} to ${provider}/${model}`);
+    if (isCustomModel && customModelInfo) {
+      message += `Provider: \`${targetProvider}\` (custom)\n`;
+      message += `Model: \`${targetModel}\`\n`;
+      message += `Base URL: \`${customModelInfo.baseUrl}\`\n`;
+    } else {
+      message += `Provider: ${targetProvider}\n`;
+      message += `Model: ${targetModel}\n`;
+    }
+    
+    message += `\nChanges are active immediately!`;
+    
+    await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+    
+    logger.info(`[Bot] User ${msg.from.id} set ${agentName} to ${targetProvider}/${targetModel}`);
   } else {
     await bot.sendMessage(msg.chat.id, `❌ Failed to update ${agentName}. Check logs.`);
   }
@@ -1745,49 +1791,95 @@ bot.onText(/\/setagent\s+(\S+)\s+(\S+)\s+(\S+)/, async (msg, match) => {
 // /setallagents command - Set AI model for ALL agents at once
 // Usage: /setallagents <provider> <model>
 // Example: /setallagents zhipu glm-5
+// For custom models: /setallagents custom <custom_key>
 bot.onText(/\/setallagents\s+(\S+)\s+(\S+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
 
   const provider = match[1].trim().toLowerCase();
-  const model = match[2].trim();
+  const modelOrKey = match[2].trim();
 
-  // Validate provider
-  const providers = await agentConfig.getAvailableProviders();
-  if (!providers[provider]) {
-    await bot.sendMessage(msg.chat.id, 
-      `❌ Invalid provider: ${provider}\n\n` +
-      `Available providers:\n` +
-      Object.keys(providers).map(p => `• ${p}`).join('\n'),
-      { parse_mode: 'Markdown' }
-    );
-    return;
+  let targetProvider = provider;
+  let targetModel = modelOrKey;
+  let isCustomModel = false;
+  let customModelInfo = null;
+
+  // Check if using custom model syntax: /setallagents custom <custom_key>
+  if (provider === 'custom') {
+    const customKey = modelOrKey.toLowerCase();
+    const config = sharedConfig.getFullConfig();
+    const customModels = config.customModels || {};
+    
+    // Find custom model (case-insensitive)
+    const foundKey = Object.keys(customModels).find(k => k.toLowerCase() === customKey);
+    
+    if (!foundKey) {
+      const availableKeys = Object.keys(customModels);
+      await bot.sendMessage(msg.chat.id, 
+        `❌ Custom model "${modelOrKey}" not found.\n\n` +
+        `Available custom models:\n` +
+        (availableKeys.length > 0 
+          ? availableKeys.map(k => `• ${k}`).join('\n')
+          : 'No custom models configured. Use /addmodel or /addglm'),
+        { parse_mode: 'Markdown' }
+      );
+      return;
+    }
+    
+    const customModel = customModels[foundKey];
+    isCustomModel = true;
+    customModelInfo = customModel;
+    
+    // For custom models, we use the provider key as provider and the model ID as model
+    targetProvider = foundKey;
+    targetModel = customModel.model;
+  } else {
+    // Validate built-in provider
+    const providers = await agentConfig.getAvailableProviders();
+    if (!providers[provider]) {
+      await bot.sendMessage(msg.chat.id, 
+        `❌ Invalid provider: ${provider}\n\n` +
+        `Available providers:\n` +
+        Object.keys(providers).map(p => `• ${p}`).join('\n') + '\n\n' +
+        `For custom models, use:\n` +
+        '`/setallagents custom <model_key>`',
+        { parse_mode: 'Markdown' }
+      );
+      return;
+    }
   }
 
   // Update global defaults
-  await agentConfig.setGlobalDefaults(provider, model);
+  await agentConfig.setGlobalDefaults(targetProvider, targetModel);
   
   // Update all agents
   const agentNames = ['orchestrator', 'planner', 'backend-dev', 'frontend-dev', 'qa-tester', 'code-reviewer', 'reporter'];
   let updatedCount = 0;
   
   for (const agentName of agentNames) {
-    const success = await agentConfig.setAgentModel(agentName, provider, model);
+    const success = await agentConfig.setAgentModel(agentName, targetProvider, targetModel);
     if (success) updatedCount++;
   }
   
   // Reload orchestrator agents with new config
   orchestrator.reloadAgentConfigs();
   
-  await bot.sendMessage(msg.chat.id, 
-    `✅ **All Agents Updated**\n\n` +
-    `${updatedCount} agents will now use:\n` +
-    `Provider: ${provider}\n` +
-    `Model: ${model}\n\n` +
-    `Changes are active immediately!`,
-    { parse_mode: 'Markdown' }
-  );
+  let message = `✅ **All Agents Updated**\n\n`;
+  message += `${updatedCount} agents will now use:\n`;
   
-  logger.info(`[Bot] User ${msg.from.id} set ALL agents to ${provider}/${model}`);
+  if (isCustomModel && customModelInfo) {
+    message += `Provider: \`${targetProvider}\` (custom)\n`;
+    message += `Model: \`${targetModel}\`\n`;
+    message += `Base URL: \`${customModelInfo.baseUrl}\`\n`;
+  } else {
+    message += `Provider: ${targetProvider}\n`;
+    message += `Model: ${targetModel}\n`;
+  }
+  
+  message += `\nChanges are active immediately!`;
+  
+  await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+  
+  logger.info(`[Bot] User ${msg.from.id} set ALL agents to ${targetProvider}/${targetModel}`);
 });
 
 // /model command - Set default AI provider and optionally model
