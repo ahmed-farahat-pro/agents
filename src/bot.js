@@ -231,6 +231,8 @@ Send voice notes or text naturally:
 • /agentmodels — Show agent models
 • /setagent <agent> <provider> <model> — Change agent model
 • /setallagents <provider> <model> — Set all agents
+• /testagents [agent] — Test all agent models
+• /testagentmodel <provider> <model> — Test specific model
 • /addmodel — Add custom AI model
 • /addglm <key> [model] — Add Zhipu GLM model quickly
 • /addmoonshot <key> [model] — Add Moonshot model quickly
@@ -687,6 +689,184 @@ DevPack Plans:
 
 **Status:** ${statusCode || 'Network Error'}
 **Error:** ${errorMsg}${helpText}`,
+      { parse_mode: 'Markdown' }
+    );
+  }
+});
+
+// /testagents command - Test all configured agent models
+// Usage: /testagents [agent]
+// Examples:
+//   /testagents         - Test all agents
+//   /testagents planner - Test only planner agent
+bot.onText(/\/testagents(?:\s+(\S+))?/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const specificAgent = match[1];
+  
+  await bot.sendMessage(msg.chat.id, '🧪 **Testing Agent Models...**\n\nThis may take a moment.', { parse_mode: 'Markdown' });
+  await bot.sendChatAction(msg.chat.id, 'typing');
+
+  try {
+    // Get all agent configurations
+    const agents = await agentConfig.getAllAgents();
+    const providers = await agentConfig.getAvailableProviders();
+    
+    const agentNames = specificAgent 
+      ? [specificAgent.toLowerCase()]
+      : Object.keys(agents);
+    
+    let results = [];
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const agentName of agentNames) {
+      const agent = agents[agentName];
+      if (!agent) {
+        results.push(`❌ **${agentName}**: Agent not found`);
+        failCount++;
+        continue;
+      }
+
+      const provider = agent.provider;
+      const model = agent.model;
+      
+      await bot.sendChatAction(msg.chat.id, 'typing');
+      
+      try {
+        // Test the agent's configured model
+        const startTime = Date.now();
+        
+        // Use aiClient to call the specific provider/model
+        const response = await aiClient.call(
+          'Hello! Please confirm this test is working and tell me which model you are. Reply in one short sentence.',
+          {
+            provider: provider,
+            model: model,
+            maxTokens: 100,
+            temperature: 0.7,
+          }
+        );
+        
+        const duration = Date.now() - startTime;
+        
+        if (response.success) {
+          results.push(
+            `✅ **${agentName}**\n` +
+            `   Provider: \`${provider}\`\n` +
+            `   Model: \`${model}\`\n` +
+            `   Duration: ${duration}ms\n` +
+            `   Response: "${response.content.substring(0, 100)}..."`
+          );
+          successCount++;
+        } else {
+          results.push(
+            `❌ **${agentName}**\n` +
+            `   Provider: \`${provider}\`\n` +
+            `   Model: \`${model}\`\n` +
+            `   Error: ${response.error || 'Unknown error'}`
+          );
+          failCount++;
+        }
+      } catch (error) {
+        results.push(
+          `❌ **${agentName}**\n` +
+          `   Provider: \`${provider}\`\n` +
+          `   Model: \`${model}\`\n` +
+          `   Error: ${error.message}`
+        );
+        failCount++;
+      }
+      
+      // Small delay between tests to avoid rate limits
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    // Send results
+    const summary = `🧪 **Agent Model Test Results**\n\n` +
+      `✅ Passed: ${successCount}\n` +
+      `❌ Failed: ${failCount}\n\n` +
+      results.join('\n\n');
+    
+    // Split if too long
+    if (summary.length > 4000) {
+      await bot.sendMessage(msg.chat.id, summary.substring(0, 4000) + '\n\n...(truncated)', { parse_mode: 'Markdown' });
+    } else {
+      await bot.sendMessage(msg.chat.id, summary, { parse_mode: 'Markdown' });
+    }
+    
+    // Provide recommendations if there are failures
+    if (failCount > 0) {
+      let helpText = '\n💡 **Troubleshooting:**\n';
+      helpText += '• Check API keys in environment variables\n';
+      helpText += '• Use `/agentmodels` to view current settings\n';
+      helpText += '• Use `/setagent <agent> <provider> <model>` to fix\n';
+      helpText += '• Use `/testglm <key>` to test GLM directly\n';
+      await bot.sendMessage(msg.chat.id, helpText, { parse_mode: 'Markdown' });
+    }
+    
+  } catch (error) {
+    logger.error('[Bot] Test agents failed:', error);
+    await bot.sendMessage(msg.chat.id, `❌ Error testing agents: ${error.message}`);
+  }
+});
+
+// /testagentmodel command - Test a specific provider/model combination
+// Usage: /testagentmodel <provider> <model>
+// Example: /testagentmodel zhipu glm-5
+bot.onText(/\/testagentmodel\s+(\S+)\s+(\S+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const provider = match[1].trim().toLowerCase();
+  const model = match[2].trim();
+  
+  await bot.sendMessage(msg.chat.id, `🧪 Testing **${provider}** / **${model}**...`, { parse_mode: 'Markdown' });
+  await bot.sendChatAction(msg.chat.id, 'typing');
+
+  try {
+    const startTime = Date.now();
+    
+    const response = await aiClient.call(
+      'Hello! Please confirm this test is working and tell me which model you are.',
+      {
+        provider: provider,
+        model: model,
+        maxTokens: 200,
+        temperature: 0.7,
+      }
+    );
+    
+    const duration = Date.now() - startTime;
+    
+    if (response.success) {
+      await bot.sendMessage(msg.chat.id, 
+        `✅ **Test Successful!**\n\n` +
+        `**Provider:** ${provider}\n` +
+        `**Model:** ${model}\n` +
+        `**Duration:** ${duration}ms\n` +
+        `**Tokens:** ${response.usage?.total_tokens || 'N/A'}\n\n` +
+        `**Response:**\n` +
+        '\`\`\`\n' +
+        response.content.substring(0, 1000) +
+        '\`\`\`',
+        { parse_mode: 'Markdown' }
+      );
+    } else {
+      await bot.sendMessage(msg.chat.id, 
+        `❌ **Test Failed!**\n\n` +
+        `**Provider:** ${provider}\n` +
+        `**Model:** ${model}\n` +
+        `**Error:** ${response.error || 'Unknown error'}`,
+        { parse_mode: 'Markdown' }
+      );
+    }
+  } catch (error) {
+    logger.error('[Bot] Test agent model failed:', error);
+    await bot.sendMessage(msg.chat.id, 
+      `❌ **Test Failed!**\n\n` +
+      `**Provider:** ${provider}\n` +
+      `**Model:** ${model}\n` +
+      `**Error:** ${error.message}`,
       { parse_mode: 'Markdown' }
     );
   }
