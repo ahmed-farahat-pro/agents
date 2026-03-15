@@ -1312,9 +1312,9 @@ bot.onText(/\/agentmodels/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
   try {
-    const agents = agentConfig.getAllAgents();
-    const globalDefaults = agentConfig.getGlobalDefaults();
-    const providers = agentConfig.getAvailableProviders();
+    const agents = await agentConfig.getAllAgents();
+    const globalDefaults = await agentConfig.getGlobalDefaults();
+    const providers = await agentConfig.getAvailableProviders();
     
     let message = '🤖 **Agent Model Configuration**\n\n';
     
@@ -1372,7 +1372,7 @@ bot.onText(/\/setagent\s+(\S+)\s+(\S+)\s+(\S+)/, async (msg, match) => {
   }
 
   // Validate provider
-  const providers = agentConfig.getAvailableProviders();
+  const providers = await agentConfig.getAvailableProviders();
   if (!providers[provider]) {
     await bot.sendMessage(msg.chat.id, 
       `❌ Invalid provider: ${provider}\n\n` +
@@ -1396,7 +1396,7 @@ bot.onText(/\/setagent\s+(\S+)\s+(\S+)\s+(\S+)/, async (msg, match) => {
   }
 
   // Update the agent config
-  const success = agentConfig.setAgentModel(agentName, provider, model);
+  const success = await agentConfig.setAgentModel(agentName, provider, model);
   
   if (success) {
     // Reload orchestrator agents with new config
@@ -1427,7 +1427,7 @@ bot.onText(/\/setallagents\s+(\S+)\s+(\S+)/, async (msg, match) => {
   const model = match[2].trim();
 
   // Validate provider
-  const providers = agentConfig.getAvailableProviders();
+  const providers = await agentConfig.getAvailableProviders();
   if (!providers[provider]) {
     await bot.sendMessage(msg.chat.id, 
       `❌ Invalid provider: ${provider}\n\n` +
@@ -1439,14 +1439,14 @@ bot.onText(/\/setallagents\s+(\S+)\s+(\S+)/, async (msg, match) => {
   }
 
   // Update global defaults
-  agentConfig.setGlobalDefaults(provider, model);
+  await agentConfig.setGlobalDefaults(provider, model);
   
   // Update all agents
   const agentNames = ['orchestrator', 'planner', 'backend-dev', 'frontend-dev', 'qa-tester', 'code-reviewer', 'reporter'];
   let updatedCount = 0;
   
   for (const agentName of agentNames) {
-    const success = agentConfig.setAgentModel(agentName, provider, model);
+    const success = await agentConfig.setAgentModel(agentName, provider, model);
     if (success) updatedCount++;
   }
   
