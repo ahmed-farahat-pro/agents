@@ -245,14 +245,31 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 28px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
             margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .material-card.fullstack .material-icon { color: var(--accent-orange); }
-        .material-card.backend .material-icon { color: var(--accent-green); }
-        .material-card.frontend .material-icon { color: var(--accent-blue); }
-        .material-card.qa .material-icon { color: var(--accent-purple); }
+        .material-card.fullstack .material-icon { 
+            color: var(--accent-orange); 
+            border-color: rgba(255, 87, 10, 0.3);
+        }
+        .material-card.backend .material-icon { 
+            color: var(--accent-green); 
+            border-color: rgba(25, 213, 158, 0.3);
+        }
+        .material-card.frontend .material-icon { 
+            color: var(--accent-blue); 
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+        .material-card.qa .material-icon { 
+            color: var(--accent-purple); 
+            border-color: rgba(139, 92, 246, 0.3);
+        }
 
         .material-title {
             font-family: var(--font-sans);
@@ -280,6 +297,12 @@
             display: flex;
             align-items: center;
             gap: 6px;
+        }
+
+        .material-meta span::before {
+            content: '•';
+            color: var(--card-accent, var(--accent-orange));
+            font-weight: bold;
         }
 
         .download-btn {
@@ -369,11 +392,17 @@
             width: 64px;
             height: 64px;
             background: rgba(255, 87, 10, 0.1);
+            border: 1px solid rgba(255, 87, 10, 0.3);
             border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 32px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--accent-orange);
+            text-transform: uppercase;
+            letter-spacing: 1px;
             margin-bottom: 24px;
         }
 
@@ -565,52 +594,52 @@
         <div class="materials-grid">
             <!-- Full Stack -->
             <div class="material-card fullstack">
-                <div class="material-icon">🚀</div>
+                <div class="material-icon">FS</div>
                 <h3 class="material-title">Full Stack</h3>
                 <p class="material-desc">Master both frontend and backend development. From React to Node.js, databases to deployment.</p>
                 <div class="material-meta">
-                    <span>📄 PDF</span>
-                    <span>⏱ 30 Days</span>
-                    <span>📚 Beginner</span>
+                    <span>PDF</span>
+                    <span>30 Days</span>
+                    <span>Beginner</span>
                 </div>
                 <button class="download-btn" onclick="openModal('fullstack', 'Full Stack')">Get Download Link</button>
             </div>
 
             <!-- Backend -->
             <div class="material-card backend">
-                <div class="material-icon">⚙️</div>
+                <div class="material-icon">BE</div>
                 <h3 class="material-title">Backend</h3>
                 <p class="material-desc">Deep dive into server-side development. APIs, databases, authentication, and microservices architecture.</p>
                 <div class="material-meta">
-                    <span>📄 PDF</span>
-                    <span>⏱ 30 Days</span>
-                    <span>📚 Intermediate</span>
+                    <span>PDF</span>
+                    <span>30 Days</span>
+                    <span>Intermediate</span>
                 </div>
                 <button class="download-btn" onclick="openModal('backend', 'Backend')">Get Download Link</button>
             </div>
 
             <!-- Frontend -->
             <div class="material-card frontend">
-                <div class="material-icon">🎨</div>
+                <div class="material-icon">FE</div>
                 <h3 class="material-title">Frontend</h3>
                 <p class="material-desc">Build beautiful user interfaces. React, Vue, CSS mastery, animations, and responsive design.</p>
                 <div class="material-meta">
-                    <span>📄 PDF</span>
-                    <span>⏱ 30 Days</span>
-                    <span>📚 Beginner</span>
+                    <span>PDF</span>
+                    <span>30 Days</span>
+                    <span>Beginner</span>
                 </div>
                 <button class="download-btn" onclick="openModal('frontend', 'Frontend')">Get Download Link</button>
             </div>
 
             <!-- QA / Testing -->
             <div class="material-card qa">
-                <div class="material-icon">🧪</div>
+                <div class="material-icon">QA</div>
                 <h3 class="material-title">QA & Testing</h3>
                 <p class="material-desc">Ensure code quality with automated testing. Unit tests, integration tests, CI/CD, and best practices.</p>
                 <div class="material-meta">
-                    <span>📄 PDF</span>
-                    <span>⏱ 30 Days</span>
-                    <span>📚 Intermediate</span>
+                    <span>PDF</span>
+                    <span>30 Days</span>
+                    <span>Intermediate</span>
                 </div>
                 <button class="download-btn" onclick="openModal('qa', 'QA')">Get Download Link</button>
             </div>
@@ -628,7 +657,7 @@
             <button class="modal-close" onclick="closeModal()">×</button>
             
             <div id="modal-form">
-                <div class="modal-icon" id="modal-icon">📧</div>
+                <div class="modal-icon" id="modal-icon">GET</div>
                 <h2 id="modal-title">Get Your Roadmap</h2>
                 <p>Enter your email and we'll send you the <strong id="modal-roadmap">Full Stack</strong> Developer Roadmap PDF.</p>
                 
@@ -660,10 +689,10 @@
         let currentRoadmapName = '';
 
         const icons = {
-            fullstack: '🚀',
-            backend: '⚙️',
-            frontend: '🎨',
-            qa: '🧪'
+            fullstack: 'FS',
+            backend: 'BE',
+            frontend: 'FE',
+            qa: 'QA'
         };
 
         function openModal(roadmap, name) {
