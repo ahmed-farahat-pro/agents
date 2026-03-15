@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nigents - Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -11,56 +12,96 @@
             box-sizing: border-box;
         }
         
+        :root {
+            --bg-dark: #09080c;
+            --bg-card: #141116;
+            --bg-code: #0d0c0f;
+            --text: #ffffff;
+            --text-muted: #6b6b7b;
+            --accent: #ff570a;
+            --accent-green: #19d59e;
+            --accent-purple: #8b5cf6;
+            --border: #1f1d26;
+            --font-mono: 'IBM Plex Mono', monospace;
+            --font-sans: 'Inter', sans-serif;
+        }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%);
+            font-family: var(--font-sans);
+            background: var(--bg-dark);
             min-height: 100vh;
+            display: flex;
+            color: var(--text);
+            overflow: hidden;
+        }
+        
+        /* Grid Background Pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(255, 87, 10, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 87, 10, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        /* Left Side - Login Form */
+        .login-section {
+            flex: 0 0 420px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 48px;
+            position: relative;
+            z-index: 1;
+            background: linear-gradient(180deg, var(--bg-dark) 0%, rgba(9, 8, 12, 0.98) 100%);
+            border-right: 1px solid var(--border);
         }
         
         .login-container {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            padding: 48px;
             width: 100%;
-            max-width: 420px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-width: 360px;
         }
         
         .logo {
-            text-align: center;
-            margin-bottom: 32px;
+            margin-bottom: 40px;
         }
         
-        .logo-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 20px;
+        .logo-text {
+            font-family: var(--font-mono);
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -1px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            margin: 0 auto 16px;
-            font-size: 40px;
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            gap: 12px;
         }
         
-        .logo h1 {
-            color: #fff;
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
+        .logo-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
         }
         
         .logo p {
-            color: rgba(255, 255, 255, 0.5);
+            color: var(--text-muted);
             font-size: 14px;
-            margin-top: 4px;
+            margin-top: 8px;
+            font-family: var(--font-mono);
         }
         
         .form-group {
@@ -69,50 +110,57 @@
         
         .form-group label {
             display: block;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 14px;
+            color: var(--text-muted);
+            font-size: 12px;
             font-weight: 500;
             margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: var(--font-mono);
         }
         
         .form-group input {
             width: 100%;
-            padding: 14px 18px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            color: #fff;
-            font-size: 16px;
-            transition: all 0.3s ease;
+            padding: 14px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 15px;
+            font-family: var(--font-mono);
+            transition: all 0.2s ease;
         }
         
         .form-group input:focus {
             outline: none;
-            border-color: #667eea;
-            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(255, 87, 10, 0.1);
         }
         
         .form-group input::placeholder {
-            color: rgba(255, 255, 255, 0.3);
+            color: var(--text-muted);
         }
         
         .login-btn {
             width: 100%;
             padding: 16px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--accent);
             border: none;
-            border-radius: 12px;
+            border-radius: 8px;
             color: #fff;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
+            font-family: var(--font-mono);
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             margin-top: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .login-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            background: #ff6b2c;
+            transform: translateY(-1px);
         }
         
         .login-btn:disabled {
@@ -126,10 +174,11 @@
             border: 1px solid rgba(239, 68, 68, 0.3);
             color: #ef4444;
             padding: 12px 16px;
-            border-radius: 10px;
-            font-size: 14px;
+            border-radius: 8px;
+            font-size: 13px;
             margin-bottom: 20px;
             display: none;
+            font-family: var(--font-mono);
         }
         
         .error-message.show {
@@ -142,92 +191,339 @@
         }
         
         .back-link a {
-            color: rgba(255, 255, 255, 0.5);
+            color: var(--text-muted);
             text-decoration: none;
-            font-size: 14px;
-            transition: color 0.3s ease;
+            font-size: 13px;
+            font-family: var(--font-mono);
+            transition: color 0.2s ease;
         }
         
         .back-link a:hover {
-            color: #667eea;
+            color: var(--accent);
         }
         
-        .features {
+        /* Right Side - Code Editor Demo */
+        .demo-section {
+            flex: 1;
             display: flex;
+            align-items: center;
             justify-content: center;
-            gap: 24px;
-            margin-top: 32px;
-            padding-top: 32px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 48px;
+            position: relative;
+            z-index: 1;
+            min-width: 0;
         }
         
-        .feature {
-            text-align: center;
-            color: rgba(255, 255, 255, 0.5);
+        .code-window {
+            width: 100%;
+            max-width: 700px;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 
+                0 0 0 1px rgba(255, 87, 10, 0.1),
+                0 20px 60px -20px rgba(0, 0, 0, 0.8),
+                0 0 100px -20px rgba(255, 87, 10, 0.1);
+        }
+        
+        .code-header {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .code-dots {
+            display: flex;
+            gap: 8px;
+            margin-right: 16px;
+        }
+        
+        .code-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .code-dot.red { background: #ff5f56; }
+        .code-dot.yellow { background: #ffbd2e; }
+        .code-dot.green { background: #27c93f; }
+        
+        .code-tabs {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .code-tab {
+            padding: 6px 16px;
             font-size: 12px;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            background: transparent;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
         }
         
-        .feature-icon {
-            font-size: 20px;
-            margin-bottom: 4px;
+        .code-tab.active {
+            color: var(--text);
+            background: var(--bg-code);
+        }
+        
+        .code-status {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            font-family: var(--font-mono);
+            color: var(--accent-green);
+        }
+        
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: blink 1s ease-in-out infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        .code-content {
+            padding: 24px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.7;
+            min-height: 420px;
+            position: relative;
+        }
+        
+        .agent-indicator {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            background: rgba(255, 87, 10, 0.08);
+            border: 1px solid rgba(255, 87, 10, 0.2);
+            border-radius: 8px;
+        }
+        
+        .agent-avatar {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent) 0%, #ff8a4c 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .agent-info {
+            flex: 1;
+        }
+        
+        .agent-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .agent-action {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+        
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 4px 8px;
+            background: var(--bg-card);
+            border-radius: 4px;
+        }
+        
+        .typing-indicator span {
+            width: 4px;
+            height: 4px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: typing 1.4s ease-in-out infinite;
+        }
+        
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-4px); }
+        }
+        
+        .code-area {
+            color: var(--text);
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .code-line {
+            display: flex;
+            counter-increment: line;
+        }
+        
+        .line-number {
+            width: 40px;
+            color: var(--text-muted);
+            text-align: right;
+            padding-right: 16px;
+            user-select: none;
+            flex-shrink: 0;
+        }
+        
+        .line-content {
+            flex: 1;
+            color: #e2e2e2;
+        }
+        
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 18px;
+            background: var(--accent);
+            animation: cursor-blink 1s step-end infinite;
+            vertical-align: middle;
+            margin-left: 2px;
+        }
+        
+        @keyframes cursor-blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        /* Syntax Highlighting */
+        .keyword { color: #ff7b72; }
+        .string { color: #a5d6ff; }
+        .function { color: #d2a8ff; }
+        .comment { color: #8b949e; font-style: italic; }
+        .number { color: #79c0ff; }
+        .operator { color: #ff7b72; }
+        .variable { color: #ffa657; }
+        .property { color: #7ee787; }
+        
+        .highlight-line {
+            background: rgba(255, 87, 10, 0.08);
+            margin: 0 -24px;
+            padding: 0 24px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .demo-section {
+                display: none;
+            }
+            
+            .login-section {
+                flex: 1;
+                border-right: none;
+            }
         }
         
         @media (max-width: 480px) {
-            .login-container {
+            .login-section {
                 padding: 32px 24px;
-            }
-            
-            .features {
-                gap: 16px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="logo">
-            <div class="logo-icon">N</div>
-            <h1>Nigents</h1>
-            <p>Night Agents for GitLab</p>
-        </div>
-        
-        <div class="error-message" id="error-message">
-            Invalid username or password
-        </div>
-        
-        <form id="login-form">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" placeholder="Enter username" required>
+    <!-- Left Side - Login Form -->
+    <div class="login-section">
+        <div class="login-container">
+            <div class="logo">
+                <div class="logo-text">
+                    Nigents
+                    <span class="logo-dot"></span>
+                </div>
+                <p>Autonomous coding agents for your team</p>
             </div>
             
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="Enter password" required>
+            <div class="error-message" id="error-message">
+                Invalid username or password
             </div>
             
-            <button type="submit" class="login-btn">Sign In</button>
-        </form>
-        
-        <div class="back-link">
-            <a href="/">← Back to Home</a>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" placeholder="Enter username" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter password" required>
+                </div>
+                
+                <button type="submit" class="login-btn">Sign In</button>
+            </form>
+            
+            <div class="back-link">
+                <a href="/">← Back to Home</a>
+            </div>
         </div>
-        
-        <div class="features">
-            <div class="feature">
-                <div>7 AI Agents</div>
+    </div>
+    
+    <!-- Right Side - Code Editor Demo -->
+    <div class="demo-section">
+        <div class="code-window">
+            <div class="code-header">
+                <div class="code-dots">
+                    <div class="code-dot red"></div>
+                    <div class="code-dot yellow"></div>
+                    <div class="code-dot green"></div>
+                </div>
+                <div class="code-tabs">
+                    <button class="code-tab active">api-service.ts</button>
+                    <button class="code-tab">auth.middleware.ts</button>
+                </div>
+                <div class="code-status">
+                    <span class="status-dot"></span>
+                    backend-dev agent writing...
+                </div>
             </div>
-            <div class="feature">
-                <div>24/7 Operation</div>
-            </div>
-            <div class="feature">
-                <div>Secure</div>
+            
+            <div class="code-content">
+                <div class="agent-indicator">
+                    <div class="agent-avatar">BD</div>
+                    <div class="agent-info">
+                        <div class="agent-name">backend-dev</div>
+                        <div class="agent-action">Implementing user authentication service</div>
+                    </div>
+                    <div class="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+                
+                <div class="code-area" id="code-area">
+                    <div class="code-line">
+                        <span class="line-number">1</span>
+                        <span class="line-content" id="line-1"></span><span class="cursor"></span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
     
     <script>
-        // Hardcoded credentials
+        // Login Form Logic
         const VALID_USERNAME = 'admin';
         const VALID_PASSWORD = 'Medahny@12345';
         
@@ -239,26 +535,284 @@
             const errorMessage = document.getElementById('error-message');
             
             if (username === VALID_USERNAME && password === VALID_PASSWORD) {
-                // Set authentication token
                 localStorage.setItem('nigents_auth', 'true');
                 localStorage.setItem('nigents_user', username);
-                
-                // Redirect to dashboard
                 window.location.href = '/dashboard.html';
             } else {
                 errorMessage.textContent = 'Invalid username or password';
                 errorMessage.classList.add('show');
-                
-                setTimeout(() => {
-                    errorMessage.classList.remove('show');
-                }, 3000);
+                setTimeout(() => errorMessage.classList.remove('show'), 3000);
             }
         });
         
-        // Check if already logged in
         if (localStorage.getItem('nigents_auth') === 'true') {
             window.location.href = '/dashboard.html';
         }
+        
+        // Code Streaming Animation
+        const codeSnippets = [
+            {
+                agent: 'backend-dev',
+                action: 'Implementing user authentication service',
+                file: 'api-service.ts',
+                language: 'typescript',
+                code: `<span class="keyword">import</span> { <span class="variable">Injectable</span>, <span class="variable">UnauthorizedException</span> } <span class="keyword">from</span> <span class="string">'@nestjs/common'</span>;
+<span class="keyword">import</span> { <span class="variable">JwtService</span> } <span class="keyword">from</span> <span class="string">'@nestjs/jwt'</span>;
+<span class="keyword">import</span> { <span class="variable">InjectRepository</span> } <span class="keyword">from</span> <span class="string">'@nestjs/typeorm'</span>;
+<span class="keyword">import</span> { <span class="variable">Repository</span> } <span class="keyword">from</span> <span class="string">'typeorm'</span>;
+<span class="keyword">import</span> * <span class="keyword">as</span> <span class="variable">bcrypt</span> <span class="keyword">from</span> <span class="string">'bcrypt'</span>;
+
+<span class="keyword">@Injectable</span>()
+<span class="keyword">export class</span> <span class="function">AuthService</span> {
+  <span class="keyword">constructor</span>(
+    <span class="keyword">@InjectRepository</span>(<span class="variable">User</span>)
+    <span class="keyword">private</span> <span class="variable">userRepository</span>: <span class="variable">Repository</span><<span class="variable">User</span>>,
+    <span class="keyword">private</span> <span class="variable">jwtService</span>: <span class="variable">JwtService</span>,
+  ) {}
+
+  <span class="keyword">async</span> <span class="function">validateUser</span>(<span class="variable">email</span>: <span class="variable">string</span>, <span class="variable">password</span>: <span class="variable">string</span>): <span class="variable">Promise</span><<span class="variable">User</span> | <span class="keyword">null</span>> {
+    <span class="keyword">const</span> <span class="variable">user</span> = <span class="keyword">await</span> <span class="keyword">this</span>.<span class="property">userRepository</span>.<span class="function">findOne</span>({ <span class="property">where</span>: { <span class="property">email</span> } });
+    
+    <span class="keyword">if</span> (!<span class="variable">user</span>) {
+      <span class="keyword">return null</span>;
+    }
+
+    <span class="keyword">const</span> <span class="variable">isMatch</span> = <span class="keyword">await</span> <span class="variable">bcrypt</span>.<span class="function">compare</span>(<span class="variable">password</span>, <span class="variable">user</span>.<span class="property">passwordHash</span>);
+    
+    <span class="keyword">if</span> (!<span class="variable">isMatch</span>) {
+      <span class="keyword">throw new</span> <span class="function">UnauthorizedException</span>(<span class="string">'Invalid credentials'</span>);
+    }
+
+    <span class="keyword">return</span> <span class="variable">user</span>;
+  }
+
+  <span class="keyword">async</span> <span class="function">login</span>(<span class="variable">user</span>: <span class="variable">User</span>) {
+    <span class="keyword">const</span> <span class="variable">payload</span> = { <span class="property">sub</span>: <span class="variable">user</span>.<span class="property">id</span>, <span class="property">email</span>: <span class="variable">user</span>.<span class="property">email</span> };
+    
+    <span class="keyword">return</span> {
+      <span class="property">access_token</span>: <span class="keyword">this</span>.<span class="property">jwtService</span>.<span class="function">sign</span>(<span class="variable">payload</span>),
+      <span class="property">user</span>: {
+        <span class="property">id</span>: <span class="variable">user</span>.<span class="property">id</span>,
+        <span class="property">email</span>: <span class="variable">user</span>.<span class="property">email</span>,
+        <span class="property">name</span>: <span class="variable">user</span>.<span class="property">name</span>,
+      },
+    };
+  }
+}`
+            },
+            {
+                agent: 'frontend-dev',
+                action: 'Creating React hook for data fetching',
+                file: 'useApi.ts',
+                language: 'typescript',
+                code: `<span class="keyword">import</span> { <span class="variable">useState</span>, <span class="variable">useEffect</span>, <span class="variable">useCallback</span> } <span class="keyword">from</span> <span class="string">'react'</span>;
+
+<span class="keyword">interface</span> <span class="function">UseApiOptions</span><<span class="variable">T</span>> {
+  <span class="property">url</span>: <span class="variable">string</span>;
+  <span class="property">initialData</span>?: <span class="variable">T</span>;
+  <span class="property">enabled</span>?: <span class="variable">boolean</span>;
+}
+
+<span class="keyword">interface</span> <span class="function">ApiState</span><<span class="variable">T</span>> {
+  <span class="property">data</span>: <span class="variable">T</span> | <span class="keyword">null</span>;
+  <span class="property">loading</span>: <span class="variable">boolean</span>;
+  <span class="property">error</span>: <span class="variable">Error</span> | <span class="keyword">null</span>;
+}
+
+<span class="keyword">export function</span> <span class="function">useApi</span><<span class="variable">T</span>>({ <span class="variable">url</span>, <span class="variable">initialData</span> = <span class="keyword">null</span>, <span class="variable">enabled</span> = <span class="keyword">true</span> }: <span class="function">UseApiOptions</span><<span class="variable">T</span>>): <span class="function">ApiState</span><<span class="variable">T</span>> {
+  <span class="keyword">const</span> [<span class="variable">state</span>, <span class="variable">setState</span>] = <span class="function">useState</span><<span class="function">ApiState</span><<span class="variable">T</span>>>({
+    <span class="property">data</span>: <span class="variable">initialData</span>,
+    <span class="property">loading</span>: <span class="variable">enabled</span>,
+    <span class="property">error</span>: <span class="keyword">null</span>,
+  });
+
+  <span class="keyword">const</span> <span class="variable">fetchData</span> = <span class="function">useCallback</span>(<span class="keyword">async</span> () => {
+    <span class="function">setState</span>(<span class="variable">prev</span> => ({ ...<span class="variable">prev</span>, <span class="property">loading</span>: <span class="keyword">true</span>, <span class="property">error</span>: <span class="keyword">null</span> }));
+
+    <span class="keyword">try</span> {
+      <span class="keyword">const</span> <span class="variable">response</span> = <span class="keyword">await</span> <span class="function">fetch</span>(<span class="variable">url</span>);
+      
+      <span class="keyword">if</span> (!<span class="variable">response</span>.<span class="property">ok</span>) {
+        <span class="keyword">throw new</span> <span class="function">Error</span>(<span class="string">\`HTTP error! status: \${<span class="variable">response</span>.<span class="property">status</span>}\`</span>);
+      }
+
+      <span class="keyword">const</span> <span class="variable">data</span> = <span class="keyword">await</span> <span class="variable">response</span>.<span class="function">json</span>();
+      <span class="function">setState</span>({ <span class="property">data</span>, <span class="property">loading</span>: <span class="keyword">false</span>, <span class="property">error</span>: <span class="keyword">null</span> });
+    } <span class="keyword">catch</span> (<span class="variable">error</span>) {
+      <span class="function">setState</span>({ <span class="property">data</span>: <span class="keyword">null</span>, <span class="property">loading</span>: <span class="keyword">false</span>, <span class="property">error</span>: <span class="variable">error</span> <span class="keyword">as</span> <span class="variable">Error</span> });
+    }
+  }, [<span class="variable">url</span>]);
+
+  <span class="function">useEffect</span>(() => {
+    <span class="keyword">if</span> (<span class="variable">enabled</span>) {
+      <span class="function">fetchData</span>();
+    }
+  }, [<span class="variable">enabled</span>, <span class="function">fetchData</span>]);
+
+  <span class="keyword">return</span> <span class="variable">state</span>;
+}`
+            },
+            {
+                agent: 'qa-tester',
+                action: 'Writing integration tests',
+                file: 'auth.spec.ts',
+                language: 'typescript',
+                code: `<span class="keyword">import</span> { <span class="variable">Test</span>, <span class="variable">TestingModule</span> } <span class="keyword">from</span> <span class="string">'@nestjs/testing'</span>;
+<span class="keyword">import</span> { <span class="variable">INestApplication</span> } <span class="keyword">from</span> <span class="string">'@nestjs/common'</span>;
+<span class="keyword">import</span> <span class="variable">request</span> <span class="keyword">from</span> <span class="string">'supertest'</span>;
+<span class="keyword">import</span> { <span class="variable">AppModule</span> } <span class="keyword">from</span> <span class="string">'./../src/app.module'</span>;
+
+<span class="function">describe</span>(<span class="string">'AuthController (e2e)'</span>, () => {
+  <span class="keyword">let</span> <span class="variable">app</span>: <span class="variable">INestApplication</span>;
+
+  <span class="function">beforeEach</span>(<span class="keyword">async</span> () => {
+    <span class="keyword">const</span> <span class="variable">moduleFixture</span>: <span class="variable">TestingModule</span> = <span class="keyword">await</span> <span class="variable">Test</span>.<span class="function">createTestingModule</span>({
+      <span class="property">imports</span>: [<span class="variable">AppModule</span>],
+    }).<span class="function">compile</span>();
+
+    <span class="variable">app</span> = <span class="variable">moduleFixture</span>.<span class="function">createNestApplication</span>();
+    <span class="keyword">await</span> <span class="variable">app</span>.<span class="function">init</span>();
+  });
+
+  <span class="function">it</span>(<span class="string">'/auth/login (POST) - should return access token'</span>, () => {
+    <span class="keyword">return</span> <span class="function">request</span>(<span class="variable">app</span>.<span class="function">getHttpServer</span>())
+      .<span class="function">post</span>(<span class="string">'/auth/login'</span>)
+      .<span class="function">send</span>({ <span class="property">email</span>: <span class="string">'test@example.com'</span>, <span class="property">password</span>: <span class="string">'password123'</span> })
+      .<span class="function">expect</span>(<span class="number">201</span>)
+      .<span class="function">expect</span>((<span class="variable">res</span>) => {
+        <span class="function">expect</span>(<span class="variable">res</span>.<span class="property">body</span>.<span class="property">access_token</span>).<span class="function">toBeDefined</span>();
+        <span class="function">expect</span>(<span class="variable">res</span>.<span class="property">body</span>.<span class="property">user</span>.<span class="property">email</span>).<span class="function">toBe</span>(<span class="string">'test@example.com'</span>);
+      });
+  });
+
+  <span class="function">afterAll</span>(<span class="keyword">async</span> () => {
+    <span class="keyword">await</span> <span class="variable">app</span>.<span class="function">close</span>();
+  });
+});`
+            }
+        ];
+        
+        let currentSnippetIndex = 0;
+        let currentCharIndex = 0;
+        let isDeleting = false;
+        let typingSpeed = 20;
+        let pauseDuration = 3000;
+        
+        const codeArea = document.getElementById('code-area');
+        const agentNameEl = document.querySelector('.agent-name');
+        const agentActionEl = document.querySelector('.agent-action');
+        const codeTabs = document.querySelectorAll('.code-tab');
+        const codeStatus = document.querySelector('.code-status');
+        
+        function getAgentInitials(name) {
+            return name.split('-').map(n => n[0].toUpperCase()).join('');
+        }
+        
+        function getAgentColor(name) {
+            const colors = {
+                'backend-dev': '#ff570a',
+                'frontend-dev': '#19d59e',
+                'qa-tester': '#8b5cf6',
+                'planner': '#f59e0b',
+                'code-reviewer': '#ec4899'
+            };
+            return colors[name] || '#ff570a';
+        }
+        
+        function typeCode() {
+            const snippet = codeSnippets[currentSnippetIndex];
+            const code = snippet.code;
+            
+            // Update agent info
+            agentNameEl.textContent = snippet.agent;
+            agentActionEl.textContent = snippet.action;
+            document.querySelector('.agent-avatar').textContent = getAgentInitials(snippet.agent);
+            document.querySelector('.agent-avatar').style.background = 
+                `linear-gradient(135deg, ${getAgentColor(snippet.agent)} 0%, ${getAgentColor(snippet.agent)}aa 100%)`;
+            
+            // Update tabs
+            codeTabs[0].textContent = snippet.file;
+            codeStatus.innerHTML = `<span class="status-dot"></span>${snippet.agent} agent writing...`;
+            
+            if (!isDeleting) {
+                // Typing
+                if (currentCharIndex < code.length) {
+                    const char = code[currentCharIndex];
+                    
+                    // Check if we're starting a new line
+                    if (char === '\n') {
+                        const lineCount = (code.substring(0, currentCharIndex).match(/\n/g) || []).length + 2;
+                        codeArea.innerHTML += `
+                            <div class="code-line">
+                                <span class="line-number">${lineCount}</span>
+                                <span class="line-content" id="line-${lineCount}"></span><span class="cursor"></span>
+                            </div>
+                        `;
+                    } else {
+                        // Add character to current line
+                        const lines = codeArea.querySelectorAll('.line-content');
+                        const currentLine = lines[lines.length - 1];
+                        if (currentLine) {
+                            currentLine.innerHTML = code.substring(0, currentCharIndex + 1).split('\n').pop();
+                        }
+                    }
+                    
+                    currentCharIndex++;
+                    
+                    // Variable typing speed for realism
+                    const speed = Math.random() * 30 + 10;
+                    setTimeout(typeCode, speed);
+                } else {
+                    // Finished typing, pause before deleting
+                    setTimeout(() => {
+                        isDeleting = true;
+                        typeCode();
+                    }, pauseDuration);
+                }
+            } else {
+                // Deleting
+                if (currentCharIndex > 0) {
+                    currentCharIndex--;
+                    
+                    const lines = code.split('\n');
+                    let charCount = 0;
+                    let currentLineIndex = 0;
+                    
+                    for (let i = 0; i < lines.length; i++) {
+                        if (charCount + lines[i].length >= currentCharIndex) {
+                            currentLineIndex = i;
+                            break;
+                        }
+                        charCount += lines[i].length + 1;
+                    }
+                    
+                    // Rebuild visible content
+                    const visibleLines = code.substring(0, currentCharIndex).split('\n');
+                    codeArea.innerHTML = visibleLines.map((line, i) => `
+                        <div class="code-line">
+                            <span class="line-number">${i + 1}</span>
+                            <span class="line-content" id="line-${i + 1}">${line}</span>${i === visibleLines.length - 1 ? '<span class="cursor"></span>' : ''}
+                        </div>
+                    `).join('');
+                    
+                    setTimeout(typeCode, 5);
+                } else {
+                    // Finished deleting, move to next snippet
+                    isDeleting = false;
+                    currentSnippetIndex = (currentSnippetIndex + 1) % codeSnippets.length;
+                    codeArea.innerHTML = `
+                        <div class="code-line">
+                            <span class="line-number">1</span>
+                            <span class="line-content" id="line-1"></span><span class="cursor"></span>
+                        </div>
+                    `;
+                    setTimeout(typeCode, 500);
+                }
+            }
+        }
+        
+        // Start the animation
+        setTimeout(typeCode, 1000);
     </script>
 </body>
 </html>
