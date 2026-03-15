@@ -1,77 +1,63 @@
 /**
- * Nigents - PM2 Ecosystem Configuration
- * Process manager configuration for 24/7 operation with data persistence
+ * PM2 Ecosystem Configuration
+ * Manages memory limits and auto-restart for Nigents services
  */
-
-const path = require('path');
 
 module.exports = {
   apps: [
     {
       name: 'nigents-bot',
       script: './src/bot.js',
+      cwd: '/home/ubuntu/nigents',
       instances: 1,
       exec_mode: 'fork',
-      watch: false,
-      max_memory_restart: '1G',
-      env: {
-        NODE_ENV: 'production',
-        // Data persistence paths
-        DATA_DIR: '/home/ubuntu/nigents/data',
-        LOGS_DIR: '/home/ubuntu/nigents/logs',
-        CACHE_DIR: '/home/ubuntu/nigents/.cache',
-      },
-      log_file: '/home/ubuntu/nigents/logs/bot.log',
-      out_file: '/home/ubuntu/nigents/logs/bot-out.log',
-      error_file: '/home/ubuntu/nigents/logs/bot-error.log',
-      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-      merge_logs: true,
+      // Memory management
+      max_memory_restart: '2G',       // Restart if memory exceeds 2GB
+      node_args: '--max-old-space-size=4096 --optimize-for-size',
+      // Auto-restart on failure
       autorestart: true,
-      restart_delay: 5000,
       max_restarts: 10,
       min_uptime: '10s',
-      // Ensure data persists between restarts
+      // Environment
+      env: {
+        NODE_ENV: 'production',
+      },
+      // Logging
+      log_file: './logs/bot.log',
+      out_file: './logs/bot-out.log',
+      error_file: './logs/bot-error.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      // Monitoring
+      monitor: true,
+      // Graceful shutdown
       kill_timeout: 5000,
       listen_timeout: 10000,
-      // Post-deploy hook to ensure directories exist
-      post_update: ['mkdir -p /home/ubuntu/nigents/data /home/ubuntu/nigents/logs /home/ubuntu/nigents/.cache'],
     },
     {
       name: 'nigents-dashboard',
       script: './src/dashboard/server.js',
+      cwd: '/home/ubuntu/nigents',
       instances: 1,
       exec_mode: 'fork',
-      watch: false,
-      max_memory_restart: '512M',
+      // Memory management
+      max_memory_restart: '1G',       // Restart if memory exceeds 1GB
+      node_args: '--max-old-space-size=2048 --optimize-for-size',
+      // Auto-restart on failure
+      autorestart: true,
+      max_restarts: 10,
+      min_uptime: '10s',
+      // Environment
       env: {
         NODE_ENV: 'production',
-        PORT: 4000,
-        DATA_DIR: '/home/ubuntu/nigents/data',
-        LOGS_DIR: '/home/ubuntu/nigents/logs',
+        PORT: 3000,
       },
-      log_file: '/home/ubuntu/nigents/logs/dashboard.log',
-      out_file: '/home/ubuntu/nigents/logs/dashboard-out.log',
-      error_file: '/home/ubuntu/nigents/logs/dashboard-error.log',
+      // Logging
+      log_file: './logs/dashboard.log',
+      out_file: './logs/dashboard-out.log',
+      error_file: './logs/dashboard-error.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-      merge_logs: true,
-      autorestart: true,
-      restart_delay: 5000,
+      // Graceful shutdown
       kill_timeout: 5000,
-      listen_timeout: 10000,
     },
   ],
-
-  // Deployment configuration (if using PM2 deploy)
-  deploy: {
-    production: {
-      user: 'ubuntu',
-      host: process.env.EC2_HOST || 'nigents.com',
-      ref: 'origin/main',
-      repo: 'https://gitlab.com/bonyad-tech/nigents.git',
-      path: '/home/ubuntu/nigents',
-      'pre-deploy-local': '',
-      'post-deploy': 'npm ci --production && pm2 reload ecosystem.config.js --env production && pm2 save',
-      'pre-setup': '',
-    },
-  },
 };

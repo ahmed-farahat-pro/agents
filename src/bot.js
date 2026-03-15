@@ -74,6 +74,50 @@ process.on('SIGINT', stopBot);
 process.on('SIGTERM', stopBot);
 process.on('SIGUSR2', stopBot); // PM2 reload signal
 
+// Memory monitoring and cleanup
+function logMemoryUsage() {
+  const used = process.memoryUsage();
+  logger.info('[Bot] Memory usage:', {
+    rss: `${Math.round(used.rss / 1024 / 1024)}MB`,
+    heapTotal: `${Math.round(used.heapTotal / 1024 / 1024)}MB`,
+    heapUsed: `${Math.round(used.heapUsed / 1024 / 1024)}MB`,
+    external: `${Math.round(used.external / 1024 / 1024)}MB`,
+  });
+}
+
+// Log memory every 5 minutes
+setInterval(logMemoryUsage, 5 * 60 * 1000);
+
+// Force garbage collection hint every 10 minutes (if enabled)
+setInterval(() => {
+  if (global.gc) {
+    logger.info('[Bot] Running garbage collection...');
+    global.gc();
+    logMemoryUsage();
+  }
+}, 10 * 60 * 1000);
+
+// Memory leak prevention - cleanup old sessions periodically
+setInterval(() => {
+  logger.info('[Bot] Running periodic cleanup...');
+  // Clear any old pending plans (older than 24 hours)
+  const cutoff = Date.now() - (24 * 60 * 60 * 1000);
+  // This will be handled by the orchestrator's memory limits
+  if (orchestrator && orchestrator.taskQueue) {
+    const initialSize = orchestrator.taskQueue.length;
+    orchestrator.taskQueue = orchestrator.taskQueue.filter(task => {
+      if (task.createdAt && new Date(task.createdAt).getTime() < cutoff) {
+        return task.status === 'running' || task.status === 'approved'; // Keep active tasks
+      }
+      return true;
+    });
+    const removed = initialSize - orchestrator.taskQueue.length;
+    if (removed > 0) {
+      logger.info(`[Bot] Cleaned up ${removed} old tasks from queue`);
+    }
+  }
+}, 30 * 60 * 1000); // Every 30 minutes
+
 // Initialize agents
 const orchestrator = new OrchestratorAgent();
 const reporter = new ReporterAgent(bot, chatId);

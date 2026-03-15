@@ -16,6 +16,8 @@ class OrchestratorAgent extends BaseAgent {
     this.taskQueue = []; // In-memory fallback
     this.activeTasks = new Map();
     this.completedTasks = [];
+    this.maxTaskQueueSize = 100; // Limit memory usage
+    this.maxCompletedTasks = 50; // Keep only recent completed tasks
     
     // Load database task queue if MySQL is configured
     this.dbTaskQueue = null;
@@ -58,6 +60,38 @@ class OrchestratorAgent extends BaseAgent {
         };
         logger.warn('[Orchestrator] Using minimal stub storage - persistence disabled!');
       }
+    }
+  }
+
+  /**
+   * Safely add task to queue with memory limits
+   */
+  addTaskToQueue(task) {
+    // Enforce max queue size
+    if (this.taskQueue.length >= this.maxTaskQueueSize) {
+      // Remove oldest pending tasks first
+      const pendingIndex = this.taskQueue.findIndex(t => t.status === 'pending_approval');
+      if (pendingIndex !== -1) {
+        this.taskQueue.splice(pendingIndex, 1);
+        logger.warn('[Orchestrator] Removed oldest pending task to free memory');
+      } else {
+        // Remove oldest completed/cancelled tasks
+        this.taskQueue.shift();
+        logger.warn('[Orchestrator] Removed oldest task from queue');
+      }
+    }
+    this.taskQueue.push(task);
+  }
+
+  /**
+   * Safely add completed task with memory limits
+   */
+  addCompletedTask(task) {
+    this.addCompletedTask(task);
+    // Enforce max completed tasks
+    if (this.completedTasks.length > this.maxCompletedTasks) {
+      this.completedTasks = this.completedTasks.slice(-this.maxCompletedTasks);
+      logger.debug('[Orchestrator] Trimmed completed tasks to max size');
     }
   }
 
@@ -348,7 +382,7 @@ Respond with JSON only:
         taskEntry.userId = context.userId.toString();
       }
       
-      this.taskQueue.push(taskEntry);
+      this.addTaskToQueue(taskEntry);
       
       // Also save to database if available
       if (this.useDatabase && this.dbTaskQueue) {
@@ -439,7 +473,7 @@ Provide a helpful answer. If the question is about specific code and you don't h
           createdAt: new Date(persistedPlan.createdAt || Date.now()),
           userId: userIdStr,
         };
-        this.taskQueue.push(pendingPlan);
+        this.addTaskToQueue(pendingPlan);
       }
     }
     
@@ -500,7 +534,7 @@ Provide a helpful answer. If the question is about specific code and you don't h
           approvedAt: new Date(),
           userId: userIdStr,
         };
-        this.taskQueue.push(newTask);
+        this.addTaskToQueue(newTask);
         approvedTasks = [newTask];
       }
     }
@@ -629,7 +663,7 @@ Provide a helpful answer. If the question is about specific code and you don't h
       }
     }
 
-    this.completedTasks.push(task);
+    this.addCompletedTask(task);
     this.emit('implementationCompleted', { taskId: task.id, task });
   }
 
@@ -798,7 +832,7 @@ Provide a helpful answer. If the question is about specific code and you don't h
 
     // Move to completed with cancelled status
     task.status = 'cancelled';
-    this.completedTasks.push(task);
+    this.addCompletedTask(task);
     this.taskQueue.splice(taskIndex, 1);
 
     return {
@@ -834,7 +868,7 @@ Provide a helpful answer. If the question is about specific code and you don't h
     task.stoppedAt = new Date().toISOString();
     
     // Move to completed
-    this.completedTasks.push(task);
+    this.addCompletedTask(task);
     this.taskQueue.splice(taskIndex, 1);
 
     // Emit stop event so agents can clean up

@@ -220,48 +220,23 @@ class SharedConfig {
 
     logger.info(`[SharedConfig] Applied ${applied} config values to environment`);
     
-    // Update ai-client if available
+    // Update ai-client if available (lazy load to avoid circular dependency)
     try {
-      const aiClient = require('./ai-client');
-      this.updateAIClient(aiClient);
+      // Use setImmediate to break circular dependency chain
+      setImmediate(() => {
+        try {
+          const aiClient = require('./ai-client');
+          if (aiClient && aiClient.refreshProviders) {
+            aiClient.refreshProviders();
+            logger.info('[SharedConfig] AI client refreshed with new config');
+          }
+        } catch (err) {
+          logger.warn('[SharedConfig] Could not refresh AI client:', err.message);
+        }
+      });
     } catch (e) {
-      logger.warn('[SharedConfig] Could not update AI client:', e.message);
+      logger.warn('[SharedConfig] Could not schedule AI client update:', e.message);
     }
-  }
-
-  updateAIClient(aiClient) {
-    const keys = this.getApiKeys();
-    let updated = 0;
-    
-    // Update providers in ai-client
-    if (keys.ANTHROPIC_API_KEY && aiClient.providers.anthropic) {
-      aiClient.providers.anthropic.enabled = true;
-      aiClient.providers.anthropic.apiKey = keys.ANTHROPIC_API_KEY;
-      if (aiClient.providers.anthropic.client) {
-        aiClient.providers.anthropic.client.apiKey = keys.ANTHROPIC_API_KEY;
-      }
-      updated++;
-    }
-    
-    if (keys.ZHIPU_API_KEY && aiClient.providers.zhipu) {
-      aiClient.providers.zhipu.enabled = true;
-      aiClient.providers.zhipu.apiKey = keys.ZHIPU_API_KEY;
-      updated++;
-    }
-    
-    if (keys.MOONSHOT_API_KEY && aiClient.providers.moonshot) {
-      aiClient.providers.moonshot.enabled = true;
-      aiClient.providers.moonshot.apiKey = keys.MOONSHOT_API_KEY;
-      updated++;
-    }
-    
-    if (keys.DEEPSEEK_API_KEY && aiClient.providers.deepseek) {
-      aiClient.providers.deepseek.enabled = true;
-      aiClient.providers.deepseek.apiKey = keys.DEEPSEEK_API_KEY;
-      updated++;
-    }
-
-    logger.info(`[SharedConfig] Updated ${updated} AI providers`);
   }
   
   // Force reload from disk
