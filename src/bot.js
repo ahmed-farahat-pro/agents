@@ -228,6 +228,7 @@ Send voice notes or text naturally:
 • /settings — View your settings
 • /models — Select AI provider (interactive)
 • /model <provider> [model] — Switch AI model
+• /agentmodels — Show agent model assignments
 • /addmodel — Add custom AI model
 • /addglm <key> [model] — Add Zhipu GLM model quickly
 • /addmoonshot <key> [model] — Add Moonshot model quickly
@@ -1298,6 +1299,54 @@ bot.onText(/\/models/, async (msg) => {
   } catch (error) {
     logger.error('Failed to load models:', error);
     await bot.sendMessage(msg.chat.id, 'Error loading AI models.');
+  }
+});
+
+// /agentmodels command - Show current agent model assignments
+bot.onText(/\/agentmodels/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  try {
+    // Load agents config
+    const agentsConfig = require('./agents').agentsConfig || require('../../config/agents.json');
+    
+    let message = '🤖 **Agent Model Configuration**\n\n';
+    
+    // Show global defaults
+    if (agentsConfig.global) {
+      message += '🌍 **Global Defaults:**\n';
+      message += `Provider: ${agentsConfig.global.defaultProvider || 'anthropic'}\n`;
+      message += `Model: ${agentsConfig.global.defaultModel || 'default'}\n\n`;
+    }
+    
+    // Show per-agent configuration
+    message += '📋 **Per-Agent Configuration:**\n';
+    const agentNames = ['orchestrator', 'planner', 'backend-dev', 'frontend-dev', 'qa-tester', 'code-reviewer', 'reporter'];
+    
+    for (const agentName of agentNames) {
+      const agent = agentsConfig[agentName];
+      if (agent) {
+        const provider = agent.provider || 'default';
+        const model = agent.model || 'default';
+        const fallback = agent.fallbackProvider ? `→ ${agent.fallbackProvider}` : '';
+        message += `• **${agentName}**: ${provider} (${model}) ${fallback}\n`;
+      }
+    }
+    
+    message += '\n💡 **To change:**\n';
+    message += 'Edit `config/agents.json` and restart the bot.\n\n';
+    message += '📝 **Global section:**\n';
+    message += '```json\n';
+    message += '"global": {\n';
+    message += '  "defaultProvider": "zhipu",\n';
+    message += '  "defaultModel": "glm-5"\n';
+    message += '}\n';
+    message += '```';
+    
+    await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+  } catch (error) {
+    logger.error('[Bot] Failed to load agent models:', error);
+    await bot.sendMessage(msg.chat.id, 'Error loading agent configuration.');
   }
 });
 

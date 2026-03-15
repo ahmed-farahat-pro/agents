@@ -16,10 +16,29 @@ class AIClient {
     // Initialize providers (will be updated with actual keys from shared config)
     this.refreshProviders();
     
-    this.defaultProvider = process.env.DEFAULT_AI_PROVIDER || 'anthropic';
+    // Set default provider from: 1) env var, 2) agents.json global config, 3) 'anthropic'
+    const agentsConfig = this.loadAgentsConfig();
+    this.defaultProvider = process.env.DEFAULT_AI_PROVIDER || 
+                           agentsConfig?.global?.defaultProvider || 
+                           'anthropic';
+    this.defaultModel = agentsConfig?.global?.defaultModel || null;
+
+    logger.info(`[AIClient] Default provider: ${this.defaultProvider}${this.defaultModel ? ` (${this.defaultModel})` : ''}`);
 
     // Log API keys status on startup
     this.logAPIKeysStatus();
+  }
+
+  /**
+   * Load agents config from agents.json
+   */
+  loadAgentsConfig() {
+    try {
+      return require('../../config/agents.json');
+    } catch (error) {
+      logger.warn('[AIClient] Could not load agents.json:', error.message);
+      return null;
+    }
   }
 
   /**
@@ -653,16 +672,21 @@ class AIClient {
     // Refresh providers before each call
     this.refreshProviders();
     
+    // Use provided options, or fall back to global defaults
     const provider = options.provider || this.defaultProvider;
+    const model = options.model || this.defaultModel;
+    
+    // Update options with resolved model
+    const resolvedOptions = { ...options, provider, model };
 
     logger.info(`[AIClient] Calling ${provider}:`, {
       promptLength: prompt.length,
-      model: options.model || 'default',
+      model: model || 'default',
     });
 
     // Check if it's a custom provider
     if (this.providers[provider]?.isCustom) {
-      return this.callCustom(provider, prompt, options);
+      return this.callCustom(provider, prompt, resolvedOptions);
     }
 
     switch (provider) {
@@ -670,22 +694,22 @@ class AIClient {
         if (!this.providers.anthropic.enabled) {
           throw new Error('Anthropic API key not configured');
         }
-        return this.callAnthropic(prompt, options);
+        return this.callAnthropic(prompt, resolvedOptions);
       case 'zhipu':
         if (!this.providers.zhipu.enabled) {
           throw new Error('Zhipu API key not configured');
         }
-        return this.callZhipu(prompt, options);
+        return this.callZhipu(prompt, resolvedOptions);
       case 'moonshot':
         if (!this.providers.moonshot.enabled) {
           throw new Error('Moonshot API key not configured');
         }
-        return this.callMoonshot(prompt, options);
+        return this.callMoonshot(prompt, resolvedOptions);
       case 'deepseek':
         if (!this.providers.deepseek.enabled) {
           throw new Error('DeepSeek API key not configured');
         }
-        return this.callDeepseek(prompt, options);
+        return this.callDeepseek(prompt, resolvedOptions);
       default:
         const availableProviders = Object.keys(this.providers).join(', ');
         logger.error(`[AIClient] Unknown provider: ${provider}. Available: ${availableProviders}`);
