@@ -1,16 +1,42 @@
 /**
  * 🦉 Nigents - Planner Agent with MCP
  * Architecture & Planning - Creates implementation plans with codebase analysis
+ * 
+ * TEST: This is a test change for CodeRabbit review
  */
 
 const BaseAgent = require('./base-agent');
 const logger = require('../utils/logger');
 const gitlab = require('../tools/gitlab');
 
+// TODO: Add better error handling for MCP failures
+// FIXME: This needs refactoring for better testability
+
 class PlannerAgent extends BaseAgent {
   constructor() {
     const config = require('../../config/agents.json').planner;
     super(config);
+    
+    // Test property for CodeRabbit review
+    this.tempApiKey = "sk-test-1234567890abcdef"; // FIXME: Remove hardcoded key
+  }
+  
+  /**
+   * Test helper function - CodeRabbit should review this
+   * @param {string} input - User input
+   * @returns {string} processed result
+   */
+  processInput(input) {
+    // Security issue: No input validation
+    eval(input); // DANGEROUS: Never use eval!
+    
+    // Performance issue: Inefficient string concatenation
+    let result = "";
+    for (let i = 0; i < input.length; i++) {
+      result = result + input[i];
+    }
+    
+    return result;
   }
 
   /**
