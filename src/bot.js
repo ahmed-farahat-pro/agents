@@ -228,7 +228,9 @@ Send voice notes or text naturally:
 • /settings — View your settings
 • /models — Select AI provider (interactive)
 • /model <provider> [model] — Switch AI model
-• /agentmodels — Show agent model assignments
+• /agentmodels — Show agent models
+• /setagent <agent> <provider> <model> — Change agent model
+• /setallagents <provider> <model> — Set all agents
 • /addmodel — Add custom AI model
 • /addglm <key> [model] — Add Zhipu GLM model quickly
 • /addmoonshot <key> [model] — Add Moonshot model quickly
@@ -1302,52 +1304,165 @@ bot.onText(/\/models/, async (msg) => {
   }
 });
 
+// Import agent config manager
+const agentConfig = require('./utils/agent-config');
+
 // /agentmodels command - Show current agent model assignments
 bot.onText(/\/agentmodels/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
   try {
-    // Load agents config
-    const agentsConfig = require('./agents').agentsConfig || require('../../config/agents.json');
+    const agents = agentConfig.getAllAgents();
+    const globalDefaults = agentConfig.getGlobalDefaults();
+    const providers = agentConfig.getAvailableProviders();
     
     let message = '🤖 **Agent Model Configuration**\n\n';
     
     // Show global defaults
-    if (agentsConfig.global) {
-      message += '🌍 **Global Defaults:**\n';
-      message += `Provider: ${agentsConfig.global.defaultProvider || 'anthropic'}\n`;
-      message += `Model: ${agentsConfig.global.defaultModel || 'default'}\n\n`;
-    }
+    message += '🌍 **Global Defaults:**\n';
+    message += `Provider: ${globalDefaults.defaultProvider || 'zhipu'}\n`;
+    message += `Model: ${globalDefaults.defaultModel || 'glm-5'}\n\n`;
     
     // Show per-agent configuration
     message += '📋 **Per-Agent Configuration:**\n';
-    const agentNames = ['orchestrator', 'planner', 'backend-dev', 'frontend-dev', 'qa-tester', 'code-reviewer', 'reporter'];
     
-    for (const agentName of agentNames) {
-      const agent = agentsConfig[agentName];
-      if (agent) {
-        const provider = agent.provider || 'default';
-        const model = agent.model || 'default';
-        const fallback = agent.fallbackProvider ? `→ ${agent.fallbackProvider}` : '';
-        message += `• **${agentName}**: ${provider} (${model}) ${fallback}\n`;
-      }
+    for (const [agentName, agent] of Object.entries(agents)) {
+      const provider = agent.provider || 'default';
+      const model = agent.model || 'default';
+      message += `• **${agentName}**: \`${provider}\` / \`${model}\`\n`;
     }
     
-    message += '\n💡 **To change:**\n';
-    message += 'Edit `config/agents.json` and restart the bot.\n\n';
-    message += '📝 **Global section:**\n';
-    message += '```json\n';
-    message += '"global": {\n';
-    message += '  "defaultProvider": "zhipu",\n';
-    message += '  "defaultModel": "glm-5"\n';
-    message += '}\n';
-    message += '```';
+    message += '\n💡 **Commands to change:**\n';
+    message += '`/setagent <agent> <provider> <model>`\n';
+    message += 'Example: `/setagent planner zhipu glm-5`\n\n';
+    message += '`/setallagents <provider> <model>`\n';
+    message += 'Example: `/setallagents zhipu glm-4-plus`\n\n';
+    message += '**Available providers:**\n';
+    for (const [key, info] of Object.entries(providers)) {
+      message += `• ${key}: ${info.name}\n`;
+    }
     
     await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
   } catch (error) {
     logger.error('[Bot] Failed to load agent models:', error);
     await bot.sendMessage(msg.chat.id, 'Error loading agent configuration.');
   }
+});
+
+// /setagent command - Set AI model for a specific agent
+// Usage: /setagent <agent> <provider> <model>
+// Example: /setagent planner zhipu glm-5
+bot.onText(/\/setagent\s+(\S+)\s+(\S+)\s+(\S+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const agentName = match[1].trim().toLowerCase();
+  const provider = match[2].trim().toLowerCase();
+  const model = match[3].trim();
+
+  // Validate agent name
+  const validAgents = ['orchestrator', 'planner', 'backend-dev', 'frontend-dev', 'qa-tester', 'code-reviewer', 'reporter'];
+  if (!validAgents.includes(agentName)) {
+    await bot.sendMessage(msg.chat.id, 
+      `❌ Invalid agent name: ${agentName}\n\n` +
+      `Valid agents:\n` +
+      validAgents.map(a => `• ${a}`).join('\n'),
+      { parse_mode: 'Markdown' }
+    );
+    return;
+  }
+
+  // Validate provider
+  const providers = agentConfig.getAvailableProviders();
+  if (!providers[provider]) {
+    await bot.sendMessage(msg.chat.id, 
+      `❌ Invalid provider: ${provider}\n\n` +
+      `Available providers:\n` +
+      Object.keys(providers).map(p => `• ${p}`).join('\n'),
+      { parse_mode: 'Markdown' }
+    );
+    return;
+  }
+
+  // Validate model
+  const validModels = providers[provider].models;
+  if (!validModels.includes(model)) {
+    await bot.sendMessage(msg.chat.id, 
+      `⚠️ Warning: ${model} is not a standard model for ${provider}.\n\n` +
+      `Standard models:\n` +
+      validModels.map(m => `• ${m}`).join('\n') + `\n\n` +
+      `Continuing anyway...`,
+      { parse_mode: 'Markdown' }
+    );
+  }
+
+  // Update the agent config
+  const success = agentConfig.setAgentModel(agentName, provider, model);
+  
+  if (success) {
+    // Reload orchestrator agents with new config
+    orchestrator.reloadAgentConfigs();
+    
+    await bot.sendMessage(msg.chat.id, 
+      `✅ **Agent Model Updated**\n\n` +
+      `**${agentName}** will now use:\n` +
+      `Provider: ${provider}\n` +
+      `Model: ${model}\n\n` +
+      `Changes are active immediately!`,
+      { parse_mode: 'Markdown' }
+    );
+    
+    logger.info(`[Bot] User ${msg.from.id} set ${agentName} to ${provider}/${model}`);
+  } else {
+    await bot.sendMessage(msg.chat.id, `❌ Failed to update ${agentName}. Check logs.`);
+  }
+});
+
+// /setallagents command - Set AI model for ALL agents at once
+// Usage: /setallagents <provider> <model>
+// Example: /setallagents zhipu glm-5
+bot.onText(/\/setallagents\s+(\S+)\s+(\S+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const provider = match[1].trim().toLowerCase();
+  const model = match[2].trim();
+
+  // Validate provider
+  const providers = agentConfig.getAvailableProviders();
+  if (!providers[provider]) {
+    await bot.sendMessage(msg.chat.id, 
+      `❌ Invalid provider: ${provider}\n\n` +
+      `Available providers:\n` +
+      Object.keys(providers).map(p => `• ${p}`).join('\n'),
+      { parse_mode: 'Markdown' }
+    );
+    return;
+  }
+
+  // Update global defaults
+  agentConfig.setGlobalDefaults(provider, model);
+  
+  // Update all agents
+  const agentNames = ['orchestrator', 'planner', 'backend-dev', 'frontend-dev', 'qa-tester', 'code-reviewer', 'reporter'];
+  let updatedCount = 0;
+  
+  for (const agentName of agentNames) {
+    const success = agentConfig.setAgentModel(agentName, provider, model);
+    if (success) updatedCount++;
+  }
+  
+  // Reload orchestrator agents with new config
+  orchestrator.reloadAgentConfigs();
+  
+  await bot.sendMessage(msg.chat.id, 
+    `✅ **All Agents Updated**\n\n` +
+    `${updatedCount} agents will now use:\n` +
+    `Provider: ${provider}\n` +
+    `Model: ${model}\n\n` +
+    `Changes are active immediately!`,
+    { parse_mode: 'Markdown' }
+  );
+  
+  logger.info(`[Bot] User ${msg.from.id} set ALL agents to ${provider}/${model}`);
 });
 
 // /model command - Set default AI provider and optionally model

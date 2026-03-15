@@ -75,6 +75,59 @@ class OrchestratorAgent extends BaseAgent {
   }
 
   /**
+   * Reload agent configurations from file
+   * Called when agent models are changed at runtime
+   */
+  reloadAgentConfigs() {
+    logger.info('[Orchestrator] Reloading agent configurations...');
+    
+    try {
+      // Clear require cache to reload fresh config
+      delete require.cache[require.resolve('../../config/agents.json')];
+      const freshConfig = require('../../config/agents.json');
+      
+      // Update each registered agent with new config
+      for (const [agentName, agent] of this.agents) {
+        if (freshConfig[agentName]) {
+          const newConfig = freshConfig[agentName];
+          
+          // Update provider and model
+          if (newConfig.provider) {
+            agent.configProvider = newConfig.provider;
+            agent.provider = newConfig.provider;
+          }
+          if (newConfig.model) {
+            agent.configModel = newConfig.model;
+            agent.model = newConfig.model;
+          }
+          if (newConfig.fallbackProvider) {
+            agent.fallbackProvider = newConfig.fallbackProvider;
+          }
+          if (newConfig.fallbackModel) {
+            agent.fallbackModel = newConfig.fallbackModel;
+          }
+          
+          logger.info(`[Orchestrator] Updated ${agentName}: ${agent.provider}/${agent.model}`);
+        }
+      }
+      
+      // Also update self (orchestrator)
+      if (freshConfig.orchestrator) {
+        this.configProvider = freshConfig.orchestrator.provider;
+        this.provider = freshConfig.orchestrator.provider;
+        this.configModel = freshConfig.orchestrator.model;
+        this.model = freshConfig.orchestrator.model;
+      }
+      
+      logger.info('[Orchestrator] Agent configurations reloaded successfully');
+      return true;
+    } catch (error) {
+      logger.error('[Orchestrator] Failed to reload agent configs:', error);
+      return false;
+    }
+  }
+
+  /**
    * Process a user command
    */
   async processCommand(command, context = {}) {
