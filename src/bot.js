@@ -1061,9 +1061,19 @@ bot.onText(/\/usecustommodel\s+(\S+)/, async (msg, match) => {
   const customModels = config.customModels || {};
   
   if (!customModels[modelKey]) {
+    // Debug: show available keys
+    const availableKeys = Object.keys(customModels);
+    logger.info(`[Bot] /usecustommodel failed: key='${modelKey}', available=[${availableKeys.join(', ')}]`);
+    
+    let debugInfo = '';
+    if (availableKeys.length > 0) {
+      debugInfo = `\n\n**Available custom model keys:**\n${availableKeys.map(k => `• \`${k}\``).join('\n')}`;
+    } else {
+      debugInfo = '\n\n**No custom models found.**\nAdd one with /addmodel or /addglm';
+    }
+    
     await bot.sendMessage(msg.chat.id, 
-      `❌ Custom model "${modelKey}" not found.\n\n` +
-      `Use /mymodels to see available custom models.`,
+      `❌ Custom model "${modelKey}" not found.` + debugInfo,
       { parse_mode: 'Markdown' }
     );
     return;
