@@ -1054,22 +1054,471 @@ The Nigents Dashboard runs at `http://EC2_IP:4000` and provides:
 
 ---
 
-## Tech Stack
+## Tech Stack & Architecture
 
-| Layer | Technology |
-|-------|------------|
-| **Agent Framework** | Microsoft AutoGen + Custom EventEmitter |
-| **AI Models** | Anthropic Claude, Zhipu AI GLM, Moonshot AI Kimi |
-| **MCP Protocol** | Model Context Protocol SDK |
-| **Backend** | Node.js 20+, Express |
-| **Real-time** | Socket.io |
-| **Telegram** | node-telegram-bot-api |
-| **Voice** | OpenAI Whisper (STT) + gTTS (TTS) |
-| **Dashboard UI** | Vanilla JS + Chart.js |
-| **Process Manager** | PM2 |
-| **Code Sandbox** | OpenHands (Docker) |
-| **Version Control** | Simple-git |
-| **Deployment** | AWS EC2 t3.large |
+### 🏗️ System Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              USER INTERFACE LAYER                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Telegram Bot (node-telegram-bot-api)        Web Dashboard (Express + Socket.io) │
+│       ↓                                              ↓                      │
+│  Voice Commands (Whisper + gTTS)              Real-time Updates              │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                       │
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         ORCHESTRATION LAYER                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                         Orchestrator Agent (EventEmitter)                    │
+│                              ↓         ↓         ↓                          │
+│                    ┌─────────┐  ┌─────────┐  ┌─────────┐                   │
+│                    │ Planner │  │ Backend │  │   QA    │                   │
+│                    │  Agent  │  │   Dev   │  │ Tester  │                   │
+│                    └────┬────┘  └────┬────┘  └────┬────┘                   │
+│                    ┌─────────┐  ┌─────────┐  ┌─────────┐                   │
+│                    │ Frontend│  │  Code   │  │ Reporter│                   │
+│                    │   Dev   │  │ Reviewer│  │  Agent  │                   │
+│                    └─────────┘  └─────────┘  └─────────┘                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                       │
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         TOOLS & INTEGRATION LAYER                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
+│  │   GitLab    │  │    MCP      │  │  OpenHands  │  │   MySQL     │        │
+│  │    API      │  │  Servers    │  │   Sandbox   │  │  Database   │        │
+│  │             │  │             │  │             │  │             │        │
+│  │ • Repos     │  │ • Arabic    │  │ • Docker    │  │ • Users     │        │
+│  │ • MRs       │  │ • Search    │  │ • Code Exec │  │ • Tasks     │        │
+│  │ • Issues    │  │ • Splitter  │  │ • Testing   │  │ • History   │        │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘        │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                       │
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         AI PROVIDER LAYER                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
+│  │  Anthropic   │  │  Zhipu AI    │  │  Moonshot    │  │  DeepSeek    │    │
+│  │   Claude     │  │    GLM-4     │  │    Kimi      │  │   Coder      │    │
+│  │              │  │              │  │              │  │              │    │
+│  │ Best for:    │  │ Best for:    │  │ Best for:    │  │ Best for:    │    │
+│  │ Complex code │  │ Fast/Cheap   │  │ Long context │  │ Code tasks   │    │
+│  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 🛠️ Frameworks & Technologies
+
+| Layer | Technology | Purpose |
+|-------|------------|---------|
+| **Agent Framework** | Custom EventEmitter + AutoGen patterns | Multi-agent orchestration with pub/sub communication |
+| **Backend Runtime** | Node.js 20+ LTS | Server-side JavaScript execution |
+| **Web Framework** | Express.js 4.x | REST API and dashboard server |
+| **Real-time Communication** | Socket.io 4.x | Bidirectional event-based communication |
+| **Database** | MySQL 8.0 + mysql2 | Persistent storage for all data |
+| **AI Integration** | Native HTTP clients | Direct API calls to AI providers |
+| **MCP Protocol** | @modelcontextprotocol/sdk | Standardized tool integration |
+| **Telegram Bot** | node-telegram-bot-api | Bot interaction with users |
+| **Voice Processing** | OpenAI Whisper + gTTS | Speech-to-text and text-to-speech |
+| **Process Management** | PM2 | Production process manager |
+| **Git Integration** | simple-git | Programmatic Git operations |
+| **Containerization** | Docker + Dockerode | OpenHands sandbox management |
+| **Dashboard UI** | Vanilla JS + Chart.js | Lightweight real-time dashboard |
+| **Email** | Nodemailer | Subscriber email notifications |
+| **Deployment** | AWS EC2 + GitLab CI/CD | Cloud infrastructure |
+
+### 📦 Core Dependencies
+
+```json
+{
+  "@anthropic-ai/sdk": "^0.17.1",
+  "@modelcontextprotocol/sdk": "^0.4.0",
+  "axios": "^1.13.6",
+  "dotenv": "^16.4.5",
+  "express": "^4.18.2",
+  "gtts": "^0.2.1",
+  "mysql2": "^3.19.1",
+  "node-telegram-bot-api": "^0.66.0",
+  "nodemailer": "^8.0.2",
+  "openai": "^4.28.0",
+  "simple-git": "^3.22.0",
+  "socket.io": "^4.7.4",
+  "uuid": "^9.0.1",
+  "winston": "^3.11.0"
+}
+```
+
+---
+
+## 🔄 How Nigents Works (Detailed Flow)
+
+### 1. User Interaction Flow
+
+```
+┌──────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│  User    │────▶│   Telegram   │────▶│    Bot.js    │────▶│ Orchestrator │
+│  (You)   │     │    Bot       │     │   Handler    │     │    Agent     │
+└──────────┘     └──────────────┘     └──────────────┘     └──────┬───────┘
+                                                                   │
+                    Command: "/plan Make login page prettier"      │
+                    ↓                                              │
+                    1. Parse command                               │
+                    2. Store in chatStorage (MySQL/JSON)           │
+                    3. Call Planner Agent                          │
+                    4. Generate implementation plan                │
+                    5. Return to user with /approve button         │
+                                                                   ▼
+```
+
+### 2. Plan Creation Flow
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                          PLAN CREATION PHASE                            │
+└────────────────────────────────────────────────────────────────────────┘
+
+User: "/plan Make login page prettier"
+
+Step 1: Command Parsing
+├─ Bot receives message
+├─ Extract user ID, chat ID, command
+├─ Validate GitLab project selection
+└─ Store in pending_plans (MySQL table)
+
+Step 2: Planner Agent Activation
+├─ Load codebase context from GitLab API
+├─ Analyze existing login.html structure
+├─ Query MCP servers for relevant patterns
+└─ Generate implementation plan:
+
+   📋 Implementation Plan
+   ├─ Title: "Redesign Login Page UI"
+   ├─ Complexity: M (2 hours)
+   ├─ Steps:
+   │   1. Analyze existing login.html
+   │   2. Update CSS with modern styling
+   │   3. Add responsive design
+   │   4. Test across browsers
+   └─ Files to modify:
+       - login.html
+       - styles.css
+
+Step 3: User Approval
+├─ Send plan to Telegram with approve button
+├─ Wait for /approve command
+└─ On approval: Add to task_queue (status: approved)
+```
+
+### 3. Implementation Workflow
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                       IMPLEMENTATION PHASE                              │
+└────────────────────────────────────────────────────────────────────────┘
+
+Orchestrator triggers workflow:
+
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   Backend   │───▶│     QA      │───▶│    Code     │───▶│   Create    │
+│     Dev     │    │   Tester    │    │  Reviewer   │    │     MR      │
+└──────┬──────┘    └──────┬──────┘    └──────┬──────┘    └─────────────┘
+       │                  │                  │
+       ▼                  ▼                  ▼
+  Implements code    Runs tests        Reviews code
+  ↓                  ↓                  ↓
+  Git operations     Test results      Approval/Changes
+  ↓                  ↓                  ↓
+  Commits changes    Pass/Fail          MR created
+
+Step-by-Step:
+
+1. BACKEND DEVELOPER AGENT
+   ├─ Clone repository (simple-git)
+   ├─ Create feature branch: feature/login-redesign
+   ├─ Modify login.html with new design
+   ├─ Update styles.css
+   ├─ Commit changes with descriptive message
+   └─ Push branch to GitLab
+
+2. QA TESTER AGENT
+   ├─ Pull latest changes
+   ├─ Run linting checks
+   ├─ Verify responsive design
+   ├─ Check accessibility (a11y)
+   ├─ Validate HTML structure
+   └─ Report: ✅ All tests passed
+
+3. CODE REVIEWER AGENT
+   ├─ Review code changes via GitLab API
+   ├─ Check coding standards
+   ├─ Verify security best practices
+   ├─ Confirm design implementation
+   └─ Approve: ✅ Ready to merge
+
+4. MERGE REQUEST CREATION
+   ├─ Create MR via GitLab API
+   ├─ Title: "Redesign login page for better UX"
+   ├─ Description: Detailed changes summary
+   └─ Link: https://gitlab.com/.../merge_requests/42
+```
+
+### 4. Data Persistence Flow
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                         DATA FLOW ARCHITECTURE                          │
+└────────────────────────────────────────────────────────────────────────┘
+
+                            MySQL Database
+                    ┌─────────────────────────┐
+                    │      nigents DB         │
+                    ├─────────────────────────┤
+    Telegram  ─────▶│ users                   │
+    Users           │ user_settings           │◀── Preferences
+                    │ chat_messages           │◀── History
+                    │ pending_plans           │◀── Pending Tasks
+                    │ tasks                   │◀── Task Queue
+    Orchestrator ──▶│ task_steps              │
+    Agents          │ agents                  │◀── Agent Status
+                    │ activities              │◀── Logs
+                    │ code_edits              │
+                    │ agent_communications    │
+    Dashboard  ────▶│ subscribers             │◀── Email list
+                    └─────────────────────────┘
+
+Data Flow Examples:
+
+1. Chat Message Storage:
+   Telegram Bot ──▶ chat-storage-mysql.js ──▶ chat_messages table
+   
+2. Task Queue Management:
+   Orchestrator ──▶ task-queue-mysql.js ──▶ tasks table
+   
+3. Agent Status Updates:
+   Dashboard API ──▶ Dashboard emits ──▶ Socket.io ──▶ Frontend
+```
+
+### 5. Real-time Dashboard Updates
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                      REAL-TIME COMMUNICATION                            │
+└────────────────────────────────────────────────────────────────────────┘
+
+Dashboard Server (Express + Socket.io)
+         │
+         ├── Socket.io Connection ──▶ Browser (Real-time updates)
+         │
+         └── REST API Endpoints:
+             ├── GET /api/status      → System health
+             ├── GET /api/agents      → Agent statuses
+             ├── GET /api/tasks       → Task queue
+             ├── GET /api/activity    → Activity log
+             └── POST /api/agents/:name/status → Update agent
+
+Event Flow:
+
+1. Agent Status Change:
+   Backend Dev ──▶ "Implementing login.css..."
+        ↓
+   Orchestrator.emit('agentStatusChange')
+        ↓
+   Dashboard Server receives ──▶ Socket.io.emit('agentStatus')
+        ↓
+   Browser receives ──▶ UI updates in real-time
+
+2. Code Edit Stream:
+   Agent modifies file ──▶ POST /api/code-edit
+        ↓
+   Database stores edit ──▶ Socket.io.emit('codeEdit')
+        ↓
+   Dashboard shows live code changes
+```
+
+### 6. MCP (Model Context Protocol) Integration
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                      MCP SERVERS ARCHITECTURE                           │
+└────────────────────────────────────────────────────────────────────────┘
+
+                    ┌─────────────────────┐
+                    │   MCP Client SDK    │
+                    │  (Part of Agent)    │
+                    └──────────┬──────────┘
+                               │
+           ┌───────────────────┼───────────────────┐
+           │                   │                   │
+           ▼                   ▼                   ▼
+    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+    │ Arabic RTL  │    │ Smart Code  │    │   Task      │
+    │   Auditor   │    │   Search    │    │  Splitter   │
+    │             │    │             │    │             │
+    │ • RTL check │    │ • Search    │    │ • Split     │
+    │ • Arabic    │    │   codebase  │    │   large     │
+    │   support   │    │ • Find refs │    │   tasks     │
+    └─────────────┘    └─────────────┘    └─────────────┘
+
+Example Usage:
+
+Planner Agent needs to find all login-related files:
+├─ Calls Smart Code Search MCP
+├─ Search query: "login authentication form"
+└─ Returns: ["login.html", "auth.js", "styles.css"]
+
+Backend Dev needs to split large task:
+├─ Calls Task Splitter MCP
+├─ Input: "Rebuild entire auth system"
+└─ Returns: ["Update login", "Add JWT", "Create middleware"]
+```
+
+### 7. Complete Request Lifecycle
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    COMPLETE USER REQUEST LIFECYCLE                       │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Time: 00:00 - User sends: "/plan Make login page prettier"
+
+Time: 00:02 - System:
+├─ Parses command
+├─ Validates user
+├─ Checks GitLab project
+└─ Stores pending plan in MySQL
+
+Time: 00:05 - Planner Agent:
+├─ Analyzes login.html
+├─ Queries codebase via GitLab API
+├─ Uses MCP servers for patterns
+└─ Generates detailed plan
+
+Time: 00:15 - User receives:
+├─ Implementation plan
+├─ Complexity estimate
+├─ Time estimate
+└─ /approve button
+
+Time: 00:30 - User clicks /approve
+├─ Plan status → approved
+├─ Task added to queue
+└─ Orchestrator starts workflow
+
+Time: 00:35 - Backend Dev Agent:
+├─ Git clone/pull
+├─ Create branch
+├─ Modify files
+├─ Git commit/push
+└─ Report: "Code implemented"
+
+Time: 01:15 - QA Tester Agent:
+├─ Run tests
+├─ Validate HTML/CSS
+├─ Check responsiveness
+└─ Report: "✅ All tests passed"
+
+Time: 01:30 - Code Reviewer Agent:
+├─ Review changes
+├─ Check standards
+├─ Verify design
+└─ Report: "✅ Approved"
+
+Time: 01:45 - Reporter Agent:
+├─ Create Merge Request
+├─ Generate summary
+├─ Send Telegram notification
+└─ Report: "✅ MR Created: link"
+
+Time: 02:00 - Complete!
+User wakes up to:
+├─ Telegram notification
+├─ Link to MR
+├─ Summary of changes
+└─ Ready to merge on GitLab
+
+Dashboard shows entire timeline:
+├─ Agent activities
+├─ Code changes
+├─ Test results
+└─ Communication logs
+```
+
+---
+
+## 📊 System Components Detail
+
+### Agent System (Event-Driven Architecture)
+
+```javascript
+// Base Agent Class
+class BaseAgent extends EventEmitter {
+  constructor(config) {
+    this.name = config.name;
+    this.role = config.role;
+    this.model = config.model;
+    this.status = 'idle'; // idle | working | error
+  }
+  
+  async callAI(prompt, options) {
+    // Route to configured AI provider
+    // Support: Claude, GLM, Kimi, DeepSeek
+  }
+  
+  emitStatus(status, activity) {
+    this.emit('statusChange', { name, status, activity });
+  }
+}
+```
+
+### Storage Layer (Dual Mode)
+
+```javascript
+// Hybrid Storage Pattern
+if (DB_HOST configured) {
+  // Use MySQL for persistence
+  chatStorage = require('./chat-storage-mysql');
+  taskQueue = require('./task-queue-mysql');
+} else {
+  // Fallback to JSON files
+  chatStorage = require('./chat-storage-json');
+}
+```
+
+### Telegram Bot Handlers
+
+```javascript
+// Command Router
+bot.onText(/\/plan (.+)/, handlePlanCommand);
+bot.onText(/\/approve/, handleApproveCommand);
+bot.onText(/\/run/, handleRunCommand);
+bot.onText(/\/status/, handleStatusCommand);
+
+// Callback Handlers
+bot.on('callback_query', handleButtonClick);
+
+// Voice Messages
+bot.on('voice', handleVoiceMessage);
+```
+
+### Dashboard WebSocket Events
+
+```javascript
+// Server → Client Events
+io.emit('agentStatus', { name, status, activity });
+io.emit('task', { id, status, progress });
+io.emit('codeEdit', { agent, file, action, code });
+io.emit('activity', { type, agent, message });
+
+// Client → Server
+socket.emit('requestLogs', { lines: 100 });
+socket.emit('streamLogs', { enabled: true });
+```
+
+---
 
 ---
 
