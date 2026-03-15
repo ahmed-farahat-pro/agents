@@ -22,7 +22,8 @@ Your personal AI development company running on AWS EC2. 7 specialized agents co
 12. [Quick Start (Local)](#quick-start-local)
 13. [Deploy on AWS EC2](#deploy-on-aws-ec2)
 14. [Configuration](#configuration)
-15. [Troubleshooting](#troubleshooting)
+15. [MySQL Database Configuration](#mysql-database-configuration)
+16. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -1588,6 +1589,157 @@ You can configure **multiple projects** and switch between them:
     }
   ]
 }
+```
+
+---
+
+## MySQL Database Configuration
+
+Nigents uses **MySQL** for persistent storage of all data including:
+- User profiles and settings
+- Chat history
+- Pending plans and task queue
+- Agent activities and code edits
+- Email subscribers
+
+### Database Schema
+
+The database schema is defined in `src/database/schema.sql` with the following tables:
+
+| Table | Purpose |
+|-------|---------|
+| `users` | Telegram user profiles |
+| `user_settings` | User preferences (voice, language, AI provider) |
+| `chat_messages` | Chat history (last 100 per user) |
+| `pending_plans` | Pending plan approvals (24h expiry) |
+| `tasks` | Task queue with full status tracking |
+| `task_steps` | Individual plan steps |
+| `agents` | Agent registration and status |
+| `activities` | Activity log |
+| `code_edits` | Code changes tracking |
+| `agent_communications` | Agent-to-agent messages |
+| `subscribers` | Email subscribers |
+| `system_config` | System configuration |
+
+### Environment Variables
+
+Add these to your `.env` file:
+
+```bash
+# MySQL Database Configuration
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=nigents
+DB_PASSWORD=nigents_password
+DB_NAME=nigents
+```
+
+### Setting Up MySQL on EC2
+
+**Option 1: Automatic Setup (Recommended)**
+
+The deployment script automatically sets up MySQL:
+
+```bash
+# During CI/CD deployment, MySQL is automatically installed and configured
+# Database is created, schema applied, and existing JSON data migrated
+```
+
+**Option 2: Manual Setup**
+
+```bash
+# SSH to your EC2 instance
+ssh -i your-key.pem ubuntu@YOUR_EC2_IP
+
+# Run the MySQL setup script
+sudo bash scripts/setup-mysql.sh
+```
+
+**Option 3: Docker Setup**
+
+```bash
+# Run MySQL in Docker
+docker run -d \
+  --name mysql \
+  -e MYSQL_ROOT_PASSWORD=root_password \
+  -e MYSQL_DATABASE=nigents \
+  -e MYSQL_USER=nigents \
+  -e MYSQL_PASSWORD=nigents_password \
+  -p 3306:3306 \
+  mysql:8.0
+
+# Apply schema
+docker exec -i mysql mysql -unigents -pnigents_password nigents < src/database/schema.sql
+```
+
+### Migrating from JSON to MySQL
+
+If you have existing JSON data, it will be automatically migrated on the first deployment. To manually migrate:
+
+```bash
+# Ensure DB environment variables are set
+export DB_HOST=localhost
+export DB_PORT=3306
+export DB_USER=nigents
+export DB_PASSWORD=nigents_password
+export DB_NAME=nigents
+export DATA_DIR=./data
+
+# Run migration
+node src/database/migrate.js
+```
+
+### Backwards Compatibility
+
+If MySQL is not configured, Nigents will automatically fall back to JSON file storage:
+
+```bash
+# Without DB_HOST set, uses JSON files:
+# - data/chat-history.json
+# - data/pending-plans.json
+# - data/user-settings.json
+```
+
+### Database Connection Pool
+
+The database module uses connection pooling for efficiency:
+
+```javascript
+const db = require('./src/database/connection');
+
+// Execute a query
+const results = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
+
+// Use transactions
+await db.transaction(async (connection) => {
+  await connection.execute('INSERT INTO tasks...', [...]);
+  await connection.execute('UPDATE users...', [...]);
+});
+```
+
+### Troubleshooting Database Issues
+
+**Connection Refused**
+```bash
+# Check MySQL is running
+sudo systemctl status mysql
+
+# Start MySQL if needed
+sudo systemctl start mysql
+```
+
+**Authentication Failed**
+```bash
+# Reset MySQL root password
+sudo mysql
+ALTER USER 'nigents'@'localhost' IDENTIFIED BY 'nigents_password';
+FLUSH PRIVILEGES;
+```
+
+**Missing Tables**
+```bash
+# Re-run schema
+mysql -unigents -pnigents_password nigents < src/database/schema.sql
 ```
 
 ---
