@@ -1056,14 +1056,24 @@ bot.onText(/\/mymodels/, async (msg) => {
 bot.onText(/\/usecustommodel\s+(\S+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
 
-  const modelKey = match[1].trim();
+  const modelKeyInput = match[1].trim();
   const config = sharedConfig.getFullConfig();
   const customModels = config.customModels || {};
+  
+  // Try exact match first, then case-insensitive
+  let modelKey = modelKeyInput;
+  if (!customModels[modelKey]) {
+    const lowerInput = modelKeyInput.toLowerCase();
+    const foundKey = Object.keys(customModels).find(k => k.toLowerCase() === lowerInput);
+    if (foundKey) {
+      modelKey = foundKey;
+    }
+  }
   
   if (!customModels[modelKey]) {
     // Debug: show available keys
     const availableKeys = Object.keys(customModels);
-    logger.info(`[Bot] /usecustommodel failed: key='${modelKey}', available=[${availableKeys.join(', ')}]`);
+    logger.info(`[Bot] /usecustommodel failed: key='${modelKeyInput}', available=[${availableKeys.join(', ')}]`);
     
     let debugInfo = '';
     if (availableKeys.length > 0) {
@@ -1073,7 +1083,7 @@ bot.onText(/\/usecustommodel\s+(\S+)/, async (msg, match) => {
     }
     
     await bot.sendMessage(msg.chat.id, 
-      `❌ Custom model "${modelKey}" not found.` + debugInfo,
+      `❌ Custom model "${modelKeyInput}" not found.` + debugInfo,
       { parse_mode: 'Markdown' }
     );
     return;
