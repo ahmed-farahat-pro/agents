@@ -142,45 +142,21 @@ deploy-to-ec2:
       set -e
 
       echo "=========================================="
-      echo "  NIGENTS DEPLOYMENT - DATA PRESERVING"
+      echo "  NIGENTS DEPLOYMENT - MYSQL ONLY"
       echo "=========================================="
 
       DEPLOY_DIR=/home/ubuntu/nigents
       DATA_DIR=$DEPLOY_DIR/data
-      BACKUP_DIR=/home/ubuntu/nigents-backups
 
       echo "Navigating to project directory..."
       cd $DEPLOY_DIR
 
-      echo "Creating backup directory..."
-      mkdir -p $BACKUP_DIR
-
-      echo "Creating data directories if not exist..."
+      echo "Creating directories..."
       mkdir -p data logs .cache
-
-      echo "Backing up data BEFORE deployment..."
-      if [ -d "$DATA_DIR" ] && [ "$(ls -A $DATA_DIR)" ]; then
-        BACKUP_NAME="data.backup.$(date +%Y%m%d_%H%M%S)"
-        cp -r $DATA_DIR $BACKUP_DIR/$BACKUP_NAME
-        echo "Data backed up to: $BACKUP_DIR/$BACKUP_NAME"
-        ls -la $BACKUP_DIR/$BACKUP_NAME/
-      else
-        echo "WARNING: Data directory is empty or does not exist!"
-      fi
-
-      echo "Saving pending plans info..."
-      if [ -f "$DATA_DIR/pending-plans.json" ]; then
-        echo "Pending plans BEFORE update:"
-        cat $DATA_DIR/pending-plans.json | head -20
-      fi
 
       echo "Pulling latest changes..."
       git fetch origin
       git reset --hard origin/main
-
-      echo "Restoring data directory..."
-      # Ensure data directory still exists (git reset might have removed it)
-      mkdir -p $DATA_DIR
 
       echo "Installing dependencies..."
       npm ci --production
@@ -190,16 +166,8 @@ deploy-to-ec2:
       cd mcp-servers/task-splitter && npm ci && npm run build && cd ../..
       cd mcp-servers/smart-code-search && npm ci && npm run build && cd ../..
 
-      echo "Verifying data after build..."
-      if [ -f "$DATA_DIR/pending-plans.json" ]; then
-        echo "Pending plans AFTER build:"
-        cat $DATA_DIR/pending-plans.json | head -20
-      else
-        echo "WARNING: pending-plans.json not found after build!"
-      fi
-
       echo "=========================================="
-      echo "  DATABASE SETUP & MIGRATION"
+      echo "  DATABASE SETUP"
       echo "=========================================="
       
       # Check if MySQL is installed
@@ -221,18 +189,6 @@ deploy-to-ec2:
       # Run schema
       echo "Running database schema..."
       sudo mysql nigents < src/database/schema.sql
-      
-      # Run migration if data exists
-      if [ -f "$DATA_DIR/pending-plans.json" ] || [ -f "$DATA_DIR/user-settings.json" ]; then
-        echo "Migrating existing JSON data to MySQL..."
-        export DB_HOST=localhost
-        export DB_PORT=3306
-        export DB_USER=nigents
-        export DB_PASSWORD=nigents_password
-        export DB_NAME=nigents
-        export DATA_DIR=$DATA_DIR
-        node src/database/migrate.js || echo "Migration completed with warnings"
-      fi
       
       echo "Database setup complete!"
 
@@ -263,15 +219,8 @@ deploy-to-ec2:
       echo "=========================================="
       pm2 status
       echo ""
-      echo "Data directory contents:"
-      ls -la $DATA_DIR/ 2>/dev/null || echo "  (data directory is empty)"
-      echo ""
-      echo "Pending plans count:"
-      if [ -f "$DATA_DIR/pending-plans.json" ]; then
-        cat $DATA_DIR/pending-plans.json | grep -o '"task"' | wc -l
-      else
-        echo "0 (file not found)"
-      fi
+      echo "Checking database connection..."
+      mysql -u nigents -pnigents_password -e "SELECT COUNT(*) as pending_plans FROM nigents.pending_plans WHERE status='pending';" 2>/dev/null || echo "  (Could not check database)"
       EOF
 
     - scp -o StrictHostKeyChecking=no deploy.sh "${SSH_USER}@${EC2_HOST}:/tmp/deploy.sh"
