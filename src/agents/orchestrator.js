@@ -552,6 +552,10 @@ Provide a helpful answer. If the question is about specific code and you don't h
     let implementationResult;
     if (backendDev) {
       implementationResult = await backendDev.implement(task.plan);
+      // Store branch on task for reporter
+      if (implementationResult?.branch) {
+        task.branch = implementationResult.branch;
+      }
     }
 
     // Step 2: QA Testing

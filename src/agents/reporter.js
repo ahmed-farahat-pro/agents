@@ -81,12 +81,13 @@ class ReporterAgent extends BaseAgent {
    * Send completion report
    */
   async sendCompletionReport(task) {
+    const branch = task.branch || task.plan?.branch || 'unknown';
     const message = `
 ✅ **Task Completed**
 
-**${task.plan.title}**
+**${task.plan?.title || 'Untitled Task'}**
 
-• Branch: \`${task.branch}\`
+• Branch: \`${branch}\`
 • Started: ${this.formatTime(task.startedAt)}
 • Completed: ${this.formatTime(task.completedAt)}
 • Duration: ${this.calculateDuration(task.startedAt, task.completedAt)}
