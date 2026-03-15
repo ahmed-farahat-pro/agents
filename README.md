@@ -922,6 +922,344 @@ All MCP servers are configured in `config/mcp-servers.json`:
 
 ---
 
+## 🔍 Planning MCP Flow & Architecture
+
+This section explains exactly how the **Planner Agent** creates implementation plans, which MCP tools are used, and how to diagnose issues.
+
+### Planner Agent Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         PLAN CREATION FLOW                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+User: "/plan Add payment gateway"
+         │
+         ▼
+┌──────────────────────────┐
+│   src/bot.js             │
+│   ───────────            │
+│   /plan command handler  │
+└──────────┬───────────────┘
+           │
+           ▼
+┌──────────────────────────┐
+│   Orchestrator Agent     │
+│   ──────────────────     │
+│   processCommand()       │
+│   └── handlePlanTask()   │
+└──────────┬───────────────┘
+           │
+           ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                    PLANNER AGENT - CREATE PLAN                          │
+│                    src/agents/planner.js                                │
+└────────────────────────────────────────────────────────────────────────┘
+           │
+           ▼
+Step 1: SETUP AI PROVIDER
+┌─────────────────────────────────────┐
+│  Check user preference              │
+│  ├── Use preferredAI if set         │
+│  └── Fallback to agent config       │
+└─────────────┬───────────────────────┘
+              │
+              ▼
+Step 2: ANALYZE CODEBASE (Optional)
+┌─────────────────────────────────────┐
+│  analyzeCodebaseWithMCP(project)    │
+│  ├── List directory (MCP)           │
+│  ├── Read relevant files (MCP)      │
+│  └── Git status (MCP)               │
+└─────────────┬───────────────────────┘
+              │
+              ▼
+Step 3: GENERATE PLAN
+┌─────────────────────────────────────┐
+│  generatePlanWithMCP()              │
+│  │                                  │
+│  ├── Try 1: executeWithMCP()        │
+│  │      └── AgentMCPWrapper         │
+│  │          └── src/mcp/agent-      │
+│  │              mcp-wrapper.js      │
+│  │                                  │
+│  └── Try 2: (Fallback) callAI()     │
+│         └── Direct AI call          │
+│             └── src/utils/ai-       │
+│                 client.js           │
+└─────────────┬───────────────────────┘
+              │
+              ▼
+Step 4: PARSE RESPONSE
+┌─────────────────────────────────────┐
+│  Extract JSON from AI response      │
+│  ├── Attempt 1: Code blocks         │
+│  ├── Attempt 2: Curly braces        │
+│  └── Attempt 3: Full content        │
+└─────────────┬───────────────────────┘
+              │
+              ▼
+Step 5: RETURN PLAN
+┌─────────────────────────────────────┐
+│  Return structured plan object      │
+│  └── Orchestrator sends to Telegram │
+└─────────────────────────────────────┘
+```
+
+### MCP Wrapper Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    AGENT MCP WRAPPER FLOW                                    │
+│                    src/mcp/agent-mcp-wrapper.js                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+When planner calls executeWithMCP():
+
+┌────────────────────┐     ┌────────────────────┐     ┌────────────────────┐
+│   Planner Agent    │────▶│  AgentMCPWrapper   │────▶│   MCP Client       │
+│                    │     │                    │     │   src/mcp/         │
+└────────────────────┘     └─────────┬──────────┘     │   mcp-client.js    │
+                                     │                └──────────┬─────────┘
+                                     │                           │
+                                     ▼                           ▼
+                           ┌─────────────────┐         ┌─────────────────┐
+                           │ executeWithTools│         │  Call MCP Tool  │
+                           │                 │         │                 │
+                           │ 1. Get available│         │ • filesystem    │
+                           │    tools        │         │ • git           │
+                           │                 │         │ • gitlab        │
+                           │ 2. Build prompt │         │ • postgresql    │
+                           │    with tools   │         │ • brave-search  │
+                           │                 │         │ • (35+ tools)   │
+                           │ 3. Call AI with │         │                 │
+                           │    tool context │         └─────────────────┘
+                           │                 │
+                           │ 4. Parse tool   │
+                           │    calls        │
+                           │                 │
+                           │ 5. Execute      │
+                           │    tools        │
+                           │                 │
+                           │ 6. Return       │
+                           │    results      │
+                           └─────────────────┘
+```
+
+### Planning Process Step-by-Step
+
+#### Step 1: Provider Selection
+```javascript
+// src/agents/planner.js - createPlan()
+async createPlan({ task, project, context = {} }) {
+  // Check user preference from context
+  const preferredProvider = context.aiProvider || context.preferredProvider;
+  const preferredModel = context.aiModel || context.preferredModel;
+  
+  if (preferredProvider) {
+    this.setAIProvider(preferredProvider, preferredModel);
+  }
+  // ...
+}
+```
+
+**Issue Check:** If the wrong AI provider is being used, check:
+- `context.aiProvider` is passed from bot.js
+- Agent's `this.provider` is set correctly
+- `src/utils/ai-client.js` routes to correct provider
+
+#### Step 2: Codebase Analysis via MCP
+```javascript
+// src/agents/planner.js - analyzeCodebaseWithMCP()
+async analyzeCodebaseWithMCP(project, task) {
+  // Try MCP first
+  const dirResult = await this.mcpWrapper.quickTool('list_directory', {
+    path: workspacePath,
+  });
+  
+  // Read relevant files
+  for (const filePath of relevantFiles) {
+    const content = await this.mcpWrapper.quickTool('read_file', {
+      path: fullPath,
+    });
+  }
+}
+```
+
+**MCP Tools Used:**
+| Tool | Purpose | MCP Server |
+|------|---------|------------|
+| `list_directory` | List repo structure | filesystem |
+| `read_file` | Read file contents | filesystem |
+| `git_status` | Check git state | git |
+
+**Issue Check:** If MCP fails:
+- Check `config/mcp-servers.json` configuration
+- Verify MCP server is built (`dist/index.js` exists)
+- Check MCP client is initialized
+
+#### Step 3: Plan Generation with Fallback
+```javascript
+// src/agents/planner.js - generatePlanWithMCP()
+async generatePlanWithMCP(task, codebaseAnalysis, project) {
+  // Build prompt with codebase context
+  const prompt = `You are an expert software architect...`;
+  
+  // Try MCP first
+  try {
+    result = await this.executeWithMCP(prompt, { task, project });
+  } catch (mcpError) {
+    // FALLBACK: Direct AI call
+    logger.warn('[Planner] MCP failed, falling back to direct AI');
+    result = await this.callAI(prompt, { provider: this.provider, model: this.model });
+  }
+}
+```
+
+**The Fallback Mechanism:**
+1. **Primary:** Try MCP wrapper for tool-augmented planning
+2. **Fallback:** Direct AI call if MCP fails
+3. **Result:** Both paths return structured JSON plan
+
+**Why MCP Might Fail:**
+- MCP server not running or not built
+- Tool execution error
+- Timeout during tool calls
+- JSON parsing error in tool results
+
+#### Step 4: AI Provider Call Flow
+```
+┌─────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│  Planner Agent  │────▶│   AI Client      │────▶│  Provider-Specific│
+│                 │     │   src/utils/     │     │  Call Function    │
+└─────────────────┘     │   ai-client.js   │     └──────────────────┘
+                        └──────────────────┘              │
+                                   │                      │
+                                   ▼                      ▼
+                        ┌──────────────────┐     ┌──────────────────┐
+                        │ 1. Get provider  │     │ callZhipu()      │
+                        │    from options  │     │ callAnthropic()  │
+                        │                  │     │ callMoonshot()   │
+                        │ 2. Check if      │     │ callDeepseek()   │
+                        │    enabled       │     │                  │
+                        │                  │     │ Each handles:    │
+                        │ 3. Route to      │     │ • API key check  │
+                        │    specific      │     │ • Request build  │
+                        │    function      │     │ • Response parse │
+                        │                  │     │ • Error handling │
+                        └──────────────────┘     └──────────────────┘
+```
+
+**Common AI Provider Issues:**
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| `401 invalid x-api-key` | Wrong API key | Check `ZHIPU_API_KEY` in `.env` |
+| `Provider anthropic not enabled` | Missing API key | Add `ANTHROPIC_API_KEY` or switch provider |
+| `Unknown provider: xxx` | Typo in provider name | Use: zhipu, anthropic, moonshot, deepseek |
+| Model ignored | Model not specified | Check `config/agents.json` model field |
+
+### Debugging Planning Issues
+
+#### Enable Debug Logging
+```bash
+# Set debug level in .env
+LOG_LEVEL=debug
+
+# Or check logs
+pm2 logs nigents-bot --lines 100 | grep -i "planner\|mcp\|ai-client"
+```
+
+#### Check Provider Configuration
+```bash
+# Test via Telegram
+/testglm your-api-key glm-5
+/testmoonshot sk-your-key moonshot-v1-8k
+
+# Or check dashboard
+# http://your-ec2-ip:4000 → AI Providers tab
+```
+
+#### Check Agent Model Assignment
+```bash
+# Via Telegram
+/agentmodels
+
+# Output shows:
+# 🌍 Global Defaults:
+# Provider: zhipu
+# Model: glm-5
+#
+# 📋 Per-Agent Configuration:
+# • planner: zhipu (glm-5)
+# • backend-dev: zhipu (glm-5)
+```
+
+#### Change Agent Model (Runtime)
+```bash
+# Change single agent
+/setagent planner zhipu glm-4-plus
+
+# Change ALL agents
+/setallagents anthropic claude-3-sonnet-20240229
+```
+
+### Planner MCP Tools Configuration
+
+The Planner agent has specific MCP tools assigned in `config/mcp-servers.json`:
+
+```json
+{
+  "agentTools": {
+    "planner": [
+      "smart-code-search",    // Semantic code search
+      "brave-search",         // Web search for best practices
+      "gitlab"                // GitLab API access
+    ]
+  }
+}
+```
+
+**Custom MCP Servers for Planning:**
+
+| Server | File | Tools | Purpose |
+|--------|------|-------|---------|
+| smart-code-search | `mcp-servers/smart-code-search/dist/index.js` | semantic_search, index_repository | Find relevant code |
+| brave-search | External | web_search | Research best practices |
+| gitlab | Built-in | get_file, list_files | Read repository |
+
+### Complete Planning Debug Checklist
+
+If planning is not working:
+
+```
+□ 1. Check AI Provider
+   └── /agentmodels in Telegram
+   └── Verify provider is enabled in dashboard
+
+□ 2. Check API Keys
+   └── /testglm or /testmoonshot in Telegram
+   └── Check .env file has correct keys
+
+□ 3. Check MCP Servers
+   └── ls mcp-servers/*/dist/index.js
+   └── Rebuild if missing: npm run build:mcp
+
+□ 4. Check Logs
+   └── pm2 logs nigents-bot
+   └── Look for: "[Planner]", "[MCP Wrapper]", "[AIClient]"
+
+□ 5. Test Direct AI Call
+   └── /ask What is 2+2?
+   └── Should respond using default provider
+
+□ 6. Test Plan Creation
+   └── /plan Create a simple hello world API
+   └── Should return plan with steps
+```
+
+---
+
 ## Telegram Integration
 
 ### Setting Up Telegram Bot
