@@ -15,11 +15,51 @@ class AgentConfigMySQL {
   async initialize() {
     try {
       await db.initializePool();
+      await this.runMigrations();
       this.initialized = true;
       logger.info('[AgentConfigMySQL] Initialized');
     } catch (error) {
       logger.error('[AgentConfigMySQL] Initialization failed:', error.message);
       throw error;
+    }
+  }
+
+  /**
+   * Run database migrations
+   */
+  async runMigrations() {
+    try {
+      // Drop foreign key constraints to support custom provider keys
+      const constraints = await db.query(`
+        SELECT CONSTRAINT_NAME, COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+        WHERE TABLE_NAME = 'agent_configurations' 
+        AND TABLE_SCHEMA = DATABASE()
+        AND REFERENCED_TABLE_NAME IS NOT NULL
+      `);
+
+      for (const constraint of constraints) {
+        try {
+          await db.query(`ALTER TABLE agent_configurations DROP FOREIGN KEY ${constraint.CONSTRAINT_NAME}`);
+          logger.info(`[AgentConfigMySQL] Dropped FK constraint: ${constraint.CONSTRAINT_NAME}`);
+        } catch (dropError) {
+          logger.warn(`[AgentConfigMySQL] Failed to drop FK ${constraint.CONSTRAINT_NAME}:`, dropError.message);
+        }
+      }
+
+      // Alter columns to support longer custom provider keys
+      await db.query(`
+        ALTER TABLE agent_configurations 
+        MODIFY COLUMN provider_id VARCHAR(100),
+        MODIFY COLUMN model_id VARCHAR(100),
+        MODIFY COLUMN fallback_provider_id VARCHAR(100),
+        MODIFY COLUMN fallback_model_id VARCHAR(100)
+      `);
+
+      logger.info('[AgentConfigMySQL] Migrations completed - custom provider keys supported');
+    } catch (error) {
+      logger.error('[AgentConfigMySQL] Migration error:', error.message);
+      // Don't throw - let it continue even if migrations fail
     }
   }
 
@@ -180,16 +220,21 @@ class AgentConfigMySQL {
     await this.ensureInitialized();
     
     try {
-      await db.query(`
+      const result = await db.query(`
         UPDATE agent_configurations 
         SET provider_id = ?, model_id = ?, updated_at = NOW()
         WHERE agent_name = ?
       `, [provider, model, agentName]);
       
-      logger.info(`[AgentConfigMySQL] Updated ${agentName}: ${provider}/${model}`);
+      if (result.affectedRows === 0) {
+        logger.warn(`[AgentConfigMySQL] No rows updated for ${agentName}, agent may not exist`);
+        return false;
+      }
+      
+      logger.info(`[AgentConfigMySQL] Updated ${agentName}: ${provider}/${model} (affectedRows: ${result.affectedRows})`);
       return true;
     } catch (error) {
-      logger.error('[AgentConfigMySQL] Failed to set agent model:', error);
+      logger.error(`[AgentConfigMySQL] Failed to set ${agentName} to ${provider}/${model}:`, error.message);
       return false;
     }
   }

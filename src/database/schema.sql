@@ -264,23 +264,20 @@ ON DUPLICATE KEY UPDATE name = VALUES(name);
 -- =====================================================
 -- Agent Configurations Table
 -- =====================================================
+-- Dropped foreign key constraints to support custom provider keys
 CREATE TABLE IF NOT EXISTS agent_configurations (
   agent_name VARCHAR(100) PRIMARY KEY,
   display_name VARCHAR(100),
   role VARCHAR(100),
-  provider_id VARCHAR(50),
+  provider_id VARCHAR(100),
   model_id VARCHAR(100),
-  fallback_provider_id VARCHAR(50),
+  fallback_provider_id VARCHAR(100),
   fallback_model_id VARCHAR(100),
   max_tokens INT DEFAULT 4096,
   system_message TEXT,
   enabled BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (provider_id) REFERENCES ai_providers(id) ON DELETE SET NULL,
-  FOREIGN KEY (model_id) REFERENCES ai_models(id) ON DELETE SET NULL,
-  FOREIGN KEY (fallback_provider_id) REFERENCES ai_providers(id) ON DELETE SET NULL,
-  FOREIGN KEY (fallback_model_id) REFERENCES ai_models(id) ON DELETE SET NULL
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insert default agent configurations

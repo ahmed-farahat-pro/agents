@@ -788,7 +788,9 @@ bot.onText(/\/testagents(?:\s+(\S+))?/, async (msg, match) => {
     }
 
     // Send results
+    const useMySQL = !!(process.env.DB_HOST && process.env.DB_USER && process.env.DB_PASSWORD);
     const summary = `🧪 **Agent Model Test Results**\n\n` +
+      `Data Source: ${useMySQL ? 'MySQL' : 'File'}\n` +
       `✅ Passed: ${successCount}\n` +
       `❌ Failed: ${failCount}\n\n` +
       results.join('\n\n');
@@ -806,6 +808,7 @@ bot.onText(/\/testagents(?:\s+(\S+))?/, async (msg, match) => {
       helpText += '• Check API keys in environment variables\n';
       helpText += '• Use `/agentmodels` to view current settings\n';
       helpText += '• Use `/setagent <agent> <provider> <model>` to fix\n';
+      helpText += '• Use `/migrate` if using custom models (fixes DB constraints)\n';
       helpText += '• Use `/testglm <key>` to test GLM directly\n';
       await bot.sendMessage(msg.chat.id, helpText, { parse_mode: 'Markdown' });
     }
@@ -1287,6 +1290,37 @@ bot.onText(/\/reload/, async (msg) => {
   } catch (error) {
     logger.error('[Bot] Reload failed:', error);
     await bot.sendMessage(msg.chat.id, `Error reloading: ${error.message}`);
+  }
+});
+
+// /migrate command - Run database migrations
+bot.onText(/\/migrate/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  await bot.sendMessage(msg.chat.id, '🔄 Running database migrations...');
+  
+  try {
+    // Check if MySQL config module is available
+    const useMySQL = process.env.DB_HOST && process.env.DB_USER && process.env.DB_PASSWORD;
+    
+    if (!useMySQL) {
+      await bot.sendMessage(msg.chat.id, '⚠️ MySQL is not configured. Using file-based config.');
+      return;
+    }
+    
+    // Import MySQL config module and run migrations
+    const mysqlConfig = require('./database/agent-config-mysql');
+    await mysqlConfig.runMigrations();
+    
+    await bot.sendMessage(msg.chat.id, 
+      '✅ **Migration Complete**\n\n' +
+      'Custom provider keys are now supported.\n' +
+      'You can now use `/setagent` and `/setallagents` with custom models.',
+      { parse_mode: 'Markdown' }
+    );
+  } catch (error) {
+    logger.error('[Bot] Migration failed:', error);
+    await bot.sendMessage(msg.chat.id, `❌ Migration failed: ${error.message}`);
   }
 });
 
