@@ -240,6 +240,9 @@ Send voice notes or text naturally:
 • /testglm <key> [model] — Quick test Zhipu GLM
 • /testmoonshot <key> [model] — Quick test Moonshot
 • /mymodels — List your custom AI models
+• /usecustommodel <key> — Use a custom model
+• /editcustommodel <key> <api_key> — Update custom model API key
+• /removecustommodel <key> — Remove custom model
 • /reload — Reload configuration and API keys
 • /debug — Show debug information
 
@@ -1037,11 +1040,131 @@ bot.onText(/\/mymodels/, async (msg) => {
     });
   }
 
-  message += '\n**Usage:**\n';
-  message += '`/usemodel <provider>` - Set default\n';
+  message += '\n**Commands:**\n';
+  message += '`/usemodel <provider>` - Set default built-in\n';
+  message += '`/usecustommodel <key>` - Use custom model\n';
+  message += '`/editcustommodel <key> <new_api_key>` - Update API key\n';
+  message += '`/removecustommodel <key>` - Remove custom model\n';
   message += '`/addmodel` - Add new model';
 
   await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+});
+
+// /usecustommodel command - Use a custom model
+bot.onText(/\/usecustommodel\s+(\S+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const modelKey = match[1].trim();
+  const config = sharedConfig.getFullConfig();
+  const customModels = config.customModels || {};
+  
+  if (!customModels[modelKey]) {
+    await bot.sendMessage(msg.chat.id, 
+      `❌ Custom model "${modelKey}" not found.\n\n` +
+      `Use /mymodels to see available custom models.`,
+      { parse_mode: 'Markdown' }
+    );
+    return;
+  }
+  
+  const model = customModels[modelKey];
+  
+  // Update user settings to use this custom model
+  chatStorage.setUserSettings(msg.from.id, { 
+    preferredAI: modelKey,
+    preferredModel: model.model,
+  });
+  
+  await bot.sendMessage(msg.chat.id, 
+    `✅ **Custom Model Selected**\n\n` +
+    `Model: **${model.name}**\n` +
+    `Provider Key: \`${modelKey}\`\n` +
+    `Model ID: \`${model.model}\`\n` +
+    `URL: \`${model.baseUrl}\`\n\n` +
+    `This model will now be used for your requests.`,
+    { parse_mode: 'Markdown' }
+  );
+  
+  logger.info(`[Bot] User ${msg.from.id} selected custom model: ${modelKey}`);
+});
+
+// /editcustommodel command - Update API key for custom model
+bot.onText(/\/editcustommodel\s+(\S+)\s+(.+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const modelKey = match[1].trim();
+  const newApiKey = match[2].trim();
+  
+  const config = sharedConfig.getFullConfig();
+  const customModels = config.customModels || {};
+  
+  if (!customModels[modelKey]) {
+    await bot.sendMessage(msg.chat.id, 
+      `❌ Custom model "${modelKey}" not found.\n\n` +
+      `Use /mymodels to see available custom models.`,
+      { parse_mode: 'Markdown' }
+    );
+    return;
+  }
+  
+  // Update the API key
+  customModels[modelKey].apiKey = newApiKey;
+  customModels[modelKey].updatedAt = new Date().toISOString();
+  
+  sharedConfig.saveConfig({
+    ...config,
+    customModels,
+  });
+  
+  // Refresh AI client
+  aiClient.refreshProviders();
+  
+  const model = customModels[modelKey];
+  await bot.sendMessage(msg.chat.id, 
+    `✅ **API Key Updated**\n\n` +
+    `Model: **${model.name}** (${modelKey})\n` +
+    `New API Key: \`${newApiKey.substring(0, 8)}...${newApiKey.substring(newApiKey.length - 4)}\`\n\n` +
+    `The AI client has been refreshed with the new key.`,
+    { parse_mode: 'Markdown' }
+  );
+  
+  logger.info(`[Bot] User ${msg.from.id} updated API key for custom model: ${modelKey}`);
+});
+
+// /removecustommodel command - Remove a custom model
+bot.onText(/\/removecustommodel\s+(\S+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const modelKey = match[1].trim();
+  const config = sharedConfig.getFullConfig();
+  const customModels = config.customModels || {};
+  
+  if (!customModels[modelKey]) {
+    await bot.sendMessage(msg.chat.id, 
+      `❌ Custom model "${modelKey}" not found.`,
+      { parse_mode: 'Markdown' }
+    );
+    return;
+  }
+  
+  const modelName = customModels[modelKey].name;
+  delete customModels[modelKey];
+  
+  sharedConfig.saveConfig({
+    ...config,
+    customModels,
+  });
+  
+  // Refresh AI client
+  aiClient.refreshProviders();
+  
+  await bot.sendMessage(msg.chat.id, 
+    `✅ **Custom Model Removed**\n\n` +
+    `Model: **${modelName}** (${modelKey}) has been removed.`,
+    { parse_mode: 'Markdown' }
+  );
+  
+  logger.info(`[Bot] User ${msg.from.id} removed custom model: ${modelKey}`);
 });
 
 // /usemodel command - Set default model
