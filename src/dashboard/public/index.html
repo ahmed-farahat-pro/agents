@@ -138,13 +138,29 @@
         .hero {
             min-height: 100vh;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
+            flex-direction: row;
             align-items: center;
-            text-align: center;
             padding: 120px 40px 80px;
             position: relative;
             z-index: 1;
+            gap: 60px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .hero-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .hero-visual {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
         }
 
         .hero-badge {
@@ -250,13 +266,220 @@
         .hero-meta-icons {
             display: flex;
             gap: 12px;
+            align-items: center;
         }
 
         .hero-meta-icon {
-            width: 24px;
-            height: 24px;
-            opacity: 0.6;
+            font-size: 13px;
+            color: var(--text-muted);
         }
+
+        /* Code Window */
+        .code-window {
+            width: 100%;
+            max-width: 600px;
+            background: #0d0c0f;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 
+                0 0 0 1px rgba(255, 87, 10, 0.1),
+                0 20px 60px -20px rgba(0, 0, 0, 0.8),
+                0 0 100px -20px rgba(255, 87, 10, 0.1);
+        }
+
+        .code-header {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .code-dots {
+            display: flex;
+            gap: 8px;
+            margin-right: 16px;
+        }
+
+        .code-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .code-dot.red { background: #ff5f56; }
+        .code-dot.yellow { background: #ffbd2e; }
+        .code-dot.green { background: #27c93f; }
+
+        .code-tabs {
+            display: flex;
+            gap: 4px;
+        }
+
+        .code-tab {
+            padding: 6px 16px;
+            font-size: 12px;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            background: transparent;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .code-tab.active {
+            color: var(--text-primary);
+            background: #0d0c0f;
+        }
+
+        .code-status {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            font-family: var(--font-mono);
+            color: var(--accent-green);
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: blink 1s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .code-content {
+            padding: 24px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.7;
+            min-height: 320px;
+            position: relative;
+        }
+
+        .agent-indicator {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            background: rgba(255, 87, 10, 0.08);
+            border: 1px solid rgba(255, 87, 10, 0.2);
+            border-radius: 8px;
+        }
+
+        .agent-avatar-small {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-orange) 0%, #ff8a4c 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--bg-primary);
+        }
+
+        .agent-info-small {
+            flex: 1;
+        }
+
+        .agent-name-small {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .agent-action-small {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 4px 8px;
+            background: var(--bg-card);
+            border-radius: 4px;
+        }
+
+        .typing-indicator span {
+            width: 4px;
+            height: 4px;
+            background: var(--accent-orange);
+            border-radius: 50%;
+            animation: typing 1.4s ease-in-out infinite;
+        }
+
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-4px); }
+        }
+
+        .code-area {
+            color: var(--text-primary);
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .code-line {
+            display: flex;
+            counter-increment: line;
+        }
+
+        .line-number {
+            width: 40px;
+            color: var(--text-muted);
+            text-align: right;
+            padding-right: 16px;
+            user-select: none;
+            flex-shrink: 0;
+        }
+
+        .line-content {
+            flex: 1;
+            color: #e2e2e2;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 18px;
+            background: var(--accent-orange);
+            animation: cursor-blink 1s step-end infinite;
+            vertical-align: middle;
+            margin-left: 2px;
+        }
+
+        @keyframes cursor-blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Syntax Highlighting */
+        .keyword { color: #ff7b72; }
+        .string { color: #a5d6ff; }
+        .function { color: #d2a8ff; }
+        .comment { color: #8b949e; font-style: italic; }
+        .number { color: #79c0ff; }
+        .operator { color: #ff7b72; }
+        .variable { color: #ffa657; }
+        .property { color: #7ee787; }
 
         /* Stats Section */
         .stats {
@@ -367,7 +590,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--accent-orange);
             margin-bottom: 20px;
         }
 
@@ -421,7 +647,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--bg-primary);
             flex-shrink: 0;
         }
 
@@ -532,6 +761,24 @@
         }
 
         /* Responsive */
+        @media (max-width: 1024px) {
+            .hero {
+                flex-direction: column;
+                gap: 40px;
+                padding-top: 100px;
+            }
+
+            .hero-content {
+                text-align: center;
+                align-items: center;
+            }
+
+            .hero-visual {
+                width: 100%;
+                max-width: 600px;
+            }
+        }
+
         @media (max-width: 768px) {
             .nav {
                 padding: 16px 20px;
@@ -552,6 +799,10 @@
 
             .hero-subtitle {
                 font-size: 15px;
+            }
+
+            .code-window {
+                display: none;
             }
 
             .features,
@@ -600,28 +851,72 @@
 
     <!-- Hero Section -->
     <section class="hero">
-        <div class="hero-badge">
-            <div class="hero-badge-dot"></div>
-            <span>System Online</span>
+        <div class="hero-content">
+            <div class="hero-badge">
+                <div class="hero-badge-dot"></div>
+                <span>System Online</span>
+            </div>
+            <h1 class="hero-title">
+                Ship code overnight.<br>
+                <span>Wake up to merge requests.</span>
+            </h1>
+            <p class="hero-subtitle">
+                7 AI agents working together to plan, code, test, and review — 
+                while you sleep. Integrated with GitLab.
+            </p>
+            <div class="hero-actions">
+                <a href="/login.html" class="btn btn-primary">Get Started →</a>
+                <a href="#features" class="btn btn-secondary">See How It Works</a>
+            </div>
+            <div class="hero-meta">
+                <span>Works with</span>
+                <div class="hero-meta-icons">
+                    <span>GitLab</span>
+                    <span>•</span>
+                    <span>Telegram</span>
+                </div>
+            </div>
         </div>
-        <h1 class="hero-title">
-            Ship code overnight.<br>
-            <span>Wake up to merge requests.</span>
-        </h1>
-        <p class="hero-subtitle">
-            7 AI agents working together to plan, code, test, and review — 
-            while you sleep. Integrated with GitLab.
-        </p>
-        <div class="hero-actions">
-            <a href="/login.html" class="btn btn-primary">Get Started →</a>
-            <a href="#features" class="btn btn-secondary">See How It Works</a>
-        </div>
-        <div class="hero-meta">
-            <span>Works with</span>
-            <div class="hero-meta-icons">
-                <span>GitLab</span>
-                <span>•</span>
-                <span>Telegram</span>
+        
+        <div class="hero-visual">
+            <div class="code-window">
+                <div class="code-header">
+                    <div class="code-dots">
+                        <div class="code-dot red"></div>
+                        <div class="code-dot yellow"></div>
+                        <div class="code-dot green"></div>
+                    </div>
+                    <div class="code-tabs">
+                        <button class="code-tab active">AuthService.ts</button>
+                        <button class="code-tab">Login.tsx</button>
+                    </div>
+                    <div class="code-status">
+                        <span class="status-dot"></span>
+                        backend-dev writing...
+                    </div>
+                </div>
+                
+                <div class="code-content">
+                    <div class="agent-indicator">
+                        <div class="agent-avatar-small">BE</div>
+                        <div class="agent-info-small">
+                            <div class="agent-name-small">backend-dev</div>
+                            <div class="agent-action-small">Implementing user authentication</div>
+                        </div>
+                        <div class="typing-indicator">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                    
+                    <div class="code-area" id="code-area">
+                        <div class="code-line">
+                            <span class="line-number">1</span>
+                            <span class="line-content" id="line-1"></span><span class="cursor"></span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -658,32 +953,32 @@
             </div>
             <div class="features-grid">
                 <div class="feature-card">
-                    <div class="feature-icon">🌙</div>
-                    <h3 class="feature-title">24/7 Operation</h3>
+                    <div class="feature-icon">24/7</div>
+                    <h3 class="feature-title">Always On</h3>
                     <p class="feature-desc">Agents work overnight on feature branches. Wake up to completed merge requests ready for review.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">💬</div>
+                    <div class="feature-icon">TG</div>
                     <h3 class="feature-title">Telegram Control</h3>
                     <p class="feature-desc">Send voice or text commands from anywhere. Get notified when work is done — in Arabic or English.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">🔀</div>
+                    <div class="feature-icon">MR</div>
                     <h3 class="feature-title">GitLab Integration</h3>
                     <p class="feature-desc">Automatic branch creation, commits, and merge requests. Works seamlessly with your existing workflow.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">🧠</div>
+                    <div class="feature-icon">AI</div>
                     <h3 class="feature-title">Multi-Model AI</h3>
                     <p class="feature-desc">Use Claude, GLM, Kimi, or DeepSeek. Different models for different tasks — all configurable.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">🛠️</div>
-                    <h3 class="feature-title">38 MCP Tools</h3>
+                    <div class="feature-icon">38</div>
+                    <h3 class="feature-title">MCP Tools</h3>
                     <p class="feature-desc">Filesystem, git, databases, search, and custom MCP tools give your agents superpowers.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">📊</div>
+                    <div class="feature-icon">UI</div>
                     <h3 class="feature-title">Live Dashboard</h3>
                     <p class="feature-desc">Watch agents work in real-time. See code edits, conversations, and progress as it happens.</p>
                 </div>
@@ -701,7 +996,7 @@
             </div>
             <div class="agents-grid">
                 <div class="agent-card">
-                    <div class="agent-avatar">🎯</div>
+                    <div class="agent-avatar">OR</div>
                     <div class="agent-info">
                         <div class="agent-name">Orchestrator</div>
                         <div class="agent-role">Team Lead & Router</div>
@@ -709,7 +1004,7 @@
                     </div>
                 </div>
                 <div class="agent-card">
-                    <div class="agent-avatar">📋</div>
+                    <div class="agent-avatar">PL</div>
                     <div class="agent-info">
                         <div class="agent-name">Planner</div>
                         <div class="agent-role">Architecture & Planning</div>
@@ -717,7 +1012,7 @@
                     </div>
                 </div>
                 <div class="agent-card">
-                    <div class="agent-avatar">⚙️</div>
+                    <div class="agent-avatar">BE</div>
                     <div class="agent-info">
                         <div class="agent-name">Backend Dev</div>
                         <div class="agent-role">Backend Developer</div>
@@ -725,7 +1020,7 @@
                     </div>
                 </div>
                 <div class="agent-card">
-                    <div class="agent-avatar">🎨</div>
+                    <div class="agent-avatar">FE</div>
                     <div class="agent-info">
                         <div class="agent-name">Frontend Dev</div>
                         <div class="agent-role">Frontend Developer</div>
@@ -733,7 +1028,7 @@
                     </div>
                 </div>
                 <div class="agent-card">
-                    <div class="agent-avatar">🧪</div>
+                    <div class="agent-avatar">QA</div>
                     <div class="agent-info">
                         <div class="agent-name">QA Tester</div>
                         <div class="agent-role">Quality Assurance</div>
@@ -741,7 +1036,7 @@
                     </div>
                 </div>
                 <div class="agent-card">
-                    <div class="agent-avatar">🔍</div>
+                    <div class="agent-avatar">CR</div>
                     <div class="agent-info">
                         <div class="agent-name">Code Reviewer</div>
                         <div class="agent-role">Security & Quality</div>
@@ -749,7 +1044,7 @@
                     </div>
                 </div>
                 <div class="agent-card">
-                    <div class="agent-avatar">📢</div>
+                    <div class="agent-avatar">RP</div>
                     <div class="agent-info">
                         <div class="agent-name">Reporter</div>
                         <div class="agent-role">Updates & Reports</div>
@@ -782,5 +1077,150 @@
             </div>
         </div>
     </footer>
+
+    <script>
+        // Code Streaming Animation
+        const codeSnippets = [
+            {
+                agent: 'backend-dev',
+                action: 'Implementing user authentication service',
+                file: 'AuthService.ts',
+                code: `<span class="keyword">import</span> { <span class="variable">Injectable</span>, <span class="variable">UnauthorizedException</span> } <span class="keyword">from</span> <span class="string">'@nestjs/common'</span>;
+<span class="keyword">import</span> { <span class="variable">JwtService</span> } <span class="keyword">from</span> <span class="string">'@nestjs/jwt'</span>;
+<span class="keyword">import</span> * <span class="keyword">as</span> <span class="variable">bcrypt</span> <span class="keyword">from</span> <span class="string">'bcrypt'</span>;
+
+<span class="keyword">@Injectable</span>()
+<span class="keyword">export class</span> <span class="function">AuthService</span> {
+  <span class="keyword">constructor</span>(
+    <span class="keyword">private</span> <span class="variable">jwtService</span>: <span class="variable">JwtService</span>,
+  ) {}
+
+  <span class="keyword">async</span> <span class="function">validateUser</span>(<span class="variable">email</span>: <span class="variable">string</span>, <span class="variable">pass</span>: <span class="variable">string</span>) {
+    <span class="keyword">const</span> <span class="variable">user</span> = <span class="keyword">await</span> <span class="keyword">this</span>.<span class="property">usersService</span>.<span class="function">findOne</span>(<span class="variable">email</span>);
+    <span class="keyword">if</span> (<span class="variable">user</span> && <span class="variable">user</span>.<span class="property">password</span> === <span class="variable">pass</span>) {
+      <span class="keyword">return</span> <span class="variable">user</span>;
+    }
+    <span class="keyword">return null</span>;
+  }
+}`
+            },
+            {
+                agent: 'frontend-dev',
+                action: 'Creating login form component',
+                file: 'Login.tsx',
+                code: `<span class="keyword">import</span> { <span class="variable">useState</span> } <span class="keyword">from</span> <span class="string">'react'</span>;
+<span class="keyword">import</span> { <span class="variable">useAuth</span> } <span class="keyword">from</span> <span class="string">'@/hooks/useAuth'</span>;
+
+<span class="keyword">export function</span> <span class="function">LoginForm</span>() {
+  <span class="keyword">const</span> [<span class="variable">email</span>, <span class="function">setEmail</span>] = <span class="function">useState</span>(<span class="string">''</span>);
+  <span class="keyword">const</span> [<span class="variable">password</span>, <span class="function">setPassword</span>] = <span class="function">useState</span>(<span class="string">''</span>);
+  <span class="keyword">const</span> { <span class="function">login</span> } = <span class="function">useAuth</span>();
+
+  <span class="keyword">const</span> <span class="function">handleSubmit</span> = <span class="keyword">async</span> (<span class="variable">e</span>) => {
+    <span class="variable">e</span>.<span class="function">preventDefault</span>();
+    <span class="keyword">await</span> <span class="function">login</span>(<span class="variable">email</span>, <span class="variable">password</span>);
+  };
+
+  <span class="keyword">return</span> (
+    <span class="operator">&lt;</span><span class="variable">form</span> <span class="property">onSubmit</span>={<span class="function">handleSubmit</span>}<span class="operator">&gt;</span>
+      <span class="operator">&lt;</span><span class="variable">input</span> <span class="property">type</span>=<span class="string">"email"</span> <span class="property">value</span>={<span class="variable">email</span>} /&gt;
+    <span class="operator">&lt;/</span><span class="variable">form</span><span class="operator">&gt;</span>
+  );
+}`
+            }
+        ];
+        
+        let currentSnippetIndex = 0;
+        let currentCharIndex = 0;
+        let isDeleting = false;
+        
+        const codeArea = document.getElementById('code-area');
+        const agentNameEl = document.querySelector('.agent-name-small');
+        const agentActionEl = document.querySelector('.agent-action-small');
+        const codeTabs = document.querySelectorAll('.code-tab');
+        
+        function getAgentColor(name) {
+            const colors = {
+                'backend-dev': '#ff570a',
+                'frontend-dev': '#19d59e',
+                'qa-tester': '#8b5cf6'
+            };
+            return colors[name] || '#ff570a';
+        }
+        
+        function typeCode() {
+            const snippet = codeSnippets[currentSnippetIndex];
+            const code = snippet.code;
+            
+            // Update agent info
+            agentNameEl.textContent = snippet.agent;
+            agentActionEl.textContent = snippet.action;
+            document.querySelector('.agent-avatar-small').style.background = 
+                `linear-gradient(135deg, ${getAgentColor(snippet.agent)} 0%, ${getAgentColor(snippet.agent)}aa 100%)`;
+            
+            // Update tabs
+            codeTabs[0].textContent = snippet.file;
+            
+            if (!isDeleting) {
+                // Typing
+                if (currentCharIndex < code.length) {
+                    const char = code[currentCharIndex];
+                    
+                    if (char === '\n') {
+                        const lineCount = (code.substring(0, currentCharIndex).match(/\n/g) || []).length + 2;
+                        codeArea.innerHTML += `
+                            <div class="code-line">
+                                <span class="line-number">${lineCount}</span>
+                                <span class="line-content" id="line-${lineCount}"></span><span class="cursor"></span>
+                            </div>
+                        `;
+                    } else {
+                        const lines = codeArea.querySelectorAll('.line-content');
+                        const currentLine = lines[lines.length - 1];
+                        if (currentLine) {
+                            currentLine.innerHTML = code.substring(0, currentCharIndex + 1).split('\n').pop();
+                        }
+                    }
+                    
+                    currentCharIndex++;
+                    const speed = Math.random() * 30 + 10;
+                    setTimeout(typeCode, speed);
+                } else {
+                    setTimeout(() => {
+                        isDeleting = true;
+                        typeCode();
+                    }, 3000);
+                }
+            } else {
+                // Deleting
+                if (currentCharIndex > 0) {
+                    currentCharIndex--;
+                    
+                    const visibleLines = code.substring(0, currentCharIndex).split('\n');
+                    codeArea.innerHTML = visibleLines.map((line, i) => `
+                        <div class="code-line">
+                            <span class="line-number">${i + 1}</span>
+                            <span class="line-content" id="line-${i + 1}">${line}</span>${i === visibleLines.length - 1 ? '<span class="cursor"></span>' : ''}
+                        </div>
+                    `).join('');
+                    
+                    setTimeout(typeCode, 5);
+                } else {
+                    isDeleting = false;
+                    currentSnippetIndex = (currentSnippetIndex + 1) % codeSnippets.length;
+                    codeArea.innerHTML = `
+                        <div class="code-line">
+                            <span class="line-number">1</span>
+                            <span class="line-content" id="line-1"></span><span class="cursor"></span>
+                        </div>
+                    `;
+                    setTimeout(typeCode, 500);
+                }
+            }
+        }
+        
+        // Start the animation
+        setTimeout(typeCode, 1000);
+    </script>
 </body>
 </html>
