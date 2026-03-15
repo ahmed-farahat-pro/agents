@@ -187,11 +187,12 @@ async function sendMessageWithVoice(userId, chatId, text, options = {}) {
 bot.onText(/\/start/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
-  const welcomeMessage = `**Welcome to Nigents!**
+  // Use HTML parse mode instead of Markdown to avoid parsing issues with < > characters
+  const welcomeMessage = `<b>Welcome to Nigents!</b>
 
 Your AI development team. Send tasks via voice or text, and I'll handle the rest.
 
-**Just Talk To Me!**
+<b>Just Talk To Me!</b>
 Send voice notes or text naturally:
 • "Add login feature with JWT"
 • "Switch to the frontend project"  
@@ -199,56 +200,57 @@ Send voice notes or text naturally:
 • "What's the status?"
 • "I want to talk to the backend developer"
 
-**Quick Commands:**
-• /plan <task> — Create implementation plan (interactive)
-• /quickplan <task> | <project> — Create plan directly
+<b>Quick Commands:</b>
+• /plan task — Create implementation plan (interactive)
+• /quickplan task | project — Create plan directly
 • /plans — List your pending plans
 • /approve — Approve plan
 • /projects — List projects
-• /project <id> — Switch project
+• /project id — Switch project
 • /models — List AI models
-• /model <id> — Switch AI model
+• /model id — Switch AI model
 • /status — Check status
-• /ask <question> — Ask about code
+• /ask question — Ask about code
 
-**Agent Chat:**
-• /meet <agent> — Chat with specific agent
+<b>Agent Chat:</b>
+• /meet agent — Chat with specific agent
   (planner, backend, frontend, qa, reviewer)
 
-**Management:**
+<b>Management:</b>
 • /run — Start implementation now
 • /queue — List all tasks with IDs
-• /cancel <id> — Cancel a queued/approved task
-• /stop <id> — Stop a running task
-• /remove <id> — Remove a pending plan
+• /cancel id — Cancel a queued/approved task
+• /stop id — Stop a running task
+• /remove id — Remove a pending plan
 • /clear — Clear all completed/cancelled tasks
 
-**Settings:**
+<b>Settings:</b>
 • /voice — Toggle voice responses on/off
 • /settings — View your settings
 • /models — Select AI provider (interactive)
-• /model <provider> [model] — Switch AI model
+• /model provider model — Switch AI model
 • /agentmodels — Show agent models
-• /setagent <agent> <provider> <model> — Change agent model
-• /setallagents <provider> <model> — Set all agents
-• /testagents [agent] — Test all agent models
-• /testagentmodel <provider> <model> — Test specific model
+• /setagent agent provider model — Change agent model
+• /setallagents provider model — Set all agents
+• /testagents agent — Test all agent models
+• /testagentmodel provider model — Test specific model
 • /addmodel — Add custom AI model
-• /addglm <key> [model] — Add Zhipu GLM model quickly
-• /addmoonshot <key> [model] — Add Moonshot model quickly
+• /addglm key model — Add Zhipu GLM model quickly
+• /addmoonshot key model — Add Moonshot model quickly
 • /testmodel — Test any AI model
-• /testglm <key> [model] — Quick test Zhipu GLM
-• /testmoonshot <key> [model] — Quick test Moonshot
+• /testglm key model — Quick test Zhipu GLM
+• /testmoonshot key model — Quick test Moonshot
 • /mymodels — List your custom AI models
-• /usecustommodel <key> — Use a custom model
-• /editcustommodel <key> <api_key> — Update custom model API key
-• /removecustommodel <key> — Remove custom model
+• /usecustommodel key — Use a custom model
+• /editcustommodel key api_key — Update custom model API key
+• /removecustommodel key — Remove custom model
 • /reload — Reload configuration and API keys
 • /debug — Show debug information
 
 I understand Arabic and English voice messages!`;
 
-  await sendMessageWithVoice(msg.from.id, msg.chat.id, welcomeMessage, { voice: false });
+  // Send without Markdown to avoid parsing issues
+  await bot.sendMessage(msg.chat.id, welcomeMessage, { parse_mode: 'HTML' });
 });
 
 // /settings command - Show user settings
