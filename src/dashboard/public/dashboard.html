@@ -2134,34 +2134,7 @@
                     </div>
 
                     <div class="system-status" id="system-status">
-                        <div class="status-item">
-                            <div class="status-icon online">●</div>
-                            <div class="status-details">
-                                <h4>Orchestrator</h4>
-                                <span>Online - Coordinating</span>
-                            </div>
-                        </div>
-                        <div class="status-item">
-                            <div class="status-icon online">●</div>
-                            <div class="status-details">
-                                <h4>MCP Servers</h4>
-                                <span>38/38 Online</span>
-                            </div>
-                        </div>
-                        <div class="status-item">
-                            <div class="status-icon online">●</div>
-                            <div class="status-details">
-                                <h4>GitLab API</h4>
-                                <span>Connected</span>
-                            </div>
-                        </div>
-                        <div class="status-item">
-                            <div class="status-icon online">●</div>
-                            <div class="status-details">
-                                <h4>OpenHands</h4>
-                                <span>Sandbox Ready</span>
-                            </div>
-                        </div>
+                        <div class="empty text-muted">Loading status…</div>
                     </div>
 
                     <div class="agent-monitor" id="agent-monitor">
@@ -2392,41 +2365,19 @@
                         </div>
 
                         <div class="config-card">
-                            <h3 class="config-title">AI API Keys</h3>
+                            <h3 class="config-title">API Keys</h3>
                             <p class="text-sm text-muted" style="margin-bottom: 15px;">
-                                Add your API keys here. They will be saved and synced with the Telegram bot.
-                                Use <code>/reload</code> in Telegram to apply changes without restarting.
+                                Keys are synced with the Telegram bot. Use <code>/reload</code> in Telegram to apply changes.
+                                Only the custom model (below) and OpenAI for voice are used.
                             </p>
                             
                             <div class="form-group">
-                                <label class="form-label">Anthropic Claude API Key</label>
-                                <input type="password" class="form-input" id="api-key-anthropic" placeholder="sk-ant-api03-...">
-                                <span class="text-sm" id="status-anthropic" style="color: var(--text-muted);">Not configured</span>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Z.AI (Zhipu) API Key</label>
-                                <input type="password" class="form-input" id="api-key-zhipu" placeholder="...">
-                                <span class="text-sm" id="status-zhipu" style="color: var(--text-muted);">Not configured</span>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Moonshot AI API Key</label>
-                                <input type="password" class="form-input" id="api-key-moonshot" placeholder="sk-...">
-                                <span class="text-sm" id="status-moonshot" style="color: var(--text-muted);">Not configured</span>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">DeepSeek API Key</label>
-                                <input type="password" class="form-input" id="api-key-deepseek" placeholder="sk-...">
-                                <span class="text-sm" id="status-deepseek" style="color: var(--text-muted);">Not configured</span>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">OpenAI API Key (for voice)</label>
+                                <label class="form-label">OpenAI API Key (voice transcription)</label>
                                 <input type="password" class="form-input" id="api-key-openai" placeholder="sk-...">
-                                <span class="text-sm" id="status-openai" style="color: var(--text-muted);">Optional - for voice transcription</span>
+                                <span class="text-sm" id="status-openai" style="color: var(--text-muted);">For Whisper voice in Telegram</span>
                             </div>
+                            
+                            <p class="text-sm text-muted" style="margin-top: 12px;">Custom model (GLM etc.) is configured via Custom AI Provider in the AI Providers section or in <code>data/shared-config.json</code>.</p>
                             
                             <button class="btn btn-primary" onclick="saveApiKeys()">Save API Keys</button>
                             <button class="btn btn-secondary" onclick="loadApiKeys()" style="margin-left: 10px;">Reload</button>
@@ -2779,63 +2730,17 @@
     </div>
 
     <script>
-        // Data
-        let aiProviders = JSON.parse(localStorage.getItem('nigents_providers')) || {
-            anthropic: {
-                name: 'Anthropic Claude',
-                key: '',
-                models: ['claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku'],
-                currency: '$',
-                logo: 'C',
-                color: 'claude'
-            },
-            zhipu: {
-                name: 'Zhipu AI GLM',
-                key: '',
-                models: ['glm-4', 'glm-4-plus', 'glm-4v', 'glm-5', 'glm-5-plus'],
-                currency: '¥',
-                logo: 'Z',
-                color: 'glm'
-            },
-            moonshot: {
-                name: 'Moonshot AI Kimi',
-                key: '',
-                models: ['kimi-k2', 'kimi-k2-plus', 'kimi-2.5', 'kimi-2.5-32k', 'kimi-2.5-128k'],
-                currency: '¥',
-                logo: 'M',
-                color: 'kimi'
-            }
-        };
+        // Data – providers from /api/ai/providers (custom model + OpenAI for voice)
+        let aiProviders = {};
 
         let gitlabRepos = JSON.parse(localStorage.getItem('nigents_repos')) || [];
         let gitlabConfig = { configured: false, namespace: null };
 
-        let tasks = JSON.parse(localStorage.getItem('nigents_tasks')) || [];
+        let tasks = [];
 
-        const agents = [
-            { id: 'orchestrator', name: 'Orchestrator', role: 'Team Lead & Router', status: 'idle', provider: 'anthropic', model: 'claude-3-sonnet', tasks: 0, calls: 0 },
-            { id: 'planner', name: 'Planner', role: 'Architecture & Planning', status: 'idle', provider: 'anthropic', model: 'claude-3-sonnet', tasks: 0, calls: 0 },
-            { id: 'backend', name: 'Backend Dev', role: 'Backend Developer', status: 'idle', provider: 'anthropic', model: 'claude-3-sonnet', tasks: 0, calls: 0 },
-            { id: 'frontend', name: 'Frontend Dev', role: 'Frontend Developer', status: 'idle', provider: 'anthropic', model: 'claude-3-haiku', tasks: 0, calls: 0 },
-            { id: 'qa', name: 'QA Tester', role: 'Quality Assurance', status: 'idle', provider: 'anthropic', model: 'claude-3-haiku', tasks: 0, calls: 0 },
-            { id: 'reviewer', name: 'Reviewer', role: 'Code Reviewer', status: 'idle', provider: 'anthropic', model: 'claude-3-sonnet', tasks: 0, calls: 0 },
-            { id: 'reporter', name: 'Reporter', role: 'Reporter & Communicator', status: 'idle', provider: 'anthropic', model: 'claude-3-haiku', tasks: 0, calls: 0 },
-        ];
+        let agents = [];
 
-        const mcps = [
-            { name: 'filesystem', desc: 'File operations', status: 'online' },
-            { name: 'git', desc: 'Git commands', status: 'online' },
-            { name: 'gitlab', desc: 'GitLab API', status: 'online' },
-            { name: 'postgresql', desc: 'Database queries', status: 'online' },
-            { name: 'arabic-rtl', desc: 'RTL compliance', status: 'online' },
-            { name: 'task-splitter', desc: 'Task management', status: 'online' },
-            { name: 'code-search', desc: 'Semantic search', status: 'online' },
-            { name: 'brave-search', desc: 'Web search', status: 'online' },
-            { name: 'docker', desc: 'Container management', status: 'online' },
-            { name: 'puppeteer', desc: 'Browser automation', status: 'online' },
-            { name: 'memory', desc: 'Persistent memory', status: 'online' },
-            { name: 'sequential-thinking', desc: 'Complex reasoning', status: 'online' },
-        ];
+        let mcps = [];
 
         let currentView = 'dashboard';
         let selectedAgent = null;
@@ -2933,50 +2838,41 @@
                 </div>
             `).join('');
 
-            // Load initial comm feed
             renderCommFeed();
+            loadSystemStatus();
+        }
+
+        async function loadSystemStatus() {
+            const el = document.getElementById('system-status');
+            if (!el) return;
+            try {
+                const [statusRes, mcpRes] = await Promise.all([fetch('/api/status'), fetch('/api/mcp/health')]);
+                const status = await statusRes.json();
+                const mcp = mcpRes.ok ? await mcpRes.json() : {};
+                const mcpCount = mcp.connectedServers != null ? mcp.connectedServers : (status.mcp && status.mcp.connectedServers);
+                const mcpTotal = mcp.totalTools != null ? mcp.totalTools : (status.mcp && status.mcp.totalTools);
+                el.innerHTML = `
+                    <div class="status-item">
+                        <div class="status-icon ${status.status === 'running' ? 'online' : ''}">●</div>
+                        <div class="status-details"><h4>Server</h4><span>${status.status || 'unknown'}</span></div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-icon ${(mcpCount || 0) > 0 ? 'online' : ''}">●</div>
+                        <div class="status-details"><h4>MCP</h4><span>${mcpCount != null ? mcpCount + (mcpTotal != null ? '/' + mcpTotal + ' tools' : '') : '—'}</span></div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-icon ${(status.gitlab && status.gitlab.configured) ? 'online' : ''}">●</div>
+                        <div class="status-details"><h4>GitLab</h4><span>${(status.gitlab && status.gitlab.configured) ? 'Configured' : 'Not configured'}</span></div>
+                    </div>
+                `;
+            } catch (e) {
+                el.innerHTML = '<div class="status-item"><div class="status-details"><span class="text-muted">Failed to load status</span></div></div>';
+            }
         }
 
         function startLiveUpdates() {
             if (liveUpdateInterval) return;
-            
-            // Simulate live updates
-            liveUpdateInterval = setInterval(() => {
-                // Randomly update agent status
-                const randomAgent = agents[Math.floor(Math.random() * agents.length)];
-                if (Math.random() > 0.7) {
-                    const tasks = [
-                        'Analyzing codebase structure...',
-                        'Writing unit tests...',
-                        'Reviewing pull request...',
-                        'Generating implementation plan...',
-                        'Checking RTL compliance...',
-                        'Running security audit...',
-                        'Creating feature branch...',
-                        'Committing changes...'
-                    ];
-                    randomAgent.currentTask = tasks[Math.floor(Math.random() * tasks.length)];
-                    randomAgent.progress = Math.floor(Math.random() * 100);
-                    randomAgent.status = randomAgent.progress > 0 ? 'busy' : 'idle';
-                    
-                    // Add to activity
-                    addActivity({
-                        agent: randomAgent.name,
-                        message: randomAgent.currentTask,
-                        type: 'info'
-                    });
-
-                    // Re-render if on monitor page
-                    if (currentView === 'monitor') {
-                        renderAgentMonitor();
-                    }
-                }
-            }, 3000);
-
-            // Simulate agent communication
-            setTimeout(() => {
-                simulateAgentCommunication();
-            }, 2000);
+            liveUpdateInterval = setInterval(() => { loadAgents(); }, 5000);
         }
 
         function stopLiveUpdates() {
@@ -3132,7 +3028,7 @@
                 gitlabRepos.map(r => `<option value="${r.id}" ${r.selected ? 'selected' : ''}>${r.namespace}/${r.name}</option>`).join('');
         }
 
-        function createTask() {
+        async function createTask() {
             const title = document.getElementById('task-title').value.trim();
             const desc = document.getElementById('task-desc').value.trim();
             const repoId = document.getElementById('task-repo').value;
@@ -3158,51 +3054,100 @@
                 createdAt: new Date().toISOString()
             };
 
-            tasks.unshift(task);
-            localStorage.setItem('nigents_tasks', JSON.stringify(tasks));
-            updateTaskCount();
-            closeTaskModal();
-            
-            if (currentView === 'tasks') {
-                renderTasks();
+            try {
+                const res = await fetch('/api/tasks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(task)
+                });
+                const data = await res.json();
+                if (res.ok && (data.task || data.id)) {
+                    tasks = [data.task || { ...task, id: data.id || task.id }, ...tasks];
+                    closeTaskModal();
+                    if (currentView === 'tasks') renderTasks();
+                    updateTaskCount();
+                    showNotification('Task created successfully!');
+                } else {
+                    showNotification(data.error || 'Failed to create task', 'error');
+                }
+            } catch (e) {
+                console.error('Create task failed:', e);
+                showNotification('Failed to create task', 'error');
             }
-
-            // Show notification
-            showNotification('Task created successfully!');
         }
 
         function renderTasks() {
             const list = document.getElementById('task-list');
+            const pending = tasks.filter(t => ['pending_approval', 'approved', 'queued'].includes(t.status));
+            const running = tasks.filter(t => t.status === 'running');
+            const completed = tasks.filter(t => ['completed', 'failed', 'needs_changes'].includes(t.status));
+
+            function renderGroup(label, items, statusClass) {
+                if (!items.length) return '';
+                return `
+                    <div class="task-group" style="margin-bottom: 20px;">
+                        <h4 class="text-sm text-muted" style="margin-bottom: 10px;">${label}</h4>
+                        ${items.map(t => `
+                            <div class="task-item">
+                                <div class="task-priority ${(t.priority || 'medium')}"></div>
+                                <div class="task-content">
+                                    <div class="task-title">${(t.title || t.plan?.title || 'Untitled').replace(/</g, '&lt;')}</div>
+                                    ${(t.description || t.plan?.description) ? `<div class="task-desc">${String(t.description || t.plan?.description || '').slice(0, 120).replace(/</g, '&lt;')}${(t.description || t.plan?.description || '').length > 120 ? '…' : ''}</div>` : ''}
+                                    <div class="task-meta">
+                                        <span class="task-status ${(t.status || '').replace(/[^a-z0-9_-]/gi, '')}">${(t.status || 'unknown').replace(/_/g, ' ')}</span>
+                                        ${t.mrUrl ? `<a href="${t.mrUrl}" target="_blank" rel="noopener" class="text-sm">View MR</a>` : ''}
+                                        ${t.branch || t.plan?.branch ? `<span>${(t.branch || t.plan?.branch || '')}</span>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
             if (tasks.length === 0) {
                 list.innerHTML = `
                     <div class="empty">
                         <h3>No tasks yet</h3>
-                        <p>Create a new task to get started</p>
-                        <button class="btn btn-primary" onclick="openTaskModal()" style="margin-top: 16px;">Create First Task</button>
+                        <p>Use /plan in Telegram to create a plan, then /approve to run. Tasks from the bot appear here.</p>
+                        <button class="btn btn-primary" onclick="openTaskModal()" style="margin-top: 16px;">Add Task (Dashboard)</button>
                     </div>
                 `;
                 return;
             }
 
-            list.innerHTML = tasks.map(t => `
-                <div class="task-item">
-                    <div class="task-priority ${t.priority}"></div>
-                    <div class="task-content">
-                        <div class="task-title">${t.title}</div>
-                        ${t.description ? `<div class="task-desc">${t.description}</div>` : ''}
-                        <div class="task-meta">
-                            <span class="task-status ${t.status}">${t.status}</span>
-                            ${t.repo ? `<span>${gitlabRepos.find(r => r.id === t.repo)?.name || t.repo}</span>` : ''}
-                            ${t.agent ? `<span>@${t.agent}</span>` : '<span>@Auto</span>'}
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+            list.innerHTML = renderGroup('Pending', pending, 'pending') + renderGroup('Running', running, 'running') + renderGroup('Completed', completed, 'completed');
+        }
+
+        async function loadTasks() {
+            try {
+                const res = await fetch('/api/tasks');
+                const data = await res.json();
+                tasks = Array.isArray(data) ? data : (data.tasks || data.data || []);
+                if (currentView === 'tasks') renderTasks();
+                updateTaskCount();
+            } catch (e) {
+                console.error('Failed to load tasks:', e);
+            }
+        }
+
+        async function loadAgents() {
+            try {
+                const res = await fetch('/api/agents');
+                const data = await res.json();
+                const arr = Array.isArray(data) ? data : (data.agents || []);
+                agents = arr.map(a => ({ id: a.name || a.id, name: a.name || a.id, role: a.role || '', status: a.status || 'idle', currentTask: a.activity || '', progress: a.progress }));
+                if (currentView === 'agents') renderAgents();
+                if (currentView === 'monitor') renderAgentMonitor();
+            } catch (e) {
+                console.error('Failed to load agents:', e);
+            }
         }
 
         function updateTaskCount() {
-            const pending = tasks.filter(t => t.status === 'pending' || t.status === 'running').length;
-            document.getElementById('task-count').textContent = pending;
+            const pending = tasks.filter(t => ['pending_approval', 'approved', 'queued', 'pending', 'running'].includes(t.status)).length;
+            const el = document.getElementById('task-count');
+            if (el) el.textContent = pending;
         }
 
         function showNotification(message) {
@@ -3336,7 +3281,12 @@
 
         function renderProviders() {
             const list = document.getElementById('provider-list');
-            list.innerHTML = Object.entries(aiProviders).map(([key, provider]) => `
+            const entries = Object.entries(aiProviders || {});
+            if (!entries.length) {
+                list.innerHTML = '<div class="empty text-muted">No AI providers from server. Custom model is configured in data/shared-config.json or via Settings.</div>';
+                return;
+            }
+            list.innerHTML = entries.map(([key, provider]) => `
                 <div class="provider-item">
                     <div class="provider-info">
                         <h4>${provider.name}</h4>
@@ -3347,8 +3297,7 @@
                     </div>
                     <div class="provider-actions">
                         <button class="btn btn-secondary btn-sm" onclick="editProvider('${key}')">Edit</button>
-                        ${key !== 'anthropic' && key !== 'zhipu' && key !== 'moonshot' ? 
-                            `<button class="btn btn-danger btn-sm" onclick="deleteProvider('${key}')">Delete</button>` : ''}
+                        <button class="btn btn-danger btn-sm" onclick="deleteProvider('${key}')">Delete</button>
                     </div>
                 </div>
             `).join('');
@@ -3821,26 +3770,31 @@
         // Render Agents
         function renderAgents() {
             const grid = document.getElementById('agents-grid');
+            if (!grid) return;
+            if (!agents.length) {
+                grid.innerHTML = '<div class="empty text-muted">No agents from server. Start the bot and open Agent Monitor for live data.</div>';
+                return;
+            }
             grid.innerHTML = agents.map(a => `
-                <div class="agent-card" onclick="selectAgent('${a.id}')">
+                <div class="agent-card" onclick="selectAgent('${(a.id || a.name || '').replace(/'/g, "\\'")}')">
                     <div class="agent-header">
                         <div class="agent-info">
-                            <h3>${a.name}</h3>
-                            <div class="agent-role">${a.role}</div>
+                            <h3>${(a.name || a.id || '').replace(/</g, '&lt;')}</h3>
+                            <div class="agent-role">${(a.role || '').replace(/</g, '&lt;')}</div>
                         </div>
-                        <span class="agent-status ${a.status}">${a.status}</span>
+                        <span class="agent-status ${(a.status || 'idle')}">${(a.status || 'idle')}</span>
                     </div>
                     <div class="agent-stats-row">
                         <div class="agent-stat">
-                            <div class="agent-stat-value">${aiProviders[a.provider]?.name.split(' ')[0] || a.provider}</div>
+                            <div class="agent-stat-value">${(aiProviders[a.provider] && aiProviders[a.provider].name) ? aiProviders[a.provider].name.split(' ')[0] : (a.provider || '—')}</div>
                             <div class="agent-stat-label">Provider</div>
                         </div>
                         <div class="agent-stat">
-                            <div class="agent-stat-value">${a.model}</div>
+                            <div class="agent-stat-value">${(a.model || '—').replace(/</g, '&lt;')}</div>
                             <div class="agent-stat-label">Model</div>
                         </div>
                         <div class="agent-stat">
-                            <div class="agent-stat-value">${a.tasks}</div>
+                            <div class="agent-stat-value">${a.tasks != null ? a.tasks : '—'}</div>
                             <div class="agent-stat-label">Tasks</div>
                         </div>
                     </div>
@@ -3905,7 +3859,13 @@
         }
 
         function renderMCPs() {
-            document.getElementById('mcp-grid').innerHTML = mcps.map(m => `
+            const grid = document.getElementById('mcp-grid');
+            if (!grid) return;
+            if (!mcps.length) {
+                grid.innerHTML = '<div class="empty text-muted">MCP status is shown in Agent Monitor (System status).</div>';
+                return;
+            }
+            grid.innerHTML = mcps.map(m => `
                 <div class="mcp-card">
                     <div class="mcp-header">
                         <div class="mcp-indicator ${m.status}"></div>
@@ -3933,14 +3893,45 @@
             showNotification('Data refreshed');
         }
 
-        // Socket
+        // Socket – real-time state from same backend as Telegram bot
         const socket = io();
         socket.on('connect', () => {
-            document.getElementById('status-text').textContent = 'Connected';
+            const el = document.getElementById('status-text');
+            if (el) el.textContent = 'Connected';
+            socket.emit('requestStatus');
         });
 
         socket.on('disconnect', () => {
-            document.getElementById('status-text').textContent = 'Disconnected';
+            const el = document.getElementById('status-text');
+            if (el) el.textContent = 'Disconnected';
+        });
+
+        socket.on('init', (state) => {
+            if (state && state.tasks) tasks = state.tasks;
+            if (state && state.agents && state.agents.length) {
+                agents.length = 0;
+                agents.push(...state.agents.map(a => ({ id: a.name || a.id, name: a.name || a.id, role: a.role || '', status: a.status || 'idle', currentTask: a.activity || '', progress: a.progress })));
+            }
+            if (currentView === 'tasks') renderTasks();
+            if (currentView === 'monitor') renderAgentMonitor();
+            if (currentView === 'agents') renderAgents();
+            updateTaskCount();
+        });
+
+        socket.on('task', (task) => {
+            const idx = tasks.findIndex(t => t.id === task.id);
+            if (idx >= 0) tasks[idx] = { ...tasks[idx], ...task }; else tasks.unshift(task);
+            if (currentView === 'tasks') renderTasks();
+            updateTaskCount();
+        });
+
+        socket.on('agentStatus', (data) => {
+            const a = agents.find(x => (x.name || x.id) === data.name);
+            if (a) {
+                a.status = data.status || a.status;
+                a.currentTask = data.activity || a.currentTask;
+                if (currentView === 'monitor') renderAgentMonitor();
+            }
         });
 
         // Temperature slider
@@ -3963,14 +3954,7 @@
                 
                 if (data.success) {
                     const config = data.config;
-                    
-                    // Update input placeholders based on current status
-                    updateApiKeyStatus('anthropic', config.apiKeys.ANTHROPIC_API_KEY);
-                    updateApiKeyStatus('zhipu', config.apiKeys.ZHIPU_API_KEY);
-                    updateApiKeyStatus('moonshot', config.apiKeys.MOONSHOT_API_KEY);
-                    updateApiKeyStatus('deepseek', config.apiKeys.DEEPSEEK_API_KEY);
-                    updateApiKeyStatus('openai', config.apiKeys.OPENAI_API_KEY);
-                    
+                    updateApiKeyStatus('openai', config.apiKeys && config.apiKeys.OPENAI_API_KEY);
                     showNotification('API keys status loaded');
                 }
             } catch (error) {
@@ -3996,25 +3980,9 @@
             const statusDiv = document.getElementById('api-keys-status');
             statusDiv.style.display = 'none';
             
-            // Collect all API keys
             const apiKeys = {};
-            
-            const anthropic = document.getElementById('api-key-anthropic').value.trim();
-            const zhipu = document.getElementById('api-key-zhipu').value.trim();
-            const moonshot = document.getElementById('api-key-moonshot').value.trim();
-            const deepseek = document.getElementById('api-key-deepseek').value.trim();
             const openai = document.getElementById('api-key-openai').value.trim();
-            
-            if (anthropic) apiKeys.ANTHROPIC_API_KEY = anthropic;
-            if (zhipu) apiKeys.ZHIPU_API_KEY = zhipu;
-            if (moonshot) apiKeys.MOONSHOT_API_KEY = moonshot;
-            if (deepseek) apiKeys.DEEPSEEK_API_KEY = deepseek;
             if (openai) apiKeys.OPENAI_API_KEY = openai;
-            
-            if (Object.keys(apiKeys).length === 0) {
-                showStatus('Please enter at least one API key', 'error');
-                return;
-            }
             
             try {
                 const response = await fetch('/api/config/apikeys', {
@@ -4029,11 +3997,6 @@
                     showStatus('API keys saved successfully! Use <code>/reload</code> in Telegram to apply.', 'success');
                     showNotification('API keys saved');
                     
-                    // Clear inputs
-                    document.getElementById('api-key-anthropic').value = '';
-                    document.getElementById('api-key-zhipu').value = '';
-                    document.getElementById('api-key-moonshot').value = '';
-                    document.getElementById('api-key-deepseek').value = '';
                     document.getElementById('api-key-openai').value = '';
                     
                     // Reload status
@@ -4070,31 +4033,34 @@
             try {
                 const response = await fetch('/api/ai/providers');
                 const data = await response.json();
-                
-                if (data.success) {
-                    // Update provider status in the UI
-                    Object.entries(data.providers).forEach(([key, provider]) => {
-                        updateApiKeyStatus(key, provider.enabled);
-                    });
+                if (data.success && data.providers) {
+                    aiProviders = data.providers;
+                    if (currentView === 'ai-providers') renderProviders();
+                    updateTaskModalProviders();
                 }
             } catch (error) {
                 console.error('Failed to load AI providers:', error);
             }
         }
+        function updateTaskModalProviders() {
+            const sel = document.getElementById('task-provider');
+            if (!sel) return;
+            sel.innerHTML = '<option value="">Use Default</option>' + Object.entries(aiProviders).map(([key, p]) => `<option value="${key}">${p.name || key}</option>`).join('');
+        }
         
-        // Init
-        saveProviders();
+        // Init – load real data from backend (same as Telegram bot)
+        loadTasks();
+        loadAgents();
+        loadAiProviders();
         updateTaskCount();
         renderAgents();
         renderMCPs();
         renderProviders();
         
-        // Load GitLab config on startup
         loadGitLabConfig().then(() => {
             renderRepos();
         });
         
-        // Load API keys status on startup
         loadApiKeys();
         
         // Refresh providers every 30 seconds

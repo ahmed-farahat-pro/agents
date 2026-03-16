@@ -156,18 +156,15 @@ class SharedConfig {
     this.applyToEnv();
   }
 
-  // Get sanitized config (for frontend - hides full keys)
+  // Get sanitized config (for frontend - only custom model + OpenAI for voice)
   getSanitizedConfig() {
     const config = this.loadConfig();
     
     return {
       apiKeys: {
-        ANTHROPIC_API_KEY: config.apiKeys.ANTHROPIC_API_KEY ? 'SET' : '',
-        ZHIPU_API_KEY: config.apiKeys.ZHIPU_API_KEY ? 'SET' : '',
-        MOONSHOT_API_KEY: config.apiKeys.MOONSHOT_API_KEY ? 'SET' : '',
-        DEEPSEEK_API_KEY: config.apiKeys.DEEPSEEK_API_KEY ? 'SET' : '',
         OPENAI_API_KEY: config.apiKeys.OPENAI_API_KEY ? 'SET' : '',
       },
+      customModels: config.customModels || {},
       gitlab: {
         token: config.gitlab.token ? 'SET' : '',
         namespace: config.gitlab.namespace,

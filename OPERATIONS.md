@@ -405,6 +405,16 @@ pm2 stop nigents-bot
 pm2 start src/bot.js --name nigents-bot
 ```
 
+### MCP workspace path (permission denied fix)
+
+MCP uses a **workspace directory** for filesystem, git, and similar servers. Resolution order:
+
+1. **`MCP_WORKSPACE` or `WORKSPACE_DIR`** in `.env` (if set).
+2. **`~/workspace`** if it already exists (e.g. `/home/ubuntu/workspace`) – so your existing `workspace` under home is used.
+3. **`<project_dir>/workspace`** otherwise (e.g. `/home/ubuntu/nigents/workspace`).
+
+The app creates `workspace/data` and `workspace/repos` inside the chosen workspace if they don’t exist. No root required.
+
 ### Restart Only MCP Servers
 
 MCP servers run as child processes, so they restart with the main app. But to fully rebuild them:

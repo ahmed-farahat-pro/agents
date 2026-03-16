@@ -8,6 +8,7 @@ const { StdioClientTransport } = require('@modelcontextprotocol/sdk/client/stdio
 const logger = require('../utils/logger');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 class MCPClientManager {
   constructor() {
@@ -101,23 +102,34 @@ class MCPClientManager {
   }
 
   /**
+   * Resolve workspace path. Prefer existing ~/workspace, then env, then <project>/workspace.
+   */
+  getWorkspacePath() {
+    if (process.env.MCP_WORKSPACE) return path.resolve(process.env.MCP_WORKSPACE);
+    if (process.env.WORKSPACE_DIR) return path.resolve(process.env.WORKSPACE_DIR);
+    const homeWorkspace = path.join(os.homedir(), 'workspace');
+    if (fs.existsSync(homeWorkspace)) return path.resolve(homeWorkspace);
+    return path.resolve(path.join(process.cwd(), 'workspace'));
+  }
+
+  /**
    * Ensure workspace directory exists
    */
   ensureWorkspace() {
-    const workspacePath = '/workspace';
+    this.workspacePath = this.getWorkspacePath();
     
-    if (!fs.existsSync(workspacePath)) {
-      logger.warn(`[MCP] Workspace directory ${workspacePath} does not exist`);
+    if (!fs.existsSync(this.workspacePath)) {
+      logger.warn(`[MCP] Workspace directory ${this.workspacePath} does not exist`);
       try {
-        fs.mkdirSync(workspacePath, { recursive: true });
-        logger.info(`[MCP] Created workspace directory: ${workspacePath}`);
+        fs.mkdirSync(this.workspacePath, { recursive: true });
+        logger.info(`[MCP] Created workspace directory: ${this.workspacePath}`);
       } catch (err) {
         logger.error(`[MCP] Failed to create workspace: ${err.message}`);
+        return;
       }
     }
     
-    // Also create data subdirectory for sqlite
-    const dataPath = path.join(workspacePath, 'data');
+    const dataPath = path.join(this.workspacePath, 'data');
     if (!fs.existsSync(dataPath)) {
       try {
         fs.mkdirSync(dataPath, { recursive: true });
@@ -126,8 +138,7 @@ class MCPClientManager {
       }
     }
     
-    // Create repos subdirectory for cloned repositories
-    const reposPath = path.join(workspacePath, 'repos');
+    const reposPath = path.join(this.workspacePath, 'repos');
     if (!fs.existsSync(reposPath)) {
       try {
         fs.mkdirSync(reposPath, { recursive: true });
@@ -154,9 +165,11 @@ class MCPClientManager {
    * Connect to an MCP server via stdio
    */
   async connectServer(name, config) {
+    if (!config || !config.command) {
+      throw new Error(`Invalid MCP server config for ${name}: missing command`);
+    }
     const env = {};
     
-    // Resolve environment variables
     for (const [key, value] of Object.entries(config.env || {})) {
       if (typeof value === 'string' && value.startsWith('${') && value.endsWith('}')) {
         const envVar = value.slice(2, -1);
@@ -165,11 +178,23 @@ class MCPClientManager {
         env[key] = value;
       }
     }
+    // Pass workspace path for servers that need it (filesystem, git, etc.)
+    const workspacePath = this.workspacePath || this.getWorkspacePath();
+    env.MCP_WORKSPACE = workspacePath;
+    env.WORKSPACE = workspacePath;
 
-    // Create transport with timeout
+    // Substitute /workspace in args with actual workspace path (no root permission needed)
+    const args = (config.args || []).map(arg => {
+      if (typeof arg !== 'string') return arg;
+      if (arg === '/workspace' || arg.startsWith('/workspace/')) {
+        return path.join(workspacePath, arg.slice(9));
+      }
+      return arg.replace(/\$\{MCP_WORKSPACE\}/g, workspacePath).replace(/\/workspace/g, workspacePath);
+    });
+
     const transport = new StdioClientTransport({
       command: config.command,
-      args: config.args || [],
+      args,
       env: { ...process.env, ...env },
     });
 

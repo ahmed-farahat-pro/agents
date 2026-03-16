@@ -703,14 +703,6 @@ app.get('/api/ai/providers', (req, res) => {
     const sharedConfig = require('../utils/shared-config');
     sharedConfig.applyToEnv();
     
-    // Debug: log env vars (masked)
-    logger.info('[Dashboard] AI Provider env check:', {
-      ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ? 'SET' : 'NOT SET',
-      ZHIPU_API_KEY: process.env.ZHIPU_API_KEY ? 'SET' : 'NOT SET',
-      MOONSHOT_API_KEY: process.env.MOONSHOT_API_KEY ? 'SET' : 'NOT SET',
-      DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY ? 'SET' : 'NOT SET',
-    });
-    
     const providers = aiClient.getAvailableProviders();
     res.json({
       success: true,
