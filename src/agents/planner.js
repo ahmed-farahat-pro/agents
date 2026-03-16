@@ -515,7 +515,6 @@ NOW CREATE YOUR JSON RESPONSE FOR: ${task}`;
     
     const timestamp = Date.now();
     
-    const taskLower = task.toLowerCase();
     const likelyFrontend = /\b(login|page|ui|ux|component|css|style|frontend|react|vue)\b/i.test(taskLower);
     return {
       title: title,
