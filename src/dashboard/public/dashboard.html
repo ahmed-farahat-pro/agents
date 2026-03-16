@@ -2341,12 +2341,12 @@
                     </div>
                 </div>
 
-                <!-- Admin View: list users, view/edit per-user config -->
+                <!-- Admin View: add users, copy config, view/edit per-user config -->
                 <div class="view" id="view-admin">
                     <div class="config-grid">
                         <div class="config-card" style="grid-column: 1 / -1;">
                             <h3 class="config-title">Admin – User config</h3>
-                            <p class="text-sm text-muted" style="margin-bottom: 15px;">Select a user to view and edit their API keys, GitLab, and custom models. Users are Telegram users who have used the bot.</p>
+                            <p class="text-sm text-muted" style="margin-bottom: 15px;">Add users, copy config between users, or select a user to view and edit their API keys, GitLab, and custom models.</p>
                             <div class="form-group">
                                 <label class="form-label">Select user</label>
                                 <select class="form-input" id="admin-user-select" onchange="adminOnUserSelect()">
@@ -2357,6 +2357,38 @@
                                 <strong>User ID:</strong> <span id="admin-user-id"></span><br>
                                 <span id="admin-user-name"></span>
                             </div>
+                        </div>
+                        <div class="config-card">
+                            <h3 class="config-title">Add user</h3>
+                            <p class="text-sm text-muted" style="margin-bottom: 12px;">Create a user so you can assign config. Use Telegram user ID for bot users, or any ID for testing.</p>
+                            <div class="form-group">
+                                <label class="form-label">User ID (required)</label>
+                                <input type="text" class="form-input" id="admin-new-user-id" placeholder="e.g. 123456789 or user-alice">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Display name (optional)</label>
+                                <input type="text" class="form-input" id="admin-new-user-name" placeholder="e.g. Alice">
+                            </div>
+                            <button class="btn btn-primary" onclick="adminAddUser()">Add user</button>
+                            <div id="admin-add-user-status" style="margin-top: 10px; padding: 8px; border-radius: 6px; display: none; font-size: 13px;"></div>
+                        </div>
+                        <div class="config-card">
+                            <h3 class="config-title">Copy config to another user</h3>
+                            <p class="text-sm text-muted" style="margin-bottom: 12px;">Copy API keys, GitLab, and custom models from one user to another. Target user is created if missing.</p>
+                            <div class="form-group">
+                                <label class="form-label">From user (source)</label>
+                                <select class="form-input" id="admin-copy-from">
+                                    <option value="">-- Select source user --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">To user (target)</label>
+                                <select class="form-input" id="admin-copy-to">
+                                    <option value="">-- Select target user --</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" onclick="adminCopyConfig()">Copy config</button>
+                            <div id="admin-copy-status" style="margin-top: 10px; padding: 8px; border-radius: 6px; display: none; font-size: 13px;"></div>
                         </div>
                         <div class="config-card" id="admin-config-section" style="display: none;">
                             <h3 class="config-title">API Keys (for this user)</h3>
@@ -4067,24 +4099,112 @@
         
         let adminSelectedUserId = null;
 
+        function fillAdminUserDropdowns(users) {
+            const options = (users || []).map(u => {
+                const label = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.username || u.id;
+                return { value: u.id, text: label + (u.hasConfig ? ' ✓' : '') };
+            });
+            const sel = document.getElementById('admin-user-select');
+            const fromSel = document.getElementById('admin-copy-from');
+            const toSel = document.getElementById('admin-copy-to');
+            [sel, fromSel, toSel].forEach(dropdown => {
+                if (!dropdown) return;
+                const isFrom = dropdown.id === 'admin-copy-from';
+                const isTo = dropdown.id === 'admin-copy-to';
+                dropdown.innerHTML = isFrom ? '<option value="">-- Select source user --</option>' : (isTo ? '<option value="">-- Select target user --</option>' : '<option value="">-- Select user --</option>');
+                options.forEach(o => {
+                    const opt = document.createElement('option');
+                    opt.value = o.value;
+                    opt.textContent = o.text;
+                    dropdown.appendChild(opt);
+                });
+            });
+        }
+
         async function loadAdminUsers() {
             const sel = document.getElementById('admin-user-select');
             if (!sel) return;
             try {
                 const res = await fetch('/api/admin/users');
                 const data = await res.json();
-                sel.innerHTML = '<option value="">-- Select user --</option>';
-                if (data.success && data.users && data.users.length) {
-                    data.users.forEach(u => {
-                        const opt = document.createElement('option');
-                        opt.value = u.id;
-                        opt.textContent = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.username || u.id;
-                        if (u.hasConfig) opt.textContent += ' ✓';
-                        sel.appendChild(opt);
-                    });
+                if (data.success && data.users) {
+                    fillAdminUserDropdowns(data.users);
+                } else {
+                    fillAdminUserDropdowns([]);
                 }
             } catch (e) {
                 console.error('Failed to load admin users', e);
+                fillAdminUserDropdowns([]);
+            }
+        }
+
+        async function adminAddUser() {
+            const idEl = document.getElementById('admin-new-user-id');
+            const nameEl = document.getElementById('admin-new-user-name');
+            const statusEl = document.getElementById('admin-add-user-status');
+            const userId = (idEl && idEl.value || '').trim();
+            const displayName = (nameEl && nameEl.value || '').trim();
+            statusEl.style.display = 'none';
+            if (!userId) {
+                statusEl.textContent = 'Enter a User ID.';
+                statusEl.style.display = 'block';
+                return;
+            }
+            try {
+                const res = await fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, displayName }),
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                statusEl.textContent = data.success ? ('User added: ' + userId) : (data.error || 'Failed');
+                statusEl.style.display = 'block';
+                if (data.success) {
+                    idEl.value = '';
+                    nameEl.value = '';
+                    loadAdminUsers();
+                }
+            } catch (e) {
+                statusEl.textContent = 'Error: ' + (e.message || 'request failed');
+                statusEl.style.display = 'block';
+            }
+        }
+
+        async function adminCopyConfig() {
+            const fromSel = document.getElementById('admin-copy-from');
+            const toSel = document.getElementById('admin-copy-to');
+            const statusEl = document.getElementById('admin-copy-status');
+            const fromUserId = fromSel && fromSel.value ? fromSel.value.trim() : '';
+            const toUserId = toSel && toSel.value ? toSel.value.trim() : '';
+            statusEl.style.display = 'none';
+            if (!fromUserId || !toUserId) {
+                statusEl.textContent = 'Select both source and target user.';
+                statusEl.style.display = 'block';
+                return;
+            }
+            if (fromUserId === toUserId) {
+                statusEl.textContent = 'Source and target must be different.';
+                statusEl.style.display = 'block';
+                return;
+            }
+            try {
+                const res = await fetch('/api/admin/copy-config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fromUserId, toUserId }),
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                statusEl.textContent = data.success ? ('Config copied to ' + toUserId) : (data.error || 'Failed');
+                statusEl.style.display = 'block';
+                if (data.success) {
+                    loadAdminUsers();
+                    if (adminSelectedUserId === toUserId) loadAdminConfig(toUserId);
+                }
+            } catch (e) {
+                statusEl.textContent = 'Error: ' + (e.message || 'request failed');
+                statusEl.style.display = 'block';
             }
         }
 

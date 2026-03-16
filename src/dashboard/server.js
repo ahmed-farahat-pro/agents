@@ -957,6 +957,101 @@ app.get('/api/admin/users', async (req, res) => {
   }
 });
 
+// Admin: create a new user (so admin can pre-create and assign config)
+app.post('/api/admin/users', async (req, res) => {
+  try {
+    if (!useDatabase || !userConfigModule) {
+      return res.status(400).json({ success: false, error: 'Database not configured' });
+    }
+    const { userId, displayName, firstName, lastName } = req.body || {};
+    const id = (userId || '').toString().trim();
+    if (!id) {
+      return res.status(400).json({ success: false, error: 'userId is required' });
+    }
+    const db = require('../database/connection');
+    const first = (firstName || displayName || '').toString().trim() || null;
+    const last = (lastName || '').toString().trim() || null;
+    await db.query(
+      `INSERT INTO users (id, first_name, last_name, is_bot)
+       VALUES (?, ?, ?, FALSE)
+       ON DUPLICATE KEY UPDATE
+         first_name = COALESCE(VALUES(first_name), first_name),
+         last_name = COALESCE(VALUES(last_name), last_name),
+         updated_at = CURRENT_TIMESTAMP`,
+      [id, first, last]
+    );
+    await db.query('INSERT IGNORE INTO user_settings (user_id) VALUES (?)', [id]);
+    logger.info('[Dashboard] Admin created/updated user', id);
+    const usersRes = await db.query(
+      `SELECT id, username, first_name, last_name, last_active_at, created_at FROM users WHERE id = ?`,
+      [id]
+    );
+    const configUserIds = await userConfigModule.listUserIdsWithConfig();
+    const u = usersRes && usersRes[0] ? usersRes[0] : { id, first_name: first, last_name: last };
+    res.json({
+      success: true,
+      user: {
+        id: u.id,
+        username: u.username,
+        firstName: u.first_name,
+        lastName: u.last_name,
+        lastActiveAt: u.last_active_at,
+        createdAt: u.created_at,
+        hasConfig: configUserIds.includes(u.id),
+      },
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to create user:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Admin: copy one user's config (API keys, GitLab, custom models) to another user
+app.post('/api/admin/copy-config', async (req, res) => {
+  try {
+    if (!userConfigModule) {
+      return res.status(400).json({ success: false, error: 'Per-user config not available' });
+    }
+    const { fromUserId, toUserId } = req.body || {};
+    const from = (fromUserId || '').toString().trim();
+    const to = (toUserId || '').toString().trim();
+    if (!from || !to) {
+      return res.status(400).json({ success: false, error: 'fromUserId and toUserId are required' });
+    }
+    if (from === to) {
+      return res.status(400).json({ success: false, error: 'Source and target user must be different' });
+    }
+    if (useDatabase) {
+      const db = require('../database/connection');
+      const existing = await db.query('SELECT 1 FROM users WHERE id = ?', [to]);
+      if (!existing || existing.length === 0) {
+        await db.query(
+          'INSERT INTO users (id, is_bot) VALUES (?, FALSE) ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP',
+          [to]
+        );
+        await db.query('INSERT IGNORE INTO user_settings (user_id) VALUES (?)', [to]);
+      }
+    }
+    const sourceConfig = await userConfigModule.getConfigForUser(from);
+    await userConfigModule.setUserConfig(to, {
+      apiKeys: sourceConfig.apiKeys || {},
+      gitlab: sourceConfig.gitlab || {},
+      customModels: sourceConfig.customModels || {},
+    });
+    logger.info('[Dashboard] Admin copied config from', from, 'to', to);
+    const full = await userConfigModule.getConfigForUser(to);
+    res.json({
+      success: true,
+      message: `Config copied from ${from} to ${to}`,
+      config: sanitizeConfig(full),
+      toUserId: to,
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to copy config:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Test AI provider
 app.post('/api/ai/test', async (req, res) => {
   try {
