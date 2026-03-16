@@ -490,6 +490,119 @@ npm run health-check
 
 If you run **OpenDevin** (`ghcr.io/opendevin/opendevin`), its HTTP API may differ; the bot will treat it as “not available” unless it exposes at least `GET /health` and the endpoints above (or you run a separate adapter that does).
 
+### Configure OpenHands on EC2 (step-by-step)
+
+Use these steps on your EC2 instance to run the OpenHands sandbox so the Backend Dev agent can clone repos, edit files, and push branches.
+
+**Step 1: Install Docker (if not already)**
+
+```bash
+sudo apt-get update
+sudo apt-get install -y docker.io
+sudo systemctl enable docker
+sudo systemctl start docker
+sudo usermod -aG docker ubuntu
+# Log out and back in (or new SSH session) so docker runs without sudo
+```
+
+**Step 2: Create workspace directory**
+
+```bash
+sudo mkdir -p /home/ubuntu/workspace
+sudo chown ubuntu:ubuntu /home/ubuntu/workspace
+```
+
+**Step 3: Pull and run the OpenHands/OpenDevin container**
+
+```bash
+docker pull ghcr.io/opendevin/opendevin:latest
+
+docker run -d \
+  --name openhands \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  -v /home/ubuntu/workspace:/workspace \
+  ghcr.io/opendevin/opendevin:latest
+```
+
+Check it is running:
+
+```bash
+docker ps | grep openhands
+curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/health
+```
+
+If you get **200**, the service is up. If you get connection refused or 404, the image may expose a different API (see note at the end).
+
+**Step 4: (Optional) Run OpenHands as a systemd service**
+
+So it restarts on reboot:
+
+```bash
+sudo tee /etc/systemd/system/openhands.service > /dev/null << 'EOF'
+[Unit]
+Description=OpenHands Code Sandbox
+After=docker.service network-online.target
+
+[Service]
+Restart=always
+ExecStartPre=-/usr/bin/docker stop openhands
+ExecStartPre=-/usr/bin/docker rm openhands
+ExecStart=/usr/bin/docker run --rm --name openhands -p 3000:3000 -v /home/ubuntu/workspace:/workspace ghcr.io/opendevin/opendevin:latest
+ExecStop=/usr/bin/docker stop -t 10 openhands
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable openhands
+sudo systemctl start openhands
+sudo systemctl status openhands
+```
+
+**Step 5: Point Nigents at OpenHands**
+
+Edit the app `.env`:
+
+```bash
+cd /home/ubuntu/nigents
+nano .env
+```
+
+Add or set:
+
+```bash
+OPENHANDS_URL=http://localhost:3000
+```
+
+Save (Ctrl+O, Enter, Ctrl+X), then restart:
+
+```bash
+pm2 restart nigents-bot
+pm2 save
+```
+
+**Step 6: Verify**
+
+```bash
+cd /home/ubuntu/nigents
+npm run health-check
+```
+
+The OpenHands section should show either "OpenHands is available" (green) or an info line if the service does not expose the expected API.
+
+Quick test:
+
+```bash
+curl -s http://localhost:3000/health
+```
+
+**If the health check still says OpenHands not running:**  
+The Nigents app expects `GET /health` (200) and `POST /api/execute`. The OpenDevin image may use a different API. In that case either run a service that implements that API (e.g. an adapter) or use the built-in fallback (Backend Dev generates code via AI only, no real git/file ops). OpenHands is optional.
+
+---
+
 ### Restart OpenHands (Code Sandbox)
 
 ```bash

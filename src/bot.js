@@ -1585,11 +1585,22 @@ Use /projects to see available project IDs.`,
     await bot.deleteMessage(msg.chat.id, statusMsg.message_id);
     
     if (result.success) {
+      const userIdStr = userId.toString();
+      await chatStorage.setPendingPlan(userIdStr, {
+        task,
+        chatId: msg.chat.id,
+        username: msg.from?.username || msg.from?.first_name,
+        plan: result.plan,
+        projectId: project.id,
+        projectName: project.name,
+        project: project.fullPath,
+      });
+
       const keyboard = [[
         { text: '✅ Approve Plan', callback_data: `approve:${result.plan?.id || 'latest'}:${userId}` },
         { text: '❌ Cancel', callback_data: `cancelplan:${userId}` },
       ]];
-      
+
       await bot.sendMessage(msg.chat.id, result.message, {
         parse_mode: 'Markdown',
         reply_markup: { inline_keyboard: keyboard },

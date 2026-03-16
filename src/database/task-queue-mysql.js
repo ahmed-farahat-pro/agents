@@ -517,6 +517,16 @@ class TaskQueueMySQL {
   // Helper Methods
   // =====================================================
 
+  _parseJson(value, fallback = null) {
+    if (value == null || value === '') return fallback;
+    if (typeof value === 'object') return value;
+    try {
+      return typeof value === 'string' ? JSON.parse(value) : fallback;
+    } catch (e) {
+      return fallback;
+    }
+  }
+
   _formatTask(row) {
     return {
       id: row.id,
@@ -526,8 +536,8 @@ class TaskQueueMySQL {
       description: row.description,
       status: row.status,
       priority: row.priority,
-      plan: JSON.parse(row.plan_data || '{}'),
-      result: row.result_data ? JSON.parse(row.result_data) : null,
+      plan: this._parseJson(row.plan_data, {}),
+      result: this._parseJson(row.result_data),
       progress: row.progress,
       createdAt: row.created_at,
       approvedAt: row.approved_at,
