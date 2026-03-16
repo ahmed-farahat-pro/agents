@@ -471,15 +471,17 @@ Provide a helpful answer. If the question is about specific code and you don't h
     // If not found in memory, check persistent storage
     if (!pendingPlan && context.userId) {
       const userIdStr = context.userId.toString();
-      const persistedPlan = this.chatStorage.getPendingPlan(userIdStr);
-      
+      const persistedPlan = await this.chatStorage.getPendingPlan(userIdStr);
       if (persistedPlan) {
         logger.info(`[Orchestrator] Found persisted plan for user ${userIdStr}: ${persistedPlan.task}`);
-        // Add to in-memory queue
+        const planObj = persistedPlan.plan || persistedPlan;
+        if (planObj && !planObj.project) {
+          planObj.project = persistedPlan.project || persistedPlan.projectId || persistedPlan.projectName;
+        }
         pendingPlan = {
           id: `plan-${Date.now()}`,
           type: 'implementation',
-          plan: persistedPlan,
+          plan: planObj || persistedPlan,
           status: 'pending_approval',
           createdAt: new Date(persistedPlan.createdAt || Date.now()),
           userId: userIdStr,
@@ -531,15 +533,18 @@ Provide a helpful answer. If the question is about specific code and you don't h
     // If no approved tasks in memory, check for persisted pending plans and auto-approve
     if (approvedTasks.length === 0 && context.userId) {
       const userIdStr = context.userId.toString();
-      const persistedPlan = this.chatStorage.getPendingPlan(userIdStr);
-      
+      const persistedPlan = await this.chatStorage.getPendingPlan(userIdStr);
       if (persistedPlan) {
         logger.info(`[Orchestrator] Found persisted plan for user ${userIdStr}, auto-approving and running`);
-        // Create and auto-approve the task
+        // Use full plan object (with steps, title, branch) for implementation
+        const planObj = persistedPlan.plan || persistedPlan;
+        if (planObj && !planObj.project) {
+          planObj.project = persistedPlan.project || persistedPlan.projectId || persistedPlan.projectName;
+        }
         const newTask = {
           id: `plan-${Date.now()}`,
           type: 'implementation',
-          plan: persistedPlan,
+          plan: planObj || persistedPlan,
           status: 'approved',
           createdAt: new Date(persistedPlan.createdAt || Date.now()),
           approvedAt: new Date(),
@@ -548,8 +553,35 @@ Provide a helpful answer. If the question is about specific code and you don't h
         this.addTaskToQueue(newTask);
         approvedTasks = [newTask];
       }
+
+      // If still no task, try loading latest pending/pending_approval task from DB (e.g. after restart)
+      if (approvedTasks.length === 0 && this.useDatabase && this.dbTaskQueue) {
+        try {
+          const userTasks = await this.dbTaskQueue.getTasksByUser(userIdStr);
+          const runnable = userTasks.find(
+            t => (t.status === 'pending' || t.status === 'pending_approval') && t.plan && Array.isArray(t.plan?.steps)
+          );
+          if (runnable) {
+            logger.info(`[Orchestrator] Found runnable task from DB for user ${userIdStr}: ${runnable.id}`);
+            const plan = runnable.plan;
+            if (!plan.project) {
+              plan.project = runnable.projectId || runnable.projectName;
+            }
+            const newTask = {
+              ...runnable,
+              status: 'approved',
+              approvedAt: new Date(),
+              plan,
+            };
+            this.addTaskToQueue(newTask);
+            approvedTasks = [newTask];
+          }
+        } catch (err) {
+          logger.warn('[Orchestrator] DB fallback for /run failed:', err.message);
+        }
+      }
     }
-    
+
     if (approvedTasks.length === 0) {
       return {
         success: false,
@@ -630,8 +662,9 @@ Provide a helpful answer. If the question is about specific code and you don't h
       }
       
       const gitlab = require('../tools/gitlab');
+      const projectId = task.plan.project || task.plan.projectId || task.plan.projectName;
       const mrResult = await gitlab.createMergeRequest({
-        project: task.plan.project,
+        project: projectId,
         title: task.plan.title,
         description: task.plan.description,
         branch: task.plan.branch,

@@ -298,6 +298,11 @@ DASHBOARD_URL=https://nigents.com
 ENABLE_VOICE=true
 ENABLE_DASHBOARD=true
 ENABLE_OPENHANDS=true
+
+# OpenHands (for Backend Dev to fetch/edit code in a sandbox; optional)
+# When set, /run will use OpenHands to clone repo, apply edits, and push branch.
+OPENHANDS_URL=http://localhost:3000
+OPENHANDS_API_KEY=your_openhands_api_key_if_required
 ```
 
 ### Step 4: Save and restart

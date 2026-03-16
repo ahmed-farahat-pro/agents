@@ -70,6 +70,16 @@ function stopBot() {
   process.exit(0);
 }
 
+// Helper function to escape HTML for Telegram messages
+function escapeHtml(text) {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 process.on('SIGINT', stopBot);
 process.on('SIGTERM', stopBot);
 process.on('SIGUSR2', stopBot); // PM2 reload signal
@@ -198,13 +208,13 @@ function logBotMessage(userId, text, type = 'text', metadata = {}) {
 
 // Helper: Send message with voice option
 async function sendMessageWithVoice(userId, chatId, text, options = {}) {
-  const settings = chatStorage.getUserSettings(userId);
+  const settings = await chatStorage.getUserSettings(userId);
   
   // Always send text first
   await bot.sendMessage(chatId, text, { parse_mode: 'Markdown', ...options });
   
   // Add to chat history (both systems)
-  chatStorage.addMessage(userId, 'assistant', text, { type: 'text' });
+  await chatStorage.addMessage(userId, 'assistant', text, { type: 'text' });
   logBotMessage(userId, text, options.type || 'text', { 
     voice: settings.voiceResponse && options.voice !== false,
     ...options.metadata,
@@ -268,6 +278,13 @@ Send voice notes or text naturally:
 • /remove id — Remove a pending plan
 • /clear — Clear all completed/cancelled tasks
 
+<b>System:</b>
+• /status — Check system status
+• /testmcp — Test MCP servers & GitLab
+• /initmcp — Initialize MCP servers
+• /findproject query — Search GitLab projects
+• /migrate — Fix database issues
+
 <b>Settings:</b>
 • /voice — Toggle voice responses on/off
 • /settings — View your settings
@@ -276,18 +293,16 @@ Send voice notes or text naturally:
 • /agentmodels — Show agent models
 • /setagent agent provider model — Change agent model
 • /setallagents provider model — Set all agents
-• /testagents agent — Test all agent models
-• /testagentmodel provider model — Test specific model
-• /addmodel — Add custom AI model
-• /addglm key model — Add Zhipu GLM model quickly
-• /addmoonshot key model — Add Moonshot model quickly
-• /testmodel — Test any AI model
-• /testglm key model — Quick test Zhipu GLM
-• /testmoonshot key model — Quick test Moonshot
-• /mymodels — List your custom AI models
+• /models — Interactive AI model selection
+• /usemodel provider model — Set default AI model
+• /addopenai — Add OpenAI-compatible API
+• /addglm key model — Add Zhipu GLM quickly
+• /addmoonshot key model — Add Moonshot AI quickly
+• /mymodels — List all your AI models
 • /usecustommodel key — Use a custom model
-• /editcustommodel key api_key — Update custom model API key
-• /removecustommodel key — Remove custom model
+• /testmodel — Test AI model connection
+• /setallagents provider model — Set all agents
+• /setagent agent provider model — Set one agent
 • /reload — Reload configuration and API keys
 • /debug — Show debug information
 
@@ -301,7 +316,7 @@ I understand Arabic and English voice messages!`;
 bot.onText(/\/settings/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
-  const settings = chatStorage.getUserSettings(msg.from.id);
+  const settings = await chatStorage.getUserSettings(msg.from.id);
   
   let message = '**Your Settings**\n\n';
   message += `Voice Responses: ${settings.voiceResponse ? 'ON' : 'OFF'}\n`;
@@ -321,7 +336,7 @@ bot.onText(/\/settings/, async (msg) => {
 bot.onText(/\/voice/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
-  const newValue = chatStorage.toggleVoiceResponse(msg.from.id);
+  const newValue = await chatStorage.toggleVoiceResponse(msg.from.id);
   const status = newValue ? 'ON' : 'OFF';
   
   await bot.sendMessage(msg.chat.id, `Voice responses are now **${status}**.\n\nI will ${newValue ? 'send voice messages' : 'only send text messages'} in response to your commands.`, { parse_mode: 'Markdown' });
@@ -331,7 +346,7 @@ bot.onText(/\/voice/, async (msg) => {
 bot.onText(/\/clearhistory/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
-  chatStorage.clearChatHistory(msg.from.id);
+  await chatStorage.clearChatHistory(msg.from.id);
   await bot.sendMessage(msg.chat.id, 'Chat history cleared.');
 });
 
@@ -1019,7 +1034,86 @@ https://platform.moonshot.cn/`,
   }
 });
 
-// Handle addmodel with parameters
+// /addopenai command - Add OpenAI-compatible API (easier format)
+bot.onText(/\/addopenai/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const message = `<b>🤖 Add OpenAI-Compatible API</b>
+
+Send me the details in this format:
+<pre>addopenai name|api_key|base_url|model_name</pre>
+
+<b>Examples:</b>
+<pre>addopenai Grok|xai-your-key|https://api.x.ai/v1|grok-2</pre>
+<pre>addopenai Together|together-key|https://api.together.xyz/v1|meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo</pre>
+<pre>addopenai LocalAI|your-key|http://localhost:8080/v1|llama2</pre>
+
+<b>Parameters:</b>
+• <b>name:</b> Display name (e.g., "My API")
+• <b>api_key:</b> Your API key
+• <b>base_url:</b> API base URL (must end in /v1)
+• <b>model_name:</b> Model identifier
+
+<b>Or use quick commands:</b>
+• /addglm - Add Zhipu GLM
+• /addmoonshot - Add Moonshot AI`;
+
+  await bot.sendMessage(msg.chat.id, message, { parse_mode: 'HTML' });
+});
+
+// Handle addopenai with parameters
+bot.onText(/addopenai (.+)\|(.+)\|(.+)\|(.+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const name = match[1].trim();
+  const apiKey = match[2].trim();
+  const baseUrl = match[3].trim();
+  const modelName = match[4].trim();
+  const providerKey = `custom_${name.toLowerCase().replace(/\s+/g, '_')}`;
+
+  try {
+    // Validate URL ends with /v1
+    let normalizedUrl = baseUrl;
+    if (!baseUrl.endsWith('/v1')) {
+      normalizedUrl = baseUrl.replace(/\/$/, '') + '/v1';
+    }
+
+    // Store custom model in shared config
+    const customModels = sharedConfig.getFullConfig().customModels || {};
+    customModels[providerKey] = {
+      name: name,
+      apiKey: apiKey,
+      baseUrl: normalizedUrl,
+      model: modelName,
+      enabled: true,
+      addedBy: msg.from.id,
+      addedAt: new Date().toISOString(),
+    };
+
+    sharedConfig.saveConfig({
+      ...sharedConfig.getFullConfig(),
+      customModels,
+    });
+
+    // Refresh AI client
+    aiClient.refreshProviders();
+
+    await bot.sendMessage(msg.chat.id, 
+      `✅ <b>OpenAI-compatible API added!</b>\n\n` +
+      `<b>Name:</b> ${name}\n` +
+      `<b>Model:</b> ${modelName}\n` +
+      `<b>URL:</b> ${normalizedUrl}\n\n` +
+      `Use <code>/mymodels</code> to see all models.\n` +
+      `Use <code>/usecustommodel ${providerKey}</code> to use it.`,
+      { parse_mode: 'HTML' }
+    );
+  } catch (error) {
+    logger.error('[Bot] Failed to add OpenAI API:', error);
+    await bot.sendMessage(msg.chat.id, `❌ Error: ${error.message}`);
+  }
+});
+
+// Handle addmodel with parameters (legacy format)
 bot.onText(/addmodel (.+)\|(.+)\|(.+)\|(.+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
 
@@ -1139,7 +1233,7 @@ bot.onText(/\/usecustommodel\s+(\S+)/, async (msg, match) => {
   const model = customModels[modelKey];
   
   // Update user settings to use this custom model
-  chatStorage.setUserSettings(msg.from.id, { 
+  await chatStorage.setUserSettings(msg.from.id, { 
     preferredAI: modelKey,
     preferredModel: model.model,
   });
@@ -1242,7 +1336,7 @@ bot.onText(/\/usemodel (.+)/, async (msg, match) => {
 
   const providerName = match[1].trim();
   
-  chatStorage.setUserSettings(msg.from.id, { preferredAI: providerName });
+  await chatStorage.setUserSettings(msg.from.id, { preferredAI: providerName });
   
   await bot.sendMessage(msg.chat.id, 
     `✅ Default AI provider set to: **${providerName}**\n\n` +
@@ -1255,7 +1349,7 @@ bot.onText(/\/usemodel (.+)/, async (msg, match) => {
 bot.onText(/\/plans/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
-  const allPlans = chatStorage.getAllPendingPlans();
+  const allPlans = await chatStorage.getAllPendingPlans();
   const planEntries = Object.entries(allPlans);
   
   if (planEntries.length === 0) {
@@ -1281,8 +1375,8 @@ bot.onText(/\/plans/, async (msg) => {
 bot.onText(/\/debug/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
-  const stats = chatStorage.getStats();
-  const pending = chatStorage.getPendingPlan(msg.from.id.toString());
+  const stats = await chatStorage.getStats();
+  const pending = await chatStorage.getPendingPlan(msg.from.id.toString());
   const providers = aiClient.getAvailableProviders();
   
   let message = '**Debug Info**\n\n';
@@ -1397,14 +1491,14 @@ bot.onText(/\/plan (.+)/, async (msg, match) => {
     // Store pending plan persistently
     const userIdStr = userId.toString();
     logger.info(`[Bot] Storing pending plan for user ${userIdStr}: ${task}`);
-    const saved = chatStorage.setPendingPlan(userIdStr, {
+    const saved = await chatStorage.setPendingPlan(userIdStr, {
       task,
       chatId: msg.chat.id,
       username: msg.from.username || msg.from.first_name,
     });
     
     // Verify it was saved
-    const verify = chatStorage.getPendingPlan(userIdStr);
+    const verify = await chatStorage.getPendingPlan(userIdStr);
     logger.info(`[Bot] Verified pending plan: ${verify ? 'FOUND' : 'NOT FOUND'}, saved: ${saved}`);
     
     // Show project selection with inline keyboard
@@ -1424,8 +1518,8 @@ bot.onText(/\/plan (.+)/, async (msg, match) => {
     });
     
     // Add to chat history
-    chatStorage.addMessage(userId, 'user', `/plan ${task}`, { type: 'command' });
-    chatStorage.addMessage(userId, 'assistant', message, { type: 'project_selection', projects: projects.map(p => p.name) });
+    await chatStorage.addMessage(userId, 'user', `/plan ${task}`, { type: 'command' });
+    await chatStorage.addMessage(userId, 'assistant', message, { type: 'project_selection', projects: projects.map(p => p.name) });
     
   } catch (error) {
     logger.error('Failed to load projects for plan:', error);
@@ -1475,7 +1569,7 @@ Use /projects to see available project IDs.`,
     const statusMsg = await bot.sendMessage(msg.chat.id, `Creating plan for: **${task}**\nProject: ${project.name}...`, { parse_mode: 'Markdown' });
     
     // Get user's preferred AI provider/model
-    const userSettings = chatStorage.getUserSettings(userId);
+    const userSettings = await chatStorage.getUserSettings(userId);
     const aiProvider = userSettings.preferredAI;
     const aiModel = userSettings.preferredModel;
     
@@ -1518,7 +1612,7 @@ bot.onText(/\/planwith (.+)/, async (msg, match) => {
   
   // Get pending plan from persistent storage with retries
   logger.info(`[Bot] Looking for pending plan for user ${userIdStr}`);
-  let pending = chatStorage.getPendingPlan(userIdStr);
+  let pending = await chatStorage.getPendingPlan(userIdStr);
   
   // Retry with backoff if not found
   let retryCount = 0;
@@ -1526,7 +1620,7 @@ bot.onText(/\/planwith (.+)/, async (msg, match) => {
     retryCount++;
     logger.warn(`[Bot] No pending plan found for user ${userIdStr}, retry ${retryCount}/3...`);
     await new Promise(resolve => setTimeout(resolve, 200 * retryCount));
-    pending = chatStorage.getPendingPlan(userIdStr);
+    pending = await chatStorage.getPendingPlan(userIdStr);
   }
   
   if (!pending) {
@@ -1545,18 +1639,16 @@ bot.onText(/\/planwith (.+)/, async (msg, match) => {
       await bot.sendMessage(msg.chat.id, `Project "${projectId}" not found. Use /projects to see available projects.`);
       return;
     }
-    
-    // Delete pending plan (we're processing it now)
-    chatStorage.deletePendingPlan(userIdStr);
-    
+
+    // Keep pending plan until we have a full plan to store (so /approve and /run can use it)
     await bot.sendChatAction(msg.chat.id, 'typing');
     const statusMsg = await bot.sendMessage(msg.chat.id, `Analyzing ${project.name}... This may take a moment.`);
 
     // Add to chat history
-    chatStorage.addMessage(userIdStr, 'user', `/planwith ${projectId}`, { type: 'command' });
+    await chatStorage.addMessage(userIdStr, 'user', `/planwith ${projectId}`, { type: 'command' });
 
     // Get user's preferred AI provider/model
-    const userSettings = chatStorage.getUserSettings(userIdStr);
+    const userSettings = await chatStorage.getUserSettings(userIdStr);
     const aiProvider = userSettings.preferredAI;
     
     // If preferredAI contains a model (e.g., "moonshot:moonshot-v1-32k"), parse it
@@ -1582,20 +1674,31 @@ bot.onText(/\/planwith (.+)/, async (msg, match) => {
     await bot.deleteMessage(msg.chat.id, statusMsg.message_id);
 
     if (result.success) {
+      // Persist full plan so /approve and /run can use it (with steps, branch, project)
+      await chatStorage.setPendingPlan(userIdStr, {
+        task: pending.task,
+        chatId: msg.chat.id,
+        username: pending.username || msg.from?.username || msg.from?.first_name,
+        plan: result.plan,
+        projectId: project.id,
+        projectName: project.name,
+        project: project.fullPath,
+      });
+
       await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
-      
+
       // Add to chat history
-      chatStorage.addMessage(userId, 'assistant', result.message, { 
+      await chatStorage.addMessage(userId, 'assistant', result.message, {
         type: 'plan',
         planId: result.plan?.id,
       });
-      
+
       // Send voice confirmation
       const voiceText = `Plan created for ${pending.task}. Complexity: ${result.plan.complexity}, estimated ${result.plan.estimatedHours} hours. Reply with /approve to start.`;
       await sendMessageWithVoice(userId, msg.chat.id, voiceText, { voice: true, language: 'en' });
     } else {
       await bot.sendMessage(msg.chat.id, `Error: ${result.message}`);
-      chatStorage.addMessage(userId, 'assistant', `Error: ${result.message}`, { type: 'error' });
+      await chatStorage.addMessage(userId, 'assistant', `Error: ${result.message}`, { type: 'error' });
     }
     
   } catch (error) {
@@ -1633,7 +1736,7 @@ bot.onText(/\/projects/, async (msg) => {
     message += '**To switch default:** `/project <project-id>`';
     
     await bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
-    chatStorage.addMessage(msg.from.id, 'assistant', message, { type: 'projects_list' });
+    await chatStorage.addMessage(msg.from.id, 'assistant', message, { type: 'projects_list' });
   } catch (error) {
     logger.error('Failed to load projects:', error);
     await bot.sendMessage(msg.chat.id, 'Error loading projects from GitLab. Check your GITLAB_TOKEN.');
@@ -1656,7 +1759,7 @@ bot.onText(/\/project (.+)/, async (msg, match) => {
     }
     
     // Save as default in user settings
-    chatStorage.setUserSettings(msg.from.id, { defaultProject: project.fullPath });
+    await chatStorage.setUserSettings(msg.from.id, { defaultProject: project.fullPath });
     
     await bot.sendMessage(msg.chat.id, 
       `Default project set to: **${project.name}**\nRepo: \`${project.fullPath}\``,
@@ -1676,7 +1779,7 @@ bot.onText(/\/models/, async (msg) => {
 
   try {
     const providers = aiClient.getAvailableProviders();
-    const settings = chatStorage.getUserSettings(msg.from.id);
+    const settings = await chatStorage.getUserSettings(msg.from.id);
     
     let message = '**Select AI Provider**\n\n';
     message += 'Click a provider to see available models:\n';
@@ -1700,7 +1803,7 @@ bot.onText(/\/models/, async (msg) => {
       reply_markup: keyboard.length > 0 ? { inline_keyboard: keyboard } : undefined,
     });
     
-    chatStorage.addMessage(msg.from.id, 'assistant', message, { type: 'models_list' });
+    await chatStorage.addMessage(msg.from.id, 'assistant', message, { type: 'models_list' });
   } catch (error) {
     logger.error('Failed to load models:', error);
     await bot.sendMessage(msg.chat.id, 'Error loading AI models.');
@@ -2043,7 +2146,7 @@ bot.onText(/\/model(?:\s+(\S+))?(?:\s+(\S+))?/, async (msg, match) => {
     if (modelName) {
       settings.preferredModel = modelName;
     }
-    chatStorage.setUserSettings(msg.from.id, settings);
+    await chatStorage.setUserSettings(msg.from.id, settings);
     
     const modelDisplay = modelName || providers[providerName].defaultModel;
     await bot.sendMessage(msg.chat.id, 
@@ -2075,7 +2178,103 @@ bot.onText(/\/status/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
   const result = await orchestrator.processCommand('/status', {});
-  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'HTML' });
+});
+
+// /testmcp command - Test MCP servers and GitLab connectivity
+bot.onText(/\/testmcp/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+  
+  await bot.sendMessage(msg.chat.id, '🧪 Running MCP and GitLab connectivity tests...\n\nThis may take up to 30 seconds.');
+  
+  const { exec } = require('child_process');
+  const util = require('util');
+  const execPromise = util.promisify(exec);
+  
+  try {
+    const { stdout, stderr } = await execPromise('node scripts/test-mcp.js', {
+      cwd: process.cwd(),
+      timeout: 60000,
+      env: process.env
+    });
+    
+    // Split output if too long for Telegram
+    const output = stdout || stderr || 'No output';
+    const chunks = output.match(/.{1,3500}/gs) || ['No output'];
+    
+    for (const chunk of chunks.slice(0, 5)) {
+      await bot.sendMessage(msg.chat.id, `<pre>${escapeHtml(chunk)}</pre>`, { parse_mode: 'HTML' });
+    }
+  } catch (error) {
+    const output = error.stdout || error.message || 'Test failed';
+    await bot.sendMessage(msg.chat.id, `❌ <b>Test Error</b>\n<pre>${escapeHtml(output.substring(0, 3500))}</pre>`, { parse_mode: 'HTML' });
+  }
+});
+
+// /initmcp command - Initialize MCP servers
+bot.onText(/\/initmcp/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+  
+  await bot.sendMessage(msg.chat.id, '🔧 Initializing MCP servers...\nThis may take a few minutes on first run.');
+  
+  const { exec } = require('child_process');
+  const util = require('util');
+  const execPromise = util.promisify(exec);
+  
+  try {
+    const { stdout, stderr } = await execPromise('node scripts/init-mcp.js', {
+      cwd: process.cwd(),
+      timeout: 300000,
+      env: process.env
+    });
+    
+    const output = stdout || stderr || 'Done';
+    const chunks = output.match(/.{1,3500}/gs) || ['Done'];
+    
+    for (const chunk of chunks.slice(0, 5)) {
+      await bot.sendMessage(msg.chat.id, `<pre>${escapeHtml(chunk)}</pre>`, { parse_mode: 'HTML' });
+    }
+  } catch (error) {
+    const output = error.stdout || error.message || 'Init failed';
+    await bot.sendMessage(msg.chat.id, `❌ <b>Init Error</b>\n<pre>${escapeHtml(output.substring(0, 3500))}</pre>`, { parse_mode: 'HTML' });
+  }
+});
+
+// /findproject command - Search for projects
+bot.onText(/\/findproject (.+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+  
+  const query = match[1].trim();
+  if (!query) {
+    return bot.sendMessage(msg.chat.id, 'Please provide a search query. Example: /findproject myapp');
+  }
+  
+  await bot.sendMessage(msg.chat.id, `🔍 Searching for projects matching "${query}"...`);
+  
+  try {
+    const projects = await gitlab.searchProjects(query, 10);
+    
+    if (projects.length === 0) {
+      return bot.sendMessage(msg.chat.id, `No projects found matching "${query}".\n\nTry using /projects to list all your accessible projects.`);
+    }
+    
+    let message = `<b>🔍 Found ${projects.length} project(s):</b>\n\n`;
+    projects.forEach((p, idx) => {
+      message += `<b>${idx + 1}. ${p.name}</b>\n`;
+      message += `   Path: <code>${p.fullPath}</code>\n`;
+      if (p.description) {
+        message += `   ${p.description.substring(0, 100)}${p.description.length > 100 ? '...' : ''}\n`;
+      }
+      message += `   Branch: ${p.defaultBranch}\n\n`;
+    });
+    
+    message += `Use <code>/project ${projects[0].fullPath}</code> to switch to a project.`;
+    
+    await bot.sendMessage(msg.chat.id, message, { parse_mode: 'HTML' });
+  } catch (error) {
+    logger.error('[Bot] Find project error:', error);
+    await bot.sendMessage(msg.chat.id, `❌ Error searching projects: ${error.message}`);
+  }
 });
 
 // /run command
@@ -2101,7 +2300,7 @@ bot.onText(/\/ask (.+)/, async (msg, match) => {
   await bot.sendChatAction(msg.chat.id, 'typing');
 
   // Get user's preferred AI provider/model
-  const userSettings = chatStorage.getUserSettings(userId);
+  const userSettings = await chatStorage.getUserSettings(userId);
   const aiProvider = userSettings.preferredAI;
   const aiModel = userSettings.preferredModel;
   
@@ -2198,7 +2397,7 @@ bot.on('voice', async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
   const userId = msg.from.id;
-  const settings = chatStorage.getUserSettings(userId);
+  const settings = await chatStorage.getUserSettings(userId);
   
   await bot.sendChatAction(msg.chat.id, 'typing');
 
@@ -2222,7 +2421,7 @@ bot.on('voice', async (msg) => {
     await bot.sendMessage(msg.chat.id, `You said: "${transcribedText}"`);
     
     // Add to chat history (both systems)
-    chatStorage.addMessage(userId, 'user', transcribedText, { type: 'voice', language });
+    await chatStorage.addMessage(userId, 'user', transcribedText, { type: 'voice', language });
     logUserMessage(userId, transcribedText, 'voice', {
       language,
       userInfo: {
@@ -2233,7 +2432,7 @@ bot.on('voice', async (msg) => {
     });
     
     // Get chat history for context
-    const chatHistory = chatStorage.getChatHistory(userId, 10);
+    const chatHistory = await chatStorage.getChatHistory(userId, 10);
 
     // Route via intent router
     await bot.sendChatAction(msg.chat.id, 'typing');
@@ -2258,7 +2457,7 @@ bot.on('voice', async (msg) => {
         if (intentResult.extracted_task) {
           // Store the pending plan persistently
           const userIdStrVoice = userId.toString();
-          chatStorage.setPendingPlan(userIdStrVoice, {
+          await chatStorage.setPendingPlan(userIdStrVoice, {
             task: intentResult.extracted_task,
             chatId: msg.chat.id,
             fromVoice: true,
@@ -2285,7 +2484,7 @@ bot.on('voice', async (msg) => {
           });
           
           await bot.sendMessage(msg.chat.id, projectMsg, { parse_mode: 'Markdown' });
-          chatStorage.addMessage(userId, 'assistant', projectMsg, { type: 'project_selection' });
+          await chatStorage.addMessage(userId, 'assistant', projectMsg, { type: 'project_selection' });
           
           // Send voice confirmation if enabled
           const voiceResponse = language === 'ar' 
@@ -2363,7 +2562,7 @@ bot.on('voice', async (msg) => {
         // For other intents, send the AI-generated response
         if (aiResponse.success) {
           await bot.sendMessage(msg.chat.id, aiResponse.response);
-          chatStorage.addMessage(userId, 'assistant', aiResponse.response, { type: 'ai_response' });
+          await chatStorage.addMessage(userId, 'assistant', aiResponse.response, { type: 'ai_response' });
         }
     }
 
@@ -2410,7 +2609,7 @@ bot.on('callback_query', async (query) => {
       const maxRetries = 5;
       
       while (!pending && retryCount < maxRetries) {
-        pending = chatStorage.getPendingPlan(userIdStr);
+        pending = await chatStorage.getPendingPlan(userIdStr);
         
         if (!pending) {
           retryCount++;
@@ -2440,10 +2639,8 @@ bot.on('callback_query', async (query) => {
         await bot.sendMessage(chatId, `Project "${projectId}" not found.`);
         return;
       }
-      
-      // Delete pending plan
-      chatStorage.deletePendingPlan(userIdStr);
-      
+
+      // Keep pending plan until we have full plan stored (for /run)
       // Update message to show selection
       await bot.editMessageText(
         `**Task:** ${pending.task}\n\nSelected project: **${project.name}**\n\nCreating plan...`,
@@ -2458,7 +2655,7 @@ bot.on('callback_query', async (query) => {
       await bot.sendChatAction(chatId, 'typing');
       
       // Get user's preferred AI provider/model
-      const userSettings = chatStorage.getUserSettings(userIdStr);
+      const userSettings = await chatStorage.getUserSettings(userIdStr);
       const aiProvider = userSettings.preferredAI;
       const aiModel = userSettings.preferredModel;
       
@@ -2474,19 +2671,30 @@ bot.on('callback_query', async (query) => {
       });
       
       if (result.success) {
+        // Persist full plan so /run (when they click Approve) has steps, branch, project
+        await chatStorage.setPendingPlan(userIdStr, {
+          task: pending.task,
+          chatId,
+          username: pending.username || query.from?.username || query.from?.first_name,
+          plan: result.plan,
+          projectId: project.id,
+          projectName: project.name,
+          project: project.fullPath,
+        });
+
         // Show plan with approve button
         const keyboard = [[
           { text: '✅ Approve Plan', callback_data: `approve:${result.plan?.id || 'latest'}:${userIdStr}` },
           { text: '❌ Cancel', callback_data: `cancelplan:${userIdStr}` },
         ]];
-        
+
         await bot.sendMessage(chatId, result.message, {
           parse_mode: 'Markdown',
           reply_markup: {
             inline_keyboard: keyboard,
           },
         });
-        
+
         // Voice confirmation
         const voiceText = `Plan created for ${pending.task}. Complexity: ${result.plan.complexity}, estimated ${result.plan.estimatedHours} hours.`;
         await sendMessageWithVoice(userId, chatId, voiceText, { voice: true, language: 'en' });
@@ -2577,7 +2785,7 @@ bot.on('callback_query', async (query) => {
         );
       } else {
         // No models available, just set the provider
-        chatStorage.setUserSettings(userId, { preferredAI: providerName });
+        await chatStorage.setUserSettings(userId, { preferredAI: providerName });
         
         await bot.editMessageReplyMarkup(
           { inline_keyboard: [] },
@@ -2601,7 +2809,7 @@ bot.on('callback_query', async (query) => {
       }
       
       // Update user settings with both provider and model
-      chatStorage.setUserSettings(userId, { 
+      await chatStorage.setUserSettings(userId, { 
         preferredAI: providerName,
         preferredModel: modelName,
       });
@@ -2658,7 +2866,7 @@ bot.on('callback_query', async (query) => {
       }
       
       // Update user settings
-      chatStorage.setUserSettings(userId, { preferredAI: providerName });
+      await chatStorage.setUserSettings(userId, { preferredAI: providerName });
       
       await bot.editMessageReplyMarkup(
         { inline_keyboard: [] },
