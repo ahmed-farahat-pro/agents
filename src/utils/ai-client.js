@@ -89,6 +89,8 @@ class AIClient {
     
     // Load custom models from shared config
     const customModels = config.customModels || {};
+    const zhipuCodingUrl = 'https://api.z.ai/api/coding/paas/v4';
+    let zhipuKeyFromCustom = null;
     for (const [key, model] of Object.entries(customModels)) {
       if (model.enabled && model.apiKey) {
         this.providers[key] = {
@@ -101,9 +103,19 @@ class AIClient {
           isCustom: true,
         };
         logger.info(`[AIClient] Loaded custom provider: ${model.name} (${key})`);
+        // If this custom provider is Zhipu coding endpoint, use its key for built-in "zhipu" too
+        if (model.baseUrl === zhipuCodingUrl && model.apiKey) {
+          zhipuKeyFromCustom = model.apiKey;
+        }
       }
     }
-    
+    // Allow built-in "zhipu" to use key from a custom Zhipu provider when apiKeys.ZHIPU_API_KEY is not set
+    if (!this.providers.zhipu.enabled && zhipuKeyFromCustom) {
+      this.providers.zhipu.enabled = true;
+      this.providers.zhipu.apiKey = zhipuKeyFromCustom;
+      logger.info('[AIClient] Using Zhipu API key from custom provider for built-in zhipu');
+    }
+
     logger.info('[AIClient] Providers refreshed from shared config');
   }
 
