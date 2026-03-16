@@ -84,14 +84,25 @@ class OrchestratorAgent extends BaseAgent {
   }
 
   /**
-   * Safely add completed task with memory limits
+   * Safely add completed task with memory limits.
+   * Re-entry guard prevents stack overflow from event/observer recursion.
    */
   addCompletedTask(task) {
-    this.addCompletedTask(task);
-    // Enforce max completed tasks
-    if (this.completedTasks.length > this.maxCompletedTasks) {
-      this.completedTasks = this.completedTasks.slice(-this.maxCompletedTasks);
-      logger.debug('[Orchestrator] Trimmed completed tasks to max size');
+    if (this._addingCompletedTask) {
+      logger.warn('[Orchestrator] addCompletedTask re-entry ignored (recursion guard)');
+      return;
+    }
+    this._addingCompletedTask = true;
+    try {
+      const list = Array.isArray(this.completedTasks) ? this.completedTasks : [];
+      list.push(task);
+      const max = Math.max(0, this.maxCompletedTasks || 50);
+      this.completedTasks = list.length > max ? list.slice(-max) : list;
+      if (list.length > max) {
+        logger.debug('[Orchestrator] Trimmed completed tasks to max size');
+      }
+    } finally {
+      this._addingCompletedTask = false;
     }
   }
 
@@ -678,13 +689,47 @@ Provide a helpful answer. If the question is about specific code and you don't h
       pendingApproval: this.taskQueue.filter(t => t.status === 'pending_approval').length,
     };
 
+    // Get MCP server status
+    let mcpStatus = '❌ Not initialized';
+    let gitlabStatus = '❌ Not configured';
+    
+    try {
+      const mcpClient = require('../mcp/mcp-client');
+      if (mcpClient.isInitialized) {
+        const connected = mcpClient.clients?.size || 0;
+        mcpStatus = connected > 0 ? `✅ ${connected} connected` : '⚠️ No servers';
+      }
+    } catch (e) {
+      mcpStatus = '❌ Error';
+    }
+    
+    // Check GitLab connectivity
+    try {
+      const gitlab = require('../tools/gitlab');
+      if (gitlab.token) {
+        gitlabStatus = '✅ Configured';
+      } else {
+        gitlabStatus = '⚠️ No token';
+      }
+    } catch (e) {
+      gitlabStatus = '❌ Error';
+    }
+
     return {
       success: true,
-      message: `📊 Task Queue Status:
+      message: `📊 System Status:
+
+<b>Task Queue:</b>
 ⏳ Queued: ${status.queued}
 🔄 Running: ${status.running}
 ✅ Completed: ${status.completed}
-📝 Pending Approval: ${status.pendingApproval}`,
+📝 Pending Approval: ${status.pendingApproval}
+
+<b>Integrations:</b>
+🔧 MCP Servers: ${mcpStatus}
+🦊 GitLab: ${gitlabStatus}
+
+<i>Use /testmcp to run full connectivity test</i>`,
       status,
     };
   }

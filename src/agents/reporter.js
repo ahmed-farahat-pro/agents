@@ -33,7 +33,7 @@ class ReporterAgent extends BaseAgent {
       }
 
       const result = await this.bot.sendMessage(this.chatId, text, {
-        parse_mode: 'Markdown',
+        parse_mode: options.parse_mode || 'Markdown',
         ...options,
       });
 
@@ -46,26 +46,44 @@ class ReporterAgent extends BaseAgent {
   }
 
   /**
-   * Send a voice message
+   * Send a voice message with text fallback
    */
   async sendVoice(text, options = {}) {
     try {
-      if (!this.bot || !this.chatId || process.env.ENABLE_VOICE !== 'true') {
+      // Check if bot is available
+      if (!this.bot || !this.chatId) {
         logger.info('[Reporter] Would send voice:', text.substring(0, 100));
         return { success: true, mock: true };
       }
+      
+      // Check if voice is enabled in settings
+      if (process.env.ENABLE_VOICE !== 'true') {
+        logger.debug('[Reporter] Voice disabled, sending text fallback');
+        await this.sendMessage(`🎤 ${text}`, { ...options, parse_mode: 'HTML' });
+        return { success: true, textFallback: true };
+      }
 
-      // Generate voice using gTTS
+      // Generate voice using TTS
       const voicePath = await voice.textToSpeech(text, options.language || 'en');
       
       // Send voice message
       const result = await this.bot.sendVoice(this.chatId, voicePath);
+      
+      // Clean up temp file
+      voice.cleanup(voicePath);
 
       logger.info('[Reporter] Voice sent');
       return { success: true, messageId: result.message_id };
     } catch (error) {
-      logger.error('[Reporter] Failed to send voice:', error);
-      return { success: false, error: error.message };
+      logger.error('[Reporter] Failed to send voice, using text fallback:', error.message);
+      // Fallback to text message
+      try {
+        await this.sendMessage(`🎤 ${text}`, { ...options, parse_mode: 'HTML' });
+        return { success: true, textFallback: true, error: error.message };
+      } catch (textError) {
+        logger.error('[Reporter] Text fallback also failed:', textError.message);
+        return { success: false, error: error.message };
+      }
     }
   }
 
@@ -98,10 +116,14 @@ Sleep well! 🌙
 `;
 
     await this.sendMessage(message);
-    
-    // Also send voice summary
-    const voiceText = `Task completed successfully. ${task.plan.title} is ready for review.`;
-    await this.sendVoice(voiceText);
+
+    // Also send voice summary when enabled; do not let voice failure break the flow
+    try {
+      const voiceText = `Task completed successfully. ${task.plan?.title || 'Task'} is ready for review.`;
+      await this.sendVoice(voiceText);
+    } catch (voiceErr) {
+      logger.warn('[Reporter] Voice summary skipped:', voiceErr.message);
+    }
   }
 
   /**
@@ -127,182 +149,90 @@ Sleep well! 🌙
       message += `🟢 **COMPLETED (${completed.length})**\n\n`;
       completed.forEach(task => {
         message += `✅ **${task.plan.project}** — ${task.plan.title}\n`;
-        message += `   ${task.mrUrl ? `[MR Link](${task.mrUrl})` : `Branch: ${task.branch}`}\n\n`;
+        if (task.mrUrl) {
+          message += `   🔗 [MR](${task.mrUrl})\n`;
+        }
+        message += `   ⏱️ ${this.calculateDuration(task.startedAt, task.completedAt)}\n\n`;
       });
     }
 
     if (failed.length > 0) {
-      message += `\n🔴 **FAILED (${failed.length})**\n\n`;
+      message += `🔴 **FAILED (${failed.length})**\n\n`;
       failed.forEach(task => {
         message += `❌ **${task.plan.project}** — ${task.plan.title}\n`;
-        message += `   Check logs for details\n\n`;
+        message += `   Error: ${task.error || 'Unknown error'}\n\n`;
       });
     }
 
     if (pending.length > 0) {
-      message += `\n🟡 **NEEDS CHANGES (${pending.length})**\n\n`;
+      message += `🟡 **NEEDS CHANGES (${pending.length})**\n\n`;
       pending.forEach(task => {
-        message += `⚠️ **${task.plan.project}** — ${task.plan.title}\n`;
-        message += `   Reviewer requested changes\n\n`;
+        message += `⚠️ **${task.plan.project}** — ${task.plan.title}\n\n`;
       });
     }
 
-    // Cost tracking
-    const monthlyCost = this.costTracking.monthly.toFixed(2);
-    message += `\n💰 **API Cost This Month: $${monthlyCost}**\n`;
+    if (completed.length === 0 && failed.length === 0 && pending.length === 0) {
+      message += `😴 No activity during the night.\n\n`;
+    }
+
+    message += `━━━━━━━━━━━━━━━━━━━━━━\n`;
+    message += `Use /status for full details.`;
 
     await this.sendMessage(message);
 
-    // Voice summary
-    const completedCount = completed.length;
-    const voiceText = `Good morning! Nigents completed ${completedCount} task${completedCount !== 1 ? 's' : ''} overnight. Check Telegram for details.`;
+    // Send voice summary with fallback
+    const voiceText = `Good morning! Overnight, I completed ${completed.length} tasks, ${failed.length} failed, and ${pending.length} need changes.`;
     await this.sendVoice(voiceText, { language: 'en' });
   }
 
   /**
-   * Send standup report
+   * Format timestamp for display
    */
-  async sendStandupReport(agentStatuses) {
-    let message = `🌅 **Daily Standup**\n\n`;
-
-    agentStatuses.forEach(agent => {
-      const emoji = this.getStatusEmoji(agent.status);
-      message += `${emoji} **${agent.name}** — ${agent.status}\n`;
-      if (agent.currentTask) {
-        message += `   Working on: ${agent.currentTask}\n`;
-      }
-      message += `\n`;
-    });
-
-    await this.sendMessage(message);
-  }
-
-  /**
-   * Send project health report
-   */
-  async sendProjectHealthReport(project, health) {
-    const statusEmoji = health.status === 'good' ? '🟢' : health.status === 'warning' ? '🟡' : '🔴';
-
-    let message = `${statusEmoji} **${project} Health Report**\n\n`;
-    message += `Open MRs: ${health.openMRs}\n`;
-    message += `Last Commit: ${health.lastCommit}\n`;
-    message += `Test Status: ${health.testStatus}\n`;
-    message += `Security Issues: ${health.securityIssues}\n`;
-
-    await this.sendMessage(message);
-  }
-
-  /**
-   * Track API costs
-   */
-  trackCost(taskId, cost) {
-    this.costTracking.daily += cost;
-    this.costTracking.monthly += cost;
-    this.costTracking.tasks[taskId] = (this.costTracking.tasks[taskId] || 0) + cost;
-    
-    logger.info(`[Reporter] Cost tracked: $${cost.toFixed(4)} for task ${taskId}`);
-  }
-
-  /**
-   * Send cost report
-   */
-  async sendCostReport() {
-    const message = `
-💰 **API Cost Report**
-
-Daily: $${this.costTracking.daily.toFixed(2)}
-Monthly: $${this.costTracking.monthly.toFixed(2)}
-
-Breakdown by agent:
-${Object.entries(this.costTracking.tasks)
-  .map(([task, cost]) => `• ${task}: $${cost.toFixed(2)}`)
-  .join('\n')}
-`;
-
-    await this.sendMessage(message);
-  }
-
-  /**
-   * Send deployment notification
-   */
-  async sendDeploymentNotification(version, status) {
-    const emoji = status === 'success' ? '✅' : '❌';
-    const message = `${emoji} **Deployment ${status}**\n\nVersion: ${version}\nTime: ${new Date().toLocaleString()}`;
-    
-    await this.sendMessage(message);
-  }
-
-  /**
-   * Helper: Format time
-   */
-  formatTime(date) {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleTimeString('en-US', {
-      hour: '2-digit',
+  formatTime(timestamp) {
+    if (!timestamp) return 'N/A';
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
       minute: '2-digit',
+      hour12: true 
     });
   }
 
   /**
-   * Helper: Calculate duration
+   * Calculate duration between two timestamps
    */
   calculateDuration(start, end) {
     if (!start || !end) return 'N/A';
     const diff = new Date(end) - new Date(start);
     const minutes = Math.floor(diff / 60000);
-    if (minutes < 60) return `${minutes} min`;
     const hours = Math.floor(minutes / 60);
-    const remaining = minutes % 60;
-    return `${hours}h ${remaining}m`;
-  }
-
-  /**
-   * Helper: Get status emoji
-   */
-  getStatusEmoji(status) {
-    const emojis = {
-      'idle': '⚪',
-      'working': '🟡',
-      'done': '🟢',
-      'error': '🔴',
-    };
-    return emojis[status] || '⚪';
-  }
-
-  /**
-   * Send a report based on task type
-   */
-  async sendReport(task) {
-    const reportType = task.type || 'message';
     
-    switch (reportType) {
-      case 'completion':
-        return this.sendCompletionReport(task);
-      case 'morning':
-        return this.sendMorningReport(task.tasks);
-      case 'standup':
-        return this.sendStandupReport(task.agents);
-      case 'health':
-        return this.sendProjectHealthReport(task.project, task.health);
-      case 'cost':
-        return this.sendCostReport();
-      case 'deployment':
-        return this.sendDeploymentNotification(task.version, task.status);
-      case 'voice':
-        return this.sendVoice(task.text, task.options);
-      case 'progress':
-        return this.sendProgress(task.message, task.options);
-      case 'message':
-      default:
-        return this.sendMessage(task.text || task.message, task.options);
+    if (hours > 0) {
+      return `${hours}h ${minutes % 60}m`;
     }
+    return `${minutes}m`;
   }
 
   /**
-   * Execute task - required by BaseAgent
+   * Track API cost for a task
    */
-  async execute(task) {
-    return this.sendReport(task);
+  trackCost(taskId, cost) {
+    if (!this.costTracking.tasks[taskId]) {
+      this.costTracking.tasks[taskId] = 0;
+    }
+    this.costTracking.tasks[taskId] += cost;
+    this.costTracking.daily += cost;
+    this.costTracking.monthly += cost;
+  }
+
+  /**
+   * Get cost report
+   */
+  getCostReport() {
+    return {
+      ...this.costTracking,
+      taskCount: Object.keys(this.costTracking.tasks).length,
+    };
   }
 }
 

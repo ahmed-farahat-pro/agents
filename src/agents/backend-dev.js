@@ -81,16 +81,31 @@ class BackendDevAgent extends BaseAgent {
     this.emit('progress', { stage: 'coding', message: 'Generating code via AI (OpenHands unavailable)...' });
 
     try {
+      // Validate plan has steps
+      if (!plan || !plan.steps || !Array.isArray(plan.steps)) {
+        logger.warn('[BackendDev] Plan has no steps, using minimal fallback');
+        return {
+          success: true,
+          branch: plan?.branch || 'unknown',
+          fallbackMode: true,
+          stepsCompleted: 0,
+          message: `Implementation simulated. No steps defined in plan.`,
+        };
+      }
+      
       // Generate code for each step using direct AI calls
       const generatedCode = [];
-      
-      for (const step of plan.steps.slice(0, 3)) { // Limit to first 3 steps
+      const steps = Array.isArray(plan.steps) ? plan.steps.slice(0, 3) : [];
+
+      for (const step of steps) {
+        if (!step || step.description == null) continue;
+        const files = Array.isArray(step.files) ? step.files : [];
         const prompt = `
 You are an expert backend developer. Generate complete, working code for this step:
 
-TASK: ${plan.title}
+TASK: ${plan.title || 'Task'}
 STEP ${step.order}: ${step.description}
-FILES: ${step.files.join(', ')}
+FILES: ${files.join(', ')}
 
 Generate the actual code content that would be written to these files.
 Include proper error handling, logging, and documentation.
@@ -111,7 +126,7 @@ FILE: <filepath>
           generatedCode.push({
             step: step.order,
             description: step.description,
-            files: step.files,
+            files,
             code: result.content,
           });
         }
