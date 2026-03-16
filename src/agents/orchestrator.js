@@ -222,6 +222,9 @@ class OrchestratorAgent extends BaseAgent {
         case 'queue':
           return await this.handleQueueList(parsed, context, taskId);
         
+        case 'recheck':
+          return await this.handleRecheckTask(parsed, context, taskId);
+        
         default:
           return {
             success: false,
@@ -311,6 +314,13 @@ class OrchestratorAgent extends BaseAgent {
       return { type: 'queue' };
     }
 
+    if (lowerCmd === '/recheck') {
+      return { type: 'recheck', taskId: null };
+    }
+    if (lowerCmd.startsWith('/recheck ')) {
+      return { type: 'recheck', taskId: command.substring(9).trim() };
+    }
+
     // Use Claude to understand natural language intent
     const prompt = `
 Analyze this user message and determine the intent:
@@ -325,15 +335,16 @@ Available command types:
 - standup: User wants a daily standup report
 - meet: User wants to talk to a specific agent
 - cancel: User wants to cancel a task
+- recheck: User wants to re-run code review after pushing fixes (e.g. "recheck", "recheck the last task")
 - unknown: Cannot determine intent
 
 Respond with JSON only:
 {
-  "type": "plan|ask|approve|run|status|standup|meet|cancel|unknown",
+  "type": "plan|ask|approve|run|status|standup|meet|cancel|recheck|unknown",
   "task": "the task description if plan",
   "question": "the question if ask",
   "agentName": "agent name if meet",
-  "taskId": "task id if cancel"
+  "taskId": "task id if cancel or recheck"
 }
 `;
 
@@ -761,20 +772,40 @@ Provide a helpful answer. If the question is about specific code and you don't h
       }
     } else {
       task.status = 'needs_changes';
-      
-      // Update database if using database
+      task.reviewResult = reviewResult;
+      const gitlabTool = require('../tools/gitlab');
+      const projectIdForBranch = task.plan?.project || task.plan?.projectId || task.plan?.projectName;
+      task.targetBranch = implementationResult?.targetBranch || (projectIdForBranch ? await gitlabTool.getDefaultBranch(projectIdForBranch).catch(() => 'main') : 'main');
+
       if (this.useDatabase && this.dbTaskQueue) {
         try {
           await this.dbTaskQueue.updateTaskStatus(task.id, 'failed', {
-            result: { reviewResult },
+            result: {
+              reviewResult,
+              needs_changes: true,
+              branch: task.branch || task.plan?.branch,
+              targetBranch: task.targetBranch,
+            },
           });
         } catch (error) {
           logger.error('[Orchestrator] Failed to update task status in database:', error.message);
         }
       }
-      
+
+      const branchName = task.branch || task.plan?.branch || 'branch';
+      const issues = reviewResult?.issues || [];
+      const criticalCount = issues.filter(i => i.severity === 'critical').length;
+      const warningCount = issues.filter(i => i.severity === 'warning').length;
+      let issueSummary = '';
+      if (criticalCount > 0 || warningCount > 0) {
+        issueSummary = `${criticalCount} critical, ${warningCount} warning(s). `;
+      }
       if (reporter) {
-        await reporter.sendProgress('❌ Code review requested changes. Manual intervention needed.');
+        await reporter.sendProgress(
+          `❌ Code review requested changes. ${issueSummary}` +
+          `Push your fixes to branch \`${branchName}\`, then reply **/recheck** to re-run code review. ` +
+          `Or use \`/recheck ${task.id}\` to recheck this task.`
+        );
       }
     }
 
@@ -951,8 +982,9 @@ Provide a helpful answer. If the question is about specific code and you don't h
       message += `**✅ Completed (${this.completedTasks.length}):**\n`;
       this.completedTasks.slice(-5).forEach(t => {
         const shortId = t.id.substring(0, 8);
-        const status = t.status === 'completed' ? '✓' : '✗';
-        message += `${status} \`${shortId}\` - ${t.plan?.title || t.task || 'Unknown task'}\n`;
+        const statusIcon = t.status === 'completed' ? '✓' : t.status === 'needs_changes' ? '⚠' : '✗';
+        const statusLabel = t.status === 'needs_changes' ? ' (needs changes)' : '';
+        message += `${statusIcon} \`${shortId}\` - ${t.plan?.title || t.task || 'Unknown task'}${statusLabel}\n`;
       });
       message += '\n';
     }
@@ -961,6 +993,7 @@ Provide a helpful answer. If the question is about specific code and you don't h
     message += '`/cancel <id>` - Cancel queued/approved task\n';
     message += '`/stop <id>` - Stop running task\n';
     message += '`/remove <id>` - Remove pending plan\n';
+    message += '`/recheck [id]` - Re-run code review after fixes (for tasks that need changes)\n';
     message += '`/clear` - Clear completed tasks';
 
     return {
@@ -972,6 +1005,163 @@ Provide a helpful answer. If the question is about specific code and you don't h
         running: running.length,
         completed: this.completedTasks.length,
       },
+    };
+  }
+
+  /**
+   * Resolve a task for recheck: from completedTasks (needs_changes) or DB (failed + result.needs_changes).
+   * Normalizes task so it has branch, targetBranch, plan, reviewResult, status.
+   */
+  _normalizeTaskForRecheck(task) {
+    if (!task) return null;
+    if (task.result && task.result.needs_changes) {
+      task.branch = task.result.branch ?? task.plan?.branch;
+      task.targetBranch = task.result.targetBranch;
+      task.reviewResult = task.result.reviewResult;
+      task.status = 'needs_changes';
+    }
+    return task;
+  }
+
+  /**
+   * Handle recheck - re-run code review on a task that needs changes
+   */
+  async handleRecheckTask(parsed, context, taskId) {
+    const reporter = this.agents.get('reporter');
+    let task = null;
+
+    if (parsed.taskId) {
+      task = this.completedTasks.find(t => t.id === parsed.taskId || t.id.startsWith(parsed.taskId));
+      if (!task && this.useDatabase && this.dbTaskQueue) {
+        const fromDb = await this.dbTaskQueue.getTask(parsed.taskId);
+        if (fromDb && fromDb.result?.needs_changes) task = this._normalizeTaskForRecheck(fromDb);
+      }
+    } else {
+      task = this.completedTasks.find(t => t.status === 'needs_changes');
+      if (!task && this.useDatabase && this.dbTaskQueue && context.userId) {
+        const userTasks = await this.dbTaskQueue.getTasksByUser(context.userId.toString());
+        const recheckable = userTasks.filter(t => t.status === 'failed' && t.result?.needs_changes);
+        if (recheckable.length > 0) {
+          const byDate = recheckable.sort((a, b) => new Date(b.completedAt || 0) - new Date(a.completedAt || 0));
+          task = this._normalizeTaskForRecheck(byDate[0]);
+        }
+      }
+    }
+
+    if (!task || task.status !== 'needs_changes') {
+      return {
+        success: false,
+        message: 'No task found to recheck. Use `/recheck <id>` with a task that needs changes, or /queue to list tasks.',
+      };
+    }
+
+    const branchName = task.branch || task.plan?.branch || 'branch';
+    const projectId = task.plan?.project || task.plan?.projectId || task.plan?.projectName;
+    const sourceBranch = task.branch || task.plan?.branch;
+    const targetBranch = task.targetBranch || 'main';
+
+    if (reporter) {
+      await reporter.sendProgress(`Re-running code review on branch \`${branchName}\`...`);
+    }
+
+    const codeReviewer = this.agents.get('code-reviewer');
+    if (!codeReviewer) {
+      return { success: false, message: 'Code Reviewer agent not available.' };
+    }
+
+    const implementationResult = {
+      projectId,
+      branch: sourceBranch,
+      targetBranch,
+    };
+    const reviewResult = await codeReviewer.review(implementationResult);
+
+    if (reviewResult?.approved) {
+      const gitlab = require('../tools/gitlab');
+      let branches = await gitlab.getBranches(projectId, 100);
+      let branchExists = branches.some(b => b.name === sourceBranch);
+      if (!branchExists) {
+        if (reporter) {
+          await reporter.sendProgress(`Branch \`${sourceBranch}\` not found on GitLab. Push your changes first, then run /recheck again.`);
+        }
+        return {
+          success: false,
+          message: `Branch \`${sourceBranch}\` not on GitLab. Push your fixes, then run /recheck again.`,
+        };
+      }
+      const mrResult = await gitlab.createMergeRequest({
+        project: projectId,
+        title: task.plan?.title || 'Merge request',
+        description: task.plan?.description || '',
+        sourceBranch,
+        targetBranch,
+      });
+      task.status = 'completed';
+      task.completedAt = new Date();
+      task.mrUrl = mrResult.url;
+      try {
+        const pipelineInfo = await gitlab.getPipelineStatus(projectId, sourceBranch);
+        if (pipelineInfo) {
+          task.pipelineStatus = pipelineInfo.status;
+          task.pipelineUrl = pipelineInfo.web_url;
+        }
+      } catch (e) {
+        logger.debug('[Orchestrator] Pipeline status fetch skipped:', e.message);
+      }
+      if (this.useDatabase && this.dbTaskQueue) {
+        try {
+          await this.dbTaskQueue.updateTaskStatus(task.id, 'completed', { result: { mrUrl: mrResult.url } });
+        } catch (error) {
+          logger.error('[Orchestrator] Failed to update task status in database:', error.message);
+        }
+      }
+      const idx = this.completedTasks.findIndex(t => t.id === task.id);
+      if (idx >= 0) this.completedTasks[idx] = task;
+      else this.addCompletedTask(task);
+      if (reporter) {
+        await reporter.sendProgress(`🔗 Merge request created: ${mrResult.url}`);
+        await reporter.sendCompletionReport(task);
+      }
+      return {
+        success: true,
+        message: `✅ Code review passed. Merge request created: ${mrResult.url}`,
+      };
+    }
+
+    task.reviewResult = reviewResult;
+    if (this.useDatabase && this.dbTaskQueue) {
+      try {
+        await this.dbTaskQueue.updateTaskStatus(task.id, 'failed', {
+          result: {
+            reviewResult,
+            needs_changes: true,
+            branch: task.branch || task.plan?.branch,
+            targetBranch: task.targetBranch,
+          },
+        });
+      } catch (error) {
+        logger.error('[Orchestrator] Failed to update task status in database:', error.message);
+      }
+    }
+    const issues = reviewResult?.issues || [];
+    const criticalCount = issues.filter(i => i.severity === 'critical').length;
+    const warningCount = issues.filter(i => i.severity === 'warning').length;
+    let issueSummary = '';
+    if (criticalCount > 0 || warningCount > 0) {
+      issueSummary = `${criticalCount} critical, ${warningCount} warning(s). `;
+    }
+    if (reporter) {
+      await reporter.sendProgress(
+        `❌ Code review still requested changes. ${issueSummary}` +
+        `Push more fixes to branch \`${branchName}\`, then reply **/recheck** to re-run review.`
+      );
+    }
+    const idx = this.completedTasks.findIndex(t => t.id === task.id);
+    if (idx >= 0) this.completedTasks[idx] = task;
+    else this.addCompletedTask(task);
+    return {
+      success: true,
+      message: `Recheck complete. Review still requests changes. ${issueSummary}Push fixes to \`${branchName}\` and run /recheck again.`,
     };
   }
 

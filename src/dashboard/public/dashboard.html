@@ -1357,6 +1357,16 @@
             color: var(--success);
         }
 
+        .task-status.needs_changes {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .task-status.failed {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger, #ef4444);
+        }
+
         /* Mobile Quick Actions */
         .mobile-quick-actions {
             display: none;
@@ -3080,27 +3090,31 @@
             const list = document.getElementById('task-list');
             const pending = tasks.filter(t => ['pending_approval', 'approved', 'queued'].includes(t.status));
             const running = tasks.filter(t => t.status === 'running');
-            const completed = tasks.filter(t => ['completed', 'failed', 'needs_changes'].includes(t.status));
+            const completed = tasks.filter(t => ['completed', 'failed', 'needs_changes'].includes(t.status) || (t.status === 'failed' && t.result?.needs_changes));
 
             function renderGroup(label, items, statusClass) {
                 if (!items.length) return '';
                 return `
                     <div class="task-group" style="margin-bottom: 20px;">
                         <h4 class="text-sm text-muted" style="margin-bottom: 10px;">${label}</h4>
-                        ${items.map(t => `
+                        ${items.map(t => {
+                            const isNeedsChanges = t.status === 'needs_changes' || (t.status === 'failed' && t.result?.needs_changes);
+                            const statusDisplay = isNeedsChanges ? 'needs changes' : (t.status || 'unknown').replace(/_/g, ' ');
+                            const statusSlug = isNeedsChanges ? 'needs_changes' : (t.status || '').replace(/[^a-z0-9_-]/gi, '');
+                            return `
                             <div class="task-item">
                                 <div class="task-priority ${(t.priority || 'medium')}"></div>
                                 <div class="task-content">
                                     <div class="task-title">${(t.title || t.plan?.title || 'Untitled').replace(/</g, '&lt;')}</div>
                                     ${(t.description || t.plan?.description) ? `<div class="task-desc">${String(t.description || t.plan?.description || '').slice(0, 120).replace(/</g, '&lt;')}${(t.description || t.plan?.description || '').length > 120 ? '…' : ''}</div>` : ''}
                                     <div class="task-meta">
-                                        <span class="task-status ${(t.status || '').replace(/[^a-z0-9_-]/gi, '')}">${(t.status || 'unknown').replace(/_/g, ' ')}</span>
+                                        <span class="task-status ${statusSlug}">${statusDisplay}</span>
                                         ${t.mrUrl ? `<a href="${t.mrUrl}" target="_blank" rel="noopener" class="text-sm">View MR</a>` : ''}
-                                        ${t.branch || t.plan?.branch ? `<span>${(t.branch || t.plan?.branch || '')}</span>` : ''}
+                                        ${t.branch || t.plan?.branch || t.result?.branch ? `<span>${(t.branch || t.plan?.branch || t.result?.branch || '')}</span>` : ''}
                                     </div>
                                 </div>
                             </div>
-                        `).join('')}
+                        `; }).join('')}
                     </div>
                 `;
             }

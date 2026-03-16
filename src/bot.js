@@ -273,6 +273,7 @@ Send voice notes or text naturally:
 • /cancel id — Cancel a queued/approved task
 • /stop id — Stop a running task
 • /remove id — Remove a pending plan
+• /recheck [id] — Re-run code review after you push fixes (for tasks that need changes)
 • /clear — Clear all completed/cancelled tasks
 
 <b>System:</b>
@@ -2350,6 +2351,27 @@ bot.onText(/\/queue/, async (msg) => {
   await bot.sendChatAction(msg.chat.id, 'typing');
 
   const result = await orchestrator.processCommand('/queue', {});
+  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+});
+
+// /recheck command (re-run code review after fixes)
+bot.onText(/\/recheck$/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+  await bot.sendChatAction(msg.chat.id, 'typing');
+  const result = await orchestrator.processCommand('/recheck', {
+    userId: msg.from.id,
+    chatId: msg.chat.id,
+  });
+  await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+});
+bot.onText(/\/recheck (.+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+  const taskId = match[1].trim();
+  await bot.sendChatAction(msg.chat.id, 'typing');
+  const result = await orchestrator.processCommand(`/recheck ${taskId}`, {
+    userId: msg.from.id,
+    chatId: msg.chat.id,
+  });
   await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
 });
 

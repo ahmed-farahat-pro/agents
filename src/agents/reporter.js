@@ -141,8 +141,8 @@ Sleep well! 🌙
    */
   async sendMorningReport(tasks) {
     const completed = tasks.filter(t => t.status === 'completed');
-    const failed = tasks.filter(t => t.status === 'failed');
-    const pending = tasks.filter(t => t.status === 'needs_changes');
+    const failed = tasks.filter(t => t.status === 'failed' && !t.result?.needs_changes);
+    const pending = tasks.filter(t => t.status === 'needs_changes' || (t.status === 'failed' && t.result?.needs_changes));
 
     const date = new Date().toLocaleDateString('en-US', {
       weekday: 'long',
@@ -177,7 +177,10 @@ Sleep well! 🌙
     if (pending.length > 0) {
       message += `🟡 **NEEDS CHANGES (${pending.length})**\n\n`;
       pending.forEach(task => {
-        message += `⚠️ **${task.plan.project}** — ${task.plan.title}\n\n`;
+        const branch = task.branch || task.plan?.branch || task.result?.branch || 'branch';
+        const projectLabel = task.plan?.project || task.plan?.title || 'Task';
+        message += `⚠️ **${projectLabel}** — ${task.plan?.title || 'Untitled'}\n`;
+        message += `   Branch: \`${branch}\`. Push fixes, then **/recheck** to re-run review.\n\n`;
       });
     }
 
