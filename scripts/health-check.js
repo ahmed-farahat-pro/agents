@@ -6,15 +6,22 @@
 
 require('dotenv').config();
 
-const chalk = require('chalk');
+// ANSI colors (no extra dependency)
+const c = {
+  green: (s) => `\x1b[32m${s}\x1b[0m`,
+  red: (s) => `\x1b[31m${s}\x1b[0m`,
+  yellow: (s) => `\x1b[33m${s}\x1b[0m`,
+  blue: (s) => `\x1b[34m${s}\x1b[0m`,
+  boldCyan: (s) => `\x1b[1m\x1b[36m${s}\x1b[0m`,
+  boldMagenta: (s) => `\x1b[1m\x1b[35m${s}\x1b[0m`,
+};
 
-// Helper for colored output
 const log = {
-  success: (msg) => console.log(chalk.green('✅'), msg),
-  error: (msg) => console.log(chalk.red('❌'), msg),
-  warning: (msg) => console.log(chalk.yellow('⚠️'), msg),
-  info: (msg) => console.log(chalk.blue('ℹ️'), msg),
-  section: (msg) => console.log(chalk.bold.cyan('\n' + msg)),
+  success: (msg) => console.log(c.green('✅'), msg),
+  error: (msg) => console.log(c.red('❌'), msg),
+  warning: (msg) => console.log(c.yellow('⚠️'), msg),
+  info: (msg) => console.log(c.blue('ℹ️'), msg),
+  section: (msg) => console.log(c.boldCyan('\n' + msg)),
 };
 
 async function checkTelegram() {
@@ -182,7 +189,7 @@ async function checkConfig() {
 }
 
 async function main() {
-  console.log(chalk.bold.magenta('\n🦉 Nigents Health Check\n'));
+  console.log(c.boldMagenta('\n🦉 Nigents Health Check\n'));
   
   const results = {
     telegram: await checkTelegram(),
@@ -199,15 +206,15 @@ async function main() {
   const total = Object.keys(results).length;
   
   if (passed === total) {
-    console.log(chalk.green(`\n✅ All checks passed! Nigents is ready to fly.\n`));
+    console.log(c.green('\n✅ All checks passed! Nigents is ready to fly.\n'));
     process.exit(0);
   } else {
-    console.log(chalk.yellow(`\n⚠️  ${passed}/${total} checks passed. Some features may not work.\n`));
+    console.log(c.yellow(`\n⚠️  ${passed}/${total} checks passed. Some features may not work.\n`));
     process.exit(1);
   }
 }
 
 main().catch(error => {
-  console.error(chalk.red('Health check failed:'), error);
+  console.error(c.red('Health check failed:'), error);
   process.exit(1);
 });
