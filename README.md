@@ -10,20 +10,22 @@ Your personal AI development company running on AWS EC2. 7 specialized agents co
 
 1. [🚀 Quick Setup](#-quick-setup)
 2. [What is Nigents?](#what-is-nigents)
-3. [What is OpenHands?](#what-is-openhands)
-4. [The 7-Agent Team](#the-7-agent-team)
-5. [App Flow & Workflow](#app-flow--workflow)
-6. [MCP Servers](#mcp-servers)
-7. [Custom MCP Servers We Built](#custom-mcp-servers-we-built)
-8. [Telegram Integration](#telegram-integration)
-9. [Dashboard Features](#dashboard-features)
-10. [Tech Stack](#tech-stack)
-11. [💰 Nigents Cloud (Coming Soon)](#-nigents-cloud-coming-soon)
-12. [Quick Start (Local)](#quick-start-local)
-13. [Deploy on AWS EC2](#deploy-on-aws-ec2)
-14. [Configuration](#configuration)
-15. [MySQL Database Configuration](#mysql-database-configuration)
-16. [Troubleshooting](#troubleshooting)
+3. [Steps and workflow (current)](#steps-and-workflow-current)
+4. [What is OpenHands?](#what-is-openhands)
+5. [The 7-Agent Team](#the-7-agent-team)
+6. [App Flow & Workflow](#app-flow--workflow)
+7. [MCP Servers](#mcp-servers)
+8. [Custom MCP Servers We Built](#custom-mcp-servers-we-built)
+9. [Telegram Integration](#telegram-integration)
+10. [Dashboard Features](#dashboard-features)
+11. [Tech Stack](#tech-stack)
+12. [Future work](#future-work)
+13. [💰 Nigents Cloud (Coming Soon)](#-nigents-cloud-coming-soon)
+14. [Quick Start (Local)](#quick-start-local)
+15. [Deploy on AWS EC2](#deploy-on-aws-ec2)
+16. [Configuration](#configuration)
+17. [MySQL Database Configuration](#mysql-database-configuration)
+18. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -159,8 +161,57 @@ Nigents (Night Agents) is a self-hosted AI agent team that runs 24/7 on your AWS
 | 🛠️ **38 MCP Tools** | 35 standard + 3 custom MCP servers for extended capabilities |
 | 📊 **Live Dashboard** | Real-time code streaming and agent activity at `http://EC2_IP:4000` |
 | 🌙 **24/7 Operation** | Runs on EC2 with PM2 process manager, never sleeps |
-| 🔀 **GitLab Integration** | Automatic MR creation with proper branching |
-| 🐳 **Code Sandbox** | OpenHands Docker container for safe code execution |
+| 🔀 **GitLab Integration** | Automatic MR creation with proper branching; push to task branch then MR to main |
+| 🐳 **Code Sandbox** | OpenHands Docker container for safe code execution (optional; fallback pushes via GitLab API) |
+
+---
+
+## Steps and workflow (current)
+
+End-to-end flow from Telegram to Merge Request:
+
+### 1. Plan
+
+- User sends **/plan** &lt;task&gt; (or voice) in Telegram.
+- Bot may ask for **project** (GitLab repo); user picks from list or confirms.
+- **Planner** creates an implementation plan (steps, files, complexity, branch name e.g. `nigents/task-<timestamp>`).
+- Bot shows the plan with **“Who does what”** and step details; user sees **Reply with /approve**.
+
+### 2. Approve and run
+
+- User replies **/approve** (or clicks Approve).
+- **Orchestrator** runs the plan: Backend Dev → QA Tester → Code Reviewer.
+
+### 3. Implementation
+
+- **Backend Dev**:
+  - If **OpenHands** is available: clones repo (using push URL with token), creates branch, implements steps, commits and **pushes to GitLab**.
+  - If **OpenHands** is not available (fallback): generates code via AI; before creating the MR, the app **pushes that code to the task branch via GitLab Commits API**, so the MR has code to view.
+- **QA Tester** runs tests (or simulates when OpenHands is down).
+- **Code Reviewer** reviews and approves or requests changes.
+
+### 4. Merge request
+
+- Orchestrator checks that the **task branch exists** on GitLab (either pushed by OpenHands or created via API).
+- Creates **Merge Request** (task branch → **main**) via GitLab API and sends the MR link in Telegram.
+
+### 5. Dashboard (after login)
+
+- **All data is from the backend (MySQL)** when DB is configured: tasks, agents, activities. No dummy data.
+- Socket and REST APIs load from MySQL; on DB error the UI gets empty lists, not stale in-memory state.
+- Creating/updating tasks (e.g. from the dashboard) persists to MySQL when enabled.
+
+### Summary diagram
+
+```
+Telegram /plan → Select project → Plan (steps, who does what) → /approve
+    → Backend Dev (OpenHands push OR fallback → GitLab API push)
+    → QA → Code Reviewer → Branch exists? → Create MR → MR link to user
+
+Dashboard: Login → Data from MySQL only (tasks, agents, activities)
+```
+
+---
 
 ## What is OpenHands?
 
@@ -1858,6 +1909,23 @@ socket.emit('streamLogs', { enabled: true });
 ```
 
 ---
+
+---
+
+## Future work
+
+Planned improvements and additions:
+
+| Area | Description |
+|------|--------------|
+| **OpenHands** | Adapter or compatible service so `POST /api/execute` works as documented; or rely on fallback (GitLab API push). See OPERATIONS.md for exact API contract. |
+| **Dashboard** | Already MySQL-only when DB enabled; possible: 503 on DB error, more filters, export. |
+| **Docker** | One-command Docker deploy (image + compose) for bot + dashboard. |
+| **Default branch** | Support repos whose default branch is not `main` (e.g. `master`) for MR target and API push. |
+| **Voice** | More languages and TTS options beyond current OpenAI Whisper. |
+| **MCP** | More custom MCP servers and tool discovery from dashboard. |
+
+See also [💰 Nigents Cloud (Coming Soon)](#-nigents-cloud-coming-soon) for hosted offering and roadmap.
 
 ---
 

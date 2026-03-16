@@ -38,7 +38,11 @@ class OpenHandsTool {
         exitCode: response.data.exit_code,
       };
     } catch (error) {
+      const status = error.response?.status;
+      const data = error.response?.data;
       logger.error('[OpenHands] Command execution failed:', error.message);
+      if (status != null) logger.error('[OpenHands] Response status:', status);
+      if (data != null) logger.error('[OpenHands] Response data:', typeof data === 'object' ? JSON.stringify(data).slice(0, 500) : data);
       return {
         success: false,
         error: error.message,

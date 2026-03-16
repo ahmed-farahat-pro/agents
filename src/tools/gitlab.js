@@ -402,6 +402,49 @@ class GitLabAPI {
   }
 
   /**
+   * Get repo URL with token for push (so OpenHands or git can push without prompt)
+   * Uses https://oauth2:TOKEN@host/group/repo.git format.
+   */
+  async getPushUrl(projectPath) {
+    const url = await this.getRepoUrl(projectPath);
+    if (!this.token) return url;
+    if (url.startsWith('https://')) {
+      return url.replace(/^https:\/\//, `https://oauth2:${encodeURIComponent(this.token)}@`);
+    }
+    if (url.startsWith('http://')) {
+      return url.replace(/^http:\/\//, `http://oauth2:${encodeURIComponent(this.token)}@`);
+    }
+    return url;
+  }
+
+  /**
+   * Create a branch and commit files via API (so there is code to view in the MR).
+   * Use when OpenHands did not push (e.g. fallback mode).
+   */
+  async createBranchWithFiles(projectPath, branchName, sourceBranch, files, commitMessage) {
+    const projectId = await this.getProjectId(projectPath);
+    if (!projectId) {
+      throw new Error(`Project not found: ${projectPath}`);
+    }
+    if (!files || files.length === 0) {
+      throw new Error('At least one file is required');
+    }
+    const actions = files.map(({ path: filePath, content }) => ({
+      action: 'create',
+      file_path: filePath,
+      content: content || '',
+    }));
+    const response = await this.client.post(`/projects/${encodeURIComponent(projectId)}/repository/commits`, {
+      branch: branchName,
+      start_branch: sourceBranch || 'main',
+      commit_message: commitMessage || `feat: ${branchName}`,
+      actions,
+    });
+    logger.info('[GitLab] Branch created with commit:', branchName, response.data.id);
+    return { commitId: response.data.id, webUrl: response.data.web_url };
+  }
+
+  /**
    * Create a merge request
    */
   async createMergeRequest({ project, title, description, sourceBranch, targetBranch = 'main', branch }) {

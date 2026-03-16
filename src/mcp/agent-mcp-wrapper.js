@@ -238,6 +238,32 @@ If no tools are needed, simply provide your response.
   getToolHistory() {
     return this.toolHistory;
   }
+
+  /**
+   * Quick tool execution - directly execute a tool without AI loop
+   * Used by planner for simple filesystem/git operations
+   */
+  async quickTool(toolName, input) {
+    try {
+      if (!mcpClient.isInitialized) {
+        await mcpClient.initialize();
+      }
+      
+      // Ensure tool is available to this agent
+      const availableTools = this.getAgentTools();
+      const tool = availableTools.find(t => t.name === toolName);
+      
+      if (!tool) {
+        logger.debug(`[MCP Wrapper] Tool ${toolName} not in agent's allowed list, trying anyway...`);
+      }
+      
+      const result = await mcpClient.executeTool(toolName, input);
+      return result;
+    } catch (error) {
+      logger.debug(`[MCP Wrapper] quickTool failed: ${toolName} - ${error.message}`);
+      throw error;
+    }
+  }
 }
 
 module.exports = AgentMCPWrapper;

@@ -73,6 +73,25 @@ class BackendDevAgent extends BaseAgent {
   }
 
   /**
+   * Parse AI-generated code content into file path + content for GitLab API.
+   * Expects format: "FILE: path/to/file\n```lang\ncontent\n```"
+   */
+  parseGeneratedCodeToFiles(generatedCode) {
+    const files = [];
+    for (const item of generatedCode || []) {
+      const raw = item.code || item.content || '';
+      const fileMatch = raw.match(/FILE:\s*([^\s\n]+)/);
+      const blockMatch = raw.match(/```[\w]*\n([\s\S]*?)```/);
+      if (fileMatch && blockMatch) {
+        files.push({ path: fileMatch[1].trim(), content: blockMatch[1].trim() });
+      } else if (blockMatch && item.files && item.files[0]) {
+        files.push({ path: item.files[0], content: blockMatch[1].trim() });
+      }
+    }
+    return files;
+  }
+
+  /**
    * Fallback implementation when OpenHands is not available
    * Generates code directly via AI without actual file operations
    */
@@ -141,13 +160,17 @@ FILE: <filepath>
 
       this.setStatus('done', { task: 'implementing', branch: plan.branch });
 
+      const generatedFiles = this.parseGeneratedCodeToFiles(generatedCode);
       return {
         success: true,
         branch: plan.branch,
         fallbackMode: true,
         stepsCompleted: generatedCode.length,
         generatedCode,
-        message: `Fallback implementation complete. Branch: ${plan.branch} (code generated but not committed - OpenHands unavailable)`,
+        generatedFiles,
+        message: generatedFiles.length > 0
+          ? `Fallback implementation complete. Branch: ${plan.branch} (${generatedFiles.length} file(s) ready to push via API)`
+          : `Fallback implementation complete. Branch: ${plan.branch} (code generated but not committed - OpenHands unavailable)`,
       };
     } catch (error) {
       logger.error('[BackendDev] Fallback implementation failed:', error);
@@ -169,10 +192,11 @@ FILE: <filepath>
     const project = plan.project;
     const branch = plan.branch;
 
-    // Use OpenHands to setup the workspace
+    // Use push URL (with token) so later git push works without credentials prompt
+    const cloneUrl = await gitlab.getPushUrl(project);
     const setupCommands = [
       `cd /workspace`,
-      `git clone ${await gitlab.getRepoUrl(project)} ${project} || true`,
+      `git clone ${cloneUrl} ${project} || true`,
       `cd ${project}`,
       `git checkout -b ${branch}`,
     ];

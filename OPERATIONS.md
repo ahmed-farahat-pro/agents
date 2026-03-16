@@ -483,12 +483,26 @@ npm run health-check
 
 **API the service must expose (for full Backend Dev behavior):**
 
-- `GET /health` – Used to decide OpenHands vs fallback.
-- `POST /api/execute` – Body: `{ commands: string[], working_dir?: string, timeout?: number }`.
+- `GET /health` – Used to decide OpenHands vs fallback. Must return HTTP 200 when the service is up.
+- `POST /api/execute` – Runs shell commands in the sandbox. See exact contract below.
 - `POST /api/files/write`, `GET /api/files/read`, `POST /api/files/edit`, `GET /api/files/list` – Used if the agent edits files via these endpoints.
 - `POST /api/agent/run` – Body: `{ prompt, working_dir, model? }` – Used for “implement this step” in the sandbox.
 
-If you run **OpenDevin** (`ghcr.io/opendevin/opendevin`), its HTTP API may differ; the bot will treat it as “not available” unless it exposes at least `GET /health` and the endpoints above (or you run a separate adapter that does).
+**Exact contract for `POST /api/execute`:**
+
+- **Request:** `POST {OPENHANDS_URL}/api/execute`
+- **Body (JSON):** `{ commands: string[], working_dir?: string, timeout?: number }`
+  - `commands` – Array of shell command strings (e.g. `["cd /workspace", "git status"]`).
+  - `working_dir` – Optional; default `/workspace`. Directory to run commands in.
+  - `timeout` – Optional; default 300 (seconds).
+- **Expected response (200):** JSON with at least `exit_code`, and optionally `output`, `error`:
+  - `exit_code` (number) – Process exit code (0 = success).
+  - `output` (string) – Stdout/stderr combined or separate.
+  - `error` (string) – Error message if any.
+- If the service returns 4xx/5xx or a different response shape, the bot logs the response status and body and uses the fallback (no real git/file execution).
+
+**OpenDevin compatibility:**  
+If you run **OpenDevin** (`ghcr.io/opendevin/opendevin`), its HTTP API may differ. The bot will treat it as “not available” unless it exposes at least `GET /health` and `POST /api/execute` with the contract above. Options: run a service/adapter that implements this contract, or rely on the built-in fallback (Backend Dev generates code via AI only, no real git/file ops). OpenHands is optional.
 
 ### Configure OpenHands on EC2 (step-by-step)
 

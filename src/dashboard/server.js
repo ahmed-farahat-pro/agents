@@ -171,14 +171,25 @@ app.get('/api/status', async (req, res) => {
     res.json(stats);
   } catch (error) {
     logger.error('[Dashboard] Failed to get status:', error);
-    res.json({
-      status: dashboardState.systemStatus,
-      uptime: Date.now() - dashboardState.startTime,
-      agents: dashboardState.agents.length,
-      activeTasks: dashboardState.tasks.filter(t => t.status === 'running').length,
-      queuedTasks: dashboardState.tasks.filter(t => t.status === 'queued').length,
-      completedTasks: dashboardState.tasks.filter(t => t.status === 'completed').length,
-    });
+    if (dbTaskQueue) {
+      res.json({
+        status: dashboardState.systemStatus,
+        uptime: Date.now() - dashboardState.startTime,
+        agents: 0,
+        activeTasks: 0,
+        queuedTasks: 0,
+        completedTasks: 0,
+      });
+    } else {
+      res.json({
+        status: dashboardState.systemStatus,
+        uptime: Date.now() - dashboardState.startTime,
+        agents: dashboardState.agents.length,
+        activeTasks: dashboardState.tasks.filter(t => t.status === 'running').length,
+        queuedTasks: dashboardState.tasks.filter(t => t.status === 'queued').length,
+        completedTasks: dashboardState.tasks.filter(t => t.status === 'completed').length,
+      });
+    }
   }
 });
 
@@ -192,7 +203,7 @@ app.get('/api/agents', async (req, res) => {
     }
   } catch (error) {
     logger.error('[Dashboard] Failed to get agents:', error);
-    res.json(dashboardState.agents);
+    res.json(dbTaskQueue ? [] : dashboardState.agents);
   }
 });
 
@@ -273,7 +284,7 @@ app.get('/api/tasks', async (req, res) => {
     }
   } catch (error) {
     logger.error('[Dashboard] Failed to get tasks:', error);
-    res.json(dashboardState.tasks);
+    res.json(dbTaskQueue ? [] : dashboardState.tasks);
   }
 });
 
@@ -287,7 +298,7 @@ app.get('/api/activity', async (req, res) => {
     }
   } catch (error) {
     logger.error('[Dashboard] Failed to get activities:', error);
-    res.json(dashboardState.activities.slice(-100));
+    res.json(dbTaskQueue ? [] : dashboardState.activities.slice(-100));
   }
 });
 
@@ -411,48 +422,96 @@ app.post('/api/agent-communication', (req, res) => {
 });
 
 // Add task
-app.post('/api/tasks', (req, res) => {
+app.post('/api/tasks', async (req, res) => {
   const task = {
-    id: Date.now().toString(),
+    id: req.body.id || Date.now().toString(),
     ...req.body,
     createdAt: new Date(),
   };
-  
+
+  if (dbTaskQueue) {
+    try {
+      await dbTaskQueue.createTask({
+        id: task.id,
+        userId: task.userId || task.user_id || 'dashboard',
+        type: task.type || 'implementation',
+        title: task.title || 'Untitled',
+        description: task.description || '',
+        status: task.status || 'pending',
+        plan: task.plan || null,
+      });
+    } catch (error) {
+      logger.error('[Dashboard] Failed to create task in database:', error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
   dashboardState.tasks.push(task);
   io.emit('task', task);
-  
-  addActivity({
+
+  await addActivity({
     type: 'system',
     agent: 'orchestrator',
     message: `Task created: ${task.title}`,
     timestamp: new Date(),
   });
-  
+
   res.json({ success: true, task });
 });
 
 // Update task progress
-app.put('/api/tasks/:id/progress', (req, res) => {
+app.put('/api/tasks/:id/progress', async (req, res) => {
   const { id } = req.params;
   const { progress, status, message } = req.body;
+
+  if (dbTaskQueue) {
+    try {
+      const existing = await dbTaskQueue.getTask(id);
+      if (!existing) {
+        const inMemory = dashboardState.tasks.find(t => t.id === id);
+        if (inMemory) {
+          inMemory.progress = progress;
+          if (status) inMemory.status = status;
+          inMemory.updatedAt = new Date();
+          io.emit('task', inMemory);
+          if (message) {
+            await addActivity({ type: 'system', agent: inMemory.agent || 'orchestrator', message, timestamp: new Date() });
+          }
+          return res.json({ success: true });
+        }
+        return res.status(404).json({ success: false, error: 'Task not found' });
+      }
+      if (status) {
+        await dbTaskQueue.updateTaskStatus(id, status, progress !== undefined ? { progress } : {});
+      } else if (progress !== undefined) {
+        await dbTaskQueue.updateTaskProgress(id, progress, message);
+      }
+      if (message) {
+        await addActivity({ type: 'system', agent: existing.agent || 'orchestrator', message, timestamp: new Date() });
+      }
+      const updated = await dbTaskQueue.getTask(id);
+      if (updated) io.emit('task', updated);
+      return res.json({ success: true });
+    } catch (error) {
+      logger.error('[Dashboard] Failed to update task progress in database:', error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
 
   const task = dashboardState.tasks.find(t => t.id === id);
   if (task) {
     task.progress = progress;
     if (status) task.status = status;
     task.updatedAt = new Date();
-    
     io.emit('task', task);
-    
     if (message) {
-      addActivity({
+      await addActivity({
         type: 'system',
         agent: task.agent || 'orchestrator',
         message,
         timestamp: new Date(),
       });
     }
-    
     res.json({ success: true });
   } else {
     res.status(404).json({ success: false, error: 'Task not found' });

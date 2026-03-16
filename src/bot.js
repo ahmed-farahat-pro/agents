@@ -1602,7 +1602,7 @@ Use /projects to see available project IDs.`,
       ]];
 
       await bot.sendMessage(msg.chat.id, result.message, {
-        parse_mode: 'Markdown',
+        parse_mode: result.plan ? 'HTML' : 'Markdown',
         reply_markup: { inline_keyboard: keyboard },
       });
     } else {
@@ -1696,7 +1696,7 @@ bot.onText(/\/planwith (.+)/, async (msg, match) => {
         project: project.fullPath,
       });
 
-      await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+      await bot.sendMessage(msg.chat.id, result.message, { parse_mode: result.plan ? 'HTML' : 'Markdown' });
 
       // Add to chat history
       await chatStorage.addMessage(userId, 'assistant', result.message, {
@@ -2691,7 +2691,7 @@ bot.on('callback_query', async (query) => {
         ]];
 
         await bot.sendMessage(chatId, result.message, {
-          parse_mode: 'Markdown',
+          parse_mode: result.plan ? 'HTML' : 'Markdown',
           reply_markup: {
             inline_keyboard: keyboard,
           },
