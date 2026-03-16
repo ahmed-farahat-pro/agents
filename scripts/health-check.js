@@ -143,21 +143,31 @@ async function checkGitLab() {
 
 async function checkOpenHands() {
   log.section('OpenHands');
+  const openhandsUrl = process.env.OPENHANDS_URL || 'http://localhost:3000';
+  const isExplicit = process.env.OPENHANDS_URL && process.env.OPENHANDS_URL !== 'http://localhost:3000';
+
   try {
     const openhands = require('../src/tools/openhands');
     const result = await openhands.healthCheck();
-    
+
     if (result.available) {
       log.success('OpenHands is available');
       return true;
-    } else {
-      log.warning(`OpenHands not available: ${result.error}`);
-      log.info('OpenHands is optional and runs on EC2');
-      return true; // Not a failure
     }
+    // Optional: no warning when using default URL (nothing running on 3000 is expected)
+    if (isExplicit) {
+      log.warning(`OpenHands not reachable at ${openhandsUrl}: ${result.error}`);
+      log.info('Backend Dev will use AI fallback. Start OpenHands if you need sandbox execution.');
+    } else {
+      log.info('OpenHands not running (optional). Backend Dev uses AI fallback. Set OPENHANDS_URL and run the service to enable sandbox.');
+    }
+    return true; // Not a failure
   } catch (error) {
-    log.warning(`OpenHands check failed: ${error.message}`);
-    log.info('OpenHands is optional and runs on EC2');
+    if (isExplicit) {
+      log.warning(`OpenHands check failed: ${error.message}`);
+    } else {
+      log.info('OpenHands not running (optional). Backend Dev uses AI fallback.');
+    }
     return true;
   }
 }
