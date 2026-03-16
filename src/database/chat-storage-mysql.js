@@ -6,6 +6,16 @@
 const db = require('./connection');
 const logger = require('../utils/logger');
 
+function parseJson(value, fallback = null) {
+  if (value == null || value === '') return fallback;
+  if (typeof value === 'object') return value;
+  try {
+    return typeof value === 'string' ? JSON.parse(value) : fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+
 class ChatStorageMySQL {
   constructor() {
     this.initialized = false;
@@ -123,7 +133,7 @@ class ChatStorageMySQL {
         role: row.role,
         content: row.content,
         timestamp: new Date(row.timestamp).getTime(),
-        ...JSON.parse(row.metadata || '{}'),
+        ...parseJson(row.metadata, {}),
       }));
     } catch (error) {
       logger.error('[ChatStorageMySQL] Failed to get chat history:', error);
@@ -212,7 +222,7 @@ class ChatStorageMySQL {
         projectId: row.project_id,
         projectName: row.project_name,
         createdAt: new Date(row.created_at).getTime(),
-        ...JSON.parse(row.plan_data || '{}'),
+        ...parseJson(row.plan_data, {}),
       };
       
       logger.info(`[ChatStorageMySQL] Found pending plan for user ${key}: ${plan.task}`);
@@ -257,7 +267,7 @@ class ChatStorageMySQL {
           chatId: row.chat_id,
           username: row.username,
           createdAt: new Date(row.created_at).getTime(),
-          ...JSON.parse(row.plan_data || '{}'),
+          ...parseJson(row.plan_data, {}),
         };
       });
       

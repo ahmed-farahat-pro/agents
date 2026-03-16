@@ -388,7 +388,7 @@ class TaskQueueMySQL {
         currentTaskId: row.current_task_id,
         activity: row.activity,
         lastUpdate: row.last_update,
-        metadata: JSON.parse(row.metadata || '{}'),
+        metadata: this._parseJson(row.metadata, {}),
       }));
     } catch (error) {
       logger.error('[TaskQueueMySQL] Failed to get agents:', error);
@@ -454,7 +454,7 @@ class TaskQueueMySQL {
         agent: row.agent_name,
         taskId: row.task_id,
         message: row.message,
-        metadata: JSON.parse(row.metadata || '{}'),
+        metadata: this._parseJson(row.metadata, {}),
         timestamp: row.created_at,
       }));
     } catch (error) {

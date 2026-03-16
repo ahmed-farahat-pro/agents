@@ -54,31 +54,22 @@ async function checkTelegram() {
   }
 }
 
-async function checkClaude() {
-  log.section('Claude API (Anthropic)');
+async function checkAIProvider() {
+  log.section('AI provider (custom / Zhipu GLM)');
   try {
-    const { Anthropic } = require('@anthropic-ai/sdk');
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    
-    if (!apiKey) {
-      log.error('ANTHROPIC_API_KEY not set');
+    const AIClient = require('../src/utils/ai-client');
+    const client = new AIClient();
+    const status = client.getAPIKeysStatus();
+    const enabled = Object.entries(status.providers || {}).filter(([, p]) => p.configured && p.enabled);
+    if (enabled.length === 0) {
+      log.error('No AI provider configured (set custom provider or Zhipu in config)');
       return false;
     }
-
-    const anthropic = new Anthropic({ apiKey });
-    
-    // Test with a simple completion
-    const response = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 50,
-      messages: [{ role: 'user', content: 'Say "Nigents is ready"' }],
-    });
-
-    log.success('Claude API connected');
-    log.info(`Response: "${response.content[0].text.substring(0, 50)}..."`);
+    log.success(`AI provider ready: ${enabled.map(([k]) => k).join(', ')}`);
+    enabled.forEach(([key, p]) => log.info(`  ${key}: ${p.model || 'default'}`));
     return true;
   } catch (error) {
-    log.error(`Claude API failed: ${error.message}`);
+    log.error(`AI provider check failed: ${error.message}`);
     return false;
   }
 }
@@ -203,7 +194,7 @@ async function main() {
   
   const results = {
     telegram: await checkTelegram(),
-    claude: await checkClaude(),
+    ai: await checkAIProvider(),
     openai: await checkOpenAI(),
     gitlab: await checkGitLab(),
     openhands: await checkOpenHands(),

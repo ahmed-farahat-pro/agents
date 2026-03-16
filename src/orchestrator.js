@@ -332,11 +332,13 @@ class OrchestratorAgent extends BaseAgent {
     const reporter = this.agents.get('reporter');
 
     try {
+      const projectId = task.plan?.project || task.plan?.projectId || task.plan?.projectName || task.project;
       const mrResult = await gitlab.createMergeRequest({
-        project: task.project,
-        title: task.plan.title,
-        description: task.plan.description,
-        branch: task.plan.branch,
+        project: projectId,
+        title: task.plan?.title,
+        description: task.plan?.description,
+        sourceBranch: task.plan?.branch,
+        targetBranch: 'main',
       });
 
       task.mrUrl = mrResult.url;

@@ -667,7 +667,8 @@ Provide a helpful answer. If the question is about specific code and you don't h
         project: projectId,
         title: task.plan.title,
         description: task.plan.description,
-        branch: task.plan.branch,
+        sourceBranch: task.plan.branch,
+        targetBranch: 'main',
       });
 
       task.status = 'completed';

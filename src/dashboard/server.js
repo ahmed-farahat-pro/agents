@@ -33,7 +33,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Dashboard state
+// Dashboard state (fallback when no DB)
 const dashboardState = {
   agents: [],
   tasks: [],
@@ -57,6 +57,28 @@ if (useDatabase) {
   } catch (error) {
     logger.error('[Dashboard] Failed to load database modules:', error.message);
   }
+}
+
+/** Build state for dashboard: from MySQL when available, else in-memory */
+async function getDashboardState() {
+  if (dbTaskQueue) {
+    try {
+      const [tasks, activities, agents] = await Promise.all([
+        dbTaskQueue.getAllTasks(200),
+        dbTaskQueue.getActivities(100),
+        dbTaskQueue.getAgents(),
+      ]);
+      return {
+        ...dashboardState,
+        tasks: tasks || [],
+        activities: activities || [],
+        agents: agents || [],
+      };
+    } catch (err) {
+      logger.error('[Dashboard] Failed to load state from DB:', err.message);
+    }
+  }
+  return dashboardState;
 }
 
 // ============================================================================
@@ -123,6 +145,29 @@ app.get('/api/status', async (req, res) => {
       stats.completedTasks = dashboardState.tasks.filter(t => t.status === 'completed').length;
     }
     
+    // Add MCP and GitLab status
+    try {
+      const mcpClient = require('../mcp/mcp-client');
+      stats.mcp = {
+        initialized: mcpClient.isInitialized,
+        connectedServers: mcpClient.clients?.size || 0,
+        totalTools: mcpClient.tools?.length || 0,
+      };
+    } catch (e) {
+      stats.mcp = { initialized: false, error: e.message };
+    }
+    
+    try {
+      const gitlab = require('../tools/gitlab');
+      stats.gitlab = {
+        configured: !!gitlab.token,
+        namespace: gitlab.namespace || null,
+        baseUrl: gitlab.baseUrl,
+      };
+    } catch (e) {
+      stats.gitlab = { configured: false, error: e.message };
+    }
+    
     res.json(stats);
   } catch (error) {
     logger.error('[Dashboard] Failed to get status:', error);
@@ -148,6 +193,73 @@ app.get('/api/agents', async (req, res) => {
   } catch (error) {
     logger.error('[Dashboard] Failed to get agents:', error);
     res.json(dashboardState.agents);
+  }
+});
+
+// MCP Health Check Endpoint
+app.get('/api/mcp/health', async (req, res) => {
+  try {
+    const mcpClient = require('../mcp/mcp-client');
+    const config = require('../../config/mcp-servers.json');
+    
+    const health = {
+      initialized: mcpClient.isInitialized,
+      connectedServers: mcpClient.clients?.size || 0,
+      totalTools: mcpClient.tools?.length || 0,
+      servers: {},
+    };
+    
+    // Check each configured server
+    for (const [name, serverConfig] of Object.entries(config.servers)) {
+      if (serverConfig.enabled !== false) {
+        const isConnected = mcpClient.clients?.has(name);
+        const serverTools = mcpClient.clients?.get(name)?.tools || [];
+        health.servers[name] = {
+          enabled: true,
+          connected: isConnected,
+          tools: serverTools.map(t => t.name),
+        };
+      } else {
+        health.servers[name] = { enabled: false };
+      }
+    }
+    
+    res.json(health);
+  } catch (error) {
+    logger.error('[Dashboard] MCP health check failed:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GitLab Test Endpoint
+app.get('/api/gitlab/test', async (req, res) => {
+  try {
+    const gitlab = require('../tools/gitlab');
+    
+    if (!gitlab.token) {
+      return res.status(400).json({ 
+        configured: false, 
+        error: 'GITLAB_TOKEN not set' 
+      });
+    }
+    
+    // Test connection by listing projects
+    const projects = await gitlab.listProjects(5);
+    
+    res.json({
+      configured: true,
+      tokenSet: !!gitlab.token,
+      namespace: gitlab.namespace,
+      baseUrl: gitlab.baseUrl,
+      accessibleProjects: projects.length,
+      projects: projects.map(p => ({ name: p.name, fullPath: p.fullPath })),
+    });
+  } catch (error) {
+    logger.error('[Dashboard] GitLab test failed:', error);
+    res.status(500).json({ 
+      configured: !!gitlab.token, 
+      error: error.message 
+    });
   }
 });
 
@@ -1704,15 +1816,15 @@ app.get('/api/materials/subscribers/export', (req, res) => {
 // Socket.IO
 // ============================================================================
 
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
   logger.info('Dashboard client connected:', socket.id);
 
-  // Send current state
-  socket.emit('init', dashboardState);
+  const state = await getDashboardState();
+  socket.emit('init', state);
 
-  // Request status update
-  socket.on('requestStatus', () => {
-    socket.emit('init', dashboardState);
+  socket.on('requestStatus', async () => {
+    const freshState = await getDashboardState();
+    socket.emit('init', freshState);
   });
 
   // Handle chat
