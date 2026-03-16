@@ -9,6 +9,7 @@ const openhands = require('../tools/openhands');
 const gitlab = require('../tools/gitlab');
 const { cloneEditAndPush } = require('../tools/repo-clone-push');
 const { getCheckCommands, getGatherContextCommands, getBuildCheckCommandFromAI } = require('../tools/compile-check');
+const { getRepoTree, getStepFileContents, getRepoContextForPlan } = require('../tools/repo-context');
 
 class BackendDevAgent extends BaseAgent {
   constructor() {
@@ -165,7 +166,17 @@ class BackendDevAgent extends BaseAgent {
       };
       }
       
-      // Generate code for each step using direct AI calls
+      // Fetch repo context once (tree + file contents per step) for minimal-edit prompts
+      let repoTree = '';
+      let fileContentsByStep = {};
+      try {
+        const ctx = await getRepoContextForPlan(plan);
+        repoTree = ctx.repoTree || '';
+        fileContentsByStep = ctx.fileContentsByStep || {};
+      } catch (e) {
+        logger.warn('[BackendDev] getRepoContextForPlan failed:', e.message);
+      }
+
       const generatedCode = [];
       const steps = Array.isArray(plan.steps) ? plan.steps.slice(0, 3) : [];
 
@@ -175,16 +186,29 @@ class BackendDevAgent extends BaseAgent {
         if (reporter && files.length > 0) {
           await reporter.sendProgress(`📝 Editing \`${files.join(', ')}\` on branch \`${branch}\``);
         }
+        const stepOrder = step.order != null ? step.order : steps.indexOf(step) + 1;
+        const stepContents = fileContentsByStep[stepOrder] || [];
+        const hasCurrentContent = stepContents.length > 0;
+        const fileContentsSection = hasCurrentContent
+          ? `
+CURRENT FILE CONTENTS (you are given the current content; output only the changed version with minimal edits):
+${stepContents.map(f => `--- ${f.path} ---\n${f.content}`).join('\n\n')}
+
+MINIMAL EDIT: Make the smallest change required for the step. Do not add unrelated code, comments, or reformatting. If the step is to change a background color or one style, only change that line or add one block; do not rewrite the whole file.
+`
+          : '';
+
         const prompt = `
-You are an expert developer. Generate complete, working code for this step. Only generate code for the exact files listed.
+You are an expert developer. ${hasCurrentContent ? 'Modify the following files with minimal edits. Only change what is necessary for the step.' : 'Generate complete, working code for this step.'} Only generate code for the exact files listed.
 ${frontendOnlyNotice}
 
+${repoTree ? `REPO STRUCTURE:\n${repoTree}\n\n` : ''}
 TASK: ${plan.title || 'Task'}
 STEP ${step.order}: ${step.description}
 ONLY THESE FILES (do not add other files): ${files.join(', ')}
+${fileContentsSection}
 
-Generate the actual code content that would be written to these files.
-Include proper error handling and documentation where appropriate.
+${hasCurrentContent ? 'Output the full file content for each modified file, with only the minimal changes applied.' : 'Generate the actual code content that would be written to these files. Include proper error handling and documentation where appropriate.'}
 
 Respond with the file contents in this format:
 FILE: <filepath>
@@ -195,7 +219,7 @@ FILE: <filepath>
 
         const result = await this.callAI(prompt, {
           maxTokens: 4096,
-          temperature: 0.7,
+          temperature: 0.3,
         });
 
         if (result.success) {
@@ -293,6 +317,23 @@ FILE: <filepath>
    * Implement a single step
    */
   async implementStep(step, workDir, plan) {
+    const project = plan.project || plan.projectId;
+    let repoTree = '';
+    let fileContentsSection = '';
+    const stepContents = await getStepFileContents(plan, step);
+    if (project) {
+      const ref = await gitlab.getDefaultBranch(project).catch(() => 'main');
+      repoTree = await getRepoTree(project, ref);
+    }
+    if (stepContents.length > 0) {
+      fileContentsSection = `
+CURRENT FILE CONTENTS (make minimal edits — only change what the step requires):
+${stepContents.map(f => `--- ${f.path} ---\n${f.content}`).join('\n\n')}
+
+STRICT MINIMAL-EDIT RULE: Make the smallest change that satisfies the step. If the step is to change a color, style, or one setting, only add or edit the relevant line(s). Do not rewrite entire files. Preserve all existing code, formatting, and structure except what you must change.
+`;
+    }
+
     const filesList = Array.isArray(step.files) && step.files.length > 0 ? step.files.join(', ') : 'none specified';
     const primaryStack = plan.primaryStack || 'fullstack';
     const frontendOnlyNotice = primaryStack === 'frontend'
@@ -301,12 +342,19 @@ CRITICAL - FRONTEND-ONLY TASK: This repository is a frontend project (e.g. React
 `
       : '';
 
+    const isModify = (step.type || '').toLowerCase() === 'modify' || stepContents.length > 0;
+    const modifyInstruction = isModify
+      ? 'Modify the following files with minimal edits. Only change what is necessary for the step. Do not rewrite entire files.'
+      : 'Modify the existing file(s) to implement this step. Preserve existing functionality while adding the new feature.';
+
     const prompt = `
 You are implementing this step of a plan in the repository that was selected for this task.
 
+${repoTree ? `REPO STRUCTURE (full folder):\n${repoTree}\n\n` : ''}
 STEP: ${step.description}
 TYPE: ${step.type}
 FILES TO CREATE OR MODIFY (ONLY THESE): ${filesList}
+${fileContentsSection}
 
 STRICT: Only create or modify the exact file(s) listed above. Do not create or edit any other files or paths.
 ${frontendOnlyNotice}
@@ -318,7 +366,7 @@ WORKING DIRECTORY: ${workDir}
 
 ${step.type === 'create'
   ? `Create the new file(s) with complete, working code. Include proper error handling and documentation where appropriate.`
-  : `Modify the existing file(s) to implement this step. Preserve existing functionality while adding the new feature.`
+  : modifyInstruction
 }
 
 Use the write_file or edit_file tools to make changes. Then verify the changes compile/build correctly.

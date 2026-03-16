@@ -303,7 +303,7 @@ CRITICAL INSTRUCTIONS:
 2. Do NOT include markdown code blocks (no \`\`\`json)
 3. Do NOT include any explanatory text before or after the JSON
 4. The response must be parseable by JSON.parse()
-5. Include at least 3-7 detailed steps
+5. Include at least 3-7 detailed steps for substantial tasks; for very small tasks (e.g. "change background color", "update logo", "change one CSS variable") use exactly one step and one or two files so implementation can make minimal edits without rewriting whole files
 6. Each step must have: order, description, files array, and type (create/modify/delete/review)
 7. Analyze the existing codebase structure and suggest files to modify/create accordingly
 8. Consider the project's existing patterns and conventions
@@ -329,8 +329,11 @@ REQUIRED JSON STRUCTURE:
   "branch": "nigents/task-${timestamp}"
 }
 
-EXAMPLE RESPONSE:
+EXAMPLE (substantial task):
 {"title":"Add User Authentication","description":"Implement JWT-based user authentication with login/logout endpoints","complexity":"M","estimatedHours":4,"steps":[{"order":1,"description":"Analyze existing auth structure and user model","files":["src/models/"],"type":"review"},{"order":2,"description":"Create JWT authentication middleware","files":["src/middleware/auth.js"],"type":"create"},{"order":3,"description":"Add login and register endpoints","files":["src/routes/auth.js"],"type":"create"},{"order":4,"description":"Update user model with password hashing","files":["src/models/User.js"],"type":"modify"},{"order":5,"description":"Add auth tests","files":["src/routes/auth.test.js"],"type":"create"}],"filesToModify":["src/models/User.js"],"filesToCreate":["src/middleware/auth.js","src/routes/auth.js","src/routes/auth.test.js"],"dependencies":["jsonwebtoken","bcrypt"],"testingNotes":"Test login with valid/invalid credentials, token expiration","branch":"nigents/task-${timestamp}"}
+
+EXAMPLE (minimal task — single step, one file):
+{"title":"Change background color","description":"Update main container background to #f0f0f0","complexity":"S","estimatedHours":0.25,"steps":[{"order":1,"description":"Set background color in the main layout or theme file","files":["src/App.css"],"type":"modify"}],"filesToModify":["src/App.css"],"filesToCreate":[],"branch":"nigents/task-${timestamp}"}
 
 NOW CREATE YOUR JSON RESPONSE FOR: ${task}`;
   }

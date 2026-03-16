@@ -7,6 +7,7 @@ const BaseAgent = require('./base-agent');
 const logger = require('../utils/logger');
 const gitlab = require('../tools/gitlab');
 const { cloneEditAndPush } = require('../tools/repo-clone-push');
+const { getRepoTree, getStepFileContents } = require('../tools/repo-context');
 
 class FrontendDevAgent extends BaseAgent {
   constructor() {
@@ -59,7 +60,7 @@ class FrontendDevAgent extends BaseAgent {
         if (reporter && step.files && step.files.length > 0) {
           await reporter.sendProgress(`📝 Editing \`${step.files.join(', ')}\` on branch \`${branch}\``);
         }
-        const result = await this.implementFrontendStep(step);
+        const result = await this.implementFrontendStep(step, plan);
         results.push({ ...result, files: step.files });
         this.emit('progress', {
           stage: 'frontend_coding',
@@ -115,16 +116,44 @@ class FrontendDevAgent extends BaseAgent {
 
   /**
    * Implement a single frontend step
+   * @param {Object} step - Step with files, description
+   * @param {Object} [plan] - Plan with project, projectId (for repo context)
    */
-  async implementFrontendStep(step) {
-    const isReactNative = step.files.some(f => f.includes('.native.') || f.includes('mobile'));
+  async implementFrontendStep(step, plan = null) {
+    let repoTree = '';
+    let fileContentsSection = '';
+    if (plan && (plan.project || plan.projectId)) {
+      try {
+        const project = plan.project || plan.projectId;
+        const ref = await gitlab.getDefaultBranch(project).catch(() => 'main');
+        repoTree = await getRepoTree(project, ref);
+        const stepContents = await getStepFileContents(plan, step, ref);
+        if (stepContents.length > 0) {
+          fileContentsSection = `
+CURRENT FILE CONTENTS (make minimal edits):
+${stepContents.map(f => `--- ${f.path} ---\n${f.content}`).join('\n\n')}
+
+MINIMAL EDIT: Make the smallest change that satisfies the step. For example, if the step is to change background color, only add or edit the relevant CSS variable or property; do not rewrite entire components or files. Preserve existing code and structure.
+`;
+        }
+      } catch (e) {
+        logger.warn('[FrontendDev] repo context failed:', e.message);
+      }
+    }
+
+    const isReactNative = step.files && step.files.some(f => f.includes('.native.') || f.includes('mobile'));
     const isRTL = true; // Always assume RTL for Arabic support
+    const hasCurrentContent = fileContentsSection.length > 0;
 
     const prompt = `
+${repoTree ? `REPO STRUCTURE (full folder):\n${repoTree}\n\n` : ''}
 Create/modify the following frontend files:
-${step.files.join('\n')}
+${(step.files || []).join('\n')}
 
 Description: ${step.description}
+${fileContentsSection}
+
+${hasCurrentContent ? 'If the step is only a style/color change, only output the minimal CSS/JSX change. Output full file content for each modified file with only the minimal changes applied.' : ''}
 
 ${isReactNative ? 'PLATFORM: React Native' : 'PLATFORM: React Web'}
 ${isRTL ? 'RTL SUPPORT: Required (Arabic interface)' : ''}
@@ -156,7 +185,7 @@ DARK MODE:
 - Use CSS variables or theme context
 - Ensure contrast ratios meet accessibility standards
 
-Include PropTypes or TypeScript interfaces.
+Include PropTypes or TypeScript interfaces where relevant.
 Add JSDoc comments for component documentation.
 `;
 
