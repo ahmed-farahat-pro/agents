@@ -196,7 +196,10 @@ Respond with a JSON array of issues found (empty if none):
     const projectId = implementationResult?.projectId;
     const branch = implementationResult?.branch;
     if (projectId && branch && gitlab.isConfigured()) {
-      const fromRef = implementationResult?.targetBranch || 'main';
+      let fromRef = implementationResult?.targetBranch;
+      if (!fromRef) {
+        fromRef = await gitlab.getDefaultBranch(projectId).catch(() => null) || 'main';
+      }
       const fetched = await gitlab.getCompareDiff(projectId, fromRef, branch);
       if (fetched && fetched.length > 20) {
         return { diff: fetched, isReal: true };

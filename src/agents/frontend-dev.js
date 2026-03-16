@@ -1,11 +1,12 @@
 /**
  * 🦉 Nigents - Frontend Developer Agent
- * Writes React/React Native code with RTL support
+ * Writes React/React Native code with RTL support. Fetches repo, edits on task branch, pushes to GitLab.
  */
 
 const BaseAgent = require('./base-agent');
 const logger = require('../utils/logger');
-const openhands = require('../tools/openhands');
+const gitlab = require('../tools/gitlab');
+const { cloneEditAndPush } = require('../tools/repo-clone-push');
 
 class FrontendDevAgent extends BaseAgent {
   constructor() {
@@ -14,16 +15,40 @@ class FrontendDevAgent extends BaseAgent {
   }
 
   /**
-   * Implement frontend components
+   * Parse AI response into path + content (same format as backend fallback).
    */
-  async implement(plan) {
+  parseGeneratedCodeToFiles(generatedCode) {
+    const files = [];
+    for (const item of generatedCode || []) {
+      const raw = item.code || item.content || '';
+      const fileMatch = raw.match(/FILE:\s*([^\s\n]+)/);
+      const blockMatch = raw.match(/```[\w]*\n([\s\S]*?)```/);
+      if (fileMatch && blockMatch) {
+        files.push({ path: fileMatch[1].trim(), content: blockMatch[1].trim() });
+      } else if (blockMatch && item.files && item.files[0]) {
+        files.push({ path: item.files[0], content: blockMatch[1].trim() });
+      } else if (item.files && item.files[0] && raw.trim()) {
+        files.push({ path: item.files[0], content: raw.trim() });
+      }
+    }
+    return files;
+  }
+
+  /**
+   * Implement frontend: generate code, then clone repo and push to plan.branch (task branch).
+   * @param {Object} plan - Plan with steps, branch, project, title, description
+   * @param {Object} [context] - Optional { reporter } for progress
+   */
+  async implement(plan, context = {}) {
     this.setStatus('working', { task: 'implementing_frontend', plan: plan.title });
     this.currentTask = plan;
+    const reporter = context.reporter;
+    const branch = plan.branch || `nigents/task-${Date.now()}`;
 
     try {
-      const frontendSteps = plan.steps.filter(step => 
-        step.files.some(f => 
-          f.match(/\.(jsx?|tsx?|css|scss|vue|html)$/i) ||
+      const frontendSteps = (plan.steps || []).filter(step =>
+        (step.files || []).some(f =>
+          /\.(jsx?|tsx?|css|scss|vue|html)$/i.test(f) ||
           f.includes('components/') ||
           f.includes('pages/')
         )
@@ -31,27 +56,54 @@ class FrontendDevAgent extends BaseAgent {
 
       const results = [];
       for (const step of frontendSteps) {
+        if (reporter && step.files && step.files.length > 0) {
+          await reporter.sendProgress(`📝 Editing \`${step.files.join(', ')}\` on branch \`${branch}\``);
+        }
         const result = await this.implementFrontendStep(step);
-        results.push(result);
-        
+        results.push({ ...result, files: step.files });
         this.emit('progress', {
           stage: 'frontend_coding',
           step: step.order,
-          message: `Created ${step.files.join(', ')}`,
+          message: `Created ${(step.files || []).join(', ')}`,
         });
       }
 
-      this.setStatus('done', { task: 'implementing_frontend' });
+      const generatedCode = results.filter(r => r.success && r.code).map(r => ({ code: r.code, files: r.files }));
+      const generatedFiles = this.parseGeneratedCodeToFiles(generatedCode);
+
+      let pushedToGit = false;
+      if (generatedFiles.length > 0 && (plan.project || plan.projectId)) {
+        try {
+          await cloneEditAndPush(plan, generatedFiles, reporter);
+          pushedToGit = true;
+        } catch (pushErr) {
+          logger.warn('[FrontendDev] Clone/edit/push failed:', pushErr.message);
+        }
+      }
+
+      this.setStatus('done', { task: 'implementing_frontend', branch: plan.branch });
+      const defaultBranch = await gitlab.getDefaultBranch(plan.project || plan.projectId).catch(() => 'main');
 
       return {
         success: true,
+        branch: plan.branch,
+        targetBranch: defaultBranch,
+        projectId: plan.project || plan.projectId,
+        fallbackMode: !pushedToGit && generatedFiles.length > 0,
+        pushedToGit,
+        generatedFiles: pushedToGit ? [] : generatedFiles,
         componentsCreated: results.length,
-        message: `Frontend implementation complete. ${results.length} components created/modified.`,
+        message: pushedToGit
+          ? `Frontend complete: repo fetched, edited, and pushed to branch \`${plan.branch}\`.`
+          : `Frontend implementation complete. Branch: ${plan.branch}`,
       };
     } catch (error) {
       this.setStatus('error', { task: 'implementing_frontend', error: error.message });
+      logger.error('[FrontendDev] Implement failed:', error);
       return {
         success: false,
+        branch: plan.branch,
+        projectId: plan.project || plan.projectId,
         message: `Frontend implementation failed: ${error.message}`,
       };
     }
@@ -213,7 +265,8 @@ Return the complete updated code.
    * Execute task - required by BaseAgent
    */
   async execute(task) {
-    return this.implement(task);
+    const plan = task.plan || task;
+    return this.implement(plan, task.reporter ? { reporter: task.reporter } : {});
   }
 }
 

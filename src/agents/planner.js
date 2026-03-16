@@ -448,7 +448,27 @@ NOW CREATE YOUR JSON RESPONSE FOR: ${task}`;
     normalized.project = project;
     normalized.originalTask = task;
     normalized.branch = normalized.branch || `nigents/task-${timestamp}`;
-    
+
+    // Infer primary stack from step files so implementation stays in-repo and on-type
+    const frontendExt = /\.(jsx|tsx|css|scss|sass|less|vue|html)$/i;
+    const backendExt = /\.(java|py|go|rb|php|kt|scala)(\.[a-z]+)?$/i;
+    let hasFrontend = false;
+    let hasBackend = false;
+    for (const step of normalized.steps) {
+      const files = step.files || [];
+      for (const f of files) {
+        if (frontendExt.test(f)) hasFrontend = true;
+        if (backendExt.test(f)) hasBackend = true;
+      }
+    }
+    if (hasBackend) {
+      normalized.primaryStack = 'backend';
+    } else if (hasFrontend && !hasBackend) {
+      normalized.primaryStack = 'frontend';
+    } else {
+      normalized.primaryStack = 'fullstack';
+    }
+
     return normalized;
   }
 
@@ -495,6 +515,8 @@ NOW CREATE YOUR JSON RESPONSE FOR: ${task}`;
     
     const timestamp = Date.now();
     
+    const taskLower = task.toLowerCase();
+    const likelyFrontend = /\b(login|page|ui|ux|component|css|style|frontend|react|vue)\b/i.test(taskLower);
     return {
       title: title,
       description: `Implementation plan for: ${task}`,
@@ -511,6 +533,7 @@ NOW CREATE YOUR JSON RESPONSE FOR: ${task}`;
       project: project,
       originalTask: task,
       fallback: true,
+      primaryStack: likelyFrontend ? 'frontend' : 'fullstack',
     };
   }
 

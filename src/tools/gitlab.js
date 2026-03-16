@@ -379,6 +379,21 @@ class GitLabAPI {
   }
 
   /**
+   * Get default branch name for the project (e.g. main, master)
+   */
+  async getDefaultBranch(projectPath) {
+    try {
+      const projectId = await this.getProjectId(projectPath);
+      if (!projectId) return 'main';
+      const project = await this.getProjectById(projectId);
+      return (project && project.defaultBranch) ? project.defaultBranch : 'main';
+    } catch (e) {
+      logger.warn('[GitLab] getDefaultBranch failed:', e.message);
+      return 'main';
+    }
+  }
+
+  /**
    * Get repo clone URL
    */
   async getRepoUrl(projectPath) {

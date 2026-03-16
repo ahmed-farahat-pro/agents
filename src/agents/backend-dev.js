@@ -7,6 +7,7 @@ const BaseAgent = require('./base-agent');
 const logger = require('../utils/logger');
 const openhands = require('../tools/openhands');
 const gitlab = require('../tools/gitlab');
+const { cloneEditAndPush } = require('../tools/repo-clone-push');
 
 class BackendDevAgent extends BaseAgent {
   constructor() {
@@ -15,21 +16,26 @@ class BackendDevAgent extends BaseAgent {
   }
 
   /**
-   * Implement the backend portion of a plan
+   * Implement the backend portion of a plan.
+   * @param {Object} plan - Normalized plan (steps, files, branch, primaryStack)
+   * @param {Object} [context] - Optional { reporter } for per-step progress messages
    */
-  async implement(plan) {
+  async implement(plan, context = {}) {
     this.setStatus('working', { task: 'implementing', plan: plan.title });
     this.currentTask = plan;
+    const reporter = context.reporter;
+    const branch = plan.branch || 'unknown';
 
     try {
       // Check if OpenHands is available
       const openhandsHealth = await openhands.healthCheck();
       if (!openhandsHealth.available) {
         logger.warn('[BackendDev] OpenHands not available, using fallback implementation');
-        return this.fallbackImplement(plan);
+        return this.fallbackImplement(plan, context);
       }
 
       this.emit('progress', { stage: 'setup', message: 'Setting up development environment...' });
+      if (reporter) await reporter.sendProgress(`📂 Cloning repo and creating branch \`${branch}\`...`);
 
       // Step 1: Setup - Clone repo and create branch
       const workDir = await this.setupWorkspace(plan);
@@ -39,6 +45,12 @@ class BackendDevAgent extends BaseAgent {
       // Step 2: Implement each step in the plan
       const implementationResults = [];
       for (const step of plan.steps) {
+        const fileList = Array.isArray(step.files) && step.files.length > 0
+          ? step.files.join(', ')
+          : `step ${step.order}`;
+        if (reporter) {
+          await reporter.sendProgress(`📝 Editing \`${fileList}\` on branch \`${branch}\``);
+        }
         const result = await this.implementStep(step, workDir, plan);
         implementationResults.push(result);
         
@@ -56,10 +68,11 @@ class BackendDevAgent extends BaseAgent {
       const commitResult = await this.commitAndPush(workDir, plan);
 
       this.setStatus('done', { task: 'implementing', branch: plan.branch });
-      
+      const defaultBranch = await gitlab.getDefaultBranch(plan.project || plan.projectId).catch(() => 'main');
       return {
         success: true,
         branch: plan.branch,
+        targetBranch: defaultBranch,
         projectId: plan.project || plan.projectId,
         commit: commitResult,
         stepsCompleted: implementationResults.length,
@@ -69,7 +82,7 @@ class BackendDevAgent extends BaseAgent {
       this.setStatus('error', { task: 'implementing', error: error.message });
       logger.error('[BackendDev] Error implementing:', error);
       // Try fallback implementation
-      return this.fallbackImplement(plan);
+      return this.fallbackImplement(plan, context);
     }
   }
 
@@ -94,11 +107,19 @@ class BackendDevAgent extends BaseAgent {
 
   /**
    * Fallback implementation when OpenHands is not available
-   * Generates code directly via AI without actual file operations
+   * Fetches repo from GitLab, edits in a local directory, pushes to a non-main branch.
+   * @param {Object} plan - Plan with steps, branch, primaryStack
+   * @param {Object} [context] - Optional { reporter }
    */
-  async fallbackImplement(plan) {
+  async fallbackImplement(plan, context = {}) {
     logger.info('[BackendDev] Running fallback implementation');
     this.emit('progress', { stage: 'coding', message: 'Generating code via AI (OpenHands unavailable)...' });
+    const reporter = context.reporter;
+    const branch = plan?.branch || 'unknown';
+    const primaryStack = plan?.primaryStack || 'fullstack';
+    const frontendOnlyNotice = primaryStack === 'frontend'
+      ? '\nCRITICAL: This is a FRONTEND-ONLY task. Generate only React/TSX/CSS (or other frontend) code for the listed files. Do NOT generate Java, Spring Boot, Python, or any backend code.\n'
+      : '';
 
     try {
       // Validate plan has steps
@@ -121,15 +142,19 @@ class BackendDevAgent extends BaseAgent {
       for (const step of steps) {
         if (!step || step.description == null) continue;
         const files = Array.isArray(step.files) ? step.files : [];
+        if (reporter && files.length > 0) {
+          await reporter.sendProgress(`📝 Editing \`${files.join(', ')}\` on branch \`${branch}\``);
+        }
         const prompt = `
-You are an expert backend developer. Generate complete, working code for this step:
+You are an expert developer. Generate complete, working code for this step. Only generate code for the exact files listed.
+${frontendOnlyNotice}
 
 TASK: ${plan.title || 'Task'}
 STEP ${step.order}: ${step.description}
-FILES: ${files.join(', ')}
+ONLY THESE FILES (do not add other files): ${files.join(', ')}
 
 Generate the actual code content that would be written to these files.
-Include proper error handling, logging, and documentation.
+Include proper error handling and documentation where appropriate.
 
 Respond with the file contents in this format:
 FILE: <filepath>
@@ -163,17 +188,31 @@ FILE: <filepath>
       this.setStatus('done', { task: 'implementing', branch: plan.branch });
 
       const generatedFiles = this.parseGeneratedCodeToFiles(generatedCode);
+      let pushedToGit = false;
+      if (generatedFiles.length > 0 && (plan.project || plan.projectId)) {
+        try {
+          await cloneEditAndPush(plan, generatedFiles, reporter);
+          pushedToGit = true;
+        } catch (pushErr) {
+          logger.warn('[BackendDev] Clone/edit/push failed, orchestrator may push via API:', pushErr.message);
+        }
+      }
+      const defaultBranch = await gitlab.getDefaultBranch(plan.project || plan.projectId).catch(() => 'main');
       return {
         success: true,
         branch: plan.branch,
+        targetBranch: defaultBranch,
         projectId: plan.project || plan.projectId,
         fallbackMode: true,
+        pushedToGit,
         stepsCompleted: generatedCode.length,
         generatedCode,
-        generatedFiles,
-        message: generatedFiles.length > 0
-          ? `Fallback implementation complete. Branch: ${plan.branch} (${generatedFiles.length} file(s) ready to push via API)`
-          : `Fallback implementation complete. Branch: ${plan.branch} (code generated but not committed - OpenHands unavailable)`,
+        generatedFiles: pushedToGit ? [] : generatedFiles,
+        message: pushedToGit
+          ? `Fallback complete: repo fetched, edited, and pushed to branch \`${plan.branch}\`.`
+          : generatedFiles.length > 0
+            ? `Fallback implementation complete. Branch: ${plan.branch} (${generatedFiles.length} file(s) ready to push via API)`
+            : `Fallback implementation complete. Branch: ${plan.branch} (no files generated)`,
       };
     } catch (error) {
       logger.error('[BackendDev] Fallback implementation failed:', error);
@@ -181,8 +220,10 @@ FILE: <filepath>
       return {
         success: true,
         branch: plan.branch,
+        targetBranch: 'main',
         projectId: plan.project || plan.projectId,
         fallbackMode: true,
+        pushedToGit: false,
         stepsCompleted: 0,
         message: `Implementation simulated. Branch would be: ${plan.branch}`,
       };
@@ -218,25 +259,35 @@ FILE: <filepath>
    * Implement a single step
    */
   async implementStep(step, workDir, plan) {
+    const filesList = Array.isArray(step.files) && step.files.length > 0 ? step.files.join(', ') : 'none specified';
+    const primaryStack = plan.primaryStack || 'fullstack';
+    const frontendOnlyNotice = primaryStack === 'frontend'
+      ? `
+CRITICAL - FRONTEND-ONLY TASK: This repository is a frontend project (e.g. React). You must ONLY create or modify the files listed below. Do NOT add any backend code (no Java, Spring Boot, Python, Go, etc.). Do NOT create folders like backend/ or src/main/java/. Only edit the listed frontend files (e.g. .tsx, .jsx, .css).
+`
+      : '';
+
     const prompt = `
-You are implementing this step of a plan:
+You are implementing this step of a plan in the repository that was selected for this task.
 
 STEP: ${step.description}
 TYPE: ${step.type}
-FILES: ${step.files.join(', ')}
+FILES TO CREATE OR MODIFY (ONLY THESE): ${filesList}
+
+STRICT: Only create or modify the exact file(s) listed above. Do not create or edit any other files or paths.
+${frontendOnlyNotice}
 
 OVERALL TASK: ${plan.title}
 DESCRIPTION: ${plan.description}
 
 WORKING DIRECTORY: ${workDir}
 
-${step.type === 'create' 
-  ? `Create the new file(s) with complete, working code. Include proper error handling, logging, and documentation.`
+${step.type === 'create'
+  ? `Create the new file(s) with complete, working code. Include proper error handling and documentation where appropriate.`
   : `Modify the existing file(s) to implement this step. Preserve existing functionality while adding the new feature.`
 }
 
-Use the write_file or edit_file tools to make changes.
-Then verify the changes compile/build correctly.
+Use the write_file or edit_file tools to make changes. Then verify the changes compile/build correctly.
 `;
 
     // Use OpenHands to implement
