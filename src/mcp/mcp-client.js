@@ -198,10 +198,13 @@ class MCPClientManager {
       env: { ...process.env, ...env },
     });
 
-    const client = new Client({ transport });
+    const client = new Client({
+      name: 'nigents-mcp-client',
+      version: '1.0.0',
+    });
     
-    // Connect with timeout
-    const connectPromise = client.connect();
+    // Connect with timeout (must pass transport to connect())
+    const connectPromise = client.connect(transport);
     const timeoutPromise = new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Connection timeout (30s)')), 30000)
     );

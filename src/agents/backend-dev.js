@@ -8,6 +8,7 @@ const logger = require('../utils/logger');
 const openhands = require('../tools/openhands');
 const gitlab = require('../tools/gitlab');
 const { cloneEditAndPush } = require('../tools/repo-clone-push');
+const { getCheckCommands, getGatherContextCommands, getBuildCheckCommandFromAI } = require('../tools/compile-check');
 
 class BackendDevAgent extends BaseAgent {
   constructor() {
@@ -62,6 +63,32 @@ class BackendDevAgent extends BaseAgent {
         });
       }
 
+      // Step 2.5: Use AI to detect project type and run build/compile check
+      let compileCheckPassed = true;
+      try {
+        if (reporter) await reporter.sendProgress('🔍 Detecting project type and running compile/syntax check...');
+        const gatherCommands = getGatherContextCommands(workDir);
+        const gatherResult = await openhands.executeCommands(gatherCommands, { workingDir: workDir, timeout: 30 });
+        const contextOutput = gatherResult.output || '';
+        const aiCommand = await getBuildCheckCommandFromAI(contextOutput);
+        let checkCommands;
+        if (aiCommand && aiCommand.command) {
+          const dir = workDir.replace(/'/g, "'\\''");
+          checkCommands = [`cd '${dir}' && ${aiCommand.command}`];
+          logger.info('[BackendDev] Using AI-suggested check:', aiCommand.command);
+        } else {
+          checkCommands = getCheckCommands(workDir);
+        }
+        const checkResult = await openhands.executeCommands(checkCommands, { workingDir: workDir, timeout: 180 });
+        if (!checkResult.success) {
+          compileCheckPassed = false;
+          logger.warn('[BackendDev] Compile/syntax check failed:', checkResult.error || checkResult.output?.slice(0, 300));
+        }
+      } catch (checkErr) {
+        compileCheckPassed = false;
+        logger.warn('[BackendDev] Compile check error:', checkErr.message);
+      }
+
       this.emit('progress', { stage: 'committing', message: 'Committing changes...' });
 
       // Step 3: Commit and push
@@ -76,7 +103,10 @@ class BackendDevAgent extends BaseAgent {
         projectId: plan.project || plan.projectId,
         commit: commitResult,
         stepsCompleted: implementationResults.length,
-        message: `Implementation complete. Branch: ${plan.branch}`,
+        compileCheckPassed,
+        message: compileCheckPassed
+          ? `Implementation complete. Branch: ${plan.branch}`
+          : `Implementation complete (compile check failed - review before merge). Branch: ${plan.branch}`,
       };
     } catch (error) {
       this.setStatus('error', { task: 'implementing', error: error.message });
@@ -189,10 +219,12 @@ FILE: <filepath>
 
       const generatedFiles = this.parseGeneratedCodeToFiles(generatedCode);
       let pushedToGit = false;
+      let compileCheckPassed = true;
       if (generatedFiles.length > 0 && (plan.project || plan.projectId)) {
         try {
-          await cloneEditAndPush(plan, generatedFiles, reporter);
+          const pushResult = await cloneEditAndPush(plan, generatedFiles, reporter);
           pushedToGit = true;
+          if (pushResult.compileCheckPassed === false) compileCheckPassed = false;
         } catch (pushErr) {
           logger.warn('[BackendDev] Clone/edit/push failed, orchestrator may push via API:', pushErr.message);
         }
@@ -205,11 +237,12 @@ FILE: <filepath>
         projectId: plan.project || plan.projectId,
         fallbackMode: true,
         pushedToGit,
+        compileCheckPassed,
         stepsCompleted: generatedCode.length,
         generatedCode,
         generatedFiles: pushedToGit ? [] : generatedFiles,
         message: pushedToGit
-          ? `Fallback complete: repo fetched, edited, and pushed to branch \`${plan.branch}\`.`
+          ? (compileCheckPassed ? `Fallback complete: repo fetched, edited, and pushed to branch \`${plan.branch}\`.` : `Fallback complete (compile check failed - review before merge). Branch: \`${plan.branch}\`.`)
           : generatedFiles.length > 0
             ? `Fallback implementation complete. Branch: ${plan.branch} (${generatedFiles.length} file(s) ready to push via API)`
             : `Fallback implementation complete. Branch: ${plan.branch} (no files generated)`,
@@ -224,6 +257,7 @@ FILE: <filepath>
         projectId: plan.project || plan.projectId,
         fallbackMode: true,
         pushedToGit: false,
+        compileCheckPassed: false,
         stepsCompleted: 0,
         message: `Implementation simulated. Branch would be: ${plan.branch}`,
       };

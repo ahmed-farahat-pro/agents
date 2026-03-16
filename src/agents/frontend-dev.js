@@ -72,10 +72,12 @@ class FrontendDevAgent extends BaseAgent {
       const generatedFiles = this.parseGeneratedCodeToFiles(generatedCode);
 
       let pushedToGit = false;
+      let compileCheckPassed = true;
       if (generatedFiles.length > 0 && (plan.project || plan.projectId)) {
         try {
-          await cloneEditAndPush(plan, generatedFiles, reporter);
+          const pushResult = await cloneEditAndPush(plan, generatedFiles, reporter);
           pushedToGit = true;
+          if (pushResult.compileCheckPassed === false) compileCheckPassed = false;
         } catch (pushErr) {
           logger.warn('[FrontendDev] Clone/edit/push failed:', pushErr.message);
         }
@@ -91,10 +93,11 @@ class FrontendDevAgent extends BaseAgent {
         projectId: plan.project || plan.projectId,
         fallbackMode: !pushedToGit && generatedFiles.length > 0,
         pushedToGit,
+        compileCheckPassed,
         generatedFiles: pushedToGit ? [] : generatedFiles,
         componentsCreated: results.length,
         message: pushedToGit
-          ? `Frontend complete: repo fetched, edited, and pushed to branch \`${plan.branch}\`.`
+          ? (compileCheckPassed ? `Frontend complete: repo fetched, edited, and pushed to branch \`${plan.branch}\`.` : `Frontend complete (compile check failed - review before merge). Branch: \`${plan.branch}\`.`)
           : `Frontend implementation complete. Branch: ${plan.branch}`,
       };
     } catch (error) {
@@ -104,6 +107,7 @@ class FrontendDevAgent extends BaseAgent {
         success: false,
         branch: plan.branch,
         projectId: plan.project || plan.projectId,
+        compileCheckPassed: false,
         message: `Frontend implementation failed: ${error.message}`,
       };
     }

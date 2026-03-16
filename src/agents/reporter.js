@@ -100,6 +100,16 @@ class ReporterAgent extends BaseAgent {
    */
   async sendCompletionReport(task) {
     const branch = task.branch || task.plan?.branch || 'unknown';
+    let pipelineLine = '';
+    if (task.pipelineStatus && task.pipelineUrl) {
+      const status = task.pipelineStatus;
+      const emoji = status === 'success' ? '✅' : status === 'failed' ? '❌' : '🔄';
+      const label = status === 'success' ? 'passed' : status === 'failed' ? 'failed — do not merge until pipeline passes' : 'running';
+      pipelineLine = `• Pipeline: ${emoji} ${label}\n  [View pipeline](${task.pipelineUrl})\n\n`;
+    }
+    const compileCheckLine = task.compileCheckPassed === false
+      ? '• ⚠️ Compile/syntax check failed — review code before merge.\n\n'
+      : '';
     const message = `
 ✅ **Task Completed**
 
@@ -110,7 +120,7 @@ class ReporterAgent extends BaseAgent {
 • Completed: ${this.formatTime(task.completedAt)}
 • Duration: ${this.calculateDuration(task.startedAt, task.completedAt)}
 
-${task.mrUrl ? `🔗 [View Merge Request](${task.mrUrl})` : ''}
+${compileCheckLine}${pipelineLine}${task.mrUrl ? `🔗 [View Merge Request](${task.mrUrl})` : ''}
 
 Sleep well! 🌙
 `;

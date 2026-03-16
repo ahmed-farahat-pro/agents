@@ -11,21 +11,22 @@ Your personal AI development company running on AWS EC2. 7 specialized agents co
 1. [🚀 Quick Setup](#-quick-setup)
 2. [What is Nigents?](#what-is-nigents)
 3. [Steps and workflow (current)](#steps-and-workflow-current)
-4. [What is OpenHands?](#what-is-openhands)
-5. [The 7-Agent Team](#the-7-agent-team)
-6. [App Flow & Workflow](#app-flow--workflow)
-7. [MCP Servers](#mcp-servers)
-8. [Custom MCP Servers We Built](#custom-mcp-servers-we-built)
-9. [Telegram Integration](#telegram-integration)
-10. [Dashboard Features](#dashboard-features)
-11. [Tech Stack](#tech-stack)
-12. [Future work](#future-work)
-13. [💰 Nigents Cloud (Coming Soon)](#-nigents-cloud-coming-soon)
-14. [Quick Start (Local)](#quick-start-local)
-15. [Deploy on AWS EC2](#deploy-on-aws-ec2)
-16. [Configuration](#configuration)
-17. [MySQL Database Configuration](#mysql-database-configuration)
-18. [Troubleshooting](#troubleshooting)
+4. [How the app works: repo access, OpenHands, agents, end-to-end](#how-the-app-works-repo-access-openhands-agents-end-to-end)
+5. [What is OpenHands?](#what-is-openhands)
+6. [The 7-Agent Team](#the-7-agent-team)
+7. [App Flow & Workflow](#app-flow--workflow)
+8. [MCP Servers](#mcp-servers)
+9. [Custom MCP Servers We Built](#custom-mcp-servers-we-built)
+10. [Telegram Integration](#telegram-integration)
+11. [Dashboard Features](#dashboard-features)
+12. [Tech Stack](#tech-stack)
+13. [Future work](#future-work)
+14. [💰 Nigents Cloud (Coming Soon)](#-nigents-cloud-coming-soon)
+15. [Quick Start (Local)](#quick-start-local)
+16. [Deploy on AWS EC2](#deploy-on-aws-ec2)
+17. [Configuration](#configuration)
+18. [MySQL Database Configuration](#mysql-database-configuration)
+19. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -161,39 +162,43 @@ Nigents (Night Agents) is a self-hosted AI agent team that runs 24/7 on your AWS
 | 🛠️ **38 MCP Tools** | 35 standard + 3 custom MCP servers for extended capabilities |
 | 📊 **Live Dashboard** | Real-time code streaming and agent activity at `http://EC2_IP:4000` |
 | 🌙 **24/7 Operation** | Runs on EC2 with PM2 process manager, never sleeps |
-| 🔀 **GitLab Integration** | Automatic MR creation with proper branching; push to task branch then MR to main |
-| 🐳 **Code Sandbox** | OpenHands Docker container for safe code execution (optional; fallback pushes via GitLab API) |
+| 🔀 **GitLab Integration** | Clone selected repo, edit on **task branch** (`plan.branch`), push to GitLab; MR = task branch → default branch |
+| 🐳 **Code Sandbox** | OpenHands for Backend Dev when available; else **repo-clone-push** (clone repo, write files, push to task branch) or GitLab API fallback |
 
 ---
 
 ## Steps and workflow (current)
 
-End-to-end flow from Telegram to Merge Request:
+End-to-end flow from Telegram to Merge Request. **All implementation uses the selected GitLab repo and the task’s branch** (`plan.branch`); the app does not edit a different repo or branch.
 
 ### 1. Plan
 
 - User sends **/plan** &lt;task&gt; (or voice) in Telegram.
 - Bot may ask for **project** (GitLab repo); user picks from list or confirms.
-- **Planner** creates an implementation plan (steps, files, complexity, branch name e.g. `nigents/task-<timestamp>`).
+- **Planner** creates an implementation plan: **steps** with file paths; **branch** `plan.branch` (e.g. `nigents/task-<timestamp>`), the task branch used everywhere; **primaryStack** (`frontend` / `backend` / `fullstack`) from step files, which decides Frontend Dev vs Backend Dev.
 - Bot shows the plan with **“Who does what”** and step details; user sees **Reply with /approve**.
 
 ### 2. Approve and run
 
 - User replies **/approve** (or clicks Approve).
-- **Orchestrator** runs the plan: Backend Dev → QA Tester → Code Reviewer.
+- **Orchestrator** sets **task.branch = plan.branch**, then runs: Implementer (Frontend or Backend Dev) → QA Tester → Code Reviewer.
 
-### 3. Implementation
+### 3. Implementation (fetch repo → edit → push to task branch)
 
-- **Backend Dev**:
-  - If **OpenHands** is available: clones repo (using push URL with token), creates branch, implements steps, commits and **pushes to GitLab**.
-  - If **OpenHands** is not available (fallback): generates code via AI; before creating the MR, the app **pushes that code to the task branch via GitLab Commits API**, so the MR has code to view.
+All work uses the **selected GitLab repo** and **task branch** (`plan.branch`).
+
+- **Who implements**: Frontend-only plans → **Frontend Dev**; else **Backend Dev**.
+- **Backend Dev**: If **OpenHands** is available: clones plan’s repo, creates branch **plan.branch**, implements only plan-listed files (frontend-only = no Java/backend), commits and **pushes to GitLab**. If **OpenHands** is unavailable: generates code per step, then **repo-clone-push** (clone same repo to temp dir, branch **plan.branch**, write files, commit, push); if that fails, fallback to GitLab Commits API.
+- **Frontend Dev**: Generates frontend code per step, then **repo-clone-push** (clone plan’s repo, branch **plan.branch**, write files, commit, push). No OpenHands.
+- **Progress**: Reporter sends e.g. “Cloning repo and creating branch `nigents/task-xxx`…”, “Editing `src/components/Login.css` on branch `nigents/task-xxx`”, “Pushing branch `nigents/task-xxx` to GitLab…”.
 - **QA Tester** runs tests (or simulates when OpenHands is down).
-- **Code Reviewer** reviews and approves or requests changes.
+- **Code Reviewer** reviews (diff = task branch vs repo default branch).
 
 ### 4. Merge request
 
-- Orchestrator checks that the **task branch exists** on GitLab (either pushed by OpenHands or created via API).
-- Creates **Merge Request** (task branch → **main**) via GitLab API and sends the MR link in Telegram.
+- Orchestrator checks that the **task branch** exists on GitLab (pushed by OpenHands, by clone/edit/push, or by GitLab Commits API if clone/push failed).
+- Creates **Merge Request**: **source branch = task branch** (`plan.branch`), **target branch = repo default** (e.g. `main` or `master`, from GitLab API). Sends the MR link in Telegram.
+- Pipeline status (pass/fail/running) is reported for **the repo that was edited** (the project you selected in /plan), not the Nigents repo. To avoid pipeline failures after merge, configure **each GitLab repo you use with Nigents** with: (1) CI that runs on MR branches (e.g. `nigents/task-*`), and (2) protected main with “Pipelines must succeed.” See [OPERATIONS.md](OPERATIONS.md#ensure-pipeline-passes-before-merge-all-repos-nigents-uses).
 
 ### 5. Dashboard (after login)
 
@@ -204,18 +209,116 @@ End-to-end flow from Telegram to Merge Request:
 ### Summary diagram
 
 ```
-Telegram /plan → Select project → Plan (steps, who does what) → /approve
-    → Backend Dev (OpenHands push OR fallback → GitLab API push)
-    → QA → Code Reviewer → Branch exists? → Create MR → MR link to user
+Telegram /plan → Select project → Plan (steps, branch, primaryStack) → /approve
+    → task.branch = plan.branch
+    → Frontend Dev (if frontend-only) else Backend Dev
+        → OpenHands: clone repo → branch plan.branch → edit → push
+        → No OpenHands: clone repo (repo-clone-push) → branch plan.branch → write files → push
+        → (If push failed: GitLab Commits API to create branch with files)
+    → QA → Code Reviewer (diff: task branch vs default branch)
+    → Create MR (sourceBranch = task branch, targetBranch = default)
+    → MR link to user
 
 Dashboard: Login → Data from MySQL only (tasks, agents, activities)
 ```
 
 ---
 
+## How the app works: repo access, OpenHands, agents, end-to-end
+
+This section describes **how each agent sees repo files**, **how OpenHands is used**, **how agents work together**, and the **exact steps from /plan to branch pushed**.
+
+### How repo files are viewed by each agent
+
+| Agent | How it sees the repo / files | Source |
+|-------|------------------------------|--------|
+| **Planner** | **Repo structure** (list of file paths, e.g. up to 100 files), **relevant files** (paths matching task keywords), and **contents** of up to 5 relevant files (e.g. first 3000 chars each). Used to build the plan (steps, which files to create/modify). | **MCP filesystem** (if project is cloned at `/workspace/repos/<project>`): `list_directory`, `read_file`. **Fallback: GitLab API**: `getRepositoryFiles(project, 100)`, `getFileContent(project, filePath)` for relevant files. |
+| **Backend Dev (OpenHands)** | **Full clone** of the plan’s GitLab repo inside the sandbox at `/workspace/<project>`. The AI that runs inside OpenHands receives a **prompt** (step description, list of files to edit, task title, working directory). It uses OpenHands **write_file / edit_file** (or equivalent) to change files in that directory. So it “sees” the repo by working inside the cloned tree. | **OpenHands**: `executeCommands` to clone repo and `checkout -b plan.branch`; then `implementWithPrompt(prompt, workDir)` so the in-sandbox AI edits files under `workDir`. |
+| **Backend Dev (no OpenHands)** | Does **not** read the repo. It gets the **plan** (steps, file paths). It generates code per step via AI, then **repo-clone-push** writes those generated files into a **fresh clone** (temp dir). So the “view” is only the plan’s file list and AI-generated content. | **GitLab**: clone via `getPushUrl(project)`; write generated files to clone; push `plan.branch`. |
+| **Frontend Dev** | Same as Backend Dev without OpenHands: **plan only** (steps, file paths). Generates frontend code per step, then **repo-clone-push** writes into a fresh clone and pushes `plan.branch`. | **repo-clone-push**: clone plan’s repo, branch `plan.branch`, write generated files, commit, push. |
+| **QA Tester** | Can run tests **inside OpenHands** workspace (same clone as Backend Dev) when OpenHands is available. Otherwise runs/simulates tests without direct repo access. | **OpenHands**: `executeCommands` in `workDir` (e.g. `npm test`). Or simulated results. |
+| **Code Reviewer** | **Diff** between **default branch** and **task branch** (`plan.branch`): full patch of what would be merged. If branch not on GitLab yet (e.g. fallback with only generated code), reviews the **generated code** (file path + content) from the implementation result. | **GitLab API**: `getCompareDiff(projectId, defaultBranch, branch)`. **Fallback**: `implementationResult.generatedCode` / `generatedFiles`. |
+| **Orchestrator** | Does not read file contents. Uses **plan** (steps, branch, project, primaryStack) and **implementation result** (branch, success, generatedFiles). Can call `gitlab.getRepositoryFiles(project, 10)` for generic “repo files” context when answering /ask. | **Plan + GitLab API** (for /ask context). |
+
+So: **Planner** sees repo structure and some file contents (MCP or GitLab). **Implementer** either works inside a real clone (OpenHands) or writes generated files into a fresh clone (repo-clone-push). **QA** uses the OpenHands workspace when available. **Code Reviewer** sees the diff (default ↔ task branch) or the generated code.
+
+### How OpenHands works (detailed)
+
+OpenHands is an **HTTP service** (e.g. in Docker on port 3000). The Nigents app calls it from the Backend Dev agent when it’s available.
+
+| What | How |
+|------|-----|
+| **Health check** | `GET /health` → Backend Dev decides “use OpenHands” vs “fallback”. |
+| **Run shell commands** | `POST /api/execute` with `{ commands: string[], working_dir?, timeout? }`. Example: `cd /workspace`, `git clone <pushUrl> <project>`, `cd <project>`, `git checkout -b <plan.branch>`. Repo lives at `/workspace/<project>/`. |
+| **AI-driven edit** | `POST /api/agent/run` with `{ prompt, working_dir }`. The prompt includes: step description, **only these files** (from plan), task title, “use write_file or edit_file”. The model inside OpenHands edits files under `working_dir` and can run commands there. |
+| **Commit and push** | Again `POST /api/execute`: `cd <workDir>`, `git add -A`, `git commit -m "feat: ..."`, `git push origin <plan.branch>`. So the **task branch** is pushed from inside the container. |
+
+**Path summary**: Clone is at `/workspace/<project>` (e.g. `/workspace/group/my-repo`). Every step runs with that as `working_dir`. Only the **plan’s repo** is cloned; only **plan.branch** is created and pushed.
+
+### How agents contribute together (sequence)
+
+```
+1. User: /plan <task>  (and optionally selects GitLab project)
+        ↓
+2. Orchestrator → Planner
+   Planner: analyzeCodebase(project)     → repo file list + relevant files + contents (MCP or GitLab)
+            generatePlanWithMCP(...)    → plan { steps, files per step, branch, primaryStack }
+   Orchestrator → User: plan + "Reply with /approve"
+        ↓
+3. User: /approve
+   Orchestrator: task.branch = plan.branch
+                 Pick implementer: primaryStack === 'frontend' ? Frontend Dev : Backend Dev
+        ↓
+4. Implementer (Backend or Frontend Dev)
+   • Backend + OpenHands:
+     setupWorkspace(plan)     → clone repo, checkout -b plan.branch  (files now at /workspace/<project>)
+     for each step:
+       implementStep(step, workDir, plan)  → openhands.implementWithPrompt(prompt, workDir)
+     commitAndPush(workDir, plan)  → git add, commit, push origin plan.branch
+   • Backend without OpenHands / Frontend:
+     for each step: generate code (AI) → parse to path + content
+     cloneEditAndPush(plan, generatedFiles, reporter)  → clone repo, branch plan.branch, write files, commit, push
+   Reporter: "Editing <file> on branch <plan.branch>", "Pushing branch to GitLab..."
+        ↓
+5. Orchestrator → QA Tester
+   QA: runTests(plan)  (in OpenHands workspace if available, else simulated)
+        ↓
+6. Orchestrator → Code Reviewer
+   Reviewer: getDiff(projectId, defaultBranch, branch) or reviewGeneratedCode(implementationResult)
+             → approve or request changes
+        ↓
+7. If approved:
+   Orchestrator: ensure branch exists on GitLab (already pushed, or push via GitLab API if fallback failed to push)
+                createMergeRequest(sourceBranch = plan.branch, targetBranch = defaultBranch)
+   Reporter: MR link to user
+```
+
+So: **Planner** sees the repo (MCP or GitLab) and produces the **plan**. **Implementer** produces code and either edits in OpenHands or writes into a clone and pushes the **task branch**. **QA** and **Code Reviewer** validate; **Orchestrator** creates the MR from **task branch** to **default branch**.
+
+### End-to-end steps (from /plan to branch pushed)
+
+| Step | Who | What happens | Repo / files |
+|------|-----|--------------|--------------|
+| 1 | User | Sends /plan &lt;task&gt;, may select project | - |
+| 2 | Planner | Analyzes codebase (MCP or GitLab API) | Gets file list + contents of relevant files |
+| 3 | Planner | Builds plan (steps, file paths, branch, primaryStack) | Plan references repo paths only |
+| 4 | User | /approve | - |
+| 5 | Orchestrator | Sets task.branch = plan.branch; picks Frontend or Backend Dev | - |
+| 6a | Backend Dev (OpenHands) | Clone repo in container, checkout -b plan.branch | Repo at /workspace/&lt;project&gt;/ |
+| 6b | Backend Dev (OpenHands) | For each step: implementWithPrompt(prompt, workDir) | AI edits only plan-listed files in clone |
+| 6c | Backend Dev (OpenHands) | git add, commit, push origin plan.branch | Task branch pushed to GitLab |
+| 6d | Backend / Frontend (no OpenHands) | Generate code per step; cloneEditAndPush(plan, files, reporter) | Fresh clone, write generated files, push plan.branch |
+| 7 | QA Tester | Run tests (OpenHands workspace or simulated) | Same clone if OpenHands |
+| 8 | Code Reviewer | getCompareDiff(default, branch) or review generated code | Sees diff or generated content |
+| 9 | Orchestrator | Create MR(sourceBranch=plan.branch, targetBranch=default) | Branch already on GitLab from step 6 |
+
+After step 9, the **task branch** is on GitLab with commits, and the **Merge Request** (task branch → default branch) is created and the link sent to the user.
+
+---
+
 ## What is OpenHands?
 
-**OpenHands** is a **code execution sandbox** that runs in a Docker container. It lets the Backend Dev agent run real shell commands (git clone, npm install, file edits, tests) in an isolated workspace instead of on your host machine. When OpenHands is unavailable, Nigents falls back to generating code via AI and pushing it to GitLab via the API—so the app still delivers MRs, but without real in-sandbox execution.
+**OpenHands** is a **code execution sandbox** that runs in a Docker container. It lets the Backend Dev agent run real shell commands (git clone, npm install, file edits, tests) in an isolated workspace instead of on your host machine. When OpenHands is unavailable, Nigents falls back to: generating code via AI, then **cloning the same GitLab repo** (via shared `repo-clone-push`), writing the generated files into the clone, and **pushing to the task branch**—so you still get the correct repo and branch with real commits. If clone/push fails, the app can push via GitLab Commits API so the MR still has code to view.
 
 ### What OpenHands does
 
@@ -237,7 +340,7 @@ The Nigents app talks to OpenHands over HTTP: it sends commands (and optional fi
 2. **Backend Dev flow** – The Backend Dev agent calls `openhands.executeCommands(commands, { workingDir, timeout })`. For example:
    - Clone repo (using GitLab push URL), create branch, write files (via commands or file API), run tests, then commit and push.
 
-3. **When OpenHands is down** – The agent uses **fallback mode**: it generates code with AI and pushes the branch/commits via the **GitLab Commits API**, so you still get a branch and an MR with code to review; execution just didn’t happen in a sandbox.
+3. **When OpenHands is down** – The agent uses **fallback mode**: it generates code with AI, then the shared **repo-clone-push** flow clones the plan’s GitLab repo to a temp directory, creates the **task branch** (`plan.branch`), writes the generated files, commits and pushes to GitLab. So you get the **correct repo** and **task branch** with real commits. If that fails, the app pushes via the **GitLab Commits API** so the MR still has code to review.
 
 4. **Where it runs** – OpenHands runs in a **Docker container** with its own filesystem (e.g. `/workspace`). You can mount a host volume (e.g. `/home/ubuntu/workspace`) for persistence. The main Nigents app (bot, dashboard) stays on the host; only the sandbox runs in the container.
 
@@ -271,17 +374,18 @@ With OpenHands (safe):
 ### How OpenHands fits in the workflow
 
 ```
-1. Backend Dev receives implementation plan
-         ↓
-2. Calls openhands.executeCommands([...])  (clone, branch, edit, test, commit, push)
-         ↓
-3. OpenHands runs commands in container, returns output/exit code
-         ↓
-4. If success → branch is on GitLab with commits
-         ↓
-5. Orchestrator creates MR (task branch → main)
-         ↓
-6. If OpenHands was unavailable → fallback: same MR, code pushed via GitLab API
+1. Orchestrator picks implementer: Frontend-only → Frontend Dev; else Backend Dev.
+2. Implementer uses plan.branch (task branch) for all git operations.
+
+   With OpenHands (Backend Dev only):
+   → openhands.executeCommands: clone plan’s repo, checkout -b plan.branch, edit, commit, push
+   → Branch plan.branch is on GitLab with commits
+
+   Without OpenHands (Backend or Frontend Dev):
+   → repo-clone-push: clone plan’s repo to temp dir, checkout -b plan.branch, write generated files, commit, push
+   → If that fails → GitLab Commits API to create branch with files
+
+3. Orchestrator creates MR (sourceBranch = task branch, targetBranch = repo default)
 ```
 
 **OpenHands runs on:** Port 3000 (or `OPENHANDS_URL`); Docker container; optional mounted volume for `/workspace`. Separate from the main app—a sandbox crash doesn’t stop the bot or dashboard.
@@ -338,8 +442,8 @@ You (Telegram/Phone)          EC2 Server (AWS)                GitLab
 |-------|------|---------------|---------------------|
 | **Orchestrator** | Team Lead & Router | Configurable (default: custom GLM) | Receives tasks, coordinates all agents, manages workflow |
 | **Planner** | Architecture & Planning | Configurable (default: custom GLM) | Analyzes codebase, creates implementation plans |
-| **Backend Dev** | Backend Developer | Configurable (default: custom GLM) | Writes Spring Boot/Node.js/Python, manages infrastructure |
-| **Frontend Dev** | Frontend Developer | Configurable (default: custom GLM) | React/React Native, RTL support, UI/UX |
+| **Backend Dev** | Backend Developer | Configurable (default: custom GLM) | Implements backend/fullstack plans: OpenHands or **repo-clone-push** to **plan.branch**; only edits plan-listed files |
+| **Frontend Dev** | Frontend Developer | Configurable (default: custom GLM) | Implements frontend-only plans: **repo-clone-push** to **plan.branch** (React/TSX/CSS, RTL, UI/UX) |
 | **QA Tester** | Quality Assurance | Configurable (default: custom GLM) | Writes tests, runs suites, validates functionality |
 | **Code Reviewer** | Code Reviewer | Configurable (default: custom GLM) | Security audit, quality checks, RTL compliance |
 | **Reporter** | Reporter & Communicator | Configurable (default: custom GLM) | Telegram updates, daily reports, cost tracking |
@@ -626,12 +730,13 @@ This section shows exactly how the code flows from user input to dashboard visua
 | File | Role | Key Functions |
 |------|------|---------------|
 | `src/bot.js` | Telegram interface | Message handling, voice transcription, command parsing |
-| `src/agents/orchestrator.js` | Task router | `processCommand()`, `handlePlanTask()`, `handleAskTask()` |
-| `src/agents/planner.js` | Plan creation | `createPlan()`, `generatePlanWithMCP()` |
-| `src/agents/backend-dev.js` | Backend coding | `implementFeature()`, `writeTests()` |
-| `src/agents/frontend-dev.js` | Frontend coding | `implementUI()`, `fixRTL()` |
+| `src/agents/orchestrator.js` | Task router | `processCommand()`, `handlePlanTask()`, `executeImplementationWorkflow()` — sets `task.branch = plan.branch`, picks Frontend/Backend Dev |
+| `src/agents/planner.js` | Plan creation | `createPlan()`, `generatePlanWithMCP()` — sets `plan.branch`, `primaryStack` (frontend/backend/fullstack) |
+| `src/agents/backend-dev.js` | Backend coding | `implement(plan, context)`, OpenHands or `repo-clone-push` to **plan.branch** |
+| `src/agents/frontend-dev.js` | Frontend coding | `implement(plan, context)`, `repo-clone-push` to **plan.branch** |
+| `src/tools/repo-clone-push.js` | Shared repo push | `cloneEditAndPush(plan, generatedFiles, reporter)` — clone GitLab repo, write files, push to **plan.branch** |
 | `src/agents/qa-tester.js` | Testing | `writeTests()`, `runTestSuite()` |
-| `src/agents/code-reviewer.js` | Review | `reviewCode()`, `securityAudit()` |
+| `src/agents/code-reviewer.js` | Review | `review()`, `getDiff()` — task branch vs default branch (from GitLab or implementationResult.targetBranch) |
 | `src/autogen/group-chat.js` | Agent coordination | `executePlan()`, `manageConversation()` |
 | `src/dashboard/server.js` | Dashboard API | Real-time updates via Socket.io |
 | `src/utils/ai-client.js` | AI provider abstraction | `call()` with configurable provider (custom GLM, OpenAI for voice, etc.) |
@@ -666,27 +771,27 @@ io.emit('task', plan)  // Real-time to dashboard
 ```javascript
 // 1. User clicks approve
 bot.on('callback_query', handler)
-  → orchestrator.executePlan(planId)
+  → orchestrator.executeImplementationWorkflow(task)
+  → task.branch = plan.branch
 
-// 2. AutoGen group chat starts
-groupChat.executePlan(plan)
-  → backendDev: "I'll implement the API"
-  → qaTester: "I'll prepare tests"
+// 2. Implementer chosen by primaryStack
+isFrontendOnly ? frontendDev.implement(plan, { reporter })
+               : backendDev.implement(plan, { reporter })
 
-// 3. Backend dev writes code
-backendDev.writeCode(plan.steps[0])
-  → mcpClient.callTool('filesystem', 'writeFile', ...)
-  → Dashboard: POST /api/code-edit
-  → io.emit('codeEdit', editData)
+// 3. Implementer: clone repo → branch plan.branch → edit → push
+//    (OpenHands or repo-clone-push; reporter sends "Editing file on branch x")
+  → git clone plan’s repo, git checkout -b plan.branch
+  → write/edit only plan-listed files, commit, push origin plan.branch
 
-// 4. QA tester reviews
-qaTester.reviewImplementation()
-  → mcpClient.callTool('docker', 'runTests', ...)
-  → Reports: "Tests passed!"
+// 4. QA tester runs tests (OpenHands or simulated)
+qaTester.runTests(plan)
 
-// 5. Code reviewer approves
-codeReviewer.securityReview()
-  → Approves → Merge request created
+// 5. Code reviewer: diff task branch vs default branch
+codeReviewer.review(implementationResult)
+  → getCompareDiff(projectId, targetBranch, branch)
+
+// 6. Orchestrator creates MR (sourceBranch = plan.branch, targetBranch = default)
+gitlab.createMergeRequest({ sourceBranch: task.plan.branch, targetBranch })
 ```
 
 ### API Endpoints (Dashboard)
@@ -742,10 +847,10 @@ codeReviewer.securityReview()
 │  ┌─────────────────────────────────────────────────────────────┐   │
 │  │  Responsibilities:                                          │   │
 │  │  • Parse user intent (Arabic/English)                       │   │
-│  │  • Route to appropriate agent                               │   │
+│  │  • Set task.branch = plan.branch; pick Frontend/Backend Dev │   │
 │  │  • Monitor all agent activities                             │   │
 │  │  • Handle errors and retries                                │   │
-│  │  • Create final MR via GitLab API                           │   │
+│  │  • Create MR (sourceBranch = task branch, target = default) │   │
 │  └─────────────────────────────────────────────────────────────┘   │
 │                              │                                      │
 │           ┌──────────────────┼──────────────────┐                   │

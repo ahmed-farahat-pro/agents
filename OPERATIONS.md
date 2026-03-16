@@ -999,6 +999,20 @@ git push gitlab main
 3. Green checkmark = deployed successfully
 4. Red X = check logs for errors
 
+### Ensure pipeline passes before merge (branch protection)
+
+To prevent merging to `main` when the pipeline would fail (e.g. lint or MCP build failures), protect `main` so merges are only allowed when the pipeline has succeeded. Applicable to any GitLab project:
+
+1. Go to **GitLab** → Your Project → **Settings** → **Repository**.
+2. Expand **Protected branches**.
+3. Find or add protection for **main**:
+   - **Allowed to merge:** Maintainers (or your chosen role).
+   - Enable **Pipelines must succeed** so merges into `main` are blocked until the pipeline for the source branch is green.
+   - Optionally enable **All discussions must be resolved**.
+4. Save.
+
+The test stage runs on merge request branches (including `nigents/task-*` and `feature/*`). Once the MR pipeline passes, the merge button becomes available. This way `main` never receives a commit that would fail the pipeline.
+
 ### Setup CI/CD (First Time)
 
 See [GITLAB_SETUP.md](GITLAB_SETUP.md) for complete setup instructions.

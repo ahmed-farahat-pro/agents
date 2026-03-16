@@ -90,7 +90,8 @@ lint:
     - node --check src/database/connection.js
     - node --check src/database/migrate.js
   rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^main|develop|feature\/.*$/'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH =~ /^main|develop|feature\/.*|nigents\/.*$/'
 
 test-mcp-builds:
   stage: test
@@ -100,7 +101,8 @@ test-mcp-builds:
     - cd mcp-servers/task-splitter && npm ci && npm run build && cd ../..
     - cd mcp-servers/smart-code-search && npm ci && npm run build && cd ../..
   rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^main|feature\/.*$/'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH =~ /^main|feature\/.*|nigents\/.*$/'
 
 # ============================================================
 # STAGE 2: BUILD

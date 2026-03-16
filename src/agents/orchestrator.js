@@ -730,8 +730,21 @@ Provide a helpful answer. If the question is about specific code and you don't h
         task.status = 'completed';
         task.completedAt = new Date();
         task.mrUrl = mrResult.url;
+        if (implementationResult && typeof implementationResult.compileCheckPassed === 'boolean') {
+          task.compileCheckPassed = implementationResult.compileCheckPassed;
+        }
         if (reporter) {
           await reporter.sendProgress(`🔗 Merge request created: ${mrResult.url}`);
+        }
+        // Fetch pipeline status for the branch so completion report can show pass/fail/running
+        try {
+          const pipelineInfo = await gitlab.getPipelineStatus(projectId, sourceBranch);
+          if (pipelineInfo) {
+            task.pipelineStatus = pipelineInfo.status;
+            task.pipelineUrl = pipelineInfo.web_url;
+          }
+        } catch (e) {
+          logger.debug('[Orchestrator] Pipeline status fetch skipped:', e.message);
         }
         if (this.useDatabase && this.dbTaskQueue) {
           try {

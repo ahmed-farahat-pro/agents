@@ -237,12 +237,9 @@ async function sendMessageWithVoice(userId, chatId, text, options = {}) {
 // COMMAND HANDLERS
 // ============================================================================
 
-// /start command
-bot.onText(/\/start/, async (msg) => {
-  if (!isAuthorized(msg.chat.id)) return;
-
-  // Use HTML parse mode instead of Markdown to avoid parsing issues with < > characters
-  const welcomeMessage = `<b>Welcome to Nigents!</b>
+// Shared welcome/help message (used by /start and voice intent HELP)
+function getWelcomeMessage() {
+  return `<b>Welcome to Nigents!</b>
 
 Your AI development team. Send tasks via voice or text, and I'll handle the rest.
 
@@ -307,9 +304,12 @@ Send voice notes or text naturally:
 • /debug — Show debug information
 
 I understand Arabic and English voice messages!`;
+}
 
-  // Send without Markdown to avoid parsing issues
-  await bot.sendMessage(msg.chat.id, welcomeMessage, { parse_mode: 'HTML' });
+// /start command
+bot.onText(/\/start/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+  await bot.sendMessage(msg.chat.id, getWelcomeMessage(), { parse_mode: 'HTML' });
 });
 
 // /settings command - Show user settings
@@ -1330,19 +1330,21 @@ bot.onText(/\/removecustommodel\s+(\S+)/, async (msg, match) => {
   logger.info(`[Bot] User ${msg.from.id} removed custom model: ${modelKey}`);
 });
 
-// /usemodel command - Set default model
-bot.onText(/\/usemodel (.+)/, async (msg, match) => {
+// /usemodel command - Set default model (provider or "provider model")
+bot.onText(/\/usemodel\s+(\S+)(?:\s+(\S+))?/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
 
   const providerName = match[1].trim();
+  const modelName = match[2]?.trim();
   
-  await chatStorage.setUserSettings(msg.from.id, { preferredAI: providerName });
+  const settings = { preferredAI: providerName };
+  if (modelName) settings.preferredModel = modelName;
+  await chatStorage.setUserSettings(msg.from.id, settings);
   
-  await bot.sendMessage(msg.chat.id, 
-    `✅ Default AI provider set to: **${providerName}**\n\n` +
-    `This will be used for your future requests.`,
-    { parse_mode: 'Markdown' }
-  );
+  let reply = `✅ Default AI set to: **${providerName}**`;
+  if (modelName) reply += `\nModel: \`${modelName}\``;
+  reply += `\n\nThis will be used for your future requests.`;
+  await bot.sendMessage(msg.chat.id, reply, { parse_mode: 'Markdown' });
 });
 
 // /plans command - List all pending plans
@@ -2322,6 +2324,25 @@ bot.onText(/\/ask (.+)/, async (msg, match) => {
   }
 });
 
+// /meet command - Chat with a specific agent (planner, backend, frontend, qa, reviewer)
+bot.onText(/\/meet (.+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+
+  const agentName = match[1].trim();
+  await bot.sendChatAction(msg.chat.id, 'typing');
+
+  const result = await orchestrator.processCommand(`/meet ${agentName}`, {
+    userId: msg.from.id,
+    chatId: msg.chat.id,
+  });
+
+  if (result.success) {
+    await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+  } else {
+    await bot.sendMessage(msg.chat.id, result.message, { parse_mode: 'Markdown' });
+  }
+});
+
 // /queue command
 bot.onText(/\/queue/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
@@ -2544,7 +2565,20 @@ bot.on('voice', async (msg) => {
       case 'CLEAR':
         bot.emitText(msg, '/clear');
         break;
+
+      case 'CHAT':
+        if (intentResult.extracted_agent) {
+          const meetResult = await orchestrator.processCommand(`/meet ${intentResult.extracted_agent}`, { userId: msg.from.id, chatId: msg.chat.id });
+          await bot.sendMessage(msg.chat.id, meetResult.message, { parse_mode: 'Markdown' });
+        } else {
+          await bot.sendMessage(msg.chat.id, 'Which agent do you want to chat with? Try: planner, backend, frontend, qa, reviewer');
+        }
+        break;
         
+      case 'HELP':
+        await bot.sendMessage(msg.chat.id, getWelcomeMessage(), { parse_mode: 'HTML' });
+        break;
+
       case 'GREETING':
         // Send voice greeting back
         const greetingVoice = language === 'ar'

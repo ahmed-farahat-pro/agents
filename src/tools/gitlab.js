@@ -555,6 +555,72 @@ class GitLabAPI {
   }
 
   /**
+   * Get latest pipeline status for a branch/ref
+   * @param {string|number} projectPathOrId - Project path (e.g. group/repo) or numeric id
+   * @param {string} ref - Branch name or ref (e.g. nigents/task-123)
+   * @returns {Promise<{ status: string, id: number, web_url: string }|null>}
+   */
+  async getPipelineStatus(projectPathOrId, ref) {
+    try {
+      const projectId = typeof projectPathOrId === 'number' || /^\d+$/.test(String(projectPathOrId))
+        ? projectPathOrId
+        : await this.getProjectId(projectPathOrId);
+      if (!projectId || !ref) return null;
+      const id = typeof projectId === 'string' && !/^\d+$/.test(projectId)
+        ? encodeURIComponent(projectId)
+        : projectId;
+      const response = await this.client.get(`/projects/${id}/pipelines`, {
+        params: { ref, per_page: 1, order_by: 'id', sort: 'desc' },
+      });
+      const pipelines = response.data;
+      if (!Array.isArray(pipelines) || pipelines.length === 0) return null;
+      const p = pipelines[0];
+      return {
+        status: p.status,
+        id: p.id,
+        web_url: p.web_url || `${this.baseUrl.replace(/\/$/, '')}/${p.project_id || id}/-/pipelines/${p.id}`,
+      };
+    } catch (error) {
+      logger.warn('[GitLab] getPipelineStatus failed:', error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Poll pipeline until success or failed (or timeout)
+   * @param {string|number} projectPathOrId - Project path or id
+   * @param {string} ref - Branch name
+   * @param {number} timeoutMs - Max wait (default 15 min)
+   * @param {number} pollIntervalMs - Poll interval (default 45s)
+   * @returns {Promise<{ success: boolean, status: string, web_url?: string }>}
+   */
+  async waitForPipelineSuccess(projectPathOrId, ref, timeoutMs = 15 * 60 * 1000, pollIntervalMs = 45000) {
+    const start = Date.now();
+    const terminal = ['success', 'failed', 'canceled', 'skipped'];
+    while (Date.now() - start < timeoutMs) {
+      const info = await this.getPipelineStatus(projectPathOrId, ref);
+      if (!info) {
+        await new Promise(r => setTimeout(r, pollIntervalMs));
+        continue;
+      }
+      if (terminal.includes(info.status)) {
+        return {
+          success: info.status === 'success',
+          status: info.status,
+          web_url: info.web_url,
+        };
+      }
+      await new Promise(r => setTimeout(r, pollIntervalMs));
+    }
+    const last = await this.getPipelineStatus(projectPathOrId, ref);
+    return {
+      success: false,
+      status: last?.status || 'timeout',
+      web_url: last?.web_url,
+    };
+  }
+
+  /**
    * Clear cache
    */
   clearCache() {

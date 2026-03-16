@@ -8,6 +8,7 @@
     "dev": "nodemon src/bot.js",
     "dashboard": "node src/dashboard/server.js",
     "health-check": "node scripts/health-check.js",
+    "ci-check": "node scripts/ci-check.js",
     "db:init": "node scripts/init-database.js",
     "db:migrate": "node src/database/migrate.js",
     "test": "jest",
