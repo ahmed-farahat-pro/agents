@@ -91,18 +91,17 @@ Respond with test file content in this format:
 }
 `;
 
-    // Use fallback providers so we don't fail when e.g. anthropic key is missing
     this.setStatus('working', { task: 'calling_ai', provider: this.provider });
     let result;
     try {
       result = await this.callAI(prompt, { maxTokens: 4096 });
     } catch (firstError) {
-      logger.warn('[QA] Primary provider failed, trying fallbacks:', firstError.message);
+      logger.warn('[QA] Primary provider failed, trying enabled fallbacks:', firstError.message);
       try {
         result = await aiClient.callWithFallback(prompt, {
           maxTokens: 4096,
           systemMessage: this.systemMessage,
-        }, ['zhipu', 'anthropic', 'moonshot']);
+        });
       } catch (fallbackError) {
         logger.warn('[QA] All providers failed:', fallbackError.message);
         result = { success: false, error: fallbackError.message };

@@ -452,6 +452,44 @@ sudo systemctl restart nginx
 sudo systemctl status nginx
 ```
 
+### How OpenHands works
+
+OpenHands is an **optional** sandbox service the Backend Dev agent uses to clone repos, edit files, and push branches. If it’s not running or not reachable, the bot uses a **fallback** (AI generates code only, no real git/file operations).
+
+**Flow when OpenHands is available:**
+
+1. **Health check** – Before each implementation, the bot calls `GET {OPENHANDS_URL}/health`. If that returns HTTP 200, OpenHands is used; otherwise fallback is used.
+2. **Setup** – Backend Dev sends shell commands to clone the GitLab repo and create the feature branch via `POST /api/execute` (e.g. `git clone ...`, `git checkout -b nigents/task-...`).
+3. **Implement steps** – For each plan step, the bot sends a prompt and working dir to `POST /api/agent/run`. The sandbox is expected to apply edits (e.g. via file write/edit APIs).
+4. **Commit and push** – Backend Dev sends `git add -A`, `git commit`, `git push` via `POST /api/execute`.
+
+**Required env (optional):**
+
+- `OPENHANDS_URL` – Base URL of the sandbox (default `http://localhost:3000`).
+- `OPENHANDS_API_KEY` – Only if the service requires auth.
+
+**How to verify OpenHands:**
+
+```bash
+# From the server (or same host as the bot)
+curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/health
+# Expect: 200
+
+# Or run the full health check
+cd /home/ubuntu/nigents
+npm run health-check
+# OpenHands section should say "OpenHands is available"
+```
+
+**API the service must expose (for full Backend Dev behavior):**
+
+- `GET /health` – Used to decide OpenHands vs fallback.
+- `POST /api/execute` – Body: `{ commands: string[], working_dir?: string, timeout?: number }`.
+- `POST /api/files/write`, `GET /api/files/read`, `POST /api/files/edit`, `GET /api/files/list` – Used if the agent edits files via these endpoints.
+- `POST /api/agent/run` – Body: `{ prompt, working_dir, model? }` – Used for “implement this step” in the sandbox.
+
+If you run **OpenDevin** (`ghcr.io/opendevin/opendevin`), its HTTP API may differ; the bot will treat it as “not available” unless it exposes at least `GET /health` and the endpoints above (or you run a separate adapter that does).
+
 ### Restart OpenHands (Code Sandbox)
 
 ```bash

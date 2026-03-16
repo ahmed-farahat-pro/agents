@@ -1,9 +1,8 @@
 /**
  * 🦉 Nigents - Multi-Provider AI Client
- * Supports Anthropic, Zhipu, Moonshot, and DeepSeek with comprehensive logging
+ * Only custom models (dashboard) + zhipu when provided by a custom; no Anthropic/Moonshot/DeepSeek built-in
  */
 
-const { Anthropic } = require('@anthropic-ai/sdk');
 const axios = require('axios');
 const logger = require('./logger');
 const sharedConfig = require('./shared-config');
@@ -12,21 +11,20 @@ class AIClient {
   constructor() {
     this.requestLog = [];
     this.maxLogSize = 1000;
-    
-    // Initialize providers (will be updated with actual keys from shared config)
+
     this.refreshProviders();
-    
-    // Set default provider from: 1) env var, 2) agents.json global config, 3) 'anthropic'
     const agentsConfig = this.loadAgentsConfig();
-    this.defaultProvider = process.env.DEFAULT_AI_PROVIDER || 
-                           agentsConfig?.global?.defaultProvider || 
-                           'anthropic';
+    const configDefault = process.env.DEFAULT_AI_PROVIDER || agentsConfig?.global?.defaultProvider || 'zhipu';
+    this.defaultProvider = this.providers[configDefault]?.enabled ? configDefault : this.getFirstEnabledProvider();
     this.defaultModel = agentsConfig?.global?.defaultModel || null;
 
     logger.info(`[AIClient] Default provider: ${this.defaultProvider}${this.defaultModel ? ` (${this.defaultModel})` : ''}`);
-
-    // Log API keys status on startup
     this.logAPIKeysStatus();
+  }
+
+  getFirstEnabledProvider() {
+    const key = Object.keys(this.providers).find(k => this.providers[k]?.enabled);
+    return key || 'zhipu';
   }
 
   /**
@@ -42,55 +40,16 @@ class AIClient {
   }
 
   /**
-   * Refresh provider configurations from shared config
+   * Refresh provider configurations – only custom models + zhipu from custom (no Anthropic/Moonshot/DeepSeek)
    */
   refreshProviders() {
-    const apiKeys = sharedConfig.getApiKeys();
     const config = sharedConfig.getFullConfig();
-    
-    this.providers = {
-      anthropic: {
-        name: 'Anthropic Claude',
-        enabled: !!apiKeys.ANTHROPIC_API_KEY,
-        apiKey: apiKeys.ANTHROPIC_API_KEY,
-        client: apiKeys.ANTHROPIC_API_KEY ? new Anthropic({
-          apiKey: apiKeys.ANTHROPIC_API_KEY,
-        }) : null,
-        models: ['claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-haiku-20240307'],
-        defaultModel: 'claude-3-5-sonnet-20241022',
-      },
-      zhipu: {
-        name: 'Zhipu AI (GLM) - Coding',
-        enabled: !!apiKeys.ZHIPU_API_KEY,
-        apiKey: apiKeys.ZHIPU_API_KEY,
-        baseUrl: 'https://api.z.ai/api/coding/paas/v4',
-        models: ['glm-5', 'glm-4.5', 'glm-4', 'glm-4-plus', 'glm-4-flash', 'glm-4v', 'glm-4-long', 'glm-4-air', 'glm-4-airx'],
-        defaultModel: 'glm-5',
-        docsUrl: 'https://docs.z.ai/',
-        isCodingEndpoint: true,
-      },
-      moonshot: {
-        name: 'Moonshot AI',
-        enabled: !!apiKeys.MOONSHOT_API_KEY,
-        apiKey: apiKeys.MOONSHOT_API_KEY,
-        baseUrl: 'https://api.moonshot.ai/v1',
-        models: ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k'],
-        defaultModel: 'moonshot-v1-8k',
-      },
-      deepseek: {
-        name: 'DeepSeek',
-        enabled: !!apiKeys.DEEPSEEK_API_KEY,
-        apiKey: apiKeys.DEEPSEEK_API_KEY,
-        baseUrl: 'https://api.deepseek.com/v1',
-        models: ['deepseek-chat', 'deepseek-coder'],
-        defaultModel: 'deepseek-chat',
-      },
-    };
-    
-    // Load custom models from shared config
+    this.providers = {};
+
     const customModels = config.customModels || {};
     const zhipuCodingUrl = 'https://api.z.ai/api/coding/paas/v4';
-    let zhipuKeyFromCustom = null;
+    let zhipuFromCustom = null;
+
     for (const [key, model] of Object.entries(customModels)) {
       if (model.enabled && model.apiKey) {
         this.providers[key] = {
@@ -103,20 +62,25 @@ class AIClient {
           isCustom: true,
         };
         logger.info(`[AIClient] Loaded custom provider: ${model.name} (${key})`);
-        // If this custom provider is Zhipu coding endpoint, use its key for built-in "zhipu" too
         if (model.baseUrl === zhipuCodingUrl && model.apiKey) {
-          zhipuKeyFromCustom = model.apiKey;
+          zhipuFromCustom = {
+            name: model.name,
+            enabled: true,
+            apiKey: model.apiKey,
+            baseUrl: model.baseUrl,
+            models: [model.model],
+            defaultModel: model.model,
+            isCodingEndpoint: true,
+          };
         }
       }
     }
-    // Allow built-in "zhipu" to use key from a custom Zhipu provider when apiKeys.ZHIPU_API_KEY is not set
-    if (!this.providers.zhipu.enabled && zhipuKeyFromCustom) {
-      this.providers.zhipu.enabled = true;
-      this.providers.zhipu.apiKey = zhipuKeyFromCustom;
-      logger.info('[AIClient] Using Zhipu API key from custom provider for built-in zhipu');
+    if (zhipuFromCustom) {
+      this.providers.zhipu = zhipuFromCustom;
+      logger.info('[AIClient] zhipu alias from custom provider for agents using provider "zhipu"');
     }
 
-    logger.info('[AIClient] Providers refreshed from shared config');
+    logger.info('[AIClient] Providers refreshed (custom + zhipu only)');
   }
 
   /**
@@ -696,54 +660,38 @@ class AIClient {
       model: model || 'default',
     });
 
-    // Check if it's a custom provider
     if (this.providers[provider]?.isCustom) {
       return this.callCustom(provider, prompt, resolvedOptions);
     }
-
-    switch (provider) {
-      case 'anthropic':
-        if (!this.providers.anthropic.enabled) {
-          throw new Error('Anthropic API key not configured');
-        }
-        return this.callAnthropic(prompt, resolvedOptions);
-      case 'zhipu':
-        if (!this.providers.zhipu.enabled) {
-          throw new Error('Zhipu API key not configured');
-        }
-        return this.callZhipu(prompt, resolvedOptions);
-      case 'moonshot':
-        if (!this.providers.moonshot.enabled) {
-          throw new Error('Moonshot API key not configured');
-        }
-        return this.callMoonshot(prompt, resolvedOptions);
-      case 'deepseek':
-        if (!this.providers.deepseek.enabled) {
-          throw new Error('DeepSeek API key not configured');
-        }
-        return this.callDeepseek(prompt, resolvedOptions);
-      default:
-        const availableProviders = Object.keys(this.providers).join(', ');
-        logger.error(`[AIClient] Unknown provider: ${provider}. Available: ${availableProviders}`);
-        throw new Error(`Unknown provider: ${provider}. Available: ${availableProviders}`);
+    if (this.providers[provider]?.enabled && provider === 'zhipu') {
+      return this.callZhipu(prompt, resolvedOptions);
     }
+    if (!this.providers[provider]?.enabled) {
+      const fallback = this.getFirstEnabledProvider();
+      if (fallback && fallback !== provider) {
+        logger.info(`[AIClient] Provider ${provider} not available, using ${fallback}`);
+        return this.call(prompt, { ...options, provider: fallback });
+      }
+    }
+    const available = Object.keys(this.providers).filter(k => this.providers[k].enabled).join(', ');
+    throw new Error(`No AI provider available. Configure a custom model in the dashboard. Available: ${available || 'none'}`);
   }
 
   /**
-   * Try calling with fallback providers
+   * Try calling with fallback providers (only enabled: custom + zhipu)
    */
-  async callWithFallback(prompt, options = {}, fallbackProviders = ['anthropic', 'zhipu', 'moonshot']) {
-    // Refresh providers before trying
+  async callWithFallback(prompt, options = {}, fallbackProviders = null) {
     this.refreshProviders();
-    
+    const toTry = fallbackProviders && fallbackProviders.length > 0
+      ? fallbackProviders
+      : Object.keys(this.providers).filter(k => this.providers[k]?.enabled);
     const errors = [];
 
-    for (const provider of fallbackProviders) {
+    for (const provider of toTry) {
       if (this.providers[provider]?.enabled) {
         try {
           logger.info(`[AIClient] Trying provider: ${provider}`);
-          const result = await this.call(prompt, { ...options, provider });
-          return result;
+          return await this.call(prompt, { ...options, provider });
         } catch (error) {
           logger.warn(`[AIClient] Provider ${provider} failed:`, error.message);
           errors.push({ provider, error: error.message });
@@ -754,17 +702,9 @@ class AIClient {
     throw new Error(`All providers failed: ${JSON.stringify(errors)}`);
   }
 
-  /**
-   * Get the cheapest available provider for intent detection
-   */
   getCheapestProvider() {
-    // Refresh providers
     this.refreshProviders();
-    
-    if (this.providers.zhipu.enabled) return 'zhipu';
-    if (this.providers.deepseek.enabled) return 'deepseek';
-    if (this.providers.moonshot.enabled) return 'moonshot';
-    return 'anthropic';
+    return this.getFirstEnabledProvider();
   }
 }
 
