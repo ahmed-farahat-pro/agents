@@ -5,10 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nigents Dashboard</title>
     <script>
-        // Check authentication
-        if (localStorage.getItem('nigents_auth') !== 'true') {
-            window.location.href = '/login.html';
-        }
+        // Check authentication (session cookie must be valid; server validates on every API call)
+        (async function checkAuth() {
+            if (localStorage.getItem('nigents_auth') !== 'true') {
+                window.location.href = '/login.html';
+                return;
+            }
+            try {
+                const res = await fetch('/api/auth/check', { credentials: 'include' });
+                if (!res.ok) {
+                    localStorage.removeItem('nigents_auth');
+                    localStorage.removeItem('nigents_user');
+                    window.location.href = '/login.html';
+                }
+            } catch (_) {
+                localStorage.removeItem('nigents_auth');
+                localStorage.removeItem('nigents_user');
+                window.location.href = '/login.html';
+            }
+        })();
     </script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -1998,6 +2013,10 @@
                         <div class="nav-indicator"></div>
                         <span>Settings</span>
                     </div>
+                    <div class="nav-item" data-view="admin">
+                        <div class="nav-indicator"></div>
+                        <span>Admin</span>
+                    </div>
                     <div class="nav-item" data-view="subscribers">
                         <div class="nav-indicator"></div>
                         <span>Subscribers</span>
@@ -2318,6 +2337,57 @@
                             <div class="chart-container" style="height: 200px;">
                                 <canvas id="providerCostChart"></canvas>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin View: list users, view/edit per-user config -->
+                <div class="view" id="view-admin">
+                    <div class="config-grid">
+                        <div class="config-card" style="grid-column: 1 / -1;">
+                            <h3 class="config-title">Admin – User config</h3>
+                            <p class="text-sm text-muted" style="margin-bottom: 15px;">Select a user to view and edit their API keys, GitLab, and custom models. Users are Telegram users who have used the bot.</p>
+                            <div class="form-group">
+                                <label class="form-label">Select user</label>
+                                <select class="form-input" id="admin-user-select" onchange="adminOnUserSelect()">
+                                    <option value="">-- Select user --</option>
+                                </select>
+                            </div>
+                            <div id="admin-user-info" style="display: none; margin-top: 12px; padding: 12px; background: var(--bg-hover); border-radius: 8px; font-size: 14px;">
+                                <strong>User ID:</strong> <span id="admin-user-id"></span><br>
+                                <span id="admin-user-name"></span>
+                            </div>
+                        </div>
+                        <div class="config-card" id="admin-config-section" style="display: none;">
+                            <h3 class="config-title">API Keys (for this user)</h3>
+                            <div class="form-group">
+                                <label class="form-label">OpenAI API Key</label>
+                                <input type="password" class="form-input" id="admin-api-key-openai" placeholder="sk-...">
+                            </div>
+                            <button class="btn btn-primary" onclick="saveAdminApiKeys()">Save API Keys</button>
+                            <div id="admin-apikeys-status" style="margin-top: 10px; padding: 8px; border-radius: 6px; display: none; font-size: 13px;"></div>
+                        </div>
+                        <div class="config-card" id="admin-gitlab-section" style="display: none;">
+                            <h3 class="config-title">GitLab (for this user)</h3>
+                            <div class="form-group">
+                                <label class="form-label">GitLab URL</label>
+                                <input type="text" class="form-input" id="admin-gitlab-url" placeholder="https://gitlab.com">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Token</label>
+                                <input type="password" class="form-input" id="admin-gitlab-token" placeholder="glpat-...">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Namespace</label>
+                                <input type="text" class="form-input" id="admin-gitlab-namespace" placeholder="username or group">
+                            </div>
+                            <button class="btn btn-primary" onclick="saveAdminGitLab()">Save GitLab</button>
+                            <div id="admin-gitlab-status" style="margin-top: 10px; padding: 8px; border-radius: 6px; display: none; font-size: 13px;"></div>
+                        </div>
+                        <div class="config-card" id="admin-models-section" style="display: none;">
+                            <h3 class="config-title">Custom models (for this user)</h3>
+                            <p class="text-sm text-muted" style="margin-bottom: 10px;">Keys and config are stored per user. User adds models via Telegram /addmodel or /addglm.</p>
+                            <pre id="admin-custom-models-list" style="background: var(--bg-hover); padding: 12px; border-radius: 8px; font-size: 12px; max-height: 200px; overflow: auto;"></pre>
                         </div>
                     </div>
                 </div>
@@ -2790,6 +2860,7 @@
                 'ai-providers': 'AI Providers',
                 mcp: 'MCP Tools',
                 settings: 'Settings',
+                admin: 'Admin',
                 logs: 'Logs',
                 subscribers: 'Subscribers & Downloads'
             };
@@ -2816,6 +2887,7 @@
             }
             if (view === 'agent-detail' && selectedAgent) renderAgentDetail();
             if (view === 'subscribers') loadSubscribersData();
+            if (view === 'admin') loadAdminUsers();
         }
 
         // Agent Monitor Functions
@@ -3953,8 +4025,11 @@
             document.getElementById('temp-value').textContent = e.target.value;
         });
 
-        // Logout function
-        function logout() {
+        // Logout function (clear server session and redirect)
+        async function logout() {
+            try {
+                await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+            } catch (_) {}
             localStorage.removeItem('nigents_auth');
             localStorage.removeItem('nigents_user');
             window.location.href = '/login.html';
@@ -3990,6 +4065,129 @@
             }
         }
         
+        let adminSelectedUserId = null;
+
+        async function loadAdminUsers() {
+            const sel = document.getElementById('admin-user-select');
+            if (!sel) return;
+            try {
+                const res = await fetch('/api/admin/users');
+                const data = await res.json();
+                sel.innerHTML = '<option value="">-- Select user --</option>';
+                if (data.success && data.users && data.users.length) {
+                    data.users.forEach(u => {
+                        const opt = document.createElement('option');
+                        opt.value = u.id;
+                        opt.textContent = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.username || u.id;
+                        if (u.hasConfig) opt.textContent += ' ✓';
+                        sel.appendChild(opt);
+                    });
+                }
+            } catch (e) {
+                console.error('Failed to load admin users', e);
+            }
+        }
+
+        function adminOnUserSelect() {
+            const sel = document.getElementById('admin-user-select');
+            adminSelectedUserId = sel && sel.value ? sel.value : null;
+            const section = document.getElementById('admin-config-section');
+            const gitlabSection = document.getElementById('admin-gitlab-section');
+            const modelsSection = document.getElementById('admin-models-section');
+            const info = document.getElementById('admin-user-info');
+            if (!adminSelectedUserId) {
+                if (section) section.style.display = 'none';
+                if (gitlabSection) gitlabSection.style.display = 'none';
+                if (modelsSection) modelsSection.style.display = 'none';
+                if (info) info.style.display = 'none';
+                return;
+            }
+            if (info) {
+                info.style.display = 'block';
+                document.getElementById('admin-user-id').textContent = adminSelectedUserId;
+                const opt = sel.options[sel.selectedIndex];
+                document.getElementById('admin-user-name').textContent = opt ? opt.textContent : '';
+            }
+            if (section) section.style.display = 'block';
+            if (gitlabSection) gitlabSection.style.display = 'block';
+            if (modelsSection) modelsSection.style.display = 'block';
+            loadAdminConfig(adminSelectedUserId);
+        }
+
+        async function loadAdminConfig(userId) {
+            if (!userId) return;
+            try {
+                const res = await fetch('/api/config?userId=' + encodeURIComponent(userId));
+                const data = await res.json();
+                if (!data.success || !data.config) return;
+                const c = data.config;
+                const openaiEl = document.getElementById('admin-api-key-openai');
+                if (openaiEl) openaiEl.value = c.apiKeys && c.apiKeys.OPENAI_API_KEY === 'SET' ? '(set)' : '';
+                const urlEl = document.getElementById('admin-gitlab-url');
+                if (urlEl) urlEl.value = c.gitlab && c.gitlab.url ? c.gitlab.url : 'https://gitlab.com';
+                const tokenEl = document.getElementById('admin-gitlab-token');
+                if (tokenEl) tokenEl.value = c.gitlab && c.gitlab.token === 'SET' ? '(set)' : '';
+                const nsEl = document.getElementById('admin-gitlab-namespace');
+                if (nsEl) nsEl.value = c.gitlab && c.gitlab.namespace ? c.gitlab.namespace : '';
+                const listEl = document.getElementById('admin-custom-models-list');
+                if (listEl) listEl.textContent = c.customModels && Object.keys(c.customModels).length
+                    ? JSON.stringify(c.customModels, null, 2)
+                    : 'No custom models for this user.';
+            } catch (e) {
+                console.error('Failed to load admin config', e);
+            }
+        }
+
+        async function saveAdminApiKeys() {
+            if (!adminSelectedUserId) return;
+            const statusDiv = document.getElementById('admin-apikeys-status');
+            statusDiv.style.display = 'none';
+            const openai = document.getElementById('admin-api-key-openai').value.trim();
+            if (openai === '(set)') { statusDiv.textContent = 'Leave empty to keep current key.'; statusDiv.style.display = 'block'; return; }
+            const apiKeys = {};
+            if (openai) apiKeys.OPENAI_API_KEY = openai;
+            try {
+                const res = await fetch('/api/config/apikeys', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ apiKeys, userId: adminSelectedUserId }),
+                });
+                const data = await res.json();
+                statusDiv.textContent = data.success ? 'Saved.' : (data.error || 'Failed');
+                statusDiv.style.display = 'block';
+                if (data.success) loadAdminConfig(adminSelectedUserId);
+            } catch (e) {
+                statusDiv.textContent = 'Error: ' + e.message;
+                statusDiv.style.display = 'block';
+            }
+        }
+
+        async function saveAdminGitLab() {
+            if (!adminSelectedUserId) return;
+            const statusDiv = document.getElementById('admin-gitlab-status');
+            statusDiv.style.display = 'none';
+            const url = document.getElementById('admin-gitlab-url').value.trim() || 'https://gitlab.com';
+            const token = document.getElementById('admin-gitlab-token').value.trim();
+            const namespace = document.getElementById('admin-gitlab-namespace').value.trim();
+            if (token === '(set)') { statusDiv.textContent = 'Leave as (set) to keep current token.'; statusDiv.style.display = 'block'; return; }
+            const gitlab = { url, namespace };
+            if (token) gitlab.token = token;
+            try {
+                const res = await fetch('/api/config/gitlab', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gitlab, userId: adminSelectedUserId }),
+                });
+                const data = await res.json();
+                statusDiv.textContent = data.success ? 'Saved.' : (data.error || 'Failed');
+                statusDiv.style.display = 'block';
+                if (data.success) loadAdminConfig(adminSelectedUserId);
+            } catch (e) {
+                statusDiv.textContent = 'Error: ' + e.message;
+                statusDiv.style.display = 'block';
+            }
+        }
+
         async function saveApiKeys() {
             const statusDiv = document.getElementById('api-keys-status');
             statusDiv.style.display = 'none';

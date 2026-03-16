@@ -41,6 +41,19 @@ CREATE TABLE IF NOT EXISTS user_settings (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
+-- User Config Table (per-user API keys, GitLab, custom models)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS user_config (
+  user_id VARCHAR(50) PRIMARY KEY,
+  api_keys JSON,
+  gitlab JSON,
+  custom_models JSON,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================
 -- Chat Messages Table
 -- =====================================================
 CREATE TABLE IF NOT EXISTS chat_messages (

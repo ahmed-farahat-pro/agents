@@ -523,31 +523,46 @@
     </div>
     
     <script>
-        // Login Form Logic
-        const VALID_USERNAME = 'admin';
-        const VALID_PASSWORD = 'Medahny@12345';
-        
-        document.getElementById('login-form').addEventListener('submit', function(e) {
+        // Login: validate on server (admin / admin by default; set DASHBOARD_ADMIN_USERNAME, DASHBOARD_ADMIN_PASSWORD in env to override)
+        document.getElementById('login-form').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
-            const username = document.getElementById('username').value;
+            const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
             const errorMessage = document.getElementById('error-message');
-            
-            if (username === VALID_USERNAME && password === VALID_PASSWORD) {
-                localStorage.setItem('nigents_auth', 'true');
-                localStorage.setItem('nigents_user', username);
-                window.location.href = '/dashboard.html';
-            } else {
-                errorMessage.textContent = 'Invalid username or password';
-                errorMessage.classList.add('show');
-                setTimeout(() => errorMessage.classList.remove('show'), 3000);
+            const btn = this.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password }),
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    localStorage.setItem('nigents_auth', 'true');
+                    localStorage.setItem('nigents_user', data.user || username);
+                    window.location.href = '/dashboard.html';
+                    return;
+                }
+                errorMessage.textContent = data.error || 'Invalid username or password';
+            } catch (err) {
+                errorMessage.textContent = 'Login failed: ' + (err.message || 'network error');
             }
+            errorMessage.classList.add('show');
+            setTimeout(() => errorMessage.classList.remove('show'), 3000);
+            btn.disabled = false;
         });
-        
-        if (localStorage.getItem('nigents_auth') === 'true') {
-            window.location.href = '/dashboard.html';
-        }
+        // If already logged in (and session still valid), redirect to dashboard
+        (async function() {
+            if (localStorage.getItem('nigents_auth') !== 'true') return;
+            try {
+                const res = await fetch('/api/auth/check', { credentials: 'include' });
+                if (res.ok) {
+                    window.location.href = '/dashboard.html';
+                }
+            } catch (_) {}
+        })();
         
         // Code Streaming Animation - Smooth switching between agents
         const codeSnippets = [

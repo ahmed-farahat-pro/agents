@@ -25,6 +25,17 @@ const axios = require('axios');
 const intentRouter = require('./utils/intent-router');
 const aiClient = require('./utils/ai-client');
 const sharedConfig = require('./utils/shared-config');
+let userConfigModule = null;
+function getUserConfigModule() {
+  if (!userConfigModule) {
+    try {
+      userConfigModule = require('./database/user-config');
+    } catch (e) {
+      userConfigModule = null;
+    }
+  }
+  return userConfigModule;
+}
 
 // Reload shared config to get latest API keys from file
 sharedConfig.applyToEnv();
@@ -438,8 +449,9 @@ Send your API key and optionally the model:
     const name = `GLM ${modelName.toUpperCase()}`;
     const providerKey = `zhipu_${modelName.replace(/[^a-z0-9]/g, '_')}`;
 
-    // Store in shared config
-    const customModels = sharedConfig.getFullConfig().customModels || {};
+    const uc = getUserConfigModule();
+    const full = uc ? await uc.getConfigForUser(msg.from.id) : sharedConfig.getFullConfig();
+    const customModels = { ...(full.customModels || {}) };
     customModels[providerKey] = {
       name: name,
       apiKey: apiKey,
@@ -449,13 +461,8 @@ Send your API key and optionally the model:
       addedBy: msg.from.id,
       addedAt: new Date().toISOString(),
     };
-
-    sharedConfig.saveConfig({
-      ...sharedConfig.getFullConfig(),
-      customModels,
-    });
-
-    // Refresh AI client
+    if (uc) await uc.setUserConfig(msg.from.id, { customModels });
+    else sharedConfig.saveConfig({ ...full, customModels });
     aiClient.refreshProviders();
 
     await bot.sendMessage(msg.chat.id, 
@@ -519,8 +526,9 @@ Get your API key from: https://platform.moonshot.cn/`;
     const name = `Moonshot ${modelName.replace('moonshot-', '').toUpperCase()}`;
     const providerKey = `moonshot_${modelName.replace(/[^a-z0-9]/g, '_')}`;
 
-    // Store in shared config
-    const customModels = sharedConfig.getFullConfig().customModels || {};
+    const uc = getUserConfigModule();
+    const full = uc ? await uc.getConfigForUser(msg.from.id) : sharedConfig.getFullConfig();
+    const customModels = { ...(full.customModels || {}) };
     customModels[providerKey] = {
       name: name,
       apiKey: apiKey,
@@ -530,13 +538,8 @@ Get your API key from: https://platform.moonshot.cn/`;
       addedBy: msg.from.id,
       addedAt: new Date().toISOString(),
     };
-
-    sharedConfig.saveConfig({
-      ...sharedConfig.getFullConfig(),
-      customModels,
-    });
-
-    // Refresh AI client
+    if (uc) await uc.setUserConfig(msg.from.id, { customModels });
+    else sharedConfig.saveConfig({ ...full, customModels });
     aiClient.refreshProviders();
 
     await bot.sendMessage(msg.chat.id, 
@@ -1079,8 +1082,9 @@ bot.onText(/addopenai (.+)\|(.+)\|(.+)\|(.+)/, async (msg, match) => {
       normalizedUrl = baseUrl.replace(/\/$/, '') + '/v1';
     }
 
-    // Store custom model in shared config
-    const customModels = sharedConfig.getFullConfig().customModels || {};
+    const uc = getUserConfigModule();
+    const full = uc ? await uc.getConfigForUser(msg.from.id) : sharedConfig.getFullConfig();
+    const customModels = { ...(full.customModels || {}) };
     customModels[providerKey] = {
       name: name,
       apiKey: apiKey,
@@ -1090,13 +1094,8 @@ bot.onText(/addopenai (.+)\|(.+)\|(.+)\|(.+)/, async (msg, match) => {
       addedBy: msg.from.id,
       addedAt: new Date().toISOString(),
     };
-
-    sharedConfig.saveConfig({
-      ...sharedConfig.getFullConfig(),
-      customModels,
-    });
-
-    // Refresh AI client
+    if (uc) await uc.setUserConfig(msg.from.id, { customModels });
+    else sharedConfig.saveConfig({ ...full, customModels });
     aiClient.refreshProviders();
 
     await bot.sendMessage(msg.chat.id, 
@@ -1125,8 +1124,9 @@ bot.onText(/addmodel (.+)\|(.+)\|(.+)\|(.+)/, async (msg, match) => {
   const providerKey = `custom_${name.toLowerCase().replace(/\s+/g, '_')}`;
 
   try {
-    // Store custom model in shared config
-    const customModels = sharedConfig.getFullConfig().customModels || {};
+    const uc = getUserConfigModule();
+    const full = uc ? await uc.getConfigForUser(msg.from.id) : sharedConfig.getFullConfig();
+    const customModels = { ...(full.customModels || {}) };
     customModels[providerKey] = {
       name: name,
       apiKey: apiKey,
@@ -1136,11 +1136,8 @@ bot.onText(/addmodel (.+)\|(.+)\|(.+)\|(.+)/, async (msg, match) => {
       addedBy: msg.from.id,
       addedAt: new Date().toISOString(),
     };
-
-    sharedConfig.saveConfig({
-      ...sharedConfig.getFullConfig(),
-      customModels,
-    });
+    if (uc) await uc.setUserConfig(msg.from.id, { customModels });
+    else sharedConfig.saveConfig({ ...full, customModels });
 
     await bot.sendMessage(msg.chat.id, 
       `✅ **Custom model added!**\n\n` +
@@ -1161,9 +1158,10 @@ bot.onText(/addmodel (.+)\|(.+)\|(.+)\|(.+)/, async (msg, match) => {
 bot.onText(/\/mymodels/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
 
-  const config = sharedConfig.getFullConfig();
+  const uc = getUserConfigModule();
+  const config = uc ? await uc.getConfigForUser(msg.from.id) : sharedConfig.getFullConfig();
   const customModels = config.customModels || {};
-  const providers = aiClient.getAvailableProviders();
+  const providers = aiClient.getAvailableProviders(config);
 
   let message = '**Your AI Models**\n\n';
 
@@ -1199,7 +1197,8 @@ bot.onText(/\/usecustommodel\s+(\S+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
 
   const modelKeyInput = match[1].trim();
-  const config = sharedConfig.getFullConfig();
+  const uc = getUserConfigModule();
+  const config = uc ? await uc.getConfigForUser(msg.from.id) : sharedConfig.getFullConfig();
   const customModels = config.customModels || {};
   
   // Try exact match first, then case-insensitive
@@ -1258,9 +1257,9 @@ bot.onText(/\/editcustommodel\s+(\S+)\s+(.+)/, async (msg, match) => {
 
   const modelKey = match[1].trim();
   const newApiKey = match[2].trim();
-  
-  const config = sharedConfig.getFullConfig();
-  const customModels = config.customModels || {};
+  const uc = getUserConfigModule();
+  const config = uc ? await uc.getConfigForUser(msg.from.id) : sharedConfig.getFullConfig();
+  const customModels = { ...(config.customModels || {}) };
   
   if (!customModels[modelKey]) {
     await bot.sendMessage(msg.chat.id, 
@@ -1271,16 +1270,10 @@ bot.onText(/\/editcustommodel\s+(\S+)\s+(.+)/, async (msg, match) => {
     return;
   }
   
-  // Update the API key
   customModels[modelKey].apiKey = newApiKey;
   customModels[modelKey].updatedAt = new Date().toISOString();
-  
-  sharedConfig.saveConfig({
-    ...config,
-    customModels,
-  });
-  
-  // Refresh AI client
+  if (uc) await uc.setUserConfig(msg.from.id, { customModels });
+  else sharedConfig.saveConfig({ ...config, customModels });
   aiClient.refreshProviders();
   
   const model = customModels[modelKey];
@@ -1300,8 +1293,9 @@ bot.onText(/\/removecustommodel\s+(\S+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
 
   const modelKey = match[1].trim();
-  const config = sharedConfig.getFullConfig();
-  const customModels = config.customModels || {};
+  const uc = getUserConfigModule();
+  const config = uc ? await uc.getConfigForUser(msg.from.id) : sharedConfig.getFullConfig();
+  const customModels = { ...(config.customModels || {}) };
   
   if (!customModels[modelKey]) {
     await bot.sendMessage(msg.chat.id, 
@@ -1313,13 +1307,8 @@ bot.onText(/\/removecustommodel\s+(\S+)/, async (msg, match) => {
   
   const modelName = customModels[modelKey].name;
   delete customModels[modelKey];
-  
-  sharedConfig.saveConfig({
-    ...config,
-    customModels,
-  });
-  
-  // Refresh AI client
+  if (uc) await uc.setUserConfig(msg.from.id, { customModels });
+  else sharedConfig.saveConfig({ ...config, customModels });
   aiClient.refreshProviders();
   
   await bot.sendMessage(msg.chat.id, 
@@ -1897,10 +1886,10 @@ bot.onText(/\/setagent\s+(\S+)\s+(\S+)\s+(\S+)/, async (msg, match) => {
   let isCustomModel = false;
   let customModelInfo = null;
 
-  // Check if using custom model syntax: /setagent <agent> custom <custom_key>
   if (provider === 'custom') {
     const customKey = modelOrKey.toLowerCase();
-    const config = sharedConfig.getFullConfig();
+    const uc = getUserConfigModule();
+    const config = uc ? await uc.getConfigForUser(msg.from.id) : sharedConfig.getFullConfig();
     const customModels = config.customModels || {};
     
     // Find custom model (case-insensitive)
@@ -1998,10 +1987,10 @@ bot.onText(/\/setallagents\s+(\S+)\s+(\S+)/, async (msg, match) => {
   let isCustomModel = false;
   let customModelInfo = null;
 
-  // Check if using custom model syntax: /setallagents custom <custom_key>
   if (provider === 'custom') {
     const customKey = modelOrKey.toLowerCase();
-    const config = sharedConfig.getFullConfig();
+    const uc = getUserConfigModule();
+    const config = uc ? await uc.getConfigForUser(msg.from.id) : sharedConfig.getFullConfig();
     const customModels = config.customModels || {};
     
     // Find custom model (case-insensitive)

@@ -182,6 +182,24 @@ class OrchestratorAgent extends BaseAgent {
     this.setStatus('working', { taskId, command });
 
     try {
+      // Resolve per-user config and GitLab client
+      if (context.userId && !context.userConfig) {
+        try {
+          const userConfigModule = require('../database/user-config');
+          context.userConfig = await userConfigModule.getConfigForUser(context.userId);
+        } catch (e) {
+          logger.warn('[Orchestrator] getConfigForUser failed, using shared config:', e.message);
+          context.userConfig = require('../utils/shared-config').getFullConfig();
+        }
+      }
+      if (!context.userConfig) {
+        context.userConfig = require('../utils/shared-config').getFullConfig();
+      }
+      const gitlabModule = require('../tools/gitlab');
+      context.gitlab = gitlabModule.createGitLabClient
+        ? gitlabModule.createGitLabClient(context.userConfig)
+        : gitlabModule;
+
       // Parse the command
       const parsed = await this.parseCommand(command, context);
       
@@ -433,9 +451,7 @@ Respond with JSON only:
    * Handle ask task - answer questions about code
    */
   async handleAskTask(parsed, context, taskId) {
-    // Get relevant context from GitLab if needed
-    const gitlab = require('../tools/gitlab');
-    
+    const gitlab = context.gitlab || require('../tools/gitlab');
     let codeContext = '';
     try {
       if (context.project) {
@@ -463,8 +479,9 @@ Provide a helpful answer. If the question is about specific code and you don't h
     const result = await this.callAI(prompt, {
       provider: provider,
       model: model,
+      userConfig: context.userConfig,
     });
-    
+
     return {
       success: result.success,
       message: result.content,
@@ -600,8 +617,7 @@ Provide a helpful answer. If the question is about specific code and you don't h
       };
     }
 
-    // Start implementation workflow
-    this.executeImplementationWorkflow(approvedTasks[0]);
+    this.executeImplementationWorkflow(approvedTasks[0], context);
 
     return {
       success: true,
@@ -611,8 +627,26 @@ Provide a helpful answer. If the question is about specific code and you don't h
 
   /**
    * Execute the full implementation workflow
+   * @param {Object} context - Optional; if not provided, resolved from task.userId
    */
-  async executeImplementationWorkflow(task) {
+  async executeImplementationWorkflow(task, context = null) {
+    if (!context && task.userId) {
+      try {
+        const userConfigModule = require('../database/user-config');
+        const userConfig = await userConfigModule.getConfigForUser(task.userId);
+        const gitlabModule = require('../tools/gitlab');
+        context = {
+          userId: task.userId,
+          userConfig,
+          gitlab: gitlabModule.createGitLabClient ? gitlabModule.createGitLabClient(userConfig) : gitlabModule,
+        };
+      } catch (e) {
+        context = { userConfig: require('../utils/shared-config').getFullConfig(), gitlab: require('../tools/gitlab') };
+      }
+    }
+    if (!context) {
+      context = { userConfig: require('../utils/shared-config').getFullConfig(), gitlab: require('../tools/gitlab') };
+    }
     const reporter = this.agents.get('reporter');
     const backendDev = this.agents.get('backend-dev');
     const qaTester = this.agents.get('qa-tester');
@@ -643,11 +677,12 @@ Provide a helpful answer. If the question is about specific code and you don't h
         : '⚙️ Backend Dev implementing (repo fetch, edit, push to branch)...');
     }
 
+    const implContext = { reporter, ...context };
     let implementationResult;
     if (isFrontendOnly && frontendDev) {
-      implementationResult = await frontendDev.implement(task.plan, { reporter });
+      implementationResult = await frontendDev.implement(task.plan, implContext);
     } else if (backendDev) {
-      implementationResult = await backendDev.implement(task.plan, { reporter });
+      implementationResult = await backendDev.implement(task.plan, implContext);
     }
     if (implementationResult?.branch) {
       task.branch = implementationResult.branch;
@@ -670,7 +705,7 @@ Provide a helpful answer. If the question is about specific code and you don't h
 
     let reviewResult;
     if (codeReviewer) {
-      reviewResult = await codeReviewer.review(implementationResult);
+      reviewResult = await codeReviewer.review(implementationResult, implContext);
     }
 
     // Step 4: Create MR if approved (only after branch exists on GitLab)
@@ -679,7 +714,7 @@ Provide a helpful answer. If the question is about specific code and you don't h
         await reporter.sendProgress('✅ Creating Merge Request...');
       }
 
-      const gitlab = require('../tools/gitlab');
+      const gitlab = context.gitlab || require('../tools/gitlab');
       const projectId = task.plan.project || task.plan.projectId || task.plan.projectName;
       const sourceBranch = task.plan.branch || task.branch;
       const targetBranch = implementationResult?.targetBranch || await gitlab.getDefaultBranch(projectId).catch(() => 'main');
@@ -773,7 +808,7 @@ Provide a helpful answer. If the question is about specific code and you don't h
     } else {
       task.status = 'needs_changes';
       task.reviewResult = reviewResult;
-      const gitlabTool = require('../tools/gitlab');
+      const gitlabTool = context.gitlab || require('../tools/gitlab');
       const projectIdForBranch = task.plan?.project || task.plan?.projectId || task.plan?.projectName;
       task.targetBranch = implementationResult?.targetBranch || (projectIdForBranch ? await gitlabTool.getDefaultBranch(projectIdForBranch).catch(() => 'main') : 'main');
 
@@ -840,7 +875,7 @@ Provide a helpful answer. If the question is about specific code and you don't h
     
     // Check GitLab connectivity
     try {
-      const gitlab = require('../tools/gitlab');
+      const gitlab = context.gitlab || require('../tools/gitlab');
       if (gitlab.token) {
         gitlabStatus = '✅ Configured';
       } else {
@@ -1074,10 +1109,10 @@ Provide a helpful answer. If the question is about specific code and you don't h
       branch: sourceBranch,
       targetBranch,
     };
-    const reviewResult = await codeReviewer.review(implementationResult);
+    const reviewResult = await codeReviewer.review(implementationResult, context);
 
     if (reviewResult?.approved) {
-      const gitlab = require('../tools/gitlab');
+      const gitlab = context.gitlab || require('../tools/gitlab');
       let branches = await gitlab.getBranches(projectId, 100);
       let branchExists = branches.some(b => b.name === sourceBranch);
       if (!branchExists) {

@@ -14,12 +14,14 @@ const PER_FILE_MAX_CHARS = 10000;
  * Get repo tree as a string (one path per line), capped for prompt size.
  * @param {string} projectPath - Project path or ID
  * @param {string} [ref] - Branch/tag ref (default branch if null)
+ * @param {object} [gitlabClient] - Optional GitLab API client (for per-user)
  * @returns {Promise<string>}
  */
-async function getRepoTree(projectPath, ref = null) {
-  if (!projectPath || !gitlab.isConfigured()) return '';
+async function getRepoTree(projectPath, ref = null, gitlabClient = null) {
+  const gl = gitlabClient || gitlab;
+  if (!projectPath || !gl.isConfigured()) return '';
   try {
-    const list = await gitlab.getRepositoryFiles(projectPath, REPO_TREE_LIMIT, ref || undefined);
+    const list = await gl.getRepositoryFiles(projectPath, REPO_TREE_LIMIT, ref || undefined);
     if (!list || list.length === 0) return '';
     const lines = list.map(item => item.path || item.name).filter(Boolean);
     let out = lines.join('\n');
@@ -35,23 +37,24 @@ async function getRepoTree(projectPath, ref = null) {
 
 /**
  * Get file contents for a single step (files to modify). Skips fetch for 'create' steps.
- * Truncates per-file content to PER_FILE_MAX_CHARS.
  * @param {Object} plan - Plan with project, projectId
  * @param {Object} step - Step with files[], type
  * @param {string} [ref] - Branch ref (default branch if null)
+ * @param {object} [gitlabClient] - Optional GitLab API client (for per-user)
  * @returns {Promise<Array<{ path: string, content: string }>>}
  */
-async function getStepFileContents(plan, step, ref = null) {
+async function getStepFileContents(plan, step, ref = null, gitlabClient = null) {
+  const gl = gitlabClient || gitlab;
   const project = plan?.project || plan?.projectId;
-  if (!project || !gitlab.isConfigured()) return [];
+  if (!project || !gl.isConfigured()) return [];
   const files = Array.isArray(step?.files) ? step.files : [];
   if (files.length === 0) return [];
   const type = (step?.type || '').toLowerCase();
   if (type === 'create') return [];
 
   try {
-    const resolvedRef = ref || await gitlab.getDefaultBranch(project);
-    const results = await gitlab.getFilesContent(project, files, resolvedRef);
+    const resolvedRef = ref || await gl.getDefaultBranch(project);
+    const results = await gl.getFilesContent(project, files, resolvedRef);
     const out = [];
     for (const r of results) {
       if (!r.success || r.content == null) continue;
@@ -71,26 +74,27 @@ async function getStepFileContents(plan, step, ref = null) {
 /**
  * Get full repo context for a plan: repo tree + file contents per step (for modify steps).
  * @param {Object} plan - Plan with project, projectId, steps
- * @param {Object} [options] - { ref }
+ * @param {Object} [options] - { ref, gitlabClient }
  * @returns {Promise<{ repoTree: string, ref: string, fileContentsByStep: Object<number, Array<{ path, content }>> }>}
  */
 async function getRepoContextForPlan(plan, options = {}) {
+  const gl = options.gitlabClient || gitlab;
   const project = plan?.project || plan?.projectId;
   const fileContentsByStep = {};
   let repoTree = '';
   let ref = options.ref || null;
 
-  if (!project || !gitlab.isConfigured()) {
+  if (!project || !gl.isConfigured()) {
     return { repoTree: '', ref: ref || 'main', fileContentsByStep };
   }
 
   try {
-    ref = ref || await gitlab.getDefaultBranch(project);
-    repoTree = await getRepoTree(project, ref);
+    ref = ref || await gl.getDefaultBranch(project);
+    repoTree = await getRepoTree(project, ref, gl);
     const steps = Array.isArray(plan.steps) ? plan.steps : [];
     for (const step of steps) {
       const order = step.order != null ? step.order : steps.indexOf(step) + 1;
-      const contents = await getStepFileContents(plan, step, ref);
+      const contents = await getStepFileContents(plan, step, ref, gl);
       if (contents.length > 0) {
         fileContentsByStep[order] = contents;
       }

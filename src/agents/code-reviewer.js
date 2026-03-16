@@ -15,10 +15,12 @@ class CodeReviewerAgent extends BaseAgent {
 
   /**
    * Review code changes
+   * @param {Object} [context] - Optional { gitlab } for per-user GitLab client
    */
-  async review(implementationResult) {
+  async review(implementationResult, context = {}) {
     this.setStatus('working', { task: 'reviewing', branch: implementationResult?.branch });
     this.currentTask = implementationResult;
+    this._requestContext = context;
 
     try {
       // Handle fallback mode (generated code, no real diff)
@@ -81,7 +83,6 @@ class CodeReviewerAgent extends BaseAgent {
       };
     } catch (error) {
       this.setStatus('error', { task: 'reviewing', error: error.message });
-      // Return approved in fallback mode so workflow continues
       return {
         success: true,
         approved: true,
@@ -91,6 +92,8 @@ class CodeReviewerAgent extends BaseAgent {
         branch: implementationResult?.branch,
         message: 'Code review passed (fallback mode - OpenHands unavailable)',
       };
+    } finally {
+      this._requestContext = null;
     }
   }
 
@@ -193,14 +196,15 @@ Respond with a JSON array of issues found (empty if none):
     if (implementationResult?.diff && typeof implementationResult.diff === 'string' && implementationResult.diff.length > 50) {
       return { diff: implementationResult.diff, isReal: true };
     }
+    const gl = (this._requestContext && this._requestContext.gitlab) || gitlab;
     const projectId = implementationResult?.projectId;
     const branch = implementationResult?.branch;
-    if (projectId && branch && gitlab.isConfigured()) {
+    if (projectId && branch && gl.isConfigured()) {
       let fromRef = implementationResult?.targetBranch;
       if (!fromRef) {
-        fromRef = await gitlab.getDefaultBranch(projectId).catch(() => null) || 'main';
+        fromRef = await gl.getDefaultBranch(projectId).catch(() => null) || 'main';
       }
-      const fetched = await gitlab.getCompareDiff(projectId, fromRef, branch);
+      const fetched = await gl.getCompareDiff(projectId, fromRef, branch);
       if (fetched && fetched.length > 20) {
         return { diff: fetched, isReal: true };
       }

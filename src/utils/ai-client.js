@@ -40,18 +40,17 @@ class AIClient {
   }
 
   /**
-   * Refresh provider configurations – only custom models from dashboard
+   * Build providers map from a config (for per-user config).
+   * @param {{ customModels?: object, apiKeys?: object }} config
+   * @returns {object} providers map same shape as this.providers
    */
-  refreshProviders() {
-    const config = sharedConfig.getFullConfig();
-    this.providers = {};
-
-    const customModels = config.customModels || {};
+  getProvidersFromConfig(config) {
+    const customModels = (config && config.customModels) ? config.customModels : {};
+    const providers = {};
     let firstCustomKey = null;
-
     for (const [key, model] of Object.entries(customModels)) {
       if (model.enabled && model.apiKey) {
-        const provider = {
+        providers[key] = {
           name: model.name,
           enabled: true,
           apiKey: model.apiKey,
@@ -60,28 +59,30 @@ class AIClient {
           defaultModel: model.model,
           isCustom: true,
         };
-        this.providers[key] = provider;
         if (firstCustomKey === null) firstCustomKey = key;
-        logger.info(`[AIClient] Loaded custom provider: ${model.name} (${key})`);
       }
     }
-    if (firstCustomKey) {
-      this.providers.custom = this.providers[firstCustomKey];
-      logger.info('[AIClient] Alias "custom" points to first provider:', firstCustomKey);
-    }
+    if (firstCustomKey) providers.custom = providers[firstCustomKey];
+    return providers;
+  }
 
+  /**
+   * Refresh provider configurations – only custom models from dashboard
+   */
+  refreshProviders() {
+    const config = sharedConfig.getFullConfig();
+    this.providers = this.getProvidersFromConfig(config);
     logger.info('[AIClient] Providers refreshed (custom only)');
   }
 
   /**
-   * Get available providers
+   * Get available providers (optionally from a specific config, e.g. per-user).
+   * @param {{ customModels?: object } | null} config - If provided, use this config instead of shared.
    */
-  getAvailableProviders() {
-    // Always refresh before checking
-    this.refreshProviders();
-    
+  getAvailableProviders(config = null) {
+    const providers = config ? this.getProvidersFromConfig(config) : (this.refreshProviders(), this.providers);
     const available = {};
-    for (const [key, provider] of Object.entries(this.providers)) {
+    for (const [key, provider] of Object.entries(providers)) {
       available[key] = {
         name: provider.name,
         enabled: provider.enabled,
@@ -472,9 +473,8 @@ class AIClient {
    * Call custom provider (OpenAI-compatible API)
    */
   async callCustom(providerKey, prompt, options = {}) {
-    this.refreshProviders();
-    
-    const provider = this.providers[providerKey];
+    const providers = options._providers || (this.refreshProviders(), this.providers);
+    const provider = providers[providerKey];
     if (!provider || !provider.enabled) {
       throw new Error(`Custom provider ${providerKey} not available`);
     }
@@ -553,32 +553,35 @@ class AIClient {
    * Call AI with specified provider or default
    */
   async call(prompt, options = {}) {
-    // Refresh providers before each call
-    this.refreshProviders();
-    
-    // Use provided options, or fall back to global defaults
-    const provider = options.provider || this.defaultProvider;
-    const model = options.model || this.defaultModel;
-    
-    // Update options with resolved model
-    const resolvedOptions = { ...options, provider, model };
+    const userConfig = options.userConfig;
+    const effectiveProviders = userConfig
+      ? this.getProvidersFromConfig(userConfig)
+      : (this.refreshProviders(), this.providers);
+
+    const getFirst = () => {
+      const k = Object.keys(effectiveProviders).find(key => effectiveProviders[key]?.enabled && key !== 'custom');
+      return k || (effectiveProviders.custom ? 'custom' : null);
+    };
+    const defaultProvider = options.provider || this.defaultProvider;
+    const provider = effectiveProviders[defaultProvider]?.enabled ? defaultProvider : getFirst();
+    const model = options.model || this.defaultModel || (effectiveProviders[provider]?.defaultModel);
+
+    const resolvedOptions = { ...options, provider, model, _providers: effectiveProviders };
 
     logger.info(`[AIClient] Calling ${provider}:`, {
       promptLength: prompt.length,
       model: model || 'default',
     });
 
-    if (this.providers[provider]?.enabled) {
+    if (effectiveProviders[provider]?.enabled) {
       return this.callCustom(provider, prompt, resolvedOptions);
     }
-    if (!this.providers[provider]?.enabled) {
-      const fallback = this.getFirstEnabledProvider();
-      if (fallback && fallback !== provider) {
-        logger.info(`[AIClient] Provider ${provider} not available, using ${fallback}`);
-        return this.call(prompt, { ...options, provider: fallback });
-      }
+    const fallback = getFirst();
+    if (fallback && fallback !== provider) {
+      logger.info(`[AIClient] Provider ${provider} not available, using ${fallback}`);
+      return this.call(prompt, { ...options, provider: fallback, userConfig });
     }
-    const available = Object.keys(this.providers).filter(k => this.providers[k].enabled).join(', ');
+    const available = Object.keys(effectiveProviders).filter(k => effectiveProviders[k].enabled).join(', ');
     throw new Error(`No AI provider available. Configure a custom model in the dashboard. Available: ${available || 'none'}`);
   }
 
@@ -586,14 +589,16 @@ class AIClient {
    * Try calling with fallback providers (only enabled custom providers)
    */
   async callWithFallback(prompt, options = {}, fallbackProviders = null) {
-    this.refreshProviders();
+    const effectiveProviders = options.userConfig
+      ? this.getProvidersFromConfig(options.userConfig)
+      : (this.refreshProviders(), this.providers);
     const toTry = fallbackProviders && fallbackProviders.length > 0
       ? fallbackProviders
-      : Object.keys(this.providers).filter(k => this.providers[k]?.enabled);
+      : Object.keys(effectiveProviders).filter(k => effectiveProviders[k]?.enabled);
     const errors = [];
 
     for (const provider of toTry) {
-      if (this.providers[provider]?.enabled) {
+      if (effectiveProviders[provider]?.enabled) {
         try {
           logger.info(`[AIClient] Trying provider: ${provider}`);
           return await this.call(prompt, { ...options, provider });

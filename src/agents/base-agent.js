@@ -82,12 +82,14 @@ class BaseAgent extends EventEmitter {
         model: options.model || this.model || 'default',
       });
 
+      const userConfig = options.userConfig || (this._requestContext && this._requestContext.userConfig);
       const response = await aiClient.call(prompt, {
         provider,
         model: options.model || this.model,
         systemMessage: this.systemMessage,
         maxTokens: options.maxTokens || this.maxTokens,
         temperature: options.temperature || 0.7,
+        ...(userConfig ? { userConfig } : {}),
       });
 
       const duration = Date.now() - startTime;

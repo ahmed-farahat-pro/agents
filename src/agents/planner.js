@@ -19,6 +19,7 @@ class PlannerAgent extends BaseAgent {
   async createPlan({ task, project, context = {} }) {
     this.setStatus('working', { task: 'creating_plan', description: task });
     this.currentTask = task;
+    this._requestContext = context;
 
     try {
       // Set user-preferred AI provider if specified
@@ -72,6 +73,8 @@ class PlannerAgent extends BaseAgent {
         success: false,
         message: `Error creating plan: ${error.message}`,
       };
+    } finally {
+      this._requestContext = null;
     }
   }
 
@@ -79,22 +82,18 @@ class PlannerAgent extends BaseAgent {
    * Resolve project name to actual project info
    */
   async resolveProject(projectName) {
+    const gl = (this._requestContext && this._requestContext.gitlab) || gitlab;
     try {
-      // First check if it's a direct project ID or path
-      const directProject = await gitlab.getProject(projectName);
+      const directProject = await gl.getProject(projectName);
       if (directProject) {
         return directProject;
       }
       
-      // Try to find by searching
-      const searchResults = await gitlab.searchProjects(projectName, 5);
+      const searchResults = await gl.searchProjects(projectName, 5);
       if (searchResults.length > 0) {
-        // Return the best match
         return searchResults[0];
       }
-      
-      // List all projects and try to match
-      const allProjects = await gitlab.listProjects(100);
+      const allProjects = await gl.listProjects(100);
       const lowerName = projectName.toLowerCase();
       
       // Try exact match first
@@ -150,10 +149,10 @@ class PlannerAgent extends BaseAgent {
       logger.debug('[Planner] MCP filesystem error:', e.message);
     }
 
-    // Fall back to GitLab API
+    const gl = (this._requestContext && this._requestContext.gitlab) || gitlab;
     if (analysis.repoFiles.length === 0) {
       try {
-        const repoFiles = await gitlab.getRepositoryFiles(project, 100);
+        const repoFiles = await gl.getRepositoryFiles(project, 100);
         if (repoFiles.length > 0) {
           analysis.repoFiles = repoFiles.map(f => f.path);
           analysis.source = 'gitlab_api';
@@ -193,9 +192,8 @@ class PlannerAgent extends BaseAgent {
             }
           }
           
-          // Fall back to GitLab API
           if (!content) {
-            content = await gitlab.getFileContent(project, filePath);
+            content = await gl.getFileContent(project, filePath);
           }
           
           if (content) {

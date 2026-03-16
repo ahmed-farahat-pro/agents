@@ -16,9 +16,11 @@ const { runCheckLocal } = require('./compile-check');
  * @param {Object} plan - Plan with project, branch, title, description
  * @param {Array<{path: string, content: string}>} generatedFiles - Files to write
  * @param {Object} [reporter] - Optional reporter for progress
+ * @param {object} [gitlabClient] - Optional GitLab API client (for per-user)
  * @returns {Promise<{success: boolean}>}
  */
-async function cloneEditAndPush(plan, generatedFiles, reporter) {
+async function cloneEditAndPush(plan, generatedFiles, reporter, gitlabClient = null) {
+  const gl = gitlabClient || gitlab;
   const project = plan.project || plan.projectId;
   const branch = plan.branch || `nigents/task-${Date.now()}`;
   if (!project || !generatedFiles || generatedFiles.length === 0) {
@@ -27,8 +29,8 @@ async function cloneEditAndPush(plan, generatedFiles, reporter) {
   const workDir = path.join(os.tmpdir(), `nigents-repo-${String(project).replace(/\//g, '-')}-${Date.now()}`);
   try {
     if (reporter) await reporter.sendProgress(`📂 Fetching repo from GitLab (pushing to branch \`${branch}\`)...`);
-    const pushUrl = await gitlab.getPushUrl(project);
-    const defaultBranch = await gitlab.getDefaultBranch(project);
+    const pushUrl = await gl.getPushUrl(project);
+    const defaultBranch = await gl.getDefaultBranch(project);
     await fs.ensureDir(workDir);
     const git = simpleGit();
     await git.clone(pushUrl, workDir, ['--depth', '1', '--branch', defaultBranch]);

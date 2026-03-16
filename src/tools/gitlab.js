@@ -7,20 +7,25 @@ const axios = require('axios');
 const logger = require('../utils/logger');
 
 class GitLabAPI {
-  constructor() {
-    this.token = process.env.GITLAB_TOKEN;
-    this.namespace = process.env.GITLAB_NAMESPACE;
-    this.baseUrl = process.env.GITLAB_URL || 'https://gitlab.com';
-    
+  /**
+   * @param {object} [config] - Optional. If provided, config.gitlab = { token, namespace, url }.
+   *   Otherwise uses process.env.GITLAB_*.
+   */
+  constructor(config) {
+    const gitlab = config?.gitlab || {};
+    this.token = gitlab.token != null ? gitlab.token : process.env.GITLAB_TOKEN;
+    this.namespace = gitlab.namespace != null ? gitlab.namespace : process.env.GITLAB_NAMESPACE;
+    this.baseUrl = gitlab.url || process.env.GITLAB_URL || 'https://gitlab.com';
+
     this.client = axios.create({
       baseURL: `${this.baseUrl}/api/v4`,
       headers: {
-        'PRIVATE-TOKEN': this.token,
+        'PRIVATE-TOKEN': this.token || '',
         'Content-Type': 'application/json',
       },
       timeout: 30000,
     });
-    
+
     // Cache for project IDs to avoid repeated lookups
     this.projectCache = new Map();
     this.projectListCache = null;
@@ -631,5 +636,19 @@ class GitLabAPI {
   }
 }
 
-// Export singleton
-module.exports = new GitLabAPI();
+// Singleton (uses process.env)
+const defaultClient = new GitLabAPI();
+
+/**
+ * Create a GitLab client for a given config (e.g. per-user config).
+ * @param {{ apiKeys?: object, gitlab?: { token?, namespace?, url? }, customModels?: object }} config
+ * @returns {GitLabAPI}
+ */
+function createGitLabClient(config) {
+  if (!config || !config.gitlab) return defaultClient;
+  return new GitLabAPI(config);
+}
+
+module.exports = defaultClient;
+module.exports.GitLabAPI = GitLabAPI;
+module.exports.createGitLabClient = createGitLabClient;

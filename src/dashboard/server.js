@@ -9,6 +9,8 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const crypto = require('crypto');
+const cookieParser = require('cookie-parser');
 const logger = require('../utils/logger');
 const axios = require('axios');
 const aiClient = require('../utils/ai-client');
@@ -23,9 +25,35 @@ const io = new Server(server, {
 
 const PORT = process.env.DASHBOARD_PORT || 4000;
 
+// Admin credentials (env or defaults: admin / admin)
+const ADMIN_USERNAME = (process.env.DASHBOARD_ADMIN_USERNAME || 'admin').trim();
+const ADMIN_PASSWORD = (process.env.DASHBOARD_ADMIN_PASSWORD || 'admin').trim();
+const SESSION_COOKIE_NAME = 'nigents_session';
+const sessions = new Set();
+
+function createSession() {
+  const token = crypto.randomBytes(24).toString('hex');
+  sessions.add(token);
+  return token;
+}
+
+function isValidSession(token) {
+  return token && sessions.has(token);
+}
+
 // Middleware
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Auth middleware: require valid session for /api/* except /api/auth/login and /api/auth/check
+app.use((req, res, next) => {
+  if (!req.path.startsWith('/api/')) return next();
+  if (req.path === '/api/auth/login' || req.path === '/api/auth/check') return next();
+  const token = req.cookies && req.cookies[SESSION_COOKIE_NAME];
+  if (isValidSession(token)) return next();
+  res.status(401).json({ success: false, error: 'Unauthorized' });
+});
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -49,14 +77,34 @@ const useDatabase = process.env.DB_HOST && process.env.DB_USER && process.env.DB
 let dbTaskQueue = null;
 let dbChatStorage = null;
 
+let userConfigModule = null;
 if (useDatabase) {
   try {
     dbTaskQueue = require('../database/task-queue-mysql');
     dbChatStorage = require('../database/chat-storage-mysql');
+    userConfigModule = require('../database/user-config');
     logger.info('[Dashboard] Database integration enabled (MySQL)');
   } catch (error) {
     logger.error('[Dashboard] Failed to load database modules:', error.message);
   }
+}
+
+/** Sanitize config for API response (hide secret values) */
+function sanitizeConfig(config) {
+  if (!config) return {};
+  return {
+    apiKeys: config.apiKeys ? Object.fromEntries(
+      Object.entries(config.apiKeys).map(([k, v]) => [k, v ? 'SET' : ''])
+    ) : {},
+    customModels: config.customModels || {},
+    gitlab: {
+      token: config.gitlab?.token ? 'SET' : '',
+      namespace: config.gitlab?.namespace || '',
+      url: config.gitlab?.url || '',
+    },
+    telegram: config.telegram || {},
+    updatedAt: config.updatedAt,
+  };
 }
 
 /** Build state for dashboard: from MySQL when available, else in-memory */
@@ -91,6 +139,38 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.post('/api/auth/login', (req, res) => {
+  const { username, password } = req.body || {};
+  if (String(username).trim() === ADMIN_USERNAME && String(password) === ADMIN_PASSWORD) {
+    const token = createSession();
+    res.cookie(SESSION_COOKIE_NAME, token, {
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: 'lax',
+      path: '/',
+    });
+    logger.info('[Dashboard] Admin login success');
+    return res.json({ success: true, user: ADMIN_USERNAME });
+  }
+  logger.warn('[Dashboard] Admin login failed');
+  res.status(401).json({ success: false, error: 'Invalid username or password' });
+});
+
+app.get('/api/auth/check', (req, res) => {
+  const token = req.cookies && req.cookies[SESSION_COOKIE_NAME];
+  if (isValidSession(token)) {
+    return res.json({ success: true, user: ADMIN_USERNAME });
+  }
+  res.status(401).json({ success: false });
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  const token = req.cookies && req.cookies[SESSION_COOKIE_NAME];
+  if (token) sessions.delete(token);
+  res.clearCookie(SESSION_COOKIE_NAME, { path: '/' });
+  res.json({ success: true });
 });
 
 app.get('/login', (req, res) => {
@@ -719,20 +799,27 @@ app.get('/api/ai/providers', (req, res) => {
   }
 });
 
-// Update API keys
-app.post('/api/config/apikeys', (req, res) => {
+// Update API keys (optional userId for per-user config)
+app.post('/api/config/apikeys', async (req, res) => {
   try {
-    const { apiKeys } = req.body;
+    const { apiKeys, userId } = req.body;
     const sharedConfig = require('../utils/shared-config');
-    
-    // Update the shared config
+    if (userId && userConfigModule) {
+      const existing = await userConfigModule.getUserConfig(userId) || {};
+      const merged = { ...existing.apiKeys, ...apiKeys };
+      await userConfigModule.setUserConfig(userId, { ...existing, apiKeys: merged });
+      const full = await userConfigModule.getConfigForUser(userId);
+      logger.info('[Dashboard] API keys updated for user', userId);
+      return res.json({
+        success: true,
+        message: 'API keys updated successfully',
+        config: sanitizeConfig(full),
+        userId,
+      });
+    }
     sharedConfig.updateApiKeys(apiKeys);
-    
-    // Apply to environment
     sharedConfig.applyToEnv();
-    
     logger.info('[Dashboard] API keys updated via dashboard');
-    
     res.json({
       success: true,
       message: 'API keys updated successfully',
@@ -747,20 +834,126 @@ app.post('/api/config/apikeys', (req, res) => {
   }
 });
 
-// Get shared config (sanitized)
-app.get('/api/config', (req, res) => {
+// Update GitLab config (optional userId)
+app.post('/api/config/gitlab', async (req, res) => {
   try {
+    const { gitlab: gitlabPayload, userId } = req.body;
     const sharedConfig = require('../utils/shared-config');
+    if (userId && userConfigModule) {
+      const existing = await userConfigModule.getUserConfig(userId) || {};
+      await userConfigModule.setUserConfig(userId, {
+        ...existing,
+        gitlab: { ...(existing.gitlab || {}), ...gitlabPayload },
+      });
+      const full = await userConfigModule.getConfigForUser(userId);
+      logger.info('[Dashboard] GitLab config updated for user', userId);
+      return res.json({
+        success: true,
+        message: 'GitLab config updated',
+        config: sanitizeConfig(full),
+        userId,
+      });
+    }
+    const config = sharedConfig.getFullConfig();
+    config.gitlab = { ...config.gitlab, ...gitlabPayload };
+    sharedConfig.saveConfig(config);
+    sharedConfig.applyToEnv();
     res.json({
       success: true,
+      message: 'GitLab config updated',
       config: sharedConfig.getSanitizedConfig(),
     });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to update GitLab config:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update custom models (optional userId)
+app.post('/api/config/custommodels', async (req, res) => {
+  try {
+    const { customModels, userId } = req.body;
+    const sharedConfig = require('../utils/shared-config');
+    if (userId && userConfigModule) {
+      await userConfigModule.setUserConfig(userId, { customModels: customModels || {} });
+      const full = await userConfigModule.getConfigForUser(userId);
+      logger.info('[Dashboard] Custom models updated for user', userId);
+      return res.json({
+        success: true,
+        message: 'Custom models updated',
+        config: sanitizeConfig(full),
+        userId,
+      });
+    }
+    const config = sharedConfig.getFullConfig();
+    config.customModels = customModels || config.customModels || {};
+    sharedConfig.saveConfig(config);
+    sharedConfig.applyToEnv();
+    res.json({
+      success: true,
+      message: 'Custom models updated',
+      config: sharedConfig.getSanitizedConfig(),
+    });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to update custom models:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get config (sanitized). Optional ?userId=X for per-user config (admin).
+app.get('/api/config', async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    const sharedConfig = require('../utils/shared-config');
+    if (userId && userConfigModule) {
+      const merged = await userConfigModule.getConfigForUser(userId);
+      res.json({
+        success: true,
+        config: sanitizeConfig(merged),
+        userId,
+      });
+    } else {
+      res.json({
+        success: true,
+        config: sharedConfig.getSanitizedConfig(),
+      });
+    }
   } catch (error) {
     logger.error('[Dashboard] Failed to get config:', error);
     res.status(500).json({
       success: false,
       error: error.message,
     });
+  }
+});
+
+// Admin: list all users (for admin dropdown)
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    if (!useDatabase) {
+      return res.json({ success: true, users: [] });
+    }
+    const db = require('../database/connection');
+    const rows = await db.query(
+      `SELECT u.id, u.username, u.first_name, u.last_name, u.last_active_at, u.created_at
+       FROM users u
+       ORDER BY u.last_active_at DESC, u.created_at DESC
+       LIMIT 200`
+    );
+    const configUserIds = userConfigModule ? await userConfigModule.listUserIdsWithConfig() : [];
+    const users = (rows || []).map((r) => ({
+      id: r.id,
+      username: r.username,
+      firstName: r.first_name,
+      lastName: r.last_name,
+      lastActiveAt: r.last_active_at,
+      createdAt: r.created_at,
+      hasConfig: configUserIds.includes(r.id),
+    }));
+    res.json({ success: true, users });
+  } catch (error) {
+    logger.error('[Dashboard] Failed to list users:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

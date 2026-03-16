@@ -160,7 +160,7 @@ deploy-to-ec2:
       git fetch origin
       git reset --hard origin/main
 
-      echo "Installing dependencies..."
+      echo "Installing dependencies (includes cookie-parser for dashboard auth)..."
       npm ci --production
 
       echo "Rebuilding MCP servers..."

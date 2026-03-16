@@ -43,7 +43,9 @@ class FrontendDevAgent extends BaseAgent {
   async implement(plan, context = {}) {
     this.setStatus('working', { task: 'implementing_frontend', plan: plan.title });
     this.currentTask = plan;
+    this._requestContext = context;
     const reporter = context.reporter;
+    const gl = context.gitlab || gitlab;
     const branch = plan.branch || `nigents/task-${Date.now()}`;
 
     try {
@@ -76,7 +78,7 @@ class FrontendDevAgent extends BaseAgent {
       let compileCheckPassed = true;
       if (generatedFiles.length > 0 && (plan.project || plan.projectId)) {
         try {
-          const pushResult = await cloneEditAndPush(plan, generatedFiles, reporter);
+          const pushResult = await cloneEditAndPush(plan, generatedFiles, reporter, gl);
           pushedToGit = true;
           if (pushResult.compileCheckPassed === false) compileCheckPassed = false;
         } catch (pushErr) {
@@ -85,7 +87,7 @@ class FrontendDevAgent extends BaseAgent {
       }
 
       this.setStatus('done', { task: 'implementing_frontend', branch: plan.branch });
-      const defaultBranch = await gitlab.getDefaultBranch(plan.project || plan.projectId).catch(() => 'main');
+      const defaultBranch = await gl.getDefaultBranch(plan.project || plan.projectId).catch(() => 'main');
 
       return {
         success: true,
@@ -120,14 +122,15 @@ class FrontendDevAgent extends BaseAgent {
    * @param {Object} [plan] - Plan with project, projectId (for repo context)
    */
   async implementFrontendStep(step, plan = null) {
+    const gl = (this._requestContext && this._requestContext.gitlab) || gitlab;
     let repoTree = '';
     let fileContentsSection = '';
     if (plan && (plan.project || plan.projectId)) {
       try {
         const project = plan.project || plan.projectId;
-        const ref = await gitlab.getDefaultBranch(project).catch(() => 'main');
-        repoTree = await getRepoTree(project, ref);
-        const stepContents = await getStepFileContents(plan, step, ref);
+        const ref = await gl.getDefaultBranch(project).catch(() => 'main');
+        repoTree = await getRepoTree(project, ref, gl);
+        const stepContents = await getStepFileContents(plan, step, ref, gl);
         if (stepContents.length > 0) {
           fileContentsSection = `
 CURRENT FILE CONTENTS (make minimal edits):

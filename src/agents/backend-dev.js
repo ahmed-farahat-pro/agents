@@ -25,8 +25,10 @@ class BackendDevAgent extends BaseAgent {
   async implement(plan, context = {}) {
     this.setStatus('working', { task: 'implementing', plan: plan.title });
     this.currentTask = plan;
+    this._requestContext = context;
     const reporter = context.reporter;
     const branch = plan.branch || 'unknown';
+    const gl = context.gitlab || gitlab;
 
     try {
       // Check if OpenHands is available
@@ -96,7 +98,7 @@ class BackendDevAgent extends BaseAgent {
       const commitResult = await this.commitAndPush(workDir, plan);
 
       this.setStatus('done', { task: 'implementing', branch: plan.branch });
-      const defaultBranch = await gitlab.getDefaultBranch(plan.project || plan.projectId).catch(() => 'main');
+      const defaultBranch = await gl.getDefaultBranch(plan.project || plan.projectId).catch(() => 'main');
       return {
         success: true,
         branch: plan.branch,
@@ -112,8 +114,9 @@ class BackendDevAgent extends BaseAgent {
     } catch (error) {
       this.setStatus('error', { task: 'implementing', error: error.message });
       logger.error('[BackendDev] Error implementing:', error);
-      // Try fallback implementation
       return this.fallbackImplement(plan, context);
+    } finally {
+      this._requestContext = null;
     }
   }
 
@@ -166,11 +169,11 @@ class BackendDevAgent extends BaseAgent {
       };
       }
       
-      // Fetch repo context once (tree + file contents per step) for minimal-edit prompts
+      const glFallback = context.gitlab || gitlab;
       let repoTree = '';
       let fileContentsByStep = {};
       try {
-        const ctx = await getRepoContextForPlan(plan);
+        const ctx = await getRepoContextForPlan(plan, { gitlabClient: glFallback });
         repoTree = ctx.repoTree || '';
         fileContentsByStep = ctx.fileContentsByStep || {};
       } catch (e) {
@@ -246,14 +249,14 @@ FILE: <filepath>
       let compileCheckPassed = true;
       if (generatedFiles.length > 0 && (plan.project || plan.projectId)) {
         try {
-          const pushResult = await cloneEditAndPush(plan, generatedFiles, reporter);
+          const pushResult = await cloneEditAndPush(plan, generatedFiles, reporter, glFallback);
           pushedToGit = true;
           if (pushResult.compileCheckPassed === false) compileCheckPassed = false;
         } catch (pushErr) {
           logger.warn('[BackendDev] Clone/edit/push failed, orchestrator may push via API:', pushErr.message);
         }
       }
-      const defaultBranch = await gitlab.getDefaultBranch(plan.project || plan.projectId).catch(() => 'main');
+      const defaultBranch = await glFallback.getDefaultBranch(plan.project || plan.projectId).catch(() => 'main');
       return {
         success: true,
         branch: plan.branch,
@@ -294,9 +297,8 @@ FILE: <filepath>
   async setupWorkspace(plan) {
     const project = plan.project;
     const branch = plan.branch;
-
-    // Use push URL (with token) so later git push works without credentials prompt
-    const cloneUrl = await gitlab.getPushUrl(project);
+    const gl = (this._requestContext && this._requestContext.gitlab) || gitlab;
+    const cloneUrl = await gl.getPushUrl(project);
     const setupCommands = [
       `cd /workspace`,
       `git clone ${cloneUrl} ${project} || true`,
@@ -317,13 +319,14 @@ FILE: <filepath>
    * Implement a single step
    */
   async implementStep(step, workDir, plan) {
+    const gl = (this._requestContext && this._requestContext.gitlab) || gitlab;
     const project = plan.project || plan.projectId;
     let repoTree = '';
     let fileContentsSection = '';
-    const stepContents = await getStepFileContents(plan, step);
+    const stepContents = await getStepFileContents(plan, step, null, gl);
     if (project) {
-      const ref = await gitlab.getDefaultBranch(project).catch(() => 'main');
-      repoTree = await getRepoTree(project, ref);
+      const ref = await gl.getDefaultBranch(project).catch(() => 'main');
+      repoTree = await getRepoTree(project, ref, gl);
     }
     if (stepContents.length > 0) {
       fileContentsSection = `
