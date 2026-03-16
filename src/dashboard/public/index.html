@@ -1132,7 +1132,7 @@
         
         let currentSnippetIndex = 0;
         let currentCharIndex = 0;
-        let isDeleting = false;
+        let isPaused = false;
         
         const codeArea = document.getElementById('code-area');
         const agentNameEl = document.querySelector('.agent-name-small');
@@ -1148,6 +1148,22 @@
             return colors[name] || '#ff570a';
         }
         
+        function switchToNextSnippet() {
+            currentSnippetIndex = (currentSnippetIndex + 1) % codeSnippets.length;
+            currentCharIndex = 0;
+            isPaused = false;
+            
+            // Clear and start fresh immediately (no deletion lag)
+            codeArea.innerHTML = `
+                <div class="code-line">
+                    <span class="line-number">1</span>
+                    <span class="line-content" id="line-1"></span><span class="cursor"></span>
+                </div>
+            `;
+            
+            typeCode();
+        }
+        
         function typeCode() {
             const snippet = codeSnippets[currentSnippetIndex];
             const code = snippet.code;
@@ -1161,66 +1177,43 @@
             // Update tabs
             codeTabs[0].textContent = snippet.file;
             
-            if (!isDeleting) {
-                // Typing
-                if (currentCharIndex < code.length) {
-                    const char = code[currentCharIndex];
-                    
-                    if (char === '\n') {
-                        const lineCount = (code.substring(0, currentCharIndex).match(/\n/g) || []).length + 2;
-                        codeArea.innerHTML += `
-                            <div class="code-line">
-                                <span class="line-number">${lineCount}</span>
-                                <span class="line-content" id="line-${lineCount}"></span><span class="cursor"></span>
-                            </div>
-                        `;
-                    } else {
-                        const lines = codeArea.querySelectorAll('.line-content');
-                        const currentLine = lines[lines.length - 1];
-                        if (currentLine) {
-                            currentLine.innerHTML = code.substring(0, currentCharIndex + 1).split('\n').pop();
-                        }
-                    }
-                    
-                    currentCharIndex++;
-                    const speed = Math.random() * 30 + 10;
-                    setTimeout(typeCode, speed);
-                } else {
-                    setTimeout(() => {
-                        isDeleting = true;
-                        typeCode();
-                    }, 3000);
-                }
-            } else {
-                // Deleting
-                if (currentCharIndex > 0) {
-                    currentCharIndex--;
-                    
-                    const visibleLines = code.substring(0, currentCharIndex).split('\n');
-                    codeArea.innerHTML = visibleLines.map((line, i) => `
+            if (isPaused) {
+                setTimeout(switchToNextSnippet, 1500);
+                return;
+            }
+            
+            // Typing
+            if (currentCharIndex < code.length) {
+                const char = code[currentCharIndex];
+                
+                if (char === '\n') {
+                    const lineCount = (code.substring(0, currentCharIndex).match(/\n/g) || []).length + 2;
+                    codeArea.innerHTML += `
                         <div class="code-line">
-                            <span class="line-number">${i + 1}</span>
-                            <span class="line-content" id="line-${i + 1}">${line}</span>${i === visibleLines.length - 1 ? '<span class="cursor"></span>' : ''}
-                        </div>
-                    `).join('');
-                    
-                    setTimeout(typeCode, 5);
-                } else {
-                    isDeleting = false;
-                    currentSnippetIndex = (currentSnippetIndex + 1) % codeSnippets.length;
-                    codeArea.innerHTML = `
-                        <div class="code-line">
-                            <span class="line-number">1</span>
-                            <span class="line-content" id="line-1"></span><span class="cursor"></span>
+                            <span class="line-number">${lineCount}</span>
+                            <span class="line-content" id="line-${lineCount}"></span><span class="cursor"></span>
                         </div>
                     `;
-                    setTimeout(typeCode, 500);
+                } else {
+                    const lines = codeArea.querySelectorAll('.line-content');
+                    const currentLine = lines[lines.length - 1];
+                    if (currentLine) {
+                        currentLine.innerHTML = code.substring(0, currentCharIndex + 1).split('\n').pop();
+                    }
                 }
+                
+                currentCharIndex++;
+                const speed = Math.random() * 15 + 3; // Faster typing
+                setTimeout(typeCode, speed);
+            } else {
+                // Finished typing, pause then switch (no deletion)
+                isPaused = true;
+                setTimeout(switchToNextSnippet, 1500);
             }
         }
         
         // Start the animation
-        setTimeout(typeCode, 1000);
+        setTimeout(typeCode, 500);
     </script>
 </body>
 </html>

@@ -549,144 +549,98 @@
             window.location.href = '/dashboard.html';
         }
         
-        // Code Streaming Animation
+        // Code Streaming Animation - Smooth switching between agents
         const codeSnippets = [
             {
                 agent: 'backend-dev',
                 action: 'Implementing user authentication service',
-                file: 'api-service.ts',
-                language: 'typescript',
+                file: 'AuthService.ts',
                 code: `<span class="keyword">import</span> { <span class="variable">Injectable</span>, <span class="variable">UnauthorizedException</span> } <span class="keyword">from</span> <span class="string">'@nestjs/common'</span>;
 <span class="keyword">import</span> { <span class="variable">JwtService</span> } <span class="keyword">from</span> <span class="string">'@nestjs/jwt'</span>;
-<span class="keyword">import</span> { <span class="variable">InjectRepository</span> } <span class="keyword">from</span> <span class="string">'@nestjs/typeorm'</span>;
-<span class="keyword">import</span> { <span class="variable">Repository</span> } <span class="keyword">from</span> <span class="string">'typeorm'</span>;
 <span class="keyword">import</span> * <span class="keyword">as</span> <span class="variable">bcrypt</span> <span class="keyword">from</span> <span class="string">'bcrypt'</span>;
 
 <span class="keyword">@Injectable</span>()
 <span class="keyword">export class</span> <span class="function">AuthService</span> {
   <span class="keyword">constructor</span>(
-    <span class="keyword">@InjectRepository</span>(<span class="variable">User</span>)
-    <span class="keyword">private</span> <span class="variable">userRepository</span>: <span class="variable">Repository</span><<span class="variable">User</span>>,
     <span class="keyword">private</span> <span class="variable">jwtService</span>: <span class="variable">JwtService</span>,
   ) {}
 
-  <span class="keyword">async</span> <span class="function">validateUser</span>(<span class="variable">email</span>: <span class="variable">string</span>, <span class="variable">password</span>: <span class="variable">string</span>): <span class="variable">Promise</span><<span class="variable">User</span> | <span class="keyword">null</span>> {
-    <span class="keyword">const</span> <span class="variable">user</span> = <span class="keyword">await</span> <span class="keyword">this</span>.<span class="property">userRepository</span>.<span class="function">findOne</span>({ <span class="property">where</span>: { <span class="property">email</span> } });
-    
-    <span class="keyword">if</span> (!<span class="variable">user</span>) {
-      <span class="keyword">return null</span>;
+  <span class="keyword">async</span> <span class="function">validateUser</span>(<span class="variable">email</span>: <span class="variable">string</span>, <span class="variable">pass</span>: <span class="variable">string</span>) {
+    <span class="keyword">const</span> <span class="variable">user</span> = <span class="keyword">await</span> <span class="keyword">this</span>.<span class="property">usersService</span>.<span class="function">findOne</span>(<span class="variable">email</span>);
+    <span class="keyword">if</span> (<span class="variable">user</span> && <span class="variable">await</span> <span class="variable">bcrypt</span>.<span class="function">compare</span>(<span class="variable">pass</span>, <span class="variable">user</span>.<span class="property">password</span>)) {
+      <span class="keyword">return</span> <span class="variable">user</span>;
     }
-
-    <span class="keyword">const</span> <span class="variable">isMatch</span> = <span class="keyword">await</span> <span class="variable">bcrypt</span>.<span class="function">compare</span>(<span class="variable">password</span>, <span class="variable">user</span>.<span class="property">passwordHash</span>);
-    
-    <span class="keyword">if</span> (!<span class="variable">isMatch</span>) {
-      <span class="keyword">throw new</span> <span class="function">UnauthorizedException</span>(<span class="string">'Invalid credentials'</span>);
-    }
-
-    <span class="keyword">return</span> <span class="variable">user</span>;
+    <span class="keyword">return null</span>;
   }
 
-  <span class="keyword">async</span> <span class="function">login</span>(<span class="variable">user</span>: <span class="variable">User</span>) {
-    <span class="keyword">const</span> <span class="variable">payload</span> = { <span class="property">sub</span>: <span class="variable">user</span>.<span class="property">id</span>, <span class="property">email</span>: <span class="variable">user</span>.<span class="property">email</span> };
-    
+  <span class="keyword">async</span> <span class="function">login</span>(<span class="variable">user</span>: <span class="variable">any</span>) {
+    <span class="keyword">const</span> <span class="variable">payload</span> = { <span class="property">email</span>: <span class="variable">user</span>.<span class="property">email</span>, <span class="property">sub</span>: <span class="variable">user</span>.<span class="property">id</span> };
     <span class="keyword">return</span> {
       <span class="property">access_token</span>: <span class="keyword">this</span>.<span class="property">jwtService</span>.<span class="function">sign</span>(<span class="variable">payload</span>),
-      <span class="property">user</span>: {
-        <span class="property">id</span>: <span class="variable">user</span>.<span class="property">id</span>,
-        <span class="property">email</span>: <span class="variable">user</span>.<span class="property">email</span>,
-        <span class="property">name</span>: <span class="variable">user</span>.<span class="property">name</span>,
-      },
     };
   }
 }`
             },
             {
                 agent: 'frontend-dev',
-                action: 'Creating React hook for data fetching',
-                file: 'useApi.ts',
-                language: 'typescript',
-                code: `<span class="keyword">import</span> { <span class="variable">useState</span>, <span class="variable">useEffect</span>, <span class="variable">useCallback</span> } <span class="keyword">from</span> <span class="string">'react'</span>;
+                action: 'Creating login form component',
+                file: 'Login.tsx',
+                code: `<span class="keyword">import</span> { <span class="variable">useState</span> } <span class="keyword">from</span> <span class="string">'react'</span>;
+<span class="keyword">import</span> { <span class="variable">useAuth</span> } <span class="keyword">from</span> <span class="string">'./hooks/useAuth'</span>;
 
-<span class="keyword">interface</span> <span class="function">UseApiOptions</span><<span class="variable">T</span>> {
-  <span class="property">url</span>: <span class="variable">string</span>;
-  <span class="property">initialData</span>?: <span class="variable">T</span>;
-  <span class="property">enabled</span>?: <span class="variable">boolean</span>;
-}
+<span class="keyword">export const</span> <span class="function">LoginForm</span> = () => {
+  <span class="keyword">const</span> [<span class="variable">email</span>, <span class="function">setEmail</span>] = <span class="function">useState</span>(<span class="string">''</span>);
+  <span class="keyword">const</span> [<span class="variable">password</span>, <span class="function">setPassword</span>] = <span class="function">useState</span>(<span class="string">''</span>);
+  <span class="keyword">const</span> { <span class="function">login</span>, <span class="variable">loading</span> } = <span class="function">useAuth</span>();
 
-<span class="keyword">interface</span> <span class="function">ApiState</span><<span class="variable">T</span>> {
-  <span class="property">data</span>: <span class="variable">T</span> | <span class="keyword">null</span>;
-  <span class="property">loading</span>: <span class="variable">boolean</span>;
-  <span class="property">error</span>: <span class="variable">Error</span> | <span class="keyword">null</span>;
-}
+  <span class="keyword">const</span> <span class="function">handleSubmit</span> = <span class="keyword">async</span> (<span class="variable">e</span>: <span class="variable">React</span>.<span class="property">FormEvent</span>) => {
+    <span class="variable">e</span>.<span class="function">preventDefault</span>();
+    <span class="keyword">await</span> <span class="function">login</span>(<span class="variable">email</span>, <span class="variable">password</span>);
+  };
 
-<span class="keyword">export function</span> <span class="function">useApi</span><<span class="variable">T</span>>({ <span class="variable">url</span>, <span class="variable">initialData</span> = <span class="keyword">null</span>, <span class="variable">enabled</span> = <span class="keyword">true</span> }: <span class="function">UseApiOptions</span><<span class="variable">T</span>>): <span class="function">ApiState</span><<span class="variable">T</span>> {
-  <span class="keyword">const</span> [<span class="variable">state</span>, <span class="variable">setState</span>] = <span class="function">useState</span><<span class="function">ApiState</span><<span class="variable">T</span>>>({
-    <span class="property">data</span>: <span class="variable">initialData</span>,
-    <span class="property">loading</span>: <span class="variable">enabled</span>,
-    <span class="property">error</span>: <span class="keyword">null</span>,
-  });
-
-  <span class="keyword">const</span> <span class="variable">fetchData</span> = <span class="function">useCallback</span>(<span class="keyword">async</span> () => {
-    <span class="function">setState</span>(<span class="variable">prev</span> => ({ ...<span class="variable">prev</span>, <span class="property">loading</span>: <span class="keyword">true</span>, <span class="property">error</span>: <span class="keyword">null</span> }));
-
-    <span class="keyword">try</span> {
-      <span class="keyword">const</span> <span class="variable">response</span> = <span class="keyword">await</span> <span class="function">fetch</span>(<span class="variable">url</span>);
-      
-      <span class="keyword">if</span> (!<span class="variable">response</span>.<span class="property">ok</span>) {
-        <span class="keyword">throw new</span> <span class="function">Error</span>(<span class="string">\`HTTP error! status: \${<span class="variable">response</span>.<span class="property">status</span>}\`</span>);
-      }
-
-      <span class="keyword">const</span> <span class="variable">data</span> = <span class="keyword">await</span> <span class="variable">response</span>.<span class="function">json</span>();
-      <span class="function">setState</span>({ <span class="property">data</span>, <span class="property">loading</span>: <span class="keyword">false</span>, <span class="property">error</span>: <span class="keyword">null</span> });
-    } <span class="keyword">catch</span> (<span class="variable">error</span>) {
-      <span class="function">setState</span>({ <span class="property">data</span>: <span class="keyword">null</span>, <span class="property">loading</span>: <span class="keyword">false</span>, <span class="property">error</span>: <span class="variable">error</span> <span class="keyword">as</span> <span class="variable">Error</span> });
-    }
-  }, [<span class="variable">url</span>]);
-
-  <span class="function">useEffect</span>(() => {
-    <span class="keyword">if</span> (<span class="variable">enabled</span>) {
-      <span class="function">fetchData</span>();
-    }
-  }, [<span class="variable">enabled</span>, <span class="function">fetchData</span>]);
-
-  <span class="keyword">return</span> <span class="variable">state</span>;
-}`
+  <span class="keyword">return</span> (
+    <span class="operator">&lt;</span><span class="variable">form</span> <span class="property">onSubmit</span>={<span class="function">handleSubmit</span>} <span class="property">className</span>=<span class="string">"login-form"</span><span class="operator">&gt;</span>
+      <span class="operator">&lt;</span><span class="variable">input</span> 
+        <span class="property">type</span>=<span class="string">"email"</span> 
+        <span class="property">value</span>={<span class="variable">email</span>}
+        <span class="property">onChange</span>={<span class="variable">e</span> => <span class="function">setEmail</span>(<span class="variable">e</span>.<span class="property">target</span>.<span class="property">value</span>)}
+        <span class="property">placeholder</span>=<span class="string">"Email"</span>
+      /<span class="operator">&gt;</span>
+      <span class="operator">&lt;</span><span class="variable">button</span> <span class="property">type</span>=<span class="string">"submit"</span> <span class="property">disabled</span>={<span class="variable">loading</span>}<span class="operator">&gt;</span>
+        {loading ? <span class="string">'Loading...'</span> : <span class="string">'Sign In'</span>}
+      <span class="operator">&lt;/</span><span class="variable">button</span><span class="operator">&gt;</span>
+    <span class="operator">&lt;/</span><span class="variable">form</span><span class="operator">&gt;</span>
+  );
+};`
             },
             {
                 agent: 'qa-tester',
-                action: 'Writing integration tests',
-                file: 'auth.spec.ts',
-                language: 'typescript',
-                code: `<span class="keyword">import</span> { <span class="variable">Test</span>, <span class="variable">TestingModule</span> } <span class="keyword">from</span> <span class="string">'@nestjs/testing'</span>;
-<span class="keyword">import</span> { <span class="variable">INestApplication</span> } <span class="keyword">from</span> <span class="string">'@nestjs/common'</span>;
-<span class="keyword">import</span> <span class="variable">request</span> <span class="keyword">from</span> <span class="string">'supertest'</span>;
-<span class="keyword">import</span> { <span class="variable">AppModule</span> } <span class="keyword">from</span> <span class="string">'./../src/app.module'</span>;
+                action: 'Writing authentication tests',
+                file: 'auth.test.ts',
+                code: `<span class="keyword">import</span> { <span class="function">describe</span>, <span class="function">it</span>, <span class="function">expect</span> } <span class="keyword">from</span> <span class="string">'vitest'</span>;
+<span class="keyword">import</span> { <span class="function">render</span>, <span class="function">screen</span>, <span class="function">fireEvent</span> } <span class="keyword">from</span> <span class="string">'@testing-library/react'</span>;
+<span class="keyword">import</span> { <span class="function">LoginForm</span> } <span class="keyword">from</span> <span class="string">'./LoginForm'</span>;
 
-<span class="function">describe</span>(<span class="string">'AuthController (e2e)'</span>, () => {
-  <span class="keyword">let</span> <span class="variable">app</span>: <span class="variable">INestApplication</span>;
-
-  <span class="function">beforeEach</span>(<span class="keyword">async</span> () => {
-    <span class="keyword">const</span> <span class="variable">moduleFixture</span>: <span class="variable">TestingModule</span> = <span class="keyword">await</span> <span class="variable">Test</span>.<span class="function">createTestingModule</span>({
-      <span class="property">imports</span>: [<span class="variable">AppModule</span>],
-    }).<span class="function">compile</span>();
-
-    <span class="variable">app</span> = <span class="variable">moduleFixture</span>.<span class="function">createNestApplication</span>();
-    <span class="keyword">await</span> <span class="variable">app</span>.<span class="function">init</span>();
+<span class="function">describe</span>(<span class="string">'LoginForm'</span>, () => {
+  <span class="function">it</span>(<span class="string">'renders email and password inputs'</span>, () => {
+    <span class="function">render</span>(<span class="operator">&lt;</span><span class="function">LoginForm</span> /<span class="operator">&gt;</span>);
+    <span class="function">expect</span>(<span class="function">screen</span>.<span class="function">getByPlaceholderText</span>(<span class="string">'Email'</span>)).<span class="function">toBeInTheDocument</span>();
+    <span class="function">expect</span>(<span class="function">screen</span>.<span class="function">getByPlaceholderText</span>(<span class="string">'Password'</span>)).<span class="function">toBeInTheDocument</span>();
   });
 
-  <span class="function">it</span>(<span class="string">'/auth/login (POST) - should return access token'</span>, () => {
-    <span class="keyword">return</span> <span class="function">request</span>(<span class="variable">app</span>.<span class="function">getHttpServer</span>())
-      .<span class="function">post</span>(<span class="string">'/auth/login'</span>)
-      .<span class="function">send</span>({ <span class="property">email</span>: <span class="string">'test@example.com'</span>, <span class="property">password</span>: <span class="string">'password123'</span> })
-      .<span class="function">expect</span>(<span class="number">201</span>)
-      .<span class="function">expect</span>((<span class="variable">res</span>) => {
-        <span class="function">expect</span>(<span class="variable">res</span>.<span class="property">body</span>.<span class="property">access_token</span>).<span class="function">toBeDefined</span>();
-        <span class="function">expect</span>(<span class="variable">res</span>.<span class="property">body</span>.<span class="property">user</span>.<span class="property">email</span>).<span class="function">toBe</span>(<span class="string">'test@example.com'</span>);
-      });
-  });
-
-  <span class="function">afterAll</span>(<span class="keyword">async</span> () => {
-    <span class="keyword">await</span> <span class="variable">app</span>.<span class="function">close</span>();
+  <span class="function">it</span>(<span class="string">'submits form with credentials'</span>, <span class="keyword">async</span> () => {
+    <span class="keyword">const</span> <span class="function">mockLogin</span> = <span class="function">vi</span>.<span class="function">fn</span>();
+    <span class="function">render</span>(<span class="operator">&lt;</span><span class="function">LoginForm</span> <span class="property">onSubmit</span>={<span class="function">mockLogin</span>} /<span class="operator">&gt;</span>);
+    
+    <span class="function">fireEvent</span>.<span class="function">change</span>(<span class="function">screen</span>.<span class="function">getByPlaceholderText</span>(<span class="string">'Email'</span>), {
+      <span class="property">target</span>: { <span class="property">value</span>: <span class="string">'test@example.com'</span> }
+    });
+    
+    <span class="function">fireEvent</span>.<span class="function">click</span>(<span class="function">screen</span>.<span class="function">getByText</span>(<span class="string">'Sign In'</span>));
+    
+    <span class="function">expect</span>(<span class="function">mockLogin</span>).<span class="function">toHaveBeenCalledWith</span>({
+      <span class="property">email</span>: <span class="string">'test@example.com'</span>,
+    });
   });
 });`
             }
@@ -694,9 +648,7 @@
         
         let currentSnippetIndex = 0;
         let currentCharIndex = 0;
-        let isDeleting = false;
-        let typingSpeed = 20;
-        let pauseDuration = 3000;
+        let isPaused = false;
         
         const codeArea = document.getElementById('code-area');
         const agentNameEl = document.querySelector('.agent-name');
@@ -719,6 +671,23 @@
             return colors[name] || '#ff570a';
         }
         
+        function switchToNextSnippet() {
+            // Move to next snippet
+            currentSnippetIndex = (currentSnippetIndex + 1) % codeSnippets.length;
+            currentCharIndex = 0;
+            isPaused = false;
+            
+            // Clear and start fresh
+            codeArea.innerHTML = `
+                <div class="code-line">
+                    <span class="line-number">1</span>
+                    <span class="line-content" id="line-1"></span><span class="cursor"></span>
+                </div>
+            `;
+            
+            typeCode();
+        }
+        
         function typeCode() {
             const snippet = codeSnippets[currentSnippetIndex];
             const code = snippet.code;
@@ -734,85 +703,48 @@
             codeTabs[0].textContent = snippet.file;
             codeStatus.innerHTML = `<span class="status-dot"></span>${snippet.agent} agent writing...`;
             
-            if (!isDeleting) {
-                // Typing
-                if (currentCharIndex < code.length) {
-                    const char = code[currentCharIndex];
-                    
-                    // Check if we're starting a new line
-                    if (char === '\n') {
-                        const lineCount = (code.substring(0, currentCharIndex).match(/\n/g) || []).length + 2;
-                        codeArea.innerHTML += `
-                            <div class="code-line">
-                                <span class="line-number">${lineCount}</span>
-                                <span class="line-content" id="line-${lineCount}"></span><span class="cursor"></span>
-                            </div>
-                        `;
-                    } else {
-                        // Add character to current line
-                        const lines = codeArea.querySelectorAll('.line-content');
-                        const currentLine = lines[lines.length - 1];
-                        if (currentLine) {
-                            currentLine.innerHTML = code.substring(0, currentCharIndex + 1).split('\n').pop();
-                        }
-                    }
-                    
-                    currentCharIndex++;
-                    
-                    // Variable typing speed for realism
-                    const speed = Math.random() * 30 + 10;
-                    setTimeout(typeCode, speed);
-                } else {
-                    // Finished typing, pause before deleting
-                    setTimeout(() => {
-                        isDeleting = true;
-                        typeCode();
-                    }, pauseDuration);
-                }
-            } else {
-                // Deleting
-                if (currentCharIndex > 0) {
-                    currentCharIndex--;
-                    
-                    const lines = code.split('\n');
-                    let charCount = 0;
-                    let currentLineIndex = 0;
-                    
-                    for (let i = 0; i < lines.length; i++) {
-                        if (charCount + lines[i].length >= currentCharIndex) {
-                            currentLineIndex = i;
-                            break;
-                        }
-                        charCount += lines[i].length + 1;
-                    }
-                    
-                    // Rebuild visible content
-                    const visibleLines = code.substring(0, currentCharIndex).split('\n');
-                    codeArea.innerHTML = visibleLines.map((line, i) => `
+            if (isPaused) {
+                // Wait then switch to next agent
+                setTimeout(switchToNextSnippet, 2000);
+                return;
+            }
+            
+            // Typing
+            if (currentCharIndex < code.length) {
+                const char = code[currentCharIndex];
+                
+                // Check if we're starting a new line
+                if (char === '\n') {
+                    const lineCount = (code.substring(0, currentCharIndex).match(/\n/g) || []).length + 2;
+                    codeArea.innerHTML += `
                         <div class="code-line">
-                            <span class="line-number">${i + 1}</span>
-                            <span class="line-content" id="line-${i + 1}">${line}</span>${i === visibleLines.length - 1 ? '<span class="cursor"></span>' : ''}
-                        </div>
-                    `).join('');
-                    
-                    setTimeout(typeCode, 5);
-                } else {
-                    // Finished deleting, move to next snippet
-                    isDeleting = false;
-                    currentSnippetIndex = (currentSnippetIndex + 1) % codeSnippets.length;
-                    codeArea.innerHTML = `
-                        <div class="code-line">
-                            <span class="line-number">1</span>
-                            <span class="line-content" id="line-1"></span><span class="cursor"></span>
+                            <span class="line-number">${lineCount}</span>
+                            <span class="line-content" id="line-${lineCount}"></span><span class="cursor"></span>
                         </div>
                     `;
-                    setTimeout(typeCode, 500);
+                } else {
+                    // Add character to current line
+                    const lines = codeArea.querySelectorAll('.line-content');
+                    const currentLine = lines[lines.length - 1];
+                    if (currentLine) {
+                        currentLine.innerHTML = code.substring(0, currentCharIndex + 1).split('\n').pop();
+                    }
                 }
+                
+                currentCharIndex++;
+                
+                // Variable typing speed for realism
+                const speed = Math.random() * 20 + 5;
+                setTimeout(typeCode, speed);
+            } else {
+                // Finished typing, pause then switch
+                isPaused = true;
+                setTimeout(switchToNextSnippet, 1500);
             }
         }
         
         // Start the animation
-        setTimeout(typeCode, 1000);
+        setTimeout(typeCode, 500);
     </script>
 </body>
 </html>
