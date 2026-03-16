@@ -880,7 +880,7 @@ bot.onText(/\/testagents(?:\s+(\S+))?/, async (msg, match) => {
 
 // /testagentmodel command - Test a specific provider/model combination
 // Usage: /testagentmodel <provider> <model>
-// Example: /testagentmodel zhipu glm-5
+// Example: /testagentmodel custom
 bot.onText(/\/testagentmodel\s+(\S+)\s+(\S+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
 
@@ -1837,8 +1837,8 @@ bot.onText(/\/agentmodels/, async (msg) => {
     
     // Show global defaults
     message += '🌍 **Global Defaults:**\n';
-    message += `Provider: ${globalDefaults.defaultProvider || 'zhipu'}\n`;
-    message += `Model: ${globalDefaults.defaultModel || 'glm-5'}\n\n`;
+    message += `Provider: ${globalDefaults.defaultProvider || 'zhipuglm5'}\n`;
+    message += `Model: ${globalDefaults.defaultModel || '(provider default)'}\n\n`;
     
     // Show per-agent configuration
     message += '📋 **Per-Agent Configuration:**\n';
@@ -1851,9 +1851,9 @@ bot.onText(/\/agentmodels/, async (msg) => {
     
     message += '\n💡 **Commands to change:**\n';
     message += '`/setagent <agent> <provider> <model>`\n';
-    message += 'Example: `/setagent planner zhipu glm-5`\n\n';
-    message += '`/setallagents <provider> <model>`\n';
-    message += 'Example: `/setallagents zhipu glm-4-plus`\n\n';
+    message += 'Example: `/setagent planner zhipuglm5`\n\n';
+    message += '`/setallagents <provider>`\n';
+    message += 'Example: `/setallagents zhipuglm5`\n\n';
     message += '**Available providers:**\n';
     for (const [key, info] of Object.entries(providers)) {
       message += `• ${key}: ${info.name}\n`;
@@ -1868,7 +1868,7 @@ bot.onText(/\/agentmodels/, async (msg) => {
 
 // /setagent command - Set AI model for a specific agent
 // Usage: /setagent <agent> <provider> <model>
-// Example: /setagent planner zhipu glm-5
+// Example: /setagent planner custom
 // For custom models: /setagent <agent> custom <custom_key>
 bot.onText(/\/setagent\s+(\S+)\s+(\S+)\s+(\S+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
@@ -1982,7 +1982,7 @@ bot.onText(/\/setagent\s+(\S+)\s+(\S+)\s+(\S+)/, async (msg, match) => {
 
 // /setallagents command - Set AI model for ALL agents at once
 // Usage: /setallagents <provider> <model>
-// Example: /setallagents zhipu glm-5
+// Example: /setallagents custom
 // For custom models: /setallagents custom <custom_key>
 bot.onText(/\/setallagents\s+(\S+)\s+(\S+)/, async (msg, match) => {
   if (!isAuthorized(msg.chat.id)) return;
@@ -2086,24 +2086,15 @@ bot.onText(/\/model(?:\s+(\S+))?(?:\s+(\S+))?/, async (msg, match) => {
   const modelName = match[2]?.trim();
   
   try {
-    // If no provider specified, show interactive selection
+    // If no provider specified, show interactive selection (custom only)
     if (!providerName) {
       const providers = aiClient.getAvailableProviders();
-      const availableProviders = Object.entries(providers)
+      const allProviders = Object.entries(providers)
         .filter(([_, p]) => p.enabled)
-        .map(([name, _]) => name);
-      
-      const aiProviders = ['anthropic', 'moonshot', 'deepseek', 'zhipu'];
-      const customProviders = sharedConfig.getCustomProviders ? Object.keys(sharedConfig.getCustomProviders()) : [];
-      const allProviders = [...new Set([...aiProviders, ...customProviders])].filter(p => 
-        availableProviders.includes(p)
-      );
+        .map(([name]) => name);
       
       const keyboard = allProviders.map(provider => ([{
-        text: provider === 'anthropic' ? '🤖 Anthropic (Claude)' :
-              provider === 'moonshot' ? '🌙 Moonshot AI' :
-              provider === 'deepseek' ? '🔍 DeepSeek' :
-              provider === 'zhipu' ? '⚡ Zhipu AI' : `🔧 ${provider}`,
+        text: `🔧 ${providers[provider]?.name || provider}`,
         callback_data: `showmodels:${provider}:${msg.from.id}`,
       }]));
       
@@ -2842,16 +2833,14 @@ bot.on('callback_query', async (query) => {
         return;
       }
       
-      // Get available providers
-      const aiProviders = ['anthropic', 'moonshot', 'deepseek', 'zhipu'];
-      const customProviders = sharedConfig.getCustomProviders ? Object.keys(sharedConfig.getCustomProviders()) : [];
-      const allProviders = [...aiProviders, ...customProviders];
+      // Get available providers (custom only)
+      const providers = aiClient.getAvailableProviders();
+      const allProviders = Object.entries(providers)
+        .filter(([_, p]) => p.enabled)
+        .map(([name]) => name);
       
       const keyboard = allProviders.map(provider => ([{
-        text: provider === 'anthropic' ? 'Anthropic (Claude)' :
-              provider === 'moonshot' ? '🌙 Moonshot AI' :
-              provider === 'deepseek' ? '🔍 DeepSeek' :
-              provider === 'zhipu' ? '⚡ Zhipu AI' : `🔧 ${provider}`,
+        text: `🔧 ${providers[provider]?.name || provider}`,
         callback_data: `showmodels:${provider}:${userId}`,
       }]));
       

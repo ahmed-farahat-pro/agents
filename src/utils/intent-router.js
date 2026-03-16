@@ -20,7 +20,7 @@ class IntentRouter {
     const providers = aiClient.getAvailableProviders();
     
     // Priority order for cheap providers
-    const cheapProviders = ['zhipu', 'deepseek', 'moonshot', 'anthropic'];
+    const cheapProviders = ['custom'];
     
     for (const provider of cheapProviders) {
       if (providers[provider]?.enabled) {

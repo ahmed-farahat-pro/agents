@@ -68,7 +68,7 @@ class BaseAgent extends EventEmitter {
 
   /**
    * Call AI API with the agent's system message
-   * Supports multiple providers: anthropic, zhipu, moonshot, deepseek
+   * Uses custom model (from dashboard). OpenAI used for voice only.
    */
   async callAI(prompt, options = {}) {
     const provider = options.provider || this.provider;

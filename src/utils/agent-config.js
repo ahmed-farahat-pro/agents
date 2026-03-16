@@ -41,66 +41,50 @@ class AgentConfigManager {
   getDefaultConfig() {
     return {
       global: {
-        defaultProvider: 'zhipu',
-        defaultModel: 'glm-5',
-        fallbackProvider: 'anthropic',
-        fallbackModel: 'claude-3-5-sonnet-20241022',
+        defaultProvider: 'zhipuglm5',
+        fallbackProvider: 'zhipuglm5',
       },
       orchestrator: {
         name: 'orchestrator',
         role: 'Team Lead & Router',
-        provider: 'zhipu',
-        model: 'glm-5',
-        fallbackProvider: 'anthropic',
-        fallbackModel: 'claude-3-5-sonnet-20241022',
+        provider: 'zhipuglm5',
+        fallbackProvider: 'zhipuglm5',
       },
       planner: {
         name: 'planner',
         role: 'Architecture & Planning',
-        provider: 'zhipu',
-        model: 'glm-5',
-        fallbackProvider: 'anthropic',
-        fallbackModel: 'claude-3-5-sonnet-20241022',
+        provider: 'zhipuglm5',
+        fallbackProvider: 'zhipuglm5',
       },
       'backend-dev': {
         name: 'backend-dev',
         role: 'Backend Developer',
-        provider: 'zhipu',
-        model: 'glm-5',
-        fallbackProvider: 'anthropic',
-        fallbackModel: 'claude-3-5-sonnet-20241022',
+        provider: 'zhipuglm5',
+        fallbackProvider: 'zhipuglm5',
       },
       'frontend-dev': {
         name: 'frontend-dev',
         role: 'Frontend Developer',
-        provider: 'zhipu',
-        model: 'glm-4-plus',
-        fallbackProvider: 'anthropic',
-        fallbackModel: 'claude-3-haiku-20240307',
+        provider: 'zhipuglm5',
+        fallbackProvider: 'zhipuglm5',
       },
       'qa-tester': {
         name: 'qa-tester',
         role: 'Quality Assurance',
-        provider: 'zhipu',
-        model: 'glm-4',
-        fallbackProvider: 'anthropic',
-        fallbackModel: 'claude-3-haiku-20240307',
+        provider: 'zhipuglm5',
+        fallbackProvider: 'zhipuglm5',
       },
       'code-reviewer': {
         name: 'code-reviewer',
         role: 'Code Reviewer',
-        provider: 'zhipu',
-        model: 'glm-5',
-        fallbackProvider: 'anthropic',
-        fallbackModel: 'claude-3-5-sonnet-20241022',
+        provider: 'zhipuglm5',
+        fallbackProvider: 'zhipuglm5',
       },
       reporter: {
         name: 'reporter',
         role: 'Reporter & Communicator',
-        provider: 'zhipu',
-        model: 'glm-4',
-        fallbackProvider: 'anthropic',
-        fallbackModel: 'claude-3-haiku-20240307',
+        provider: 'zhipuglm5',
+        fallbackProvider: 'zhipuglm5',
       },
     };
   }
@@ -160,8 +144,7 @@ class AgentConfigManager {
     }
     
     return this.fileConfig.global || {
-      defaultProvider: 'zhipu',
-      defaultModel: 'glm-5',
+      defaultProvider: 'zhipuglm5',
     };
   }
 
@@ -291,25 +274,13 @@ class AgentConfigManager {
       }
     }
     
-    // Default providers
-    return {
-      anthropic: {
-        name: 'Anthropic Claude',
-        models: ['claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-haiku-20240307'],
-      },
-      zhipu: {
-        name: 'Zhipu AI (GLM)',
-        models: ['glm-5', 'glm-4.5', 'glm-4', 'glm-4-plus', 'glm-4-flash', 'glm-4v', 'glm-4-long'],
-      },
-      moonshot: {
-        name: 'Moonshot AI',
-        models: ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k'],
-      },
-      deepseek: {
-        name: 'DeepSeek',
-        models: ['deepseek-chat', 'deepseek-coder'],
-      },
-    };
+    // Only custom model (from dashboard)
+    try {
+      const aiClient = require('./ai-client');
+      return aiClient.getAvailableProviders();
+    } catch (e) {
+      return { custom: { name: 'Custom model', models: [], defaultModel: null } };
+    }
   }
 
   /**

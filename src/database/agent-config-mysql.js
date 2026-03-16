@@ -135,10 +135,8 @@ class AgentConfigMySQL {
       `);
       
       const defaults = {
-        defaultProvider: 'zhipu',
-        defaultModel: 'glm-5',
-        fallbackProvider: 'anthropic',
-        fallbackModel: 'claude-3-5-sonnet-20241022',
+        defaultProvider: 'zhipuglm5',
+        fallbackProvider: 'zhipuglm5',
       };
       
       for (const row of rows) {
@@ -162,10 +160,8 @@ class AgentConfigMySQL {
     } catch (error) {
       logger.error('[AgentConfigMySQL] Failed to get global defaults:', error);
       return {
-        defaultProvider: 'zhipu',
-        defaultModel: 'glm-5',
-        fallbackProvider: 'anthropic',
-        fallbackModel: 'claude-3-5-sonnet-20240229',
+        defaultProvider: 'zhipuglm5',
+        fallbackProvider: 'zhipuglm5',
       };
     }
   }

@@ -55,18 +55,16 @@ async function checkTelegram() {
 }
 
 async function checkAIProvider() {
-  log.section('AI provider (custom / Zhipu GLM)');
+  log.section('AI provider (custom model)');
   try {
-    const AIClient = require('../src/utils/ai-client');
-    const client = new AIClient();
-    const status = client.getAPIKeysStatus();
-    const enabled = Object.entries(status.providers || {}).filter(([, p]) => p.configured && p.enabled);
-    if (enabled.length === 0) {
-      log.error('No AI provider configured (set custom provider or Zhipu in config)');
+    const aiClient = require('../src/utils/ai-client');
+    const status = aiClient.getAPIKeysStatus();
+    if (!status.ready || status.ready.length === 0) {
+      log.error('No custom AI model configured (add one in dashboard)');
       return false;
     }
-    log.success(`AI provider ready: ${enabled.map(([k]) => k).join(', ')}`);
-    enabled.forEach(([key, p]) => log.info(`  ${key}: ${p.model || 'default'}`));
+    log.success(`AI provider ready: ${status.ready.map(p => p.key).join(', ')}`);
+    status.ready.forEach(p => log.info(`  ${p.key}: ${p.model || 'default'}`));
     return true;
   } catch (error) {
     log.error(`AI provider check failed: ${error.message}`);

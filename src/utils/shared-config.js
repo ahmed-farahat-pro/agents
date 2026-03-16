@@ -58,11 +58,8 @@ class SharedConfig {
     
     logger.info('[SharedConfig] ============================================');
     logger.info('[SharedConfig] Initialized with API keys:', {
-      anthropic: this.config.apiKeys.ANTHROPIC_API_KEY ? 'SET' : 'NOT SET',
-      zhipu: this.config.apiKeys.ZHIPU_API_KEY ? 'SET' : 'NOT SET',
-      moonshot: this.config.apiKeys.MOONSHOT_API_KEY ? 'SET' : 'NOT SET',
-      deepseek: this.config.apiKeys.DEEPSEEK_API_KEY ? 'SET' : 'NOT SET',
       openai: this.config.apiKeys.OPENAI_API_KEY ? 'SET' : 'NOT SET',
+      customModels: (this.config.customModels && Object.keys(this.config.customModels).length) || 0,
     });
     logger.info('[SharedConfig] ============================================');
   }

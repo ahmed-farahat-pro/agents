@@ -1,6 +1,6 @@
 /**
  * 🦉 Nigents - Multi-Provider AI Client
- * Only custom models (dashboard) + zhipu when provided by a custom; no Anthropic/Moonshot/DeepSeek built-in
+ * Only custom models (from dashboard). OpenAI is used separately for voice (Whisper).
  */
 
 const axios = require('axios');
@@ -14,7 +14,7 @@ class AIClient {
 
     this.refreshProviders();
     const agentsConfig = this.loadAgentsConfig();
-    const configDefault = process.env.DEFAULT_AI_PROVIDER || agentsConfig?.global?.defaultProvider || 'zhipu';
+    const configDefault = process.env.DEFAULT_AI_PROVIDER || agentsConfig?.global?.defaultProvider || 'zhipuglm5';
     this.defaultProvider = this.providers[configDefault]?.enabled ? configDefault : this.getFirstEnabledProvider();
     this.defaultModel = agentsConfig?.global?.defaultModel || null;
 
@@ -23,8 +23,8 @@ class AIClient {
   }
 
   getFirstEnabledProvider() {
-    const key = Object.keys(this.providers).find(k => this.providers[k]?.enabled);
-    return key || 'zhipu';
+    const key = Object.keys(this.providers).find(k => this.providers[k]?.enabled && k !== 'custom');
+    return key || this.providers.custom ? 'custom' : null;
   }
 
   /**
@@ -40,19 +40,18 @@ class AIClient {
   }
 
   /**
-   * Refresh provider configurations – only custom models + zhipu from custom (no Anthropic/Moonshot/DeepSeek)
+   * Refresh provider configurations – only custom models from dashboard
    */
   refreshProviders() {
     const config = sharedConfig.getFullConfig();
     this.providers = {};
 
     const customModels = config.customModels || {};
-    const zhipuCodingUrl = 'https://api.z.ai/api/coding/paas/v4';
-    let zhipuFromCustom = null;
+    let firstCustomKey = null;
 
     for (const [key, model] of Object.entries(customModels)) {
       if (model.enabled && model.apiKey) {
-        this.providers[key] = {
+        const provider = {
           name: model.name,
           enabled: true,
           apiKey: model.apiKey,
@@ -61,26 +60,17 @@ class AIClient {
           defaultModel: model.model,
           isCustom: true,
         };
+        this.providers[key] = provider;
+        if (firstCustomKey === null) firstCustomKey = key;
         logger.info(`[AIClient] Loaded custom provider: ${model.name} (${key})`);
-        if (model.baseUrl === zhipuCodingUrl && model.apiKey) {
-          zhipuFromCustom = {
-            name: model.name,
-            enabled: true,
-            apiKey: model.apiKey,
-            baseUrl: model.baseUrl,
-            models: [model.model],
-            defaultModel: model.model,
-            isCodingEndpoint: true,
-          };
-        }
       }
     }
-    if (zhipuFromCustom) {
-      this.providers.zhipu = zhipuFromCustom;
-      logger.info('[AIClient] zhipu alias from custom provider for agents using provider "zhipu"');
+    if (firstCustomKey) {
+      this.providers.custom = this.providers[firstCustomKey];
+      logger.info('[AIClient] Alias "custom" points to first provider:', firstCustomKey);
     }
 
-    logger.info('[AIClient] Providers refreshed (custom + zhipu only)');
+    logger.info('[AIClient] Providers refreshed (custom only)');
   }
 
   /**
@@ -309,88 +299,6 @@ class AIClient {
         duration,
         promptLength: prompt.length,
         error: error.message,
-      });
-
-      throw error;
-    }
-  }
-
-  /**
-   * Call Zhipu AI (GLM)
-   */
-  async callZhipu(prompt, options = {}) {
-    this.refreshProviders();
-    
-    const provider = this.providers.zhipu;
-    const model = options.model || provider.defaultModel;
-    const startTime = Date.now();
-
-    if (!provider.apiKey) {
-      throw new Error('Zhipu API key not configured');
-    }
-
-    logger.info(`[AIClient] Zhipu REQUEST:`, {
-      model,
-      promptLength: prompt.length,
-      baseUrl: provider.baseUrl,
-    });
-
-    try {
-      // Zhipu uses X-API-Key header format
-      const response = await axios.post(
-        `${provider.baseUrl}/chat/completions`,
-        {
-          model,
-          messages: [
-            { role: 'system', content: options.systemMessage || 'You are a helpful assistant.' },
-            { role: 'user', content: prompt },
-          ],
-          temperature: options.temperature || 0.7,
-          max_tokens: options.maxTokens || 4096,
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${provider.apiKey}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      const duration = Date.now() - startTime;
-      const content = response.data.choices[0].message.content;
-
-      this.logRequest({
-        provider: 'zhipu',
-        model,
-        operation: 'chat.completion',
-        status: 'success',
-        duration,
-        promptLength: prompt.length,
-        responseLength: content.length,
-        promptTokens: response.data.usage?.prompt_tokens || 0,
-        completionTokens: response.data.usage?.completion_tokens || 0,
-        totalTokens: response.data.usage?.total_tokens || 0,
-      });
-
-      return {
-        success: true,
-        content,
-        provider: 'zhipu',
-        model,
-        usage: response.data.usage,
-        duration,
-      };
-    } catch (error) {
-      const duration = Date.now() - startTime;
-      
-      this.logRequest({
-        provider: 'zhipu',
-        model,
-        operation: 'chat.completion',
-        status: 'error',
-        duration,
-        promptLength: prompt.length,
-        error: error.response?.data?.error?.message || error.message,
       });
 
       throw error;
@@ -660,11 +568,8 @@ class AIClient {
       model: model || 'default',
     });
 
-    if (this.providers[provider]?.isCustom) {
+    if (this.providers[provider]?.enabled) {
       return this.callCustom(provider, prompt, resolvedOptions);
-    }
-    if (this.providers[provider]?.enabled && provider === 'zhipu') {
-      return this.callZhipu(prompt, resolvedOptions);
     }
     if (!this.providers[provider]?.enabled) {
       const fallback = this.getFirstEnabledProvider();
@@ -678,7 +583,7 @@ class AIClient {
   }
 
   /**
-   * Try calling with fallback providers (only enabled: custom + zhipu)
+   * Try calling with fallback providers (only enabled custom providers)
    */
   async callWithFallback(prompt, options = {}, fallbackProviders = null) {
     this.refreshProviders();
