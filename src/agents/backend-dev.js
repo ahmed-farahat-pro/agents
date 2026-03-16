@@ -60,6 +60,7 @@ class BackendDevAgent extends BaseAgent {
       return {
         success: true,
         branch: plan.branch,
+        projectId: plan.project || plan.projectId,
         commit: commitResult,
         stepsCompleted: implementationResults.length,
         message: `Implementation complete. Branch: ${plan.branch}`,
@@ -103,13 +104,14 @@ class BackendDevAgent extends BaseAgent {
       // Validate plan has steps
       if (!plan || !plan.steps || !Array.isArray(plan.steps)) {
         logger.warn('[BackendDev] Plan has no steps, using minimal fallback');
-        return {
-          success: true,
-          branch: plan?.branch || 'unknown',
-          fallbackMode: true,
-          stepsCompleted: 0,
-          message: `Implementation simulated. No steps defined in plan.`,
-        };
+      return {
+        success: true,
+        branch: plan?.branch || 'unknown',
+        projectId: plan?.project || plan?.projectId,
+        fallbackMode: true,
+        stepsCompleted: 0,
+        message: `Implementation simulated. No steps defined in plan.`,
+      };
       }
       
       // Generate code for each step using direct AI calls
@@ -164,6 +166,7 @@ FILE: <filepath>
       return {
         success: true,
         branch: plan.branch,
+        projectId: plan.project || plan.projectId,
         fallbackMode: true,
         stepsCompleted: generatedCode.length,
         generatedCode,
@@ -178,6 +181,7 @@ FILE: <filepath>
       return {
         success: true,
         branch: plan.branch,
+        projectId: plan.project || plan.projectId,
         fallbackMode: true,
         stepsCompleted: 0,
         message: `Implementation simulated. Branch would be: ${plan.branch}`,

@@ -215,77 +215,89 @@ Dashboard: Login → Data from MySQL only (tasks, agents, activities)
 
 ## What is OpenHands?
 
-**OpenHands** is a code sandbox that runs inside a Docker container. It provides a safe, isolated environment where agents can:
+**OpenHands** is a **code execution sandbox** that runs in a Docker container. It lets the Backend Dev agent run real shell commands (git clone, npm install, file edits, tests) in an isolated workspace instead of on your host machine. When OpenHands is unavailable, Nigents falls back to generating code via AI and pushing it to GitLab via the API—so the app still delivers MRs, but without real in-sandbox execution.
+
+### What OpenHands does
 
 | Function | Description |
 |----------|-------------|
-| 📝 **Write Code** | Create and edit files in a controlled workspace |
-| 🔧 **Run Commands** | Execute shell commands, npm, git, etc. |
-| 🧪 **Run Tests** | Execute test suites safely |
-| 🔒 **Stay Isolated** | Cannot break your main server or system |
+| 📝 **Write code** | Create and edit files under `/workspace` in the container |
+| 🔧 **Run commands** | Execute shell commands: `git`, `npm`, `mvn`, custom scripts, etc. |
+| 🧪 **Run tests** | Run test suites inside the sandbox without affecting the host |
+| 📤 **Push to GitLab** | Clone via push URL, commit, and push from the container so the MR has real code |
 
-**Why OpenHands is Needed:**
+The Nigents app talks to OpenHands over HTTP: it sends commands (and optional file writes) to the service; the service runs them in the container and returns output and exit codes.
+
+### How OpenHands works
+
+1. **Service** – A separate process (e.g. OpenDevin or a compatible API) runs in Docker, usually on **port 3000**, and exposes:
+   - `POST /api/execute` – body: `{ commands: string[], working_dir?, timeout? }`; response: `{ exit_code, output?, error? }`
+   - Optional: file write endpoints if the service supports them.
+
+2. **Backend Dev flow** – The Backend Dev agent calls `openhands.executeCommands(commands, { workingDir, timeout })`. For example:
+   - Clone repo (using GitLab push URL), create branch, write files (via commands or file API), run tests, then commit and push.
+
+3. **When OpenHands is down** – The agent uses **fallback mode**: it generates code with AI and pushes the branch/commits via the **GitLab Commits API**, so you still get a branch and an MR with code to review; execution just didn’t happen in a sandbox.
+
+4. **Where it runs** – OpenHands runs in a **Docker container** with its own filesystem (e.g. `/workspace`). You can mount a host volume (e.g. `/home/ubuntu/workspace`) for persistence. The main Nigents app (bot, dashboard) stays on the host; only the sandbox runs in the container.
+
+The exact API contract and compatibility with images like `ghcr.io/opendevin/opendevin` are documented in **OPERATIONS.md**.
+
+### Why OpenHands is important
+
+- **Safety** – Code and commands run inside the container. A bad command or script can’t wipe your host or Nigents app; at worst, you restart the container.
+- **Real execution** – The agent can actually run `npm test`, `mvn verify`, or custom scripts and use real output to decide the next step, instead of only generating code without running it.
+- **Real Git workflow** – Clone → branch → edit → commit → push happens inside the sandbox, so the MR is backed by real commits from a real repo clone.
+- **Optional** – If you don’t run OpenHands, Nigents still works: the fallback pushes generated code via the GitLab API so you still get MRs and a working workflow.
 
 ```
-Without OpenHands (Dangerous):
+Without OpenHands (risky if agents wrote on the host):
 ┌─────────────────────────────────────┐
-│  Agent writes code directly to      │
-│  /home/ubuntu/nightowl/src/        │
-│                                     │
-│  Risk: Could accidentally delete    │
-│  critical files or break the app   │
+│  Agent would write/run on host      │
+│  e.g. /home/ubuntu/nightowl/src/    │
+│  Risk: accidental overwrites,      │
+│  broken app, or security issues     │
 └─────────────────────────────────────┘
 
-With OpenHands (Safe):
+With OpenHands (safe):
 ┌─────────────────────────────────────┐
-│  Agent writes code to:              │
-│  Docker Container → /workspace      │
-│                                     │
-│  Safe: If something breaks, only    │
-│  the container is affected          │
-│  Main server stays protected        │
+│  All code and commands run in       │
+│  Docker container → /workspace       │
+│  Host and Nigents app unchanged;    │
+│  if something breaks, reset container│
 └─────────────────────────────────────┘
 ```
 
-**How OpenHands Fits in the Workflow:**
+### How OpenHands fits in the workflow
 
 ```
-1. Backend Dev Agent receives task
+1. Backend Dev receives implementation plan
          ↓
-2. Needs to create new API endpoint
+2. Calls openhands.executeCommands([...])  (clone, branch, edit, test, commit, push)
          ↓
-3. Calls OpenHands MCP tool:
-   "Create file /workspace/PaymentController.java"
+3. OpenHands runs commands in container, returns output/exit code
          ↓
-4. OpenHands writes file in container
+4. If success → branch is on GitLab with commits
          ↓
-5. Agent tests the code in container
+5. Orchestrator creates MR (task branch → main)
          ↓
-6. If tests pass → Git commit from container
-         ↓
-7. Changes pushed to GitLab
+6. If OpenHands was unavailable → fallback: same MR, code pushed via GitLab API
 ```
 
-**OpenHands Runs On:**
-- **Port 3000** inside EC2
-- **Docker container** with isolated filesystem
-- **Mounted volume** `/home/ubuntu/workspace` for persistence
-- **Separate from main app** - crash won't affect Nigents
+**OpenHands runs on:** Port 3000 (or `OPENHANDS_URL`); Docker container; optional mounted volume for `/workspace`. Separate from the main app—a sandbox crash doesn’t stop the bot or dashboard.
 
-**Example Usage in Code:**
+**Example usage in code** (matches `src/tools/openhands.js`):
+
 ```javascript
-// Backend Dev agent uses OpenHands via MCP
-await openhands.execute({
-  action: 'write_file',
-  path: '/workspace/src/PaymentController.java',
-  content: 'public class PaymentController { ... }'
-});
+// Backend Dev agent: run commands in the sandbox
+const result = await openhands.executeCommands(
+  ['git clone --branch main ' + pushUrl + ' .', 'npm install', 'npm test'],
+  { workingDir: '/workspace', timeout: 300 }
+);
+// result: { success, output, error, exitCode }
 
-// Run tests safely
-await openhands.execute({
-  action: 'run_command',
-  command: 'mvn test'
-});
+// Write a file (if the OpenHands service supports it)
+await openhands.writeFile('/workspace/src/App.js', content);
 ```
 
 ### How It Works (High Level)
@@ -324,13 +336,13 @@ You (Telegram/Phone)          EC2 Server (AWS)                GitLab
 
 | Agent | Role | Primary Model | Key Responsibilities |
 |-------|------|---------------|---------------------|
-| **Orchestrator** | Team Lead & Router | Claude Sonnet | Receives tasks, coordinates all agents, manages workflow |
-| **Planner** | Architecture & Planning | Claude Sonnet | Analyzes codebase, creates implementation plans |
-| **Backend Dev** | Backend Developer | Claude Sonnet | Writes Spring Boot/Node.js/Python, manages infrastructure |
-| **Frontend Dev** | Frontend Developer | Claude Haiku | React/React Native, RTL support, UI/UX |
-| **QA Tester** | Quality Assurance | Claude Haiku | Writes tests, runs suites, validates functionality |
-| **Code Reviewer** | Code Reviewer | Claude Sonnet | Security audit, quality checks, RTL compliance |
-| **Reporter** | Reporter & Communicator | Claude Haiku | Telegram updates, daily reports, cost tracking |
+| **Orchestrator** | Team Lead & Router | Configurable (default: custom GLM) | Receives tasks, coordinates all agents, manages workflow |
+| **Planner** | Architecture & Planning | Configurable (default: custom GLM) | Analyzes codebase, creates implementation plans |
+| **Backend Dev** | Backend Developer | Configurable (default: custom GLM) | Writes Spring Boot/Node.js/Python, manages infrastructure |
+| **Frontend Dev** | Frontend Developer | Configurable (default: custom GLM) | React/React Native, RTL support, UI/UX |
+| **QA Tester** | Quality Assurance | Configurable (default: custom GLM) | Writes tests, runs suites, validates functionality |
+| **Code Reviewer** | Code Reviewer | Configurable (default: custom GLM) | Security audit, quality checks, RTL compliance |
+| **Reporter** | Reporter & Communicator | Configurable (default: custom GLM) | Telegram updates, daily reports, cost tracking |
 
 ### Agent Communication Flow
 
@@ -545,6 +557,9 @@ This section shows exactly how the code flows from user input to dashboard visua
 │  const io = new Server(server);         │
 │  // Socket.io for real-time updates     │
 │  io.on('connection', (socket) => {      │
+│    // init: from getDashboardState()   │
+│    // (MySQL when DB enabled, else     │
+│    //  in-memory dashboardState)       │
 │    socket.emit('init', dashboardState); │
 │  });                                    │
 └─────────────────────────────────────────┘
@@ -619,7 +634,7 @@ This section shows exactly how the code flows from user input to dashboard visua
 | `src/agents/code-reviewer.js` | Review | `reviewCode()`, `securityAudit()` |
 | `src/autogen/group-chat.js` | Agent coordination | `executePlan()`, `manageConversation()` |
 | `src/dashboard/server.js` | Dashboard API | Real-time updates via Socket.io |
-| `src/utils/ai-client.js` | AI provider abstraction | `call()`, `callClaude()`, `callZhipu()` |
+| `src/utils/ai-client.js` | AI provider abstraction | `call()` with configurable provider (custom GLM, OpenAI for voice, etc.) |
 | `src/utils/mcp-client.js` | MCP tool calling | `callTool()`, `listTools()` |
 
 ### Data Flow Examples
@@ -768,10 +783,10 @@ codeReviewer.securityReview()
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         EXTERNAL SERVICES                           │
 │                                                                     │
-│   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐     │
-│   │  GITLAB  │    │ OPENHANDS│    │ANTHROPIC│    │  DOCKER  │     │
-│   │   API    │    │Sandbox   │    │   AI     │    │  Engine  │     │
-│   └──────────┘    └──────────┘    └──────────┘    └──────────┘     │
+│   ┌──────────┐    ┌──────────┐    ┌──────────────┐    ┌──────────┐     │
+│   │  GITLAB  │    │ OPENHANDS│    │ AI (config.)  │    │  DOCKER  │     │
+│   │   API    │    │ Sandbox  │    │ Custom / GLM  │    │  Engine  │     │
+│   └──────────┘    └──────────┘    └──────────────┘    └──────────┘     │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -1188,12 +1203,12 @@ async generatePlanWithMCP(task, codebaseAnalysis, project) {
                                    │                      │
                                    ▼                      ▼
                         ┌──────────────────┐     ┌──────────────────┐
-                        │ 1. Get provider  │     │ callZhipu()      │
-                        │    from options  │     │ callAnthropic()  │
-                        │                  │     │ callMoonshot()   │
-                        │ 2. Check if      │     │ callDeepseek()   │
+                        │ 1. Get provider  │     │ call() with      │
+                        │    from config  │     │ provider-specific│
+                        │                  │     │ (custom GLM,     │
+                        │ 2. Check if      │     │  OpenAI voice)   │
                         │    enabled       │     │                  │
-                        │                  │     │ Each handles:    │
+                        │                  │     │ Handles:        │
                         │ 3. Route to      │     │ • API key check  │
                         │    specific      │     │ • Request build  │
                         │    function      │     │ • Response parse │
@@ -1207,7 +1222,7 @@ async generatePlanWithMCP(task, codebaseAnalysis, project) {
 |-------|-------|----------|
 | `401 invalid x-api-key` | Wrong API key | Check `ZHIPU_API_KEY` in `.env` |
 | `Provider anthropic not enabled` | Missing API key | Add `ANTHROPIC_API_KEY` or switch provider |
-| `Unknown provider: xxx` | Typo in provider name | Use: zhipu, anthropic, moonshot, deepseek |
+| `Unknown provider: xxx` | Typo in provider name | Check config: default is custom/zhipuglm5; others configurable |
 | Model ignored | Model not specified | Check `config/agents.json` model field |
 
 ### Debugging Planning Issues
@@ -1910,8 +1925,6 @@ socket.emit('streamLogs', { enabled: true });
 
 ---
 
----
-
 ## Future work
 
 Planned improvements and additions:
@@ -2042,7 +2055,7 @@ git --version
 
 ### Step 1: Clone and Setup
 ```bash
-git clone https://github.com/ahmed-farahat-pro/agents.git nigents
+git clone https://gitlab.com/bonyad-tech/nigents.git nigents
 cd nigents
 npm install
 ```
@@ -2055,8 +2068,8 @@ nano .env  # Edit with your API keys
 # Required minimum:
 # TELEGRAM_BOT_TOKEN=your_token
 # TELEGRAM_CHAT_ID=your_chat_id
-# ANTHROPIC_API_KEY=your_key (or ZHIPU/MOONSHOT)
-# OPENAI_API_KEY=your_key (for voice)
+# AI: custom endpoint or set provider keys (see Configuration)
+# OPENAI_API_KEY=your_key (for voice transcription)
 # GITLAB_TOKEN=your_token
 # GITLAB_NAMESPACE=your_username
 ```
@@ -2157,7 +2170,7 @@ ssh -i ~/Downloads/nigents.pem ubuntu@YOUR_EC2_IP
 
 ```bash
 cd /home/ubuntu
-git clone https://github.com/ahmed-farahat-pro/agents.git nigents
+git clone https://gitlab.com/bonyad-tech/nigents.git nigents
 cd nigents
 ```
 
@@ -2408,6 +2421,8 @@ You can configure **multiple projects** and switch between them:
 
 ## Configuration
 
+Agents use a **configurable AI provider**; the default is the custom GLM endpoint (`zhipuglm5`). Voice transcription uses OpenAI Whisper. See `.env` and `config/agents.json` (or MySQL `agent_config` when DB is enabled).
+
 ### Agent Configuration (`config/agents.json`)
 
 ```json
@@ -2652,443 +2667,15 @@ pm2 monit
 |-----|--------|---------|
 | `TELEGRAM_BOT_TOKEN` | @BotFather | Telegram bot auth |
 | `TELEGRAM_CHAT_ID` | @userinfobot | Your Telegram ID |
-| `ANTHROPIC_API_KEY` | console.anthropic.com | Claude AI models |
-| `ZHIPU_API_KEY` | open.bigmodel.cn | GLM models (optional) |
-| `MOONSHOT_API_KEY` | platform.moonshot.cn | Kimi models (optional) |
-| `OPENAI_API_KEY` | platform.openai.com | Whisper voice (optional) |
+| Custom / GLM | Your AI endpoint | Default agent model (see Configuration) |
+| `OPENAI_API_KEY` | platform.openai.com | Whisper voice transcription |
 | `GITLAB_TOKEN` | GitLab Settings | GitLab API access |
+| `DB_*` | MySQL | Optional; when set, dashboard and plans use MySQL |
 
 ---
 
 **Nigents** — *Night Agents for GitLab*  
 Built with ❤️ for developers who sleep while their code ships.
-# Nigents Operations Guide
 
-> Daily operations, updates, and troubleshooting on EC2
+For daily operations, EC2 updates, and troubleshooting, see **[OPERATIONS.md](OPERATIONS.md)**.
 
----
-
-## Table of Contents
-
-1. [Edit Environment Variables](#edit-environment-variables)
-2. [Pull Updates & Restart](#pull-updates--restart)
-3. [GitLab Connection Fix](#gitlab-connection-fix)
-4. [Common Commands](#common-commands)
-5. [Troubleshooting](#troubleshooting)
-
----
-
-## Edit Environment Variables
-
-### Step 1: SSH into EC2
-
-```bash
-ssh -i ~/Downloads/openclaw.pem ubuntu@YOUR_EC2_IP
-```
-
-### Step 2: Edit .env File
-
-```bash
-cd /home/ubuntu/nightowl
-nano .env
-```
-
-### Step 3: Common .env Variables
-
-```bash
-# Required - Telegram
-TELEGRAM_BOT_TOKEN=your_bot_token_from_botfather
-TELEGRAM_CHAT_ID=your_chat_id
-
-# Required - AI Provider (pick at least one)
-ANTHROPIC_API_KEY=sk-ant-api03-your-key
-ZHIPU_API_KEY=your.zhipu.key
-MOONSHOT_API_KEY=sk-your-moonshot-key
-
-# Required - GitLab
-GITLAB_TOKEN=glpat-your_gitlab_token
-GITLAB_NAMESPACE=your_gitlab_username
-GITLAB_URL=https://gitlab.com
-
-# Required - OpenAI (for voice)
-OPENAI_API_KEY=sk-your-openai-key
-
-# Dashboard
-DASHBOARD_PORT=4000
-DASHBOARD_PASSWORD=your_secure_password
-
-# Feature Flags
-ENABLE_VOICE=true
-ENABLE_DASHBOARD=true
-ENABLE_OPENHANDS=true
-```
-
-### Step 4: Save & Restart
-
-```bash
-# Save file in nano: Ctrl+X, then Y, then Enter
-
-# Restart services
-pm2 restart all
-
-# Check logs
-pm2 logs
-```
-
----
-
-## Pull Updates & Restart
-
-### Quick Update Script
-
-```bash
-# SSH into EC2
-ssh -i ~/Downloads/openclaw.pem ubuntu@YOUR_EC2_IP
-
-# Go to project
-cd /home/ubuntu/nightowl
-
-# Pull latest changes
-git pull origin feature/custom-mcp-servers
-
-# If you get merge conflicts:
-git stash          # Save local changes
-git pull origin feature/custom-mcp-servers
-git stash pop      # Restore local changes
-
-# Install new dependencies (if package.json changed)
-npm install
-
-# Rebuild MCP servers (if needed)
-cd mcp-servers/arabic-rtl-auditor && npm run build && cd ../..
-cd mcp-servers/task-splitter && npm run build && cd ../..
-cd mcp-servers/smart-code-search && npm run build && cd ../..
-
-# Restart all services
-pm2 restart all
-
-# Check status
-pm2 status
-pm2 logs --lines 20
-```
-
-### One-Command Update
-
-```bash
-ssh -i ~/Downloads/openclaw.pem ubuntu@YOUR_EC2_IP << 'EOF'
-cd /home/ubuntu/nightowl
-git pull origin feature/custom-mcp-servers
-npm install
-pm2 restart all
-echo "✅ Update complete!"
-EOF
-```
-
----
-
-## GitLab Connection Fix
-
-### Problem: Repos Not Showing
-
-Even with SSH key set up, repos may not appear in dashboard. Here's the fix:
-
-### Step 1: Verify GitLab Token (Not SSH)
-
-**Nigents uses TOKEN-based API access, not just SSH!**
-
-```bash
-# Check if token is set
-grep GITLAB_TOKEN /home/ubuntu/nightowl/.env
-
-# Should show: GITLAB_TOKEN=glpat-xxxxxxxx
-```
-
-### Step 2: Generate GitLab Token
-
-1. Go to **GitLab.com** → Click your avatar → **Edit Profile**
-2. Left sidebar → **Access Tokens**
-3. Click **"Add new token"**
-4. Fill in:
-   - **Token name:** Nigents
-   - **Expiration:** 1 year from now
-   - **Scopes:** Check ALL these:
-     - [x] api (Full API access)
-     - [x] read_repository
-     - [x] write_repository
-     - [x] read_user
-5. Click **"Create personal access token"**
-6. **COPY THE TOKEN IMMEDIATELY** (you can't see it again!)
-
-### Step 3: Add Token to .env
-
-```bash
-# On EC2
-nano /home/ubuntu/nightowl/.env
-
-# Add or update:
-GITLAB_TOKEN=glpat-YOUR_TOKEN_HERE
-GITLAB_NAMESPACE=your_gitlab_username
-GITLAB_URL=https://gitlab.com
-
-# Save: Ctrl+X, Y, Enter
-```
-
-### Step 4: Configure Repositories
-
-**Option A: Via Dashboard (Easiest)**
-
-1. Open dashboard: `http://YOUR_EC2_IP:4000`
-2. Go to **Settings**
-3. Scroll to "GitLab Configuration"
-4. Enter:
-   - GitLab URL: `https://gitlab.com`
-   - GitLab Token: `glpat-xxxxxxxx`
-   - Namespace: `yourusername`
-5. Click "Save GitLab Settings"
-6. Go to **GitLab Repos** menu
-7. Click "Refresh" to fetch repos
-
-**Option B: Via Config File**
-
-```bash
-# Edit projects config
-nano /home/ubuntu/nightowl/config/projects.json
-```
-
-Add your repos:
-```json
-{
-  "projects": [
-    {
-      "id": "my-backend",
-      "name": "backend-api",
-      "gitlabRepo": "yourusername/backend-api",
-      "stack": {
-        "backend": "Node.js",
-        "database": "PostgreSQL"
-      },
-      "defaultBranch": "main"
-    },
-    {
-      "id": "my-frontend",
-      "name": "frontend-app",
-      "gitlabRepo": "yourusername/frontend-app",
-      "stack": {
-        "frontend": "React"
-      },
-      "defaultBranch": "main"
-    }
-  ],
-  "defaultProject": "my-backend"
-}
-```
-
-### Step 5: Test Connection
-
-```bash
-# On EC2, test API access
-curl --header "PRIVATE-TOKEN: glpat-YOUR_TOKEN" \
-  "https://gitlab.com/api/v4/user"
-
-# Should return your user info
-```
-
-### Step 6: Restart & Verify
-
-```bash
-# Restart services
-pm2 restart all
-
-# Check logs for GitLab connection
-pm2 logs nigents-bot --lines 50
-
-# Look for:
-# "GitLab connection successful"
-# "Loaded X repositories"
-```
-
----
-
-## Common Commands
-
-### Daily Operations
-
-```bash
-# View all services
-pm2 status
-
-# View logs
-pm2 logs                    # All logs
-pm2 logs nigents-bot        # Bot only
-pm2 logs nigents-dashboard  # Dashboard only
-
-# Restart services
-pm2 restart all
-pm2 restart nigents-bot
-pm2 restart nigents-dashboard
-
-# Stop services
-pm2 stop all
-
-# Start services
-pm2 start all
-
-# Monitor in real-time
-pm2 monit
-```
-
-### File Operations
-
-```bash
-# Edit .env
-nano /home/ubuntu/nightowl/.env
-
-# Edit agent config
-nano /home/ubuntu/nightowl/config/agents.json
-
-# Edit projects
-nano /home/ubuntu/nightowl/config/projects.json
-
-# View logs file
-tail -f /home/ubuntu/nightowl/logs/app.log
-```
-
-### Git Operations
-
-```bash
-# Check status
-cd /home/ubuntu/nightowl
-git status
-
-# Pull updates
-git pull origin feature/custom-mcp-servers
-
-# Check branch
-git branch
-
-# View recent commits
-git log --oneline -5
-```
-
----
-
-## Troubleshooting
-
-### Issue: Dashboard Not Accessible
-
-```bash
-# 1. Check if running
-pm2 status
-
-# 2. Check port
-sudo netstat -tlnp | grep 4000
-
-# 3. Check firewall
-sudo ufw status
-sudo ufw allow from YOUR_IP to any port 4000
-
-# 4. Check AWS Security Group
-# AWS Console → EC2 → Security Groups → Inbound rules
-# Must have: Custom TCP 4000 from YOUR_IP/32
-```
-
-### Issue: GitLab Repos Not Showing
-
-```bash
-# 1. Check token is set
-grep GITLAB_TOKEN .env
-
-# 2. Test API manually
-curl -H "PRIVATE-TOKEN: glpat-YOUR_TOKEN" \
-  https://gitlab.com/api/v4/projects
-
-# 3. Check logs for errors
-pm2 logs --lines 100 | grep -i gitlab
-
-# 4. Verify namespace
-grep GITLAB_NAMESPACE .env
-```
-
-### Issue: Bot Not Responding
-
-```bash
-# 1. Check bot is running
-pm2 status nigents-bot
-
-# 2. Check Telegram token
-grep TELEGRAM_BOT_TOKEN .env
-
-# 3. Test Telegram API
-curl "https://api.telegram.org/botYOUR_TOKEN/getMe"
-
-# 4. Check logs
-pm2 logs nigents-bot --lines 50
-```
-
-### Issue: After Pull, App Broken
-
-```bash
-# 1. Check for errors
-pm2 logs --lines 100
-
-# 2. Reinstall dependencies
-rm -rf node_modules
-npm install
-
-# 3. Rebuild MCPs
-cd mcp-servers/arabic-rtl-auditor && npm install && npm run build && cd ../..
-cd mcp-servers/task-splitter && npm install && npm run build && cd ../..
-cd mcp-servers/smart-code-search && npm install && npm run build && cd ../..
-
-# 4. Restart
-pm2 restart all
-```
-
-### Issue: Out of Disk Space
-
-```bash
-# Check disk usage
-df -h
-
-# Clean npm cache
-npm cache clean --force
-
-# Remove old logs
-pm2 flush
-
-# Check Docker images
-docker system prune -f
-```
-
----
-
-## Quick Reference Card
-
-```bash
-# CONNECT
-ssh -i ~/Downloads/openclaw.pem ubuntu@YOUR_EC2_IP
-
-# UPDATE
-cd /home/ubuntu/nightowl
-git pull origin feature/custom-mcp-servers
-pm2 restart all
-
-# EDIT ENV
-nano /home/ubuntu/nightowl/.env
-pm2 restart all
-
-# CHECK LOGS
-pm2 logs --lines 50
-
-# RESTART
-pm2 restart all
-
-# GITLAB FIX
-# 1. Get token: GitLab → Profile → Access Tokens
-# 2. nano .env → Add GITLAB_TOKEN=glpat-xxx
-# 3. pm2 restart all
-```
-
----
-
-**Need more help?** Check the main README.md or create an issue on GitHub.

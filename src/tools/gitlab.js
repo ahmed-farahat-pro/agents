@@ -493,6 +493,29 @@ class GitLabAPI {
   }
 
   /**
+   * Get diff between two refs (e.g. main and feature branch)
+   * Returns combined diff string or null on failure
+   */
+  async getCompareDiff(projectId, fromRef = 'main', toRef) {
+    try {
+      const id = typeof projectId === 'string' && !/^\d+$/.test(projectId)
+        ? encodeURIComponent(projectId)
+        : projectId;
+      const response = await this.client.get(`/projects/${id}/repository/compare`, {
+        params: { from: fromRef, to: toRef },
+      });
+      const diffs = response.data?.diffs;
+      if (!Array.isArray(diffs) || diffs.length === 0) {
+        return null;
+      }
+      return diffs.map(d => d.diff || '').filter(Boolean).join('\n');
+    } catch (error) {
+      logger.warn('[GitLab] getCompareDiff failed:', error.message);
+      return null;
+    }
+  }
+
+  /**
    * Get repository branches
    */
   async getBranches(projectPath, limit = 20) {
