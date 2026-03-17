@@ -27,6 +27,7 @@
     </script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -36,27 +37,44 @@
         }
 
         :root {
-            --bg: #0a0a0f;
-            --bg-elevated: #12121a;
-            --bg-card: #1a1a25;
-            --bg-hover: #252532;
-            --border: #2a2a3a;
-            --border-light: #3a3a4a;
-            --text: #f0f0f5;
-            --text-muted: #8a8a95;
-            --text-dim: #5a5a65;
-            --accent: #6366f1;
-            --accent-light: #818cf8;
-            --accent-dark: #4f46e5;
+            /* Match overview page: orange + gradient (purple → pink → orange) */
+            --bg: #fafafa;
+            --bg-elevated: #ffffff;
+            --bg-card: #ffffff;
+            --bg-hover: #f5f5f7;
+            --border: #e5e7eb;
+            --border-light: #f3f4f6;
+            --text: #111827;
+            --text-primary: #111827;
+            --text-muted: #6b7280;
+            --text-secondary: #6b7280;
+            --text-dim: #9ca3af;
+            --primary-500: #7c3aed;
+            --primary-600: #6d28d9;
+            --accent: #f97316;
+            --accent-orange: #f97316;
+            --accent-light: #fb923c;
+            --accent-dark: #ea580c;
+            --accent-pink: #ec4899;
             --success: #10b981;
+            --success-light: #d1fae5;
             --warning: #f59e0b;
+            --warning-light: #fef3c7;
             --error: #ef4444;
+            --error-light: #fee2e2;
             --info: #3b82f6;
-            --gradient-1: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --info-light: #dbeafe;
+            --gradient-primary: linear-gradient(135deg, #7c3aed 0%, #ec4899 50%, #f97316 100%);
+            --gradient-soft: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(236, 72, 153, 0.1) 50%, rgba(249, 115, 22, 0.1) 100%);
+            --gradient-1: var(--gradient-primary);
             --gradient-2: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
             --gradient-3: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius-sm: 6px;
+            --radius: 12px;
+            --radius-lg: 16px;
         }
 
         body {
@@ -131,13 +149,14 @@
         .brand-mark {
             width: 36px;
             height: 36px;
-            background: var(--gradient-1);
-            border-radius: 10px;
+            background: var(--gradient-primary);
+            border-radius: var(--radius);
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
             font-size: 16px;
+            color: #fff;
             flex-shrink: 0;
         }
 
@@ -202,8 +221,9 @@
         }
 
         .nav-item.active {
-            background: var(--accent-dark);
-            color: white;
+            background: var(--gradient-soft);
+            color: var(--primary-600);
+            font-weight: 600;
         }
 
         .nav-item.active::before {
@@ -214,7 +234,7 @@
             transform: translateY(-50%);
             width: 3px;
             height: 20px;
-            background: var(--accent-light);
+            background: var(--accent-orange);
             border-radius: 0 3px 3px 0;
         }
 
@@ -227,14 +247,14 @@
         }
 
         .nav-item.active .nav-indicator {
-            background: var(--accent-light);
-            box-shadow: 0 0 8px var(--accent-light);
+            background: var(--accent-orange);
+            box-shadow: 0 0 8px rgba(249, 115, 22, 0.5);
         }
 
         .nav-badge {
             margin-left: auto;
-            background: var(--accent);
-            color: white;
+            background: var(--gradient-primary);
+            color: #fff;
             font-size: 11px;
             font-weight: 600;
             padding: 2px 8px;
@@ -351,8 +371,8 @@
         }
 
         .btn-primary {
-            background: var(--gradient-1);
-            color: white;
+            background: var(--gradient-primary);
+            color: #fff;
             box-shadow: var(--shadow);
         }
 
@@ -380,6 +400,61 @@
             padding: 8px 14px;
             font-size: 13px;
             min-height: 40px;
+        }
+
+        /* Toasts / feedback messages (overview-style) */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .toast {
+            pointer-events: auto;
+            min-width: 280px;
+            max-width: 400px;
+            padding: 14px 18px;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: toastIn 0.3s ease;
+        }
+        .toast.success {
+            background: var(--success-light);
+            color: #065f46;
+            border-color: var(--success);
+        }
+        .toast.error {
+            background: var(--error-light);
+            color: #991b1b;
+            border-color: var(--error);
+        }
+        .toast.info {
+            background: var(--info-light);
+            color: #1e40af;
+            border-color: var(--info);
+        }
+        .toast.default {
+            background: var(--bg-elevated);
+            color: var(--text);
+            border-color: var(--border);
+        }
+        .toast-icon { font-size: 18px; flex-shrink: 0; }
+        .toast.success .toast-icon { color: var(--success); }
+        .toast.error .toast-icon { color: var(--error); }
+        .toast.info .toast-icon { color: var(--info); }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(100%); }
+            to { opacity: 1; transform: translateX(0); }
         }
 
         /* Content Area */
@@ -435,7 +510,7 @@
             height: 3px;
         }
 
-        .stat-card.primary::before { background: var(--gradient-1); }
+        .stat-card.primary::before { background: var(--gradient-primary); }
         .stat-card.success::before { background: var(--gradient-2); }
         .stat-card.warning::before { background: var(--gradient-3); }
         .stat-card.info::before { background: var(--info); }
@@ -2038,6 +2113,9 @@
             </div>
         </aside>
 
+        <!-- Toast container for feedback messages -->
+        <div id="toast-container" class="toast-container"></div>
+
         <!-- Main Content -->
         <main class="main">
             <header class="header">
@@ -3268,9 +3346,21 @@
             if (el) el.textContent = pending;
         }
 
-        function showNotification(message) {
-            // Simple notification - could be enhanced
-            console.log('Notification:', message);
+        function showNotification(message, type) {
+            type = type || 'default';
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const icons = { success: '✓', error: '✕', info: 'ℹ', default: '•' };
+            const el = document.createElement('div');
+            el.className = 'toast ' + type;
+            el.innerHTML = '<span class="toast-icon">' + (icons[type] || icons.default) + '</span><span>' + (message || '') + '</span>';
+            container.appendChild(el);
+            setTimeout(function() {
+                el.style.opacity = '0';
+                el.style.transform = 'translateX(100%)';
+                el.style.transition = 'opacity 0.25s, transform 0.25s';
+                setTimeout(function() { el.remove(); }, 260);
+            }, 4000);
         }
 
         // GitLab Repos
