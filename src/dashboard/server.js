@@ -54,9 +54,12 @@ const publicApiPaths = new Set([
   '/api/materials/download',
 ]);
 function isPublicApiPath(p) {
-  if (publicApiPaths.has(p)) return true;
-  // Allow even if path has prefix (e.g. behind proxy or subpath)
-  if (p.endsWith('/api/materials/subscribe') || p.endsWith('/api/materials/download')) return true;
+  const raw = (p || '').trim();
+  const pathNorm = raw.replace(/\/+$/, '') || '/';
+  if (publicApiPaths.has(pathNorm) || publicApiPaths.has(raw)) return true;
+  // Allow with trailing slash or path prefix (e.g. behind proxy)
+  if (pathNorm.endsWith('/api/materials/subscribe') || pathNorm.endsWith('/api/materials/download')) return true;
+  if (raw.endsWith('/api/materials/subscribe') || raw.endsWith('/api/materials/download')) return true;
   return false;
 }
 app.use((req, res, next) => {
