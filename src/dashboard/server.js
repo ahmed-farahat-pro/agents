@@ -46,10 +46,22 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Auth middleware: require valid session for /api/* except /api/auth/login and /api/auth/check
+// Auth middleware: require valid session for /api/* except public routes (no login required)
+const publicApiPaths = new Set([
+  '/api/auth/login',
+  '/api/auth/check',
+  '/api/materials/subscribe',
+  '/api/materials/download',
+]);
+function isPublicApiPath(p) {
+  if (publicApiPaths.has(p)) return true;
+  // Allow even if path has prefix (e.g. behind proxy or subpath)
+  if (p.endsWith('/api/materials/subscribe') || p.endsWith('/api/materials/download')) return true;
+  return false;
+}
 app.use((req, res, next) => {
   if (!req.path.startsWith('/api/')) return next();
-  if (req.path === '/api/auth/login' || req.path === '/api/auth/check') return next();
+  if (isPublicApiPath(req.path)) return next();
   const token = req.cookies && req.cookies[SESSION_COOKIE_NAME];
   if (isValidSession(token)) return next();
   res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -1681,29 +1693,30 @@ async function sendRoadmapEmail(subscriber, roadmap) {
     to: email,
     subject: `Your ${roadmapTitle} Developer Roadmap`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-          <h1 style="color: #fff; margin: 0; font-size: 24px;">Nigents Learning</h1>
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #141116; padding: 28px 30px; text-align: center; border-radius: 12px 12px 0 0; border: 1px solid #2a2a35; border-bottom: none;">
+          <div style="display: inline-block; width: 44px; height: 44px; background: #ff570a; border-radius: 10px; line-height: 44px; font-size: 22px; font-weight: 700; color: #09080c;">N</div>
+          <h1 style="color: #ffffff; margin: 12px 0 0 0; font-size: 22px; font-weight: 700; letter-spacing: -0.5px;">Nigents</h1>
         </div>
-        <div style="background: #fff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
-          <h2 style="color: #10b981; margin-top: 0;">Hi ${displayName}!</h2>
-          <p>Thank you for subscribing! Here's your <strong>${roadmapTitle} Developer Roadmap</strong>.</p>
+        <div style="background: #ffffff; padding: 32px 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
+          <h2 style="color: #09080c; margin-top: 0; font-size: 20px; font-weight: 700;">Hi ${displayName}!</h2>
+          <p style="color: #333; font-size: 15px; line-height: 1.6;">Thank you for subscribing! Here's your <strong>${roadmapTitle} Developer Roadmap</strong>.</p>
           
-          <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-            <p style="margin: 0 0 15px 0; font-size: 16px;">Download your PDF:</p>
+          <div style="background: rgba(255, 87, 10, 0.08); padding: 24px; border-radius: 12px; margin: 24px 0; text-align: center; border: 1px solid rgba(255, 87, 10, 0.2);">
+            <p style="margin: 0 0 16px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #ff570a; font-weight: 600;">Download your PDF</p>
             <a href="https://nigents.com/materials/${roadmap}-roadmap.pdf" 
-               style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+               style="display: inline-block; background: #ff570a; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">
                Download ${roadmapTitle} Roadmap
             </a>
           </div>
           
-          <p>This 30-day roadmap will guide you step-by-step to become a professional ${roadmapTitle} Developer.</p>
+          <p style="color: #333; font-size: 15px; line-height: 1.6;">This 30-day roadmap will guide you step-by-step to become a professional ${roadmapTitle} Developer.</p>
           
-          <p style="margin-top: 30px;">Good luck on your learning journey!<br><strong>The Nigents Team</strong></p>
+          <p style="margin-top: 28px; color: #333;">Good luck on your learning journey!<br><strong>The Nigents Team</strong></p>
           
-          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-          <p style="color: #6b7280; font-size: 12px;">
-            You're receiving this because you subscribed at <a href="https://nigents.com" style="color: #667eea;">nigents.com</a>.<br>
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 28px 0;">
+          <p style="color: #666666; font-size: 12px;">
+            You're receiving this because you subscribed at <a href="https://nigents.com" style="color: #ff570a;">nigents.com</a>.<br>
             To unsubscribe, reply with "UNSUBSCRIBE".
           </p>
         </div>
