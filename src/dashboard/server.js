@@ -46,6 +46,22 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// CORS: allow any origin for public materials API (subscribe / download) – no auth required
+const materialsPublicPaths = ['/api/materials/subscribe', '/api/materials/download'];
+function isMaterialsPublicPath(p) {
+  const pathNorm = (p || '').trim().replace(/\/+$/, '') || '/';
+  return materialsPublicPaths.some(publicPath =>
+    pathNorm === publicPath || pathNorm.endsWith(publicPath));
+}
+app.use((req, res, next) => {
+  if (!isMaterialsPublicPath(req.path)) return next();
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
 // Auth middleware: require valid session for /api/* except public routes (no login required)
 const publicApiPaths = new Set([
   '/api/auth/login',
@@ -57,9 +73,11 @@ function isPublicApiPath(p) {
   const raw = (p || '').trim();
   const pathNorm = raw.replace(/\/+$/, '') || '/';
   if (publicApiPaths.has(pathNorm) || publicApiPaths.has(raw)) return true;
-  // Allow with trailing slash or path prefix (e.g. behind proxy)
   if (pathNorm.endsWith('/api/materials/subscribe') || pathNorm.endsWith('/api/materials/download')) return true;
   if (raw.endsWith('/api/materials/subscribe') || raw.endsWith('/api/materials/download')) return true;
+  // Allow any path that is the materials subscribe/download API (not /subscribers)
+  if ((pathNorm.includes('/api/materials/subscribe') && !pathNorm.includes('subscribers')) ||
+      pathNorm.includes('/api/materials/download')) return true;
   return false;
 }
 app.use((req, res, next) => {
