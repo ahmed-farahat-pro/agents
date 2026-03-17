@@ -1668,34 +1668,55 @@ if (!fs.existsSync(MATERIALS_DATA_DIR)) {
 }
 
 // Create email transporter for sending roadmaps
+// Option A: Set SMTP_HOST (and optionally SMTP_PORT, SMTP_USER, SMTP_PASS) to use your own relay
+//   for better delivery to non-Gmail/own domain (e.g. Mailgun, SendGrid, or your mail server).
+// Option B: Use Gmail via GMAIL_USER + GMAIL_PASS. Uses port 587 + STARTTLS for external domains.
+//   Requires Gmail App Password when 2FA is on: https://myaccount.google.com/apppasswords
 function createEmailTransporter() {
+  const smtpHost = process.env.SMTP_HOST && process.env.SMTP_HOST.trim();
+  const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
+  const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER;
+  const smtpPass = process.env.SMTP_PASS || process.env.GMAIL_PASS;
+
+  if (smtpHost) {
+    if (!smtpUser || !smtpPass) {
+      logger.warn('[Email] SMTP_HOST set but SMTP_USER/SMTP_PASS (or GMAIL_*) not set');
+      return null;
+    }
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465,
+      requireTLS: smtpPort === 587,
+      auth: { user: smtpUser, pass: smtpPass },
+    });
+    transporter.verify((err) => {
+      if (err) logger.error('[Email] SMTP verify failed:', err.message);
+      else logger.info('[Email] SMTP relay verified:', smtpHost);
+    });
+    return transporter;
+  }
+
   const gmailUser = process.env.GMAIL_USER;
   const gmailPass = process.env.GMAIL_PASS;
-  
   logger.info(`[Email] Config check - GMAIL_USER: ${gmailUser ? 'SET' : 'NOT SET'}, GMAIL_PASS: ${gmailPass ? 'SET' : 'NOT SET'}`);
-  
   if (!gmailUser || !gmailPass) {
     logger.warn('[Email] GMAIL_USER or GMAIL_PASS not set, emails disabled');
     return null;
   }
-  
+
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: gmailUser,
-      pass: gmailPass,
-    },
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    requireTLS: true,
+    auth: { user: gmailUser, pass: gmailPass },
+    tls: { rejectUnauthorized: true },
   });
-  
-  // Verify transporter
-  transporter.verify((error, success) => {
-    if (error) {
-      logger.error('[Email] Transporter verification failed:', error.message);
-    } else {
-      logger.info('[Email] Transporter verified successfully');
-    }
+  transporter.verify((err) => {
+    if (err) logger.error('[Email] Gmail verify failed:', err.message);
+    else logger.info('[Email] Gmail transporter verified');
   });
-  
   return transporter;
 }
 
@@ -1707,10 +1728,10 @@ async function sendRoadmapEmail(subscriber, roadmap) {
   const { email, name } = subscriber;
   const displayName = name || 'there';
   const roadmapTitle = roadmap.charAt(0).toUpperCase() + roadmap.slice(1);
-  const gmailUser = process.env.GMAIL_USER;
+  const fromAddress = process.env.MAIL_FROM || process.env.SMTP_USER || process.env.GMAIL_USER;
   
   const mailOptions = {
-    from: `"Nigents" <${gmailUser}>`,
+    from: `"Nigents" <${fromAddress}>`,
     to: email,
     subject: `Your ${roadmapTitle} Developer Roadmap`,
     html: `
@@ -1751,8 +1772,11 @@ async function sendRoadmapEmail(subscriber, roadmap) {
     logger.info(`[Email] Roadmap email sent to ${email}`);
     return { success: true, messageId: result.messageId };
   } catch (error) {
-    logger.error(`[Email] Failed to send to ${email}:`, error.message);
-    return { success: false, error: error.message };
+    const errMsg = error.message || String(error);
+    const errCode = error.code || error.responseCode;
+    const errResponse = error.response;
+    logger.error(`[Email] Failed to send to ${email}:`, errMsg, errCode ? `(code: ${errCode})` : '', errResponse ? `response: ${typeof errResponse === 'string' ? errResponse : JSON.stringify(errResponse)}` : '');
+    return { success: false, error: errMsg };
   }
 }
 
@@ -1942,10 +1966,9 @@ app.post('/api/materials/test-email', async (req, res) => {
       });
     }
     
-    const gmailUser = process.env.GMAIL_USER;
-    
+    const fromAddress = process.env.MAIL_FROM || process.env.SMTP_USER || process.env.GMAIL_USER;
     const result = await transporter.sendMail({
-      from: `"Nigents Test" <${gmailUser}>`,
+      from: `"Nigents Test" <${fromAddress}>`,
       to: to,
       subject: 'Test Email from Nigents',
       html: `
