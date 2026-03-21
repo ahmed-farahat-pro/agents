@@ -8,7 +8,7 @@ Dashboard: **Workflow Studio** (sidebar under Projects).
 - **GitLab**: Optional `group/repo` path per project (link to your existing GitLab project). The **repo dropdown** loads from `GET /api/gitlab/repos` (requires `GITLAB_TOKEN` + `GITLAB_NAMESPACE`).
 - **AI draft flow**: Pick a repo (or type `group/repo`), then **✨ AI draft flow**. The server fetches the default branch + file tree (+ README/package excerpts), runs the AI, and lays out nodes/edges with rationale (including when duplicate agents of the same type are justified).
 - **Agents**: Drag agents from the palette onto the canvas. You can place multiple instances of the same role (e.g. two Backend Dev nodes).
-- **Flow diagram**: Enable **Connect nodes**, then click two agent nodes to draw a curved edge (n8n-style: horizontal bezier from the right port to the left port). Edges use the same coordinate space as nodes (`preserveAspectRatio` fixed so lines align with cards).
+- **Flow diagram**: Enable **Connect nodes**, then click two agent nodes to draw a curved edge (n8n-style: horizontal bezier from the right port to the left port). Edge endpoints are measured from the DOM so lines stay on the ports when you drag nodes or after fonts/layout settle (`ResizeObserver` + redraw).
 - **Meetings**: Paste a meeting transcript (Zoom, Google Meet, Teams, or notes). The server calls your configured AI model to return a **text** summary and suggested next steps for the agent team.
 
 ## Data

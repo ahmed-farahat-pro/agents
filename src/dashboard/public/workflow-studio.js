@@ -22,9 +22,46 @@
   const NODE_W = 168;
   const CANVAS_PAD = 48;
   let gitlabRepos = [];
+  let wfCanvasResizeObserver = null;
 
   function el(id) {
     return document.getElementById(id);
+  }
+
+  /** Ensure edge from/to match node ids (string) — avoids silent misses after JSON/API */
+  function normalizeWorkflowEdges() {
+    const idSet = new Set(nodes.map(n => String(n.id)));
+    edges = (edges || [])
+      .map(e => {
+        if (!e || typeof e !== 'object') return null;
+        const from = String(e.from ?? e.source ?? '');
+        const to = String(e.to ?? e.target ?? '');
+        return { from, to };
+      })
+      .filter(e => e && e.from && e.to && e.from !== e.to && idSet.has(e.from) && idSet.has(e.to));
+  }
+
+  /** Port positions in the same coordinate space as the SVG (canvas-local px) */
+  function portCoords(canvas, nodeEl, side) {
+    const c = canvas.getBoundingClientRect();
+    const r = nodeEl.getBoundingClientRect();
+    if (side === 'out') {
+      return {
+        x: r.right - c.left,
+        y: r.top - c.top + r.height / 2,
+      };
+    }
+    return {
+      x: r.left - c.left,
+      y: r.top - c.top + r.height / 2,
+    };
+  }
+
+  function scheduleRedrawEdges() {
+    requestAnimationFrame(() => {
+      drawEdges();
+      requestAnimationFrame(() => drawEdges());
+    });
   }
 
   function loadGitlabRepos() {
@@ -148,11 +185,9 @@
       });
       canvas.appendChild(div);
     });
+    normalizeWorkflowEdges();
     syncCanvasExtent();
-    requestAnimationFrame(() => {
-      syncCanvasExtent();
-      drawEdges();
-    });
+    scheduleRedrawEdges();
   }
 
   /** Expand canvas so absolute nodes affect scroll size; required for SVG 1:1 with node coords */
@@ -204,15 +239,19 @@
         div.style.left = n.x + 'px';
         div.style.top = n.y + 'px';
       }
+      syncCanvasExtent();
       drawEdges();
     }
     function up() {
       dragState = null;
       document.removeEventListener('mousemove', move);
       document.removeEventListener('mouseup', up);
+      syncCanvasExtent();
+      scheduleRedrawEdges();
     }
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', up);
+    document.addEventListener('pointerup', up);
     e.preventDefault();
   }
 
@@ -229,32 +268,32 @@
 
     let pathsHtml = '';
     edges.forEach(e => {
-      const a = nodes.find(n => n.id === e.from);
-      const b = nodes.find(n => n.id === e.to);
+      const a = nodes.find(n => String(n.id) === String(e.from));
+      const b = nodes.find(n => String(n.id) === String(e.to));
       if (!a || !b) return;
       const elA = canvas.querySelector('.wf-node[data-id="' + a.id + '"]');
       const elB = canvas.querySelector('.wf-node[data-id="' + b.id + '"]');
-      const wA = elA ? elA.offsetWidth : NODE_W;
-      const hA = elA ? elA.offsetHeight : 96;
-      const wB = elB ? elB.offsetWidth : NODE_W;
-      const hB = elB ? elB.offsetHeight : 96;
-      const x1 = a.x + wA;
-      const y1 = a.y + hA / 2;
-      const x2 = b.x;
-      const y2 = b.y + hB / 2;
+      if (!elA || !elB) return;
+      const p1 = portCoords(canvas, elA, 'out');
+      const p2 = portCoords(canvas, elB, 'in');
+      const x1 = p1.x;
+      const y1 = p1.y;
+      const x2 = p2.x;
+      const y2 = p2.y;
       const dist = Math.abs(x2 - x1);
       const dx = Math.min(140, Math.max(56, dist * 0.45));
+      const sign = x2 >= x1 ? 1 : -1;
       const d =
         'M ' +
         x1 +
         ' ' +
         y1 +
         ' C ' +
-        (x1 + dx) +
+        (x1 + sign * dx) +
         ' ' +
         y1 +
         ', ' +
-        (x2 - dx) +
+        (x2 - sign * dx) +
         ' ' +
         y2 +
         ', ' +
@@ -298,6 +337,7 @@
     if (p) {
       nodes = Array.isArray(p.nodes) ? JSON.parse(JSON.stringify(p.nodes)) : [];
       edges = Array.isArray(p.edges) ? JSON.parse(JSON.stringify(p.edges)) : [];
+      normalizeWorkflowEdges();
       const gp = el('wf-gitlab-path');
       if (gp) gp.value = p.gitlabPath || '';
       const gr = el('wf-gitlab-repo-select');
@@ -355,6 +395,7 @@
         nodes = d.nodes || [];
         edges = d.edges || [];
         connectFrom = null;
+        normalizeWorkflowEdges();
         if (pathInput) pathInput.value = gitlabPath;
         renderNodes();
         showAiInsights(d);
@@ -496,7 +537,13 @@
       });
     }
 
-    window.addEventListener('resize', drawEdges);
+    window.addEventListener('resize', () => scheduleRedrawEdges());
+
+    const canvasEl = el('wf-canvas');
+    if (canvasEl && typeof ResizeObserver !== 'undefined') {
+      wfCanvasResizeObserver = new ResizeObserver(() => scheduleRedrawEdges());
+      wfCanvasResizeObserver.observe(canvasEl);
+    }
   }
 
   window.initWorkflowStudio = initWorkflowStudio;
