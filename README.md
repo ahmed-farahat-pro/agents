@@ -218,7 +218,7 @@ flowchart LR
 |------|--------|---------|
 | **Telegram bot** | Long-poll to `api.telegram.org` | `/plan`, `/approve`, `/meeting`, voice, per-user config |
 | **Dashboard** | `http(s)://<host>:4000` or `PUBLIC_DASHBOARD_URL` | Login, tasks, agents, charts, **Workflow Studio**, admin |
-| **How it works (public)** | `{PUBLIC_DASHBOARD_URL}/how-it-works.html` or `/how-it-works` | Animated architecture + flow (no login); linked from landing **How it works** / **About** |
+| **How it works (public)** | `{PUBLIC_DASHBOARD_URL}/how-it-works.html` or `/how-it-works` | **About** + product features + agents + full technical flow on one page (`#about`, `#features`, `#agents`, `#technical`). Old `/overview` redirects here. |
 | **Workflow Studio** | Dashboard → sidebar **Workflow Studio** | Canvas, GitLab-linked projects, AI draft, **team meeting** roundtable, **shareable voice link** |
 | **Voice meeting room** | `{PUBLIC_DASHBOARD_URL}/meeting-room.html?token=…` | **Jitsi** (humans) + **shared AI roundtable** via Socket.IO (`same token` = same thread for everyone) |
 | **OpenHands** | `OPENHANDS_URL` (e.g. `http://127.0.0.1:3000`) | Backend Dev: clone, edit, test, push |
