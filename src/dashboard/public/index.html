@@ -362,7 +362,9 @@
             font-family: var(--font-mono);
             font-size: 13px;
             line-height: 1.7;
-            min-height: 320px;
+            min-height: 160px;
+            max-height: 200px;
+            overflow: hidden;
             position: relative;
         }
 
@@ -1139,7 +1141,15 @@
         const agentNameEl = document.querySelector('.agent-name-small');
         const agentActionEl = document.querySelector('.agent-action-small');
         const codeTabs = document.querySelectorAll('.code-tab');
-        
+        /** Only type this many lines per cycle so the demo never scrolls off the hero */
+        const MAX_CODE_LINES = 5;
+
+        function truncateCodeToLines(codeStr, maxLines) {
+            if (!codeStr || maxLines < 1) return '';
+            const parts = codeStr.split('\n');
+            return parts.slice(0, maxLines).join('\n');
+        }
+
         function getAgentColor(name) {
             const colors = {
                 'backend-dev': '#ff570a',
@@ -1167,7 +1177,7 @@
         
         function typeCode() {
             const snippet = codeSnippets[currentSnippetIndex];
-            const code = snippet.code;
+            const code = truncateCodeToLines(snippet.code, MAX_CODE_LINES);
             
             // Update agent info
             agentNameEl.textContent = snippet.agent;
