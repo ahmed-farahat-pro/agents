@@ -19,9 +19,35 @@
   let connectFrom = null;
   let dragState = null;
   let wfBound = false;
+  const NODE_W = 168;
+  let gitlabRepos = [];
 
   function el(id) {
     return document.getElementById(id);
+  }
+
+  function loadGitlabRepos() {
+    return fetch('/api/gitlab/repos', { credentials: 'include' })
+      .then(r => r.json())
+      .then(d => {
+        gitlabRepos = d.repos || [];
+        const sel = el('wf-gitlab-repo-select');
+        if (!sel) return;
+        const pathVal = (el('wf-gitlab-path') && el('wf-gitlab-path').value) || '';
+        sel.innerHTML = '<option value="">— Select a GitLab repo —</option>';
+        gitlabRepos.forEach(r => {
+          const o = document.createElement('option');
+          o.value = r.fullPath;
+          o.textContent = r.fullPath + (r.name ? ` · ${r.name}` : '');
+          o.dataset.id = r.id;
+          sel.appendChild(o);
+        });
+        if (pathVal && gitlabRepos.some(x => x.fullPath === pathVal)) sel.value = pathVal;
+      })
+      .catch(() => {
+        const sel = el('wf-gitlab-repo-select');
+        if (sel) sel.innerHTML = '<option value="">GitLab unavailable (check token)</option>';
+      });
   }
 
   function loadProjects() {
@@ -84,6 +110,7 @@
       const div = document.createElement('div');
       div.className = 'wf-node' + (connectFrom === n.id ? ' selected' : '');
       div.dataset.id = n.id;
+      div.dataset.agent = n.agentType || 'backend-dev';
       div.style.left = n.x + 'px';
       div.style.top = n.y + 'px';
       const agent = AGENTS.find(a => a.type === n.agentType) || { label: n.agentType };
@@ -164,23 +191,26 @@
     const svg = el('wf-svg');
     const canvas = el('wf-canvas');
     if (!svg || !canvas) return;
-    const w = canvas.offsetWidth;
-    const h = canvas.offsetHeight;
+    const w = Math.max(canvas.scrollWidth, canvas.offsetWidth, 800);
+    const h = Math.max(canvas.scrollHeight, canvas.offsetHeight, 560);
     svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
-    let path = '';
+    let pathsHtml = '';
     edges.forEach(e => {
       const a = nodes.find(n => n.id === e.from);
       const b = nodes.find(n => n.id === e.to);
       if (!a || !b) return;
-      const x1 = a.x + 100;
-      const y1 = a.y + 24;
-      const x2 = b.x + 100;
-      const y2 = b.y + 24;
+      const x1 = a.x + NODE_W;
+      const y1 = a.y + 36;
+      const x2 = b.x;
+      const y2 = b.y + 36;
       const cx = (x1 + x2) / 2;
-      path += 'M ' + x1 + ' ' + y1 + ' C ' + cx + ' ' + y1 + ', ' + cx + ' ' + y2 + ', ' + x2 + ' ' + y2 + ' ';
+      const d = 'M ' + x1 + ' ' + y1 + ' C ' + cx + ' ' + y1 + ', ' + cx + ' ' + y2 + ', ' + x2 + ' ' + y2;
+      pathsHtml +=
+        '<path d="' + d + '" fill="none" stroke="#ff570a" stroke-width="2.5" opacity="0.92" marker-end="url(#wf-arrow)" />';
     });
     svg.innerHTML =
-      '<path d="' + path + '" fill="none" stroke="#ff570a" stroke-width="2" opacity="0.85" />';
+      '<defs><marker id="wf-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L9,4.5 L0,9 z" fill="#ff570a"/></marker></defs>' +
+      pathsHtml;
   }
 
   function onCanvasDrop(e) {
@@ -204,6 +234,8 @@
       edges = Array.isArray(p.edges) ? JSON.parse(JSON.stringify(p.edges)) : [];
       const gp = el('wf-gitlab-path');
       if (gp) gp.value = p.gitlabPath || '';
+      const gr = el('wf-gitlab-repo-select');
+      if (gr && p.gitlabPath && gitlabRepos.some(x => x.fullPath === p.gitlabPath)) gr.value = p.gitlabPath;
     } else {
       nodes = [];
       edges = [];
@@ -212,12 +244,75 @@
     renderNodes();
   }
 
+  function showAiInsights(data) {
+    const box = el('wf-ai-insights');
+    const sum = el('wf-ai-summary');
+    const rat = el('wf-ai-rationale');
+    const hints = el('wf-ai-hints');
+    if (!box || !sum || !rat) return;
+    box.style.display = 'block';
+    sum.textContent = data.summary || '';
+    rat.textContent = data.rationale ? 'Why this topology: ' + data.rationale : '';
+    if (hints) {
+      hints.innerHTML = '';
+      (data.stackHints || []).forEach(h => {
+        const s = document.createElement('span');
+        s.className = 'wf-chip';
+        s.textContent = h;
+        hints.appendChild(s);
+      });
+    }
+  }
+
+  function runDraftFlow() {
+    const pathInput = el('wf-gitlab-path');
+    const repoSel = el('wf-gitlab-repo-select');
+    let gitlabPath = (pathInput && pathInput.value.trim()) || (repoSel && repoSel.value) || '';
+    if (!gitlabPath) {
+      alert('Choose a GitLab repository or enter group/repo');
+      return;
+    }
+    const btn = el('wf-btn-draft');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Analyzing…';
+    }
+    fetch('/api/workflow-projects/draft-from-repo', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gitlabPath }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (!d.success) throw new Error(d.error || 'Draft failed');
+        nodes = d.nodes || [];
+        edges = d.edges || [];
+        connectFrom = null;
+        if (pathInput) pathInput.value = gitlabPath;
+        renderNodes();
+        showAiInsights(d);
+        if (typeof showNotification === 'function') showNotification('AI workflow drafted — review and Save', 'success');
+      })
+      .catch(err => {
+        alert(err.message || 'Draft failed');
+      })
+      .finally(() => {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '✨ AI draft flow';
+        }
+      });
+  }
+
   function initWorkflowStudio() {
     renderPalette();
-    loadProjects().then(() => {
-      const sel = el('wf-project-select');
-      if (sel && sel.value) selectProject(sel.value);
-    });
+    loadGitlabRepos()
+      .then(() => loadProjects())
+      .then(() => {
+        const sel = el('wf-project-select');
+        if (sel && sel.value) selectProject(sel.value);
+      });
 
     if (wfBound) return;
     wfBound = true;
@@ -258,6 +353,26 @@
 
     const btnSave = el('wf-btn-save');
     if (btnSave) btnSave.addEventListener('click', () => saveCurrent());
+
+    const repoSel = el('wf-gitlab-repo-select');
+    if (repoSel) {
+      repoSel.addEventListener('change', () => {
+        const v = repoSel.value;
+        const pathInput = el('wf-gitlab-path');
+        if (pathInput && v) pathInput.value = v;
+      });
+    }
+
+    const btnDraft = el('wf-btn-draft');
+    if (btnDraft) btnDraft.addEventListener('click', runDraftFlow);
+
+    const dismiss = el('wf-ai-dismiss');
+    if (dismiss) {
+      dismiss.addEventListener('click', () => {
+        const box = el('wf-ai-insights');
+        if (box) box.style.display = 'none';
+      });
+    }
 
     const btnGitlab = el('wf-btn-save-gitlab');
     if (btnGitlab) {

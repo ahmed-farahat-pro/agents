@@ -2296,6 +2296,102 @@ app.delete('/api/workflow-projects/:id', (req, res) => {
   }
 });
 
+/**
+ * Analyze a GitLab repo (file tree + README/package hints) and draft an n8n-style agent workflow with AI.
+ */
+app.post('/api/workflow-projects/draft-from-repo', async (req, res) => {
+  try {
+    const gitlabPath = (req.body.gitlabPath || '').trim();
+    if (!gitlabPath) {
+      return res.status(400).json({ success: false, error: 'gitlabPath required (e.g. group/repo)' });
+    }
+    const gitlab = require('../tools/gitlab');
+    if (!gitlab.isConfigured()) {
+      return res.status(400).json({ success: false, error: 'GitLab not configured (GITLAB_TOKEN)' });
+    }
+
+    const ref = await gitlab.getDefaultBranch(gitlabPath).catch(() => 'main');
+    const files = await gitlab.getRepositoryFiles(gitlabPath, 200, ref);
+    const treeLines = (files || []).map(f => f.path).filter(Boolean).join('\n') || '(empty tree)';
+
+    let extra = '';
+    const tryFiles = ['README.md', 'readme.md', 'package.json', 'pom.xml', 'go.mod', 'requirements.txt', 'Cargo.toml'];
+    for (const fp of tryFiles) {
+      try {
+        const c = await gitlab.getFileContent(gitlabPath, fp, ref);
+        if (c && typeof c === 'string' && c.length > 0) {
+          extra += `\n\n--- ${fp} (excerpt) ---\n${c.slice(0, 2800)}`;
+          if (extra.length > 6000) break;
+        }
+      } catch (_) {
+        /* skip */
+      }
+    }
+
+    const aiClient = require('../utils/ai-client');
+    const { extractJsonFromAi, layoutWorkflowNodes } = require('../utils/workflow-draft');
+
+    const systemMessage = `You are a senior software architect. Propose a multi-agent development workflow for the Nigents platform.
+
+Available agent types (use these exact strings only): orchestrator, planner, backend-dev, frontend-dev, qa-tester, code-reviewer, reporter
+
+Rules:
+- Start with orchestrator; include planner early if the repo is large or unclear.
+- Include qa-tester and code-reviewer before reporter when code changes are expected.
+- Use reporter last for summaries / handoff.
+- Use MULTIPLE nodes with the same agentType only when the repository structure clearly warrants it (e.g. separate services, monorepo packages, distinct frontend apps). Set duplicateReason on those nodes (short text). Otherwise one node per role is enough.
+- Edges must reference node ids you define. Flow left-to-right conceptually: orchestration → planning → implementation → qa → review → report.
+
+Respond with ONLY valid JSON (no markdown fences), shape:
+{"summary":"string","stackHints":["string"],"rationale":"string","nodes":[{"id":"n1","agentType":"orchestrator","label":"short","duplicateReason":null}],"edges":[{"from":"n1","to":"n2"}]}`;
+
+    const userPrompt = `Repository: ${gitlabPath} (branch ${ref})
+
+FILE TREE (paths, truncated):
+${treeLines.slice(0, 14000)}
+${extra.slice(0, 8000)}
+
+Design the agent workflow JSON as specified.`;
+
+    const aiResult = await aiClient.call(userPrompt, {
+      maxTokens: 4096,
+      temperature: 0.25,
+      systemMessage,
+    });
+
+    const raw = aiResult.content || '';
+    let parsed;
+    try {
+      parsed = extractJsonFromAi(raw);
+    } catch (parseErr) {
+      logger.error('[Workflow] draft JSON parse failed:', parseErr.message);
+      return res.status(422).json({
+        success: false,
+        error: 'AI did not return valid JSON. Try again or shorten repo.',
+        raw: raw.slice(0, 2000),
+      });
+    }
+
+    const { nodes: nodesLaid, edges: edgesOut } = layoutWorkflowNodes(parsed.nodes, parsed.edges);
+
+    res.json({
+      success: true,
+      summary: parsed.summary || '',
+      rationale: parsed.rationale || '',
+      stackHints: Array.isArray(parsed.stackHints) ? parsed.stackHints : [],
+      nodes: nodesLaid,
+      edges: edgesOut,
+      gitlabPath,
+      ref,
+      provider: aiResult.provider,
+      model: aiResult.model,
+    });
+  } catch (e) {
+    logger.error('[Workflow] draft-from-repo error:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 /** Voice / meeting transcript → agent-style text reply (Zoom: paste transcript here; future: webhooks) */
 app.post('/api/meeting/transcript', async (req, res) => {
   try {

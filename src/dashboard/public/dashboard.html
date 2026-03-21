@@ -2362,15 +2362,41 @@
 
                 <!-- Workflow Studio (n8n-style agent canvas + meetings) -->
                 <div class="view" id="view-workflow">
-                    <div class="wf-toolbar">
-                        <select id="wf-project-select" class="form-input" style="min-width:220px;"></select>
-                        <button type="button" class="btn btn-secondary btn-sm" id="wf-btn-new">+ New project</button>
-                        <button type="button" class="btn btn-primary btn-sm" id="wf-btn-save">Save flow</button>
-                        <input type="text" id="wf-gitlab-path" class="form-input" placeholder="GitLab path (group/repo)" style="min-width:200px;">
-                        <button type="button" class="btn btn-secondary btn-sm" id="wf-btn-save-gitlab">Link GitLab</button>
+                    <div class="wf-hero">
+                        <div class="wf-hero-title">Workflow Studio</div>
+                        <p class="wf-hero-sub">Map agents to a GitLab repo. AI analyzes the codebase and drafts a flow; edit, connect, and save.</p>
                     </div>
-                    <p class="text-sm text-muted" style="margin-bottom:12px;">
-                        Drag agents from the left onto the canvas. Enable &quot;Connect nodes&quot; then click two agents to draw a flow line. Multiple agents of the same role are allowed (e.g. two Backend Dev).
+                    <div class="wf-toolbar wf-toolbar-main">
+                        <div class="wf-toolbar-group">
+                            <label class="wf-label">Workflow project</label>
+                            <select id="wf-project-select" class="form-input wf-select"></select>
+                            <button type="button" class="btn btn-secondary btn-sm" id="wf-btn-new">+ New</button>
+                            <button type="button" class="btn btn-primary btn-sm" id="wf-btn-save">Save flow</button>
+                        </div>
+                        <div class="wf-toolbar-group wf-gitlab-draft">
+                            <label class="wf-label">GitLab repository</label>
+                            <select id="wf-gitlab-repo-select" class="form-input wf-select-lg">
+                                <option value="">— Load repos (configure GITLAB_TOKEN) —</option>
+                            </select>
+                            <button type="button" class="btn btn-primary btn-sm" id="wf-btn-draft" title="Analyze repo tree + README and draft agents">✨ AI draft flow</button>
+                        </div>
+                        <div class="wf-toolbar-group">
+                            <label class="wf-label">Path override</label>
+                            <input type="text" id="wf-gitlab-path" class="form-input wf-input-path" placeholder="group/repo">
+                            <button type="button" class="btn btn-secondary btn-sm" id="wf-btn-save-gitlab">Link to workflow</button>
+                        </div>
+                    </div>
+                    <div id="wf-ai-insights" class="wf-ai-insights" style="display:none;">
+                        <div class="wf-ai-insights-header">
+                            <span>AI analysis</span>
+                            <button type="button" class="wf-dismiss" id="wf-ai-dismiss" aria-label="Dismiss">×</button>
+                        </div>
+                        <p id="wf-ai-summary" class="wf-ai-text"></p>
+                        <p id="wf-ai-rationale" class="wf-ai-text wf-ai-muted"></p>
+                        <div id="wf-ai-hints" class="wf-chip-row"></div>
+                    </div>
+                    <p class="wf-help-line">
+                        <strong>Manual:</strong> drag agents from the palette. <strong>Connect:</strong> enable &quot;Connect nodes&quot;, click two cards. <strong>Duplicate roles:</strong> AI adds when the repo warrants it (see duplicate reason on the card).
                     </p>
                     <div class="wf-wrap">
                         <div class="wf-palette">
