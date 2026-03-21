@@ -118,6 +118,8 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
         }
 
         .nav-link {
@@ -728,14 +730,16 @@
 <body>
     <!-- Navigation -->
     <nav class="nav">
-        <div class="nav-brand">
+        <a href="/" class="nav-brand" style="text-decoration:none;color:inherit;">
             <div class="nav-logo">N</div>
             <div class="nav-title">Nigents</div>
-        </div>
+        </a>
         <div class="nav-links">
-            <a href="#overview" class="nav-link active">Overview</a>
+            <a href="/how-it-works.html" class="nav-link">How it works</a>
+            <a href="#overview" class="nav-link active">About</a>
             <a href="#agents" class="nav-link">Agents</a>
             <a href="#features" class="nav-link">Features</a>
+            <a href="/materials.html" class="nav-link">Free Materials</a>
             <a href="/dashboard.html" class="nav-cta">Dashboard →</a>
         </div>
     </nav>

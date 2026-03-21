@@ -255,6 +255,10 @@ app.get('/overview.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'overview.html'));
 });
 
+app.get('/how-it-works', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'how-it-works.html'));
+});
+
 app.get('/logs', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'logs.html'));
 });
