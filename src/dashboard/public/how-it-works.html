@@ -130,6 +130,59 @@
             color: var(--bg-primary);
         }
 
+        /* Mobile menu */
+        .nav-toggle {
+            display: none;
+            width: 44px;
+            height: 44px;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            cursor: pointer;
+            flex-shrink: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .nav-toggle:focus-visible {
+            outline: 2px solid var(--accent-orange);
+            outline-offset: 2px;
+        }
+
+        .nav-toggle-icon-open,
+        .nav-toggle-icon-close {
+            font-size: 22px;
+            line-height: 1;
+            font-weight: 600;
+        }
+
+        .nav-toggle-icon-close {
+            display: none;
+            font-size: 28px;
+        }
+
+        body.nav-open .nav-toggle-icon-open { display: none; }
+        body.nav-open .nav-toggle-icon-close { display: block; }
+
+        .nav-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 998;
+            backdrop-filter: blur(2px);
+        }
+
+        body.nav-open .nav-backdrop { display: block; }
+
+        body.nav-open {
+            overflow: hidden;
+            touch-action: none;
+        }
+
         /* Hero */
         .hero {
             padding: 110px 32px 64px;
@@ -991,9 +1044,9 @@
         .wf-canvas svg {
             display: block;
             width: 100%;
-            min-width: 680px;
+            min-width: 720px;
             height: auto;
-            max-height: min(340px, 55vh);
+            max-height: min(420px, 62vh);
             position: relative;
             z-index: 1;
         }
@@ -1014,7 +1067,9 @@
         .wf-studio.visible .wf-node-box.wf-d3 { animation-delay: 0.35s; }
         .wf-studio.visible .wf-node-box.wf-d4 { animation-delay: 0.5s; }
         .wf-studio.visible .wf-node-box.wf-d5 { animation-delay: 0.65s; }
-        .wf-studio.visible .wf-node-box.wf-d6 { animation-delay: 0.8s; }
+        .wf-studio.visible .wf-node-box.wf-d6 { animation-delay: 0.78s; }
+        .wf-studio.visible .wf-node-box.wf-d7 { animation-delay: 0.91s; }
+        .wf-studio.visible .wf-node-box.wf-d8 { animation-delay: 1.04s; }
 
         @keyframes wfNodeIn {
             from { opacity: 0; }
@@ -1038,7 +1093,9 @@
         .wf-studio.visible .wf-node-title.wf-d3 { animation-delay: 0.42s; }
         .wf-studio.visible .wf-node-title.wf-d4 { animation-delay: 0.57s; }
         .wf-studio.visible .wf-node-title.wf-d5 { animation-delay: 0.72s; }
-        .wf-studio.visible .wf-node-title.wf-d6 { animation-delay: 0.87s; }
+        .wf-studio.visible .wf-node-title.wf-d6 { animation-delay: 0.85s; }
+        .wf-studio.visible .wf-node-title.wf-d7 { animation-delay: 0.98s; }
+        .wf-studio.visible .wf-node-title.wf-d8 { animation-delay: 1.11s; }
 
         .wf-node-sub {
             fill: var(--text-muted);
@@ -1056,7 +1113,9 @@
         .wf-studio.visible .wf-node-sub.wf-d3 { animation-delay: 0.48s; }
         .wf-studio.visible .wf-node-sub.wf-d4 { animation-delay: 0.63s; }
         .wf-studio.visible .wf-node-sub.wf-d5 { animation-delay: 0.78s; }
-        .wf-studio.visible .wf-node-sub.wf-d6 { animation-delay: 0.93s; }
+        .wf-studio.visible .wf-node-sub.wf-d6 { animation-delay: 0.91s; }
+        .wf-studio.visible .wf-node-sub.wf-d7 { animation-delay: 1.04s; }
+        .wf-studio.visible .wf-node-sub.wf-d8 { animation-delay: 1.17s; }
 
         @keyframes wfFadeIn {
             to { opacity: 1; }
@@ -1067,18 +1126,23 @@
             stroke: #3a3a48;
             stroke-width: 2;
             stroke-linecap: round;
-            stroke-dasharray: 140;
-            stroke-dashoffset: 140;
+            stroke-dasharray: 200;
+            stroke-dashoffset: 200;
         }
 
         .wf-studio.visible .wf-edge {
-            animation: wfEdgeDraw 0.85s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            animation: wfEdgeDraw 0.75s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
-        .wf-studio.visible .wf-edge.wf-e1 { animation-delay: 0.75s; }
-        .wf-studio.visible .wf-edge.wf-e2 { animation-delay: 0.95s; }
-        .wf-studio.visible .wf-edge.wf-e3 { animation-delay: 1.15s; }
-        .wf-studio.visible .wf-edge.wf-e4 { animation-delay: 1.35s; }
+        .wf-studio.visible .wf-edge.wf-e1 { animation-delay: 0.7s; }
+        .wf-studio.visible .wf-edge.wf-e2 { animation-delay: 0.82s; }
+        .wf-studio.visible .wf-edge.wf-e3 { animation-delay: 0.94s; }
+        .wf-studio.visible .wf-edge.wf-e4 { animation-delay: 1.06s; }
+        .wf-studio.visible .wf-edge.wf-e5 { animation-delay: 1.18s; }
+        .wf-studio.visible .wf-edge.wf-e6 { animation-delay: 1.3s; }
+        .wf-studio.visible .wf-edge.wf-e7 { animation-delay: 1.42s; }
+        .wf-studio.visible .wf-edge.wf-e8 { animation-delay: 1.54s; }
+        .wf-studio.visible .wf-edge.wf-e9 { animation-delay: 1.66s; }
 
         @keyframes wfEdgeDraw {
             to { stroke-dashoffset: 0; }
@@ -1093,10 +1157,15 @@
             opacity: 0;
         }
 
-        .wf-studio.visible .wf-edge-hot.wf-e1 { animation: wfHotIn 0.45s ease forwards 2s, wfDash 1s linear infinite 2.35s; }
-        .wf-studio.visible .wf-edge-hot.wf-e2 { animation: wfHotIn 0.45s ease forwards 2.08s, wfDash 1s linear infinite 2.43s; }
-        .wf-studio.visible .wf-edge-hot.wf-e3 { animation: wfHotIn 0.45s ease forwards 2.16s, wfDash 1s linear infinite 2.51s; }
-        .wf-studio.visible .wf-edge-hot.wf-e4 { animation: wfHotIn 0.45s ease forwards 2.24s, wfDash 1s linear infinite 2.59s; }
+        .wf-studio.visible .wf-edge-hot.wf-e1 { animation: wfHotIn 0.4s ease forwards 2.15s, wfDash 1s linear infinite 2.45s; }
+        .wf-studio.visible .wf-edge-hot.wf-e2 { animation: wfHotIn 0.4s ease forwards 2.2s, wfDash 1s linear infinite 2.5s; }
+        .wf-studio.visible .wf-edge-hot.wf-e3 { animation: wfHotIn 0.4s ease forwards 2.25s, wfDash 1s linear infinite 2.55s; }
+        .wf-studio.visible .wf-edge-hot.wf-e4 { animation: wfHotIn 0.4s ease forwards 2.3s, wfDash 1s linear infinite 2.6s; }
+        .wf-studio.visible .wf-edge-hot.wf-e5 { animation: wfHotIn 0.4s ease forwards 2.35s, wfDash 1s linear infinite 2.65s; }
+        .wf-studio.visible .wf-edge-hot.wf-e6 { animation: wfHotIn 0.4s ease forwards 2.4s, wfDash 1s linear infinite 2.7s; }
+        .wf-studio.visible .wf-edge-hot.wf-e7 { animation: wfHotIn 0.4s ease forwards 2.45s, wfDash 1s linear infinite 2.75s; }
+        .wf-studio.visible .wf-edge-hot.wf-e8 { animation: wfHotIn 0.4s ease forwards 2.5s, wfDash 1s linear infinite 2.8s; }
+        .wf-studio.visible .wf-edge-hot.wf-e9 { animation: wfHotIn 0.4s ease forwards 2.55s, wfDash 1s linear infinite 2.85s; }
 
         @keyframes wfHotIn {
             to { opacity: 0.9; }
@@ -1158,6 +1227,76 @@
             background: var(--accent-orange);
             opacity: 0.85;
         }
+
+        @media (max-width: 900px) {
+            .nav {
+                padding: 14px 16px;
+                padding-left: max(16px, env(safe-area-inset-left));
+                padding-right: max(16px, env(safe-area-inset-right));
+                flex-wrap: nowrap;
+            }
+
+            .nav-toggle { display: flex; }
+
+            .nav-links {
+                display: none;
+                position: fixed;
+                left: 0;
+                right: 0;
+                top: 0;
+                margin-top: 64px;
+                padding: 8px 16px 20px;
+                padding-bottom: max(20px, env(safe-area-inset-bottom));
+                flex-direction: column;
+                align-items: stretch;
+                gap: 2px;
+                background: var(--bg-primary);
+                border-bottom: 1px solid var(--border);
+                box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+                z-index: 1001;
+                max-height: min(75vh, calc(100vh - 64px));
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .nav-links .nav-link,
+            .nav-links .nav-cta {
+                padding: 12px 14px;
+                text-align: left;
+            }
+
+            body.nav-open .nav-links { display: flex; }
+        }
+
+        @media (max-width: 640px) {
+            .about-intro {
+                padding-left: max(16px, env(safe-area-inset-left));
+                padding-right: max(16px, env(safe-area-inset-right));
+            }
+
+            .section {
+                padding-left: max(16px, env(safe-area-inset-left));
+                padding-right: max(16px, env(safe-area-inset-right));
+            }
+
+            .wf-studio .wf-canvas {
+                padding: 12px 8px 16px;
+                margin-left: -4px;
+                margin-right: -4px;
+                border-radius: var(--radius);
+            }
+
+            .wf-canvas svg {
+                min-width: 560px;
+                max-height: min(380px, 55vh);
+            }
+
+            .tech-hero-inner,
+            .hero {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1166,7 +1305,11 @@
             <a href="/" class="nav-brand">
                 <span class="nav-title">Nigents</span>
             </a>
-            <div class="nav-links">
+            <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+                <span class="nav-toggle-icon-open" aria-hidden="true">☰</span>
+                <span class="nav-toggle-icon-close" aria-hidden="true">×</span>
+            </button>
+            <div class="nav-links" id="nav-links" role="navigation" aria-label="Main">
                 <a href="#about" class="nav-link">About</a>
                 <a href="#features" class="nav-link">Features</a>
                 <a href="#agents" class="nav-link">Agents</a>
@@ -1176,6 +1319,7 @@
                 <a href="/login.html" class="nav-cta">Login</a>
             </div>
         </nav>
+        <div class="nav-backdrop" id="nav-backdrop" aria-hidden="true" hidden></div>
 
         <section class="about-intro reveal" data-reveal id="about">
             <p class="badge">Nigents</p>
@@ -1302,12 +1446,12 @@
                 <div class="section-label">Dashboard</div>
                 <h2 class="section-title">Workflow Studio — agents you wire yourself</h2>
                 <p class="section-desc">
-                    Design how work flows through your team: drag agent nodes onto the canvas, connect outputs to inputs, and save layouts per GitLab project.
-                    AI can <strong>draft a graph</strong> from your repo tree. Same agents power <strong>live meetings</strong> and production runs.
+                    Design a <strong>graph</strong>, not a single line: branch Planner and Frontend in parallel, merge into Backend, add QA and Reviewer, then ship to GitLab. Drag nodes, draw edges between ports, save per project.
+                    <strong>AI draft</strong> can propose a layout from your repo tree; the same roles power <strong>meetings</strong> and production runs.
                 </p>
             </div>
-            <div class="wf-canvas" role="img" aria-label="Animated workflow: task flows through orchestrator, planner, backend, to merge request">
-                <svg viewBox="0 0 840 200" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true">
+            <div class="wf-canvas" role="img" aria-label="Animated workflow graph: task to orchestrator, split to planner and frontend, merge to backend, qa, reviewer, merge request">
+                <svg viewBox="0 0 900 248" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true">
                     <defs>
                         <linearGradient id="wfGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" style="stop-color:#ff570a"/>
@@ -1317,53 +1461,81 @@
                             <path d="M0,0 L8,4 L0,8 Z" fill="#5a5a68"/>
                         </marker>
                     </defs>
-                    <!-- Agent nodes (canvas blocks) -->
-                    <rect class="wf-node-box wf-d1" x="32" y="70" width="88" height="56" rx="10"/>
-                    <text class="wf-node-title wf-d1" x="76" y="96" text-anchor="middle">Task</text>
-                    <text class="wf-node-sub wf-d1" x="76" y="112" text-anchor="middle">from Telegram / UI</text>
-                    <rect class="wf-node-box wf-d2" x="148" y="70" width="108" height="56" rx="10"/>
-                    <text class="wf-node-title wf-d2" x="202" y="96" text-anchor="middle">Orchestrator</text>
-                    <text class="wf-node-sub wf-d2" x="202" y="112" text-anchor="middle">route · branch · MR</text>
-                    <rect class="wf-node-box wf-d3" x="292" y="70" width="100" height="56" rx="10"/>
-                    <text class="wf-node-title wf-d3" x="342" y="96" text-anchor="middle">Planner</text>
-                    <text class="wf-node-sub wf-d3" x="342" y="112" text-anchor="middle">plan + steps</text>
-                    <rect class="wf-node-box wf-d4" x="424" y="70" width="100" height="56" rx="10"/>
-                    <text class="wf-node-title wf-d4" x="474" y="96" text-anchor="middle">Backend</text>
-                    <text class="wf-node-sub wf-d4" x="474" y="112" text-anchor="middle">code + push</text>
-                    <rect class="wf-node-box wf-d5" x="556" y="70" width="100" height="56" rx="10"/>
-                    <text class="wf-node-title wf-d5" x="606" y="96" text-anchor="middle">GitLab MR</text>
-                    <text class="wf-node-sub wf-d5" x="606" y="112" text-anchor="middle">review &amp; merge</text>
-                    <!-- Edges: arrows + animated “data” line -->
-                    <path class="wf-edge wf-e1" d="M 120 98 L 148 98" marker-end="url(#wfArrow)"/>
-                    <path class="wf-edge wf-e2" d="M 256 98 L 292 98" marker-end="url(#wfArrow)"/>
-                    <path class="wf-edge wf-e3" d="M 392 98 L 424 98" marker-end="url(#wfArrow)"/>
-                    <path class="wf-edge wf-e4" d="M 524 98 L 556 98" marker-end="url(#wfArrow)"/>
-                    <path class="wf-edge-hot wf-e1" d="M 120 98 L 148 98"/>
-                    <path class="wf-edge-hot wf-e2" d="M 256 98 L 292 98"/>
-                    <path class="wf-edge-hot wf-e3" d="M 392 98 L 424 98"/>
-                    <path class="wf-edge-hot wf-e4" d="M 524 98 L 556 98"/>
-                    <!-- Port dots on the wire -->
-                    <circle class="wf-port" cx="120" cy="98" r="4"/>
-                    <circle class="wf-port" cx="256" cy="98" r="4"/>
-                    <circle class="wf-port" cx="392" cy="98" r="4"/>
-                    <circle class="wf-port" cx="524" cy="98" r="4"/>
-                    <circle class="wf-port" cx="656" cy="98" r="4"/>
-                    <!-- Motion path + “hand” dot (dragging connection metaphor) -->
-                    <path id="wf-drag-path" d="M 120 98 L 148 98 L 256 98 L 292 98 L 392 98 L 424 98 L 524 98 L 556 98 L 656 98" fill="none" stroke="none"/>
-                    <circle class="wf-cursor-ghost" r="8">
-                        <animateMotion dur="5s" repeatCount="indefinite" rotate="auto" calcMode="linear">
-                            <mpath xlink:href="#wf-drag-path"/>
+                    <!-- Row 1: Task → Orchestrator -->
+                    <rect class="wf-node-box wf-d1" x="20" y="76" width="84" height="48" rx="10"/>
+                    <text class="wf-node-title wf-d1" x="62" y="100" text-anchor="middle">Task</text>
+                    <text class="wf-node-sub wf-d1" x="62" y="116" text-anchor="middle">Telegram / UI</text>
+                    <rect class="wf-node-box wf-d2" x="124" y="76" width="126" height="48" rx="10"/>
+                    <text class="wf-node-title wf-d2" x="187" y="100" text-anchor="middle">Orchestrator</text>
+                    <text class="wf-node-sub wf-d2" x="187" y="116" text-anchor="middle">split · merge · MR</text>
+                    <!-- Split: Planner (top) + Frontend (bottom) -->
+                    <rect class="wf-node-box wf-d3" x="300" y="28" width="96" height="46" rx="10"/>
+                    <text class="wf-node-title wf-d3" x="348" y="52" text-anchor="middle">Planner</text>
+                    <text class="wf-node-sub wf-d3" x="348" y="66" text-anchor="middle">plan + steps</text>
+                    <rect class="wf-node-box wf-d4" x="300" y="138" width="96" height="46" rx="10"/>
+                    <text class="wf-node-title wf-d4" x="348" y="162" text-anchor="middle">Frontend</text>
+                    <text class="wf-node-sub wf-d4" x="348" y="176" text-anchor="middle">UI + push</text>
+                    <!-- Merge + ship -->
+                    <rect class="wf-node-box wf-d5" x="448" y="84" width="122" height="52" rx="10"/>
+                    <text class="wf-node-title wf-d5" x="509" y="110" text-anchor="middle">Backend</text>
+                    <text class="wf-node-sub wf-d5" x="509" y="126" text-anchor="middle">API + branch</text>
+                    <rect class="wf-node-box wf-d6" x="458" y="168" width="92" height="44" rx="10"/>
+                    <text class="wf-node-title wf-d6" x="504" y="192" text-anchor="middle">QA</text>
+                    <text class="wf-node-sub wf-d6" x="504" y="206" text-anchor="middle">tests</text>
+                    <rect class="wf-node-box wf-d7" x="600" y="84" width="108" height="52" rx="10"/>
+                    <text class="wf-node-title wf-d7" x="654" y="110" text-anchor="middle">Reviewer</text>
+                    <text class="wf-node-sub wf-d7" x="654" y="126" text-anchor="middle">diff · security</text>
+                    <rect class="wf-node-box wf-d8" x="744" y="84" width="112" height="52" rx="10"/>
+                    <text class="wf-node-title wf-d8" x="800" y="110" text-anchor="middle">GitLab MR</text>
+                    <text class="wf-node-sub wf-d8" x="800" y="126" text-anchor="middle">merge</text>
+                    <!-- Edges (multi-line graph) -->
+                    <path class="wf-edge wf-e1" d="M 104 100 L 124 100" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge wf-e2" d="M 250 100 Q 278 52 300 51" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge wf-e3" d="M 250 100 Q 278 148 300 161" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge wf-e4" d="M 396 80 L 448 100" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge wf-e5" d="M 396 161 L 448 118" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge wf-e6" d="M 570 110 L 600 110" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge wf-e7" d="M 509 136 L 504 168" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge wf-e8" d="M 550 210 Q 585 118 600 110" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge wf-e9" d="M 708 110 L 744 110" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge-hot wf-e1" d="M 104 100 L 124 100"/>
+                    <path class="wf-edge-hot wf-e2" d="M 250 100 Q 278 52 300 51"/>
+                    <path class="wf-edge-hot wf-e3" d="M 250 100 Q 278 148 300 161"/>
+                    <path class="wf-edge-hot wf-e4" d="M 396 80 L 448 100"/>
+                    <path class="wf-edge-hot wf-e5" d="M 396 161 L 448 118"/>
+                    <path class="wf-edge-hot wf-e6" d="M 570 110 L 600 110"/>
+                    <path class="wf-edge-hot wf-e7" d="M 509 136 L 504 168"/>
+                    <path class="wf-edge-hot wf-e8" d="M 550 210 Q 585 118 600 110"/>
+                    <path class="wf-edge-hot wf-e9" d="M 708 110 L 744 110"/>
+                    <circle class="wf-port" cx="104" cy="100" r="3.5"/>
+                    <circle class="wf-port" cx="250" cy="100" r="3.5"/>
+                    <circle class="wf-port" cx="348" cy="74" r="3.5"/>
+                    <circle class="wf-port" cx="348" cy="138" r="3.5"/>
+                    <circle class="wf-port" cx="509" cy="84" r="3.5"/>
+                    <circle class="wf-port" cx="504" cy="168" r="3.5"/>
+                    <circle class="wf-port" cx="708" cy="110" r="3.5"/>
+                    <!-- Motion: main spine + branch (two dots) -->
+                    <path id="wf-drag-main" d="M 104 100 L 250 100 Q 278 52 348 51 L 396 80 L 448 100 L 570 110 L 600 110 L 708 110 L 800 110" fill="none" stroke="none"/>
+                    <path id="wf-drag-branch" d="M 250 100 Q 278 148 348 161 L 396 161 L 448 118 L 509 110" fill="none" stroke="none"/>
+                    <circle class="wf-cursor-ghost" r="7" fill="rgba(255,87,10,0.3)" stroke="#ff570a" stroke-width="1.5">
+                        <animateMotion dur="6s" repeatCount="indefinite" rotate="auto" calcMode="linear">
+                            <mpath xlink:href="#wf-drag-main"/>
+                        </animateMotion>
+                    </circle>
+                    <circle class="wf-cursor-ghost" r="6" fill="rgba(168,85,247,0.35)" stroke="#a855f7" stroke-width="1.5">
+                        <animateMotion dur="4.5s" repeatCount="indefinite" rotate="auto" calcMode="linear" begin="0.8s">
+                            <mpath xlink:href="#wf-drag-branch"/>
                         </animateMotion>
                     </circle>
                 </svg>
             </div>
             <p class="wf-caption">
-                In the real <strong>Workflow Studio</strong> (dashboard → sidebar), you drag nodes such as <em>Orchestrator</em>, <em>Planner</em>, and <em>Backend</em> onto a canvas, connect ports to define order and hand-offs, and attach a <strong>GitLab project</strong> so the graph stays with the repo. Optional steps: <strong>AI draft flow</strong> from the file tree, <strong>team meeting</strong> roundtable with the same agents, and <strong>voice room</strong> for humans + AI.
+                In <strong>Workflow Studio</strong>, one node can feed <strong>many</strong> others: fork after Orchestrator, join at Backend, add QA and Reviewer on their own edges — same as wiring outputs to inputs on the real canvas. Link a <strong>GitLab project</strong> so each graph stays with the repo. Optional: <strong>AI draft</strong>, <strong>team meeting</strong>, <strong>voice room</strong>.
             </p>
             <ul class="wf-bullets">
-                <li><strong>Visual</strong> — See the pipeline before a task runs; reorder by rewiring edges.</li>
+                <li><strong>Branches &amp; merges</strong> — Parallel paths (e.g. Planner vs Frontend) reconnect where you draw the edge.</li>
                 <li><strong>Project-scoped</strong> — Saved workflows live next to your linked repository.</li>
-                <li><strong>Same agents</strong> — Canvas roles map to the seven production agents you use from Telegram.</li>
+                <li><strong>Same seven agents</strong> — Canvas roles match production; reorder by reconnecting, not just a single line.</li>
             </ul>
         </section>
 
@@ -1795,6 +1967,31 @@
                 }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
                 io.observe(section);
             });
+
+            var nt = document.getElementById('nav-toggle');
+            var nb = document.getElementById('nav-backdrop');
+            if (nt && nb) {
+                function setNavOpen(open) {
+                    document.body.classList.toggle('nav-open', open);
+                    nb.hidden = !open;
+                    nb.setAttribute('aria-hidden', open ? 'false' : 'true');
+                    nt.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    nt.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+                }
+                nt.addEventListener('click', function () {
+                    setNavOpen(!document.body.classList.contains('nav-open'));
+                });
+                nb.addEventListener('click', function () { setNavOpen(false); });
+                document.querySelectorAll('#nav-links a').forEach(function (a) {
+                    a.addEventListener('click', function () { setNavOpen(false); });
+                });
+                window.addEventListener('resize', function () {
+                    if (window.innerWidth > 900) setNavOpen(false);
+                });
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape') setNavOpen(false);
+                });
+            }
         })();
     </script>
 </body>

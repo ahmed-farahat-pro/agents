@@ -2260,6 +2260,27 @@
                     </div>
                 </div>
                 <div class="nav-section">
+                    <div class="nav-title">Resources</div>
+                    <a href="/how-it-works.html" class="sidebar-nav-link" style="text-decoration:none;color:inherit;display:block;">
+                        <div class="nav-item">
+                            <div class="nav-indicator"></div>
+                            <span>How it works</span>
+                        </div>
+                    </a>
+                    <a href="/materials.html" class="sidebar-nav-link" style="text-decoration:none;color:inherit;display:block;">
+                        <div class="nav-item">
+                            <div class="nav-indicator"></div>
+                            <span>Free Materials</span>
+                        </div>
+                    </a>
+                    <a href="/" class="sidebar-nav-link" style="text-decoration:none;color:inherit;display:block;">
+                        <div class="nav-item">
+                            <div class="nav-indicator"></div>
+                            <span>Landing page</span>
+                        </div>
+                    </a>
+                </div>
+                <div class="nav-section">
                     <div class="nav-title">Projects</div>
                     <div class="nav-item" data-view="repos">
                         <div class="nav-indicator"></div>
@@ -3278,10 +3299,10 @@
         let tempModels = [];
         let selectedPriority = 'medium';
 
-        // Navigation
-        document.querySelectorAll('.nav-item').forEach(item => {
+        // Navigation (only internal views; external links in sidebar have no data-view)
+        document.querySelectorAll('.nav-item[data-view]').forEach(item => {
             item.addEventListener('click', () => {
-                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                document.querySelectorAll('.nav-item[data-view]').forEach(i => i.classList.remove('active'));
                 item.classList.add('active');
                 showView(item.dataset.view);
                 if (window.innerWidth <= 768) toggleSidebar();

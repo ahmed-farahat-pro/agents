@@ -134,6 +134,67 @@
             color: var(--bg-primary);
         }
 
+        /* Mobile menu (hamburger) */
+        .nav-toggle {
+            display: none;
+            width: 44px;
+            height: 44px;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            cursor: pointer;
+            flex-shrink: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .nav-toggle:focus-visible {
+            outline: 2px solid var(--accent-orange);
+            outline-offset: 2px;
+        }
+
+        .nav-toggle-icon-open,
+        .nav-toggle-icon-close {
+            font-size: 22px;
+            line-height: 1;
+            font-weight: 600;
+        }
+
+        .nav-toggle-icon-close {
+            display: none;
+            font-size: 28px;
+        }
+
+        body.nav-open .nav-toggle-icon-open {
+            display: none;
+        }
+
+        body.nav-open .nav-toggle-icon-close {
+            display: block;
+        }
+
+        .nav-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            top: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 998;
+            backdrop-filter: blur(2px);
+        }
+
+        body.nav-open .nav-backdrop {
+            display: block;
+        }
+
+        body.nav-open {
+            overflow: hidden;
+            touch-action: none;
+        }
+
         /* Hero Section */
         .hero {
             min-height: 100vh;
@@ -781,13 +842,54 @@
             }
         }
 
-        @media (max-width: 768px) {
-            .nav {
-                padding: 16px 20px;
+        @media (max-width: 900px) {
+            .nav-toggle {
+                display: flex;
             }
 
             .nav-links {
                 display: none;
+                position: fixed;
+                left: 0;
+                right: 0;
+                top: 0;
+                margin-top: 72px;
+                padding: 12px 20px 24px;
+                padding-bottom: max(24px, env(safe-area-inset-bottom));
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0;
+                background: var(--bg-primary);
+                border-bottom: 1px solid var(--border);
+                box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+                z-index: 1001;
+                max-height: min(70vh, calc(100vh - 72px));
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .nav-links .nav-link,
+            .nav-links .nav-cta {
+                padding: 14px 12px;
+                border-radius: 8px;
+                text-align: left;
+            }
+
+            .nav-links .nav-link:active,
+            .nav-links .nav-cta:active {
+                background: rgba(255, 255, 255, 0.06);
+            }
+
+            body.nav-open .nav-links {
+                display: flex;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav {
+                padding: 16px 20px;
+                padding-left: max(16px, env(safe-area-inset-left));
+                padding-right: max(16px, env(safe-area-inset-right));
             }
 
             .hero {
@@ -843,7 +945,11 @@
             <div class="nav-logo">N</div>
             <span class="nav-title">Nigents</span>
         </a>
-        <div class="nav-links">
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+            <span class="nav-toggle-icon-open" aria-hidden="true">☰</span>
+            <span class="nav-toggle-icon-close" aria-hidden="true">×</span>
+        </button>
+        <div class="nav-links" id="nav-links" role="navigation" aria-label="Main">
             <a href="#features" class="nav-link">Features</a>
             <a href="#agents" class="nav-link">Agents</a>
             <a href="/how-it-works.html" class="nav-link">How it works</a>
@@ -851,6 +957,7 @@
             <a href="/login.html" class="nav-cta">Login →</a>
         </div>
     </nav>
+    <div class="nav-backdrop" id="nav-backdrop" aria-hidden="true" hidden></div>
 
     <!-- Hero Section -->
     <section class="hero">
@@ -1082,6 +1189,32 @@
     </footer>
 
     <script>
+        (function () {
+            var toggle = document.getElementById('nav-toggle');
+            var backdrop = document.getElementById('nav-backdrop');
+            if (!toggle || !backdrop) return;
+            function setOpen(open) {
+                document.body.classList.toggle('nav-open', open);
+                backdrop.hidden = !open;
+                backdrop.setAttribute('aria-hidden', open ? 'false' : 'true');
+                toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+            }
+            toggle.addEventListener('click', function () {
+                setOpen(!document.body.classList.contains('nav-open'));
+            });
+            backdrop.addEventListener('click', function () { setOpen(false); });
+            document.querySelectorAll('#nav-links a').forEach(function (a) {
+                a.addEventListener('click', function () { setOpen(false); });
+            });
+            window.addEventListener('resize', function () {
+                if (window.innerWidth > 900) setOpen(false);
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') setOpen(false);
+            });
+        })();
+
         // Code Streaming Animation
         const codeSnippets = [
             {
