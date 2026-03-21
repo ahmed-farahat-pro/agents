@@ -8,6 +8,11 @@ const logger = require('../utils/logger');
 const gitlab = require('../tools/gitlab');
 const { cloneEditAndPush } = require('../tools/repo-clone-push');
 const { getRepoTree, getStepFileContents } = require('../tools/repo-context');
+const {
+  parseGeneratedCodeToFiles: parseGeneratedFilesUtil,
+  docGenerationInstructions,
+  maxTokensForStepFiles,
+} = require('../utils/ai-file-parse');
 
 class FrontendDevAgent extends BaseAgent {
   constructor() {
@@ -15,24 +20,8 @@ class FrontendDevAgent extends BaseAgent {
     super(config);
   }
 
-  /**
-   * Parse AI response into path + content (same format as backend fallback).
-   */
   parseGeneratedCodeToFiles(generatedCode) {
-    const files = [];
-    for (const item of generatedCode || []) {
-      const raw = item.code || item.content || '';
-      const fileMatch = raw.match(/FILE:\s*([^\s\n]+)/);
-      const blockMatch = raw.match(/```[\w]*\n([\s\S]*?)```/);
-      if (fileMatch && blockMatch) {
-        files.push({ path: fileMatch[1].trim(), content: blockMatch[1].trim() });
-      } else if (blockMatch && item.files && item.files[0]) {
-        files.push({ path: item.files[0], content: blockMatch[1].trim() });
-      } else if (item.files && item.files[0] && raw.trim()) {
-        files.push({ path: item.files[0], content: raw.trim() });
-      }
-    }
-    return files;
+    return parseGeneratedFilesUtil(generatedCode);
   }
 
   /**
@@ -146,17 +135,21 @@ MINIMAL EDIT: Make the smallest change that satisfies the step. For example, if 
 
     const isReactNative = step.files && step.files.some(f => f.includes('.native.') || f.includes('mobile'));
     const isRTL = true; // Always assume RTL for Arabic support
-    const hasCurrentContent = fileContentsSection.length > 0;
+    const files = step.files || [];
+    const isDocStep = files.some(f => /\.md$/i.test(f) || /readme/i.test(String(f || '')));
+    const hasCurrentContent = fileContentsSection.length > 0 && !isDocStep;
 
     const prompt = `
 ${repoTree ? `REPO STRUCTURE (full folder):\n${repoTree}\n\n` : ''}
 Create/modify the following frontend files:
-${(step.files || []).join('\n')}
+${files.join('\n')}
 
 Description: ${step.description}
+${isDocStep ? docGenerationInstructions(files) : ''}
 ${fileContentsSection}
 
 ${hasCurrentContent ? 'If the step is only a style/color change, only output the minimal CSS/JSX change. Output full file content for each modified file with only the minimal changes applied.' : ''}
+${isDocStep ? 'Output using the FILE + <<<NIGENTS_FILE_START>>> format above. Write a long, complete README.' : ''}
 
 ${isReactNative ? 'PLATFORM: React Native' : 'PLATFORM: React Web'}
 ${isRTL ? 'RTL SUPPORT: Required (Arabic interface)' : ''}
@@ -192,7 +185,10 @@ Include PropTypes or TypeScript interfaces where relevant.
 Add JSDoc comments for component documentation.
 `;
 
-    const result = await this.callClaude(prompt, { maxTokens: 4096 });
+    const result = await this.callClaude(prompt, {
+      maxTokens: maxTokensForStepFiles(files),
+      temperature: isDocStep ? 0.4 : 0.3,
+    });
     
     return {
       step: step.order,

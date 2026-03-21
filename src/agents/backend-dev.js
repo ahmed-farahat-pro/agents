@@ -10,6 +10,11 @@ const gitlab = require('../tools/gitlab');
 const { cloneEditAndPush } = require('../tools/repo-clone-push');
 const { getCheckCommands, getGatherContextCommands, getBuildCheckCommandFromAI } = require('../tools/compile-check');
 const { getRepoTree, getStepFileContents, getRepoContextForPlan } = require('../tools/repo-context');
+const {
+  parseGeneratedCodeToFiles: parseGeneratedFilesUtil,
+  docGenerationInstructions,
+  maxTokensForStepFiles,
+} = require('../utils/ai-file-parse');
 
 class BackendDevAgent extends BaseAgent {
   constructor() {
@@ -120,23 +125,8 @@ class BackendDevAgent extends BaseAgent {
     }
   }
 
-  /**
-   * Parse AI-generated code content into file path + content for GitLab API.
-   * Expects format: "FILE: path/to/file\n```lang\ncontent\n```"
-   */
   parseGeneratedCodeToFiles(generatedCode) {
-    const files = [];
-    for (const item of generatedCode || []) {
-      const raw = item.code || item.content || '';
-      const fileMatch = raw.match(/FILE:\s*([^\s\n]+)/);
-      const blockMatch = raw.match(/```[\w]*\n([\s\S]*?)```/);
-      if (fileMatch && blockMatch) {
-        files.push({ path: fileMatch[1].trim(), content: blockMatch[1].trim() });
-      } else if (blockMatch && item.files && item.files[0]) {
-        files.push({ path: item.files[0], content: blockMatch[1].trim() });
-      }
-    }
-    return files;
+    return parseGeneratedFilesUtil(generatedCode);
   }
 
   /**
@@ -181,17 +171,19 @@ class BackendDevAgent extends BaseAgent {
       }
 
       const generatedCode = [];
-      const steps = Array.isArray(plan.steps) ? plan.steps.slice(0, 3) : [];
+      const allSteps = Array.isArray(plan.steps) ? plan.steps : [];
+      const steps = allSteps.slice(0, 20);
 
       for (const step of steps) {
         if (!step || step.description == null) continue;
         const files = Array.isArray(step.files) ? step.files : [];
+        const isDocStep = files.some(f => /\.md$/i.test(f) || /readme/i.test(String(f || '')));
         if (reporter && files.length > 0) {
           await reporter.sendProgress(`📝 Editing \`${files.join(', ')}\` on branch \`${branch}\``);
         }
         const stepOrder = step.order != null ? step.order : steps.indexOf(step) + 1;
         const stepContents = fileContentsByStep[stepOrder] || [];
-        const hasCurrentContent = stepContents.length > 0;
+        const hasCurrentContent = stepContents.length > 0 && !isDocStep;
         const fileContentsSection = hasCurrentContent
           ? `
 CURRENT FILE CONTENTS (you are given the current content; output only the changed version with minimal edits):
@@ -201,8 +193,19 @@ MINIMAL EDIT: Make the smallest change required for the step. Do not add unrelat
 `
           : '';
 
+        const docBlock = isDocStep ? docGenerationInstructions(files) : '';
+        const formatInstructions = isDocStep
+          ? docBlock
+          : `
+Respond with the file contents in this format:
+FILE: <filepath>
+\`\`\`<language>
+<code>
+\`\`\`
+`;
+
         const prompt = `
-You are an expert developer. ${hasCurrentContent ? 'Modify the following files with minimal edits. Only change what is necessary for the step.' : 'Generate complete, working code for this step.'} Only generate code for the exact files listed.
+You are an expert developer. ${hasCurrentContent ? 'Modify the following files with minimal edits. Only change what is necessary for the step.' : isDocStep ? 'Produce a complete, thorough document as specified.' : 'Generate complete, working code for this step.'} Only generate output for the exact files listed.
 ${frontendOnlyNotice}
 
 ${repoTree ? `REPO STRUCTURE:\n${repoTree}\n\n` : ''}
@@ -211,18 +214,14 @@ STEP ${step.order}: ${step.description}
 ONLY THESE FILES (do not add other files): ${files.join(', ')}
 ${fileContentsSection}
 
-${hasCurrentContent ? 'Output the full file content for each modified file, with only the minimal changes applied.' : 'Generate the actual code content that would be written to these files. Include proper error handling and documentation where appropriate.'}
+${hasCurrentContent ? 'Output the full file content for each modified file, with only the minimal changes applied.' : isDocStep ? 'Write comprehensive documentation (many sections, setup, API, troubleshooting). Do not output a stub.' : 'Generate the actual code content that would be written to these files. Include proper error handling and documentation where appropriate.'}
 
-Respond with the file contents in this format:
-FILE: <filepath>
-\`\`\`<language>
-<code>
-\`\`\`
+${formatInstructions}
 `;
 
         const result = await this.callAI(prompt, {
-          maxTokens: 4096,
-          temperature: 0.3,
+          maxTokens: maxTokensForStepFiles(files),
+          temperature: isDocStep ? 0.4 : 0.3,
         });
 
         if (result.success) {

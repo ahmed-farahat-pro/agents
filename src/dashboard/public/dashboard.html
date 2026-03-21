@@ -27,7 +27,9 @@
     </script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/workflow-studio.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/workflow-studio.css">
     <style>
         * {
             margin: 0;
@@ -2065,6 +2067,10 @@
                         <div class="nav-indicator"></div>
                         <span>GitLab Repos</span>
                     </div>
+                    <div class="nav-item" data-view="workflow">
+                        <div class="nav-indicator"></div>
+                        <span>Workflow Studio</span>
+                    </div>
                 </div>
                 <div class="nav-section">
                     <div class="nav-title">System</div>
@@ -2350,6 +2356,42 @@
                         <h3 class="config-title">Selected Repository</h3>
                         <div id="selected-repo-info">
                             <p class="text-muted">No repository selected</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workflow Studio (n8n-style agent canvas + meetings) -->
+                <div class="view" id="view-workflow">
+                    <div class="wf-toolbar">
+                        <select id="wf-project-select" class="form-input" style="min-width:220px;"></select>
+                        <button type="button" class="btn btn-secondary btn-sm" id="wf-btn-new">+ New project</button>
+                        <button type="button" class="btn btn-primary btn-sm" id="wf-btn-save">Save flow</button>
+                        <input type="text" id="wf-gitlab-path" class="form-input" placeholder="GitLab path (group/repo)" style="min-width:200px;">
+                        <button type="button" class="btn btn-secondary btn-sm" id="wf-btn-save-gitlab">Link GitLab</button>
+                    </div>
+                    <p class="text-sm text-muted" style="margin-bottom:12px;">
+                        Drag agents from the left onto the canvas. Enable &quot;Connect nodes&quot; then click two agents to draw a flow line. Multiple agents of the same role are allowed (e.g. two Backend Dev).
+                    </p>
+                    <div class="wf-wrap">
+                        <div class="wf-palette">
+                            <h4>Agents</h4>
+                            <div id="wf-palette-items"></div>
+                            <label class="wf-connect-hint" style="display:flex;align-items:center;gap:8px;margin-top:12px;cursor:pointer;">
+                                <input type="checkbox" id="wf-connect-mode"> Connect nodes
+                            </label>
+                        </div>
+                        <div class="wf-canvas-wrap">
+                            <div class="wf-canvas" id="wf-canvas">
+                                <svg class="wf-svg" id="wf-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+                            </div>
+                        </div>
+                        <div class="wf-panel">
+                            <h4>Meetings → agent reply (text)</h4>
+                            <p class="wf-hint">Paste Zoom / Meet / Teams transcript, or type voice notes. Full Zoom API integration can be added with OAuth + webhooks.</p>
+                            <input type="text" id="wf-meeting-context" class="form-input" placeholder="Project name / context (optional)" style="width:100%;margin-bottom:8px;padding:8px;">
+                            <textarea id="wf-meeting-text" placeholder="Meeting transcript or bullet notes…"></textarea>
+                            <button type="button" class="btn btn-primary" id="wf-meeting-submit" style="width:100%;margin-top:10px;">Get agent-style summary &amp; next steps</button>
+                            <div class="wf-reply" id="wf-meeting-reply" style="display:none;"></div>
                         </div>
                     </div>
                 </div>
@@ -2970,7 +3012,8 @@
                 settings: 'Settings',
                 admin: 'Admin',
                 logs: 'Logs',
-                subscribers: 'Subscribers & Downloads'
+                subscribers: 'Subscribers & Downloads',
+                workflow: 'Workflow Studio'
             };
             document.getElementById('page-title').textContent = titles[view] || view;
 
@@ -2983,6 +3026,9 @@
                 startLiveUpdates();
             } else {
                 stopLiveUpdates();
+            }
+            if (view === 'workflow' && typeof initWorkflowStudio === 'function') {
+                initWorkflowStudio();
             }
             if (view === 'dashboard') {
                 initCharts();

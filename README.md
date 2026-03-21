@@ -19,14 +19,15 @@ Your personal AI development company running on AWS EC2. 7 specialized agents co
 9. [Custom MCP Servers We Built](#custom-mcp-servers-we-built)
 10. [Telegram Integration](#telegram-integration)
 11. [Dashboard Features](#dashboard-features)
-12. [Tech Stack](#tech-stack)
-13. [Future work](#future-work)
-14. [💰 Nigents Cloud (Coming Soon)](#-nigents-cloud-coming-soon)
-15. [Quick Start (Local)](#quick-start-local)
-16. [Deploy on AWS EC2](#deploy-on-aws-ec2)
-17. [Configuration](#configuration)
-18. [MySQL Database Configuration](#mysql-database-configuration)
-19. [Troubleshooting](#troubleshooting)
+12. [Multi-User Support & Admin](#multi-user-support--admin)
+13. [Tech Stack](#tech-stack)
+14. [Future work](#future-work)
+15. [💰 Nigents Cloud (Coming Soon)](#-nigents-cloud-coming-soon)
+16. [Quick Start (Local)](#quick-start-local)
+17. [Deploy on AWS EC2](#deploy-on-aws-ec2)
+18. [Configuration](#configuration)
+19. [MySQL Database Configuration](#mysql-database-configuration)
+20. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -811,6 +812,16 @@ gitlab.createMergeRequest({ sourceBranch: task.plan.branch, targetBranch })
 | `/api/ai/test` | POST | Test AI provider |
 | `/api/materials/stats` | GET | Subscribers stats |
 | `/api/materials/subscribers` | GET | List subscribers |
+| `/api/auth/login` | POST | Dashboard login (body: `username`, `password`); sets session cookie |
+| `/api/auth/check` | GET | Check if session is valid (no auth required) |
+| `/api/auth/logout` | POST | Log out and clear session |
+| `/api/admin/users` | GET | List all users (admin) |
+| `/api/admin/users` | POST | Create user (admin; body: `userId`, `displayName`) |
+| `/api/admin/copy-config` | POST | Copy one user's config to another (admin; body: `fromUserId`, `toUserId`) |
+| `/api/config?userId=X` | GET | Get config for user `X` (sanitized; optional `userId` for per-user) |
+| `/api/config/apikeys` | POST | Update API keys (body may include `userId` for per-user) |
+| `/api/config/gitlab` | POST | Update GitLab config (body may include `userId` for per-user) |
+| `/api/config/custommodels` | POST | Update custom models (body may include `userId` for per-user) |
 
 ### Socket.io Events
 
@@ -1561,6 +1572,72 @@ The Nigents Dashboard runs at `http://EC2_IP:4000` and provides:
 - Works on desktop, tablet, and mobile
 - Hamburger menu on mobile
 - Touch-friendly interface
+
+### 6. Dashboard Login (Admin)
+- The dashboard is protected by **admin credentials**.
+- **Default login:** username `admin`, password `admin`.
+- Override via environment: `DASHBOARD_ADMIN_USERNAME` and `DASHBOARD_ADMIN_PASSWORD`.
+- Session is stored in an HTTP-only cookie; all `/api/*` routes (except `/api/auth/login` and `/api/auth/check`) require a valid session.
+- Logout clears the session and redirects to the login page.
+
+### 7. Admin Panel (Multi-User)
+- **Admin** tab (after login): manage users and their config.
+- **Select user:** Choose any user (Telegram users who have used the bot, or users you add) to view and edit their **per-user config** (API keys, GitLab token/namespace/URL, custom AI models).
+- **Add user:** Create a user by **User ID** (e.g. Telegram ID or a custom ID like `user-alice`) and optional display name. Useful to pre-create users and assign config before they use the bot.
+- **Copy config:** Copy one user’s full config (API keys, GitLab, custom models) to another user. Source and target are selected from dropdowns; the target user is created automatically if missing.
+
+---
+
+## Multi-User Support & Admin
+
+Nigents supports **multiple users**, each with their own API keys, GitLab credentials, and custom AI models. The bot and dashboard use **per-user config** when available; otherwise they fall back to the global shared config (e.g. `data/shared-config.json` or env).
+
+### How Multi-User Works
+
+| Aspect | Description |
+|--------|-------------|
+| **User identity** | Bot: Telegram `from.id` is the user ID. Dashboard: admin selects a user by ID when viewing/editing config. |
+| **Per-user config** | Stored in MySQL table `user_config` (when DB is configured): `api_keys`, `gitlab`, `custom_models` (JSON). |
+| **Fallback** | If a user has no row in `user_config` or a key is missing, the app uses the global shared config (file or env). |
+| **Agents** | Every command (e.g. `/plan`, `/run`) resolves config for that Telegram user and passes it to the orchestrator and agents. GitLab and AI calls use that user’s credentials. |
+
+### Database: `user_config` Table
+
+When MySQL is enabled, the schema includes:
+
+```sql
+CREATE TABLE IF NOT EXISTS user_config (
+  user_id VARCHAR(50) PRIMARY KEY,
+  api_keys JSON,
+  gitlab JSON,
+  custom_models JSON,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```
+
+- **API keys:** e.g. `OPENAI_API_KEY`, or any key used by the AI client.
+- **GitLab:** `token`, `namespace`, `url` — used to create a per-user GitLab client for repo access and MRs.
+- **Custom models:** Same shape as in shared config (name, apiKey, baseUrl, model, enabled). Users can add models via Telegram (`/addmodel`, `/addglm`) or admins can set them in the dashboard.
+
+### Admin Panel (Dashboard)
+
+1. Log in with admin credentials (default `admin` / `admin`).
+2. Open the **Admin** tab.
+3. **Select user** — View and edit that user’s API keys, GitLab settings, and custom models (custom models shown as read-only JSON; edit via API keys / GitLab forms).
+4. **Add user** — Enter a **User ID** (required) and optional **Display name**. Creates the user in the `users` table and ensures `user_settings` exists so you can assign config.
+5. **Copy config** — Choose **From user** (source) and **To user** (target). Copies API keys, GitLab, and custom models from source to target. The target user is created if they do not exist.
+
+### Bot: Per-User Config
+
+- **Config commands** (`/mymodels`, `/addmodel`, `/usecustommodel`, `/editcustommodel`, `/removecustommodel`, `/setagent`, `/setallagents`) read and write **per-user** config when the user-config module is available (MySQL); otherwise they use the global shared config.
+- **Execution** — When you send `/plan`, `/run`, etc., the orchestrator loads config for your Telegram user and passes it to all agents (Planner, Backend Dev, Frontend Dev, Code Reviewer). GitLab and AI calls use your credentials.
+
+### Environment (Optional)
+
+- **Dashboard admin login:** `DASHBOARD_ADMIN_USERNAME`, `DASHBOARD_ADMIN_PASSWORD` (defaults: `admin`, `admin`).
+- **Global fallback:** Continue to use `GITLAB_TOKEN`, `GITLAB_NAMESPACE`, `data/shared-config.json`, etc. for users who have no per-user config.
 
 ---
 
@@ -2528,6 +2605,17 @@ You can configure **multiple projects** and switch between them:
 
 Agents use a **configurable AI provider**; the default is the custom GLM endpoint (`zhipuglm5`). Voice transcription uses OpenAI Whisper. See `.env` and `config/agents.json` (or MySQL `agent_config` when DB is enabled).
 
+### Dashboard admin login
+
+Dashboard access is protected by admin credentials. Set these in `.env` (optional; defaults shown):
+
+```bash
+DASHBOARD_ADMIN_USERNAME=admin
+DASHBOARD_ADMIN_PASSWORD=admin
+```
+
+Change these in production. All `/api/*` routes (except `/api/auth/login` and `/api/auth/check`) require a valid session cookie set after login.
+
 ### Agent Configuration (`config/agents.json`)
 
 ```json
@@ -2596,6 +2684,7 @@ The database schema is defined in `src/database/schema.sql` with the following t
 | `agent_communications` | Agent-to-agent messages |
 | `subscribers` | Email subscribers |
 | `system_config` | System configuration |
+| `user_config` | Per-user config: API keys, GitLab, custom AI models (see [Multi-User Support & Admin](#multi-user-support--admin)) |
 
 ### Environment Variables
 

@@ -2209,6 +2209,120 @@ app.get('/api/materials/subscribers/export', (req, res) => {
 });
 
 // ============================================================================
+// Workflow Projects (n8n-style canvas + GitLab link) & meeting transcript
+// ============================================================================
+
+const WORKFLOW_PROJECTS_FILE = path.join(MATERIALS_DATA_DIR, 'workflow-projects.json');
+
+function loadWorkflowProjects() {
+  try {
+    if (fs.existsSync(WORKFLOW_PROJECTS_FILE)) {
+      return JSON.parse(fs.readFileSync(WORKFLOW_PROJECTS_FILE, 'utf8'));
+    }
+  } catch (e) {
+    logger.error('[Workflow] load error:', e.message);
+  }
+  return { projects: [] };
+}
+
+function saveWorkflowProjects(data) {
+  fs.writeFileSync(WORKFLOW_PROJECTS_FILE, JSON.stringify(data, null, 2), 'utf8');
+}
+
+app.get('/api/workflow-projects', (req, res) => {
+  try {
+    const data = loadWorkflowProjects();
+    res.json({ success: true, projects: data.projects || [] });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.post('/api/workflow-projects', (req, res) => {
+  try {
+    const name = (req.body.name || '').trim() || 'Untitled project';
+    const gitlabPath = (req.body.gitlabPath || '').trim() || '';
+    const gitlabProjectId = req.body.gitlabProjectId != null ? String(req.body.gitlabProjectId) : '';
+    const data = loadWorkflowProjects();
+    const id = `wp_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    const project = {
+      id,
+      name,
+      gitlabPath,
+      gitlabProjectId,
+      nodes: Array.isArray(req.body.nodes) ? req.body.nodes : [],
+      edges: Array.isArray(req.body.edges) ? req.body.edges : [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    data.projects = data.projects || [];
+    data.projects.push(project);
+    saveWorkflowProjects(data);
+    res.json({ success: true, project });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.put('/api/workflow-projects/:id', (req, res) => {
+  try {
+    const data = loadWorkflowProjects();
+    const idx = (data.projects || []).findIndex(p => p.id === req.params.id);
+    if (idx < 0) return res.status(404).json({ success: false, error: 'Project not found' });
+    const p = data.projects[idx];
+    if (req.body.name != null) p.name = String(req.body.name).trim() || p.name;
+    if (req.body.gitlabPath !== undefined) p.gitlabPath = String(req.body.gitlabPath || '').trim();
+    if (req.body.gitlabProjectId !== undefined) p.gitlabProjectId = String(req.body.gitlabProjectId || '');
+    if (Array.isArray(req.body.nodes)) p.nodes = req.body.nodes;
+    if (Array.isArray(req.body.edges)) p.edges = req.body.edges;
+    p.updatedAt = new Date().toISOString();
+    saveWorkflowProjects(data);
+    res.json({ success: true, project: p });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.delete('/api/workflow-projects/:id', (req, res) => {
+  try {
+    const data = loadWorkflowProjects();
+    const before = (data.projects || []).length;
+    data.projects = (data.projects || []).filter(p => p.id !== req.params.id);
+    if (data.projects.length === before) return res.status(404).json({ success: false, error: 'Not found' });
+    saveWorkflowProjects(data);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/** Voice / meeting transcript → agent-style text reply (Zoom: paste transcript here; future: webhooks) */
+app.post('/api/meeting/transcript', async (req, res) => {
+  try {
+    const text = (req.body.text || '').trim();
+    if (!text) return res.status(400).json({ success: false, error: 'text required' });
+    const aiClient = require('../utils/ai-client');
+    const context = (req.body.context || '').trim();
+    const systemMessage = 'You are Nigents assistant. Summarize meeting notes, list action items, and suggest how the agent team (orchestrator, planner, backend-dev, frontend-dev, qa-tester, code-reviewer, reporter) should proceed. Respond in clear Markdown.';
+    const userPrompt = `Summarize this meeting transcript and suggest next steps for the development agents.\n\nProject/context:\n${context || '(none)'}\n\n---\n\nTranscript:\n${text}`;
+    const result = await aiClient.call(userPrompt, {
+      maxTokens: 2048,
+      temperature: 0.35,
+      systemMessage,
+    });
+    res.json({
+      success: true,
+      reply: result.content,
+      provider: result.provider,
+      model: result.model,
+    });
+  } catch (e) {
+    logger.error('[Meeting] transcript error:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// ============================================================================
 // Socket.IO
 // ============================================================================
 

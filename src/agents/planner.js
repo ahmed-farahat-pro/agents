@@ -305,6 +305,7 @@ CRITICAL INSTRUCTIONS:
 6. Each step must have: order, description, files array, and type (create/modify/delete/review)
 7. Analyze the existing codebase structure and suggest files to modify/create accordingly
 8. Consider the project's existing patterns and conventions
+9. README / documentation tasks: use ONE step with files like ["README.md"] and a description asking for full documentation (overview, install, env, architecture, API, troubleshooting). Do not split README into multiple tiny steps.
 
 REQUIRED JSON STRUCTURE:
 {
