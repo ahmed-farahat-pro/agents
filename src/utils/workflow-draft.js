@@ -26,6 +26,36 @@ function extractJsonFromAi(content) {
 /**
  * Assign x/y for nodes using BFS levels (left-to-right pipeline).
  */
+/**
+ * Accept from/to, source/target, or string ids; drop invalid references.
+ */
+function normalizeEdges(edgesIn, ids) {
+  const idSet = ids instanceof Set ? ids : new Set(ids);
+  const out = [];
+  for (const e of edgesIn || []) {
+    if (!e || typeof e !== 'object') continue;
+    const from =
+      e.from != null
+        ? String(e.from)
+        : e.source != null
+          ? String(e.source)
+          : e.out != null
+            ? String(e.out)
+            : null;
+    const to =
+      e.to != null
+        ? String(e.to)
+        : e.target != null
+          ? String(e.target)
+          : e.in != null
+            ? String(e.in)
+            : null;
+    if (!from || !to || !idSet.has(from) || !idSet.has(to) || from === to) continue;
+    out.push({ from, to });
+  }
+  return out;
+}
+
 function layoutWorkflowNodes(nodesIn, edgesIn) {
   const nodes = (nodesIn || []).map((n, i) => {
     const agentType = AGENT_TYPES.has(n.agentType) ? n.agentType : 'backend-dev';
@@ -40,7 +70,14 @@ function layoutWorkflowNodes(nodesIn, edgesIn) {
   });
 
   const ids = new Set(nodes.map(n => n.id));
-  const edges = (edgesIn || []).filter(e => ids.has(e.from) && ids.has(e.to));
+  let edges = normalizeEdges(edgesIn, ids);
+
+  /** If AI omitted or broke edges, chain nodes in listed order so the canvas always shows a flow */
+  if (!edges.length && nodes.length >= 2) {
+    for (let i = 0; i < nodes.length - 1; i++) {
+      edges.push({ from: nodes[i].id, to: nodes[i + 1].id });
+    }
+  }
 
   const incoming = new Map(nodes.map(n => [n.id, 0]));
   edges.forEach(e => incoming.set(e.to, (incoming.get(e.to) || 0) + 1));

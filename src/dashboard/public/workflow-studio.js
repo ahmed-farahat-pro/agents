@@ -20,6 +20,7 @@
   let dragState = null;
   let wfBound = false;
   const NODE_W = 168;
+  const CANVAS_PAD = 48;
   let gitlabRepos = [];
 
   function el(id) {
@@ -147,7 +148,35 @@
       });
       canvas.appendChild(div);
     });
-    drawEdges();
+    syncCanvasExtent();
+    requestAnimationFrame(() => {
+      syncCanvasExtent();
+      drawEdges();
+    });
+  }
+
+  /** Expand canvas so absolute nodes affect scroll size; required for SVG 1:1 with node coords */
+  function syncCanvasExtent() {
+    const canvas = el('wf-canvas');
+    if (!canvas) return;
+    const minW = 800;
+    const minH = 560;
+    if (!nodes.length) {
+      canvas.style.minWidth = '';
+      canvas.style.minHeight = '';
+      return;
+    }
+    let maxR = minW;
+    let maxB = minH;
+    nodes.forEach(n => {
+      const div = canvas.querySelector('.wf-node[data-id="' + n.id + '"]');
+      const w = div ? div.offsetWidth : NODE_W;
+      const h = div ? div.offsetHeight : 96;
+      maxR = Math.max(maxR, n.x + w + CANVAS_PAD);
+      maxB = Math.max(maxB, n.y + h + CANVAS_PAD);
+    });
+    canvas.style.minWidth = Math.ceil(maxR) + 'px';
+    canvas.style.minHeight = Math.ceil(maxB) + 'px';
   }
 
   function startDrag(e) {
@@ -191,25 +220,62 @@
     const svg = el('wf-svg');
     const canvas = el('wf-canvas');
     if (!svg || !canvas) return;
-    const w = Math.max(canvas.scrollWidth, canvas.offsetWidth, 800);
-    const h = Math.max(canvas.scrollHeight, canvas.offsetHeight, 560);
+    syncCanvasExtent();
+    const w = Math.max(canvas.scrollWidth, canvas.offsetWidth, 400);
+    const h = Math.max(canvas.scrollHeight, canvas.offsetHeight, 400);
+    /* Critical: map viewBox 1:1 to canvas pixels (default 'meet' scales and misaligns vs position:absolute nodes) */
     svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+    svg.setAttribute('preserveAspectRatio', 'none');
+
     let pathsHtml = '';
     edges.forEach(e => {
       const a = nodes.find(n => n.id === e.from);
       const b = nodes.find(n => n.id === e.to);
       if (!a || !b) return;
-      const x1 = a.x + NODE_W;
-      const y1 = a.y + 36;
+      const elA = canvas.querySelector('.wf-node[data-id="' + a.id + '"]');
+      const elB = canvas.querySelector('.wf-node[data-id="' + b.id + '"]');
+      const wA = elA ? elA.offsetWidth : NODE_W;
+      const hA = elA ? elA.offsetHeight : 96;
+      const wB = elB ? elB.offsetWidth : NODE_W;
+      const hB = elB ? elB.offsetHeight : 96;
+      const x1 = a.x + wA;
+      const y1 = a.y + hA / 2;
       const x2 = b.x;
-      const y2 = b.y + 36;
-      const cx = (x1 + x2) / 2;
-      const d = 'M ' + x1 + ' ' + y1 + ' C ' + cx + ' ' + y1 + ', ' + cx + ' ' + y2 + ', ' + x2 + ' ' + y2;
+      const y2 = b.y + hB / 2;
+      const dist = Math.abs(x2 - x1);
+      const dx = Math.min(140, Math.max(56, dist * 0.45));
+      const d =
+        'M ' +
+        x1 +
+        ' ' +
+        y1 +
+        ' C ' +
+        (x1 + dx) +
+        ' ' +
+        y1 +
+        ', ' +
+        (x2 - dx) +
+        ' ' +
+        y2 +
+        ', ' +
+        x2 +
+        ' ' +
+        y2;
       pathsHtml +=
-        '<path d="' + d + '" fill="none" stroke="#ff570a" stroke-width="2.5" opacity="0.92" marker-end="url(#wf-arrow)" />';
+        '<path d="' +
+        d +
+        '" fill="none" stroke="url(#wf-edge-glow)" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" opacity="0.95" marker-end="url(#wf-arrow)" />';
     });
     svg.innerHTML =
-      '<defs><marker id="wf-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L9,4.5 L0,9 z" fill="#ff570a"/></marker></defs>' +
+      '<defs>' +
+      '<linearGradient id="wf-edge-glow" x1="0%" y1="0%" x2="100%" y2="0%">' +
+      '<stop offset="0%" stop-color="#ff8f4a"/>' +
+      '<stop offset="100%" stop-color="#ff570a"/>' +
+      '</linearGradient>' +
+      '<marker id="wf-arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">' +
+      '<path d="M0,0 L10,5 L0,10 z" fill="#ff570a"/>' +
+      '</marker>' +
+      '</defs>' +
       pathsHtml;
   }
 
