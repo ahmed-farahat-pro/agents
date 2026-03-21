@@ -2396,27 +2396,51 @@
                         <div id="wf-ai-hints" class="wf-chip-row"></div>
                     </div>
                     <p class="wf-help-line">
-                        <strong>Manual:</strong> drag agents from the palette. <strong>Connect:</strong> enable &quot;Connect nodes&quot;, click two cards. <strong>Duplicate roles:</strong> AI adds when the repo warrants it (see duplicate reason on the card).
+                        <strong>Manual:</strong> drag agents from the palette onto the canvas. <strong>Connect:</strong> drag from the <strong>orange output</strong> dot on one card to the <strong>gray input</strong> dot on another. <strong>Duplicate roles:</strong> AI may add when the repo warrants it (see text on the card).
                     </p>
                     <div class="wf-wrap">
                         <div class="wf-palette">
                             <h4>Agents</h4>
                             <div id="wf-palette-items"></div>
-                            <label class="wf-connect-hint" style="display:flex;align-items:center;gap:8px;margin-top:12px;cursor:pointer;">
-                                <input type="checkbox" id="wf-connect-mode"> Connect nodes
-                            </label>
+                            <p class="wf-palette-hint">Outputs → inputs: drag a wire between the side dots.</p>
                         </div>
                         <div class="wf-canvas-wrap">
                             <div class="wf-canvas" id="wf-canvas">
                                 <svg class="wf-svg" id="wf-svg" xmlns="http://www.w3.org/2000/svg"></svg>
                             </div>
                         </div>
-                        <div class="wf-panel">
-                            <h4>Meetings → agent reply (text)</h4>
-                            <p class="wf-hint">Paste Zoom / Meet / Teams transcript, or type voice notes. Full Zoom API integration can be added with OAuth + webhooks.</p>
-                            <input type="text" id="wf-meeting-context" class="form-input" placeholder="Project name / context (optional)" style="width:100%;margin-bottom:8px;padding:8px;">
-                            <textarea id="wf-meeting-text" placeholder="Meeting transcript or bullet notes…"></textarea>
-                            <button type="button" class="btn btn-primary" id="wf-meeting-submit" style="width:100%;margin-top:10px;">Get agent-style summary &amp; next steps</button>
+                        <div class="wf-panel wf-panel-meeting">
+                            <div class="wf-meeting-head">
+                                <h4>Team meeting</h4>
+                                <p class="wf-meeting-tagline">Multiple agents answer in turn — orchestrated, no talking over each other.</p>
+                            </div>
+                            <div id="wf-chat-log" class="wf-chat-log" aria-live="polite"></div>
+                            <div class="wf-agent-pick" id="wf-agent-pick">
+                                <div class="wf-pick-row">
+                                    <span class="wf-pick-label">Who speaks this round</span>
+                                    <button type="button" class="btn btn-secondary btn-sm" id="wf-sync-canvas-agents" title="Check only agents on the canvas">Match canvas</button>
+                                </div>
+                                <div class="wf-agent-chips">
+                                    <label class="wf-chip-toggle"><input type="checkbox" name="wf-rt-agent" value="orchestrator" checked> Orchestrator</label>
+                                    <label class="wf-chip-toggle"><input type="checkbox" name="wf-rt-agent" value="planner" checked> Planner</label>
+                                    <label class="wf-chip-toggle"><input type="checkbox" name="wf-rt-agent" value="backend-dev" checked> Backend</label>
+                                    <label class="wf-chip-toggle"><input type="checkbox" name="wf-rt-agent" value="frontend-dev"> Frontend</label>
+                                    <label class="wf-chip-toggle"><input type="checkbox" name="wf-rt-agent" value="qa-tester"> QA</label>
+                                    <label class="wf-chip-toggle"><input type="checkbox" name="wf-rt-agent" value="code-reviewer"> Review</label>
+                                    <label class="wf-chip-toggle"><input type="checkbox" name="wf-rt-agent" value="reporter"> Reporter</label>
+                                </div>
+                            </div>
+                            <input type="text" id="wf-meeting-context" class="form-input wf-meeting-context-input" placeholder="Project / context (optional)">
+                            <textarea id="wf-user-message" class="wf-user-message" placeholder="Ask the team something…" rows="3"></textarea>
+                            <div class="wf-meeting-actions">
+                                <button type="button" class="btn btn-primary" id="wf-roundtable-send">Send to team</button>
+                                <button type="button" class="btn btn-secondary btn-sm" id="wf-chat-clear" title="Clear conversation">Clear chat</button>
+                                <button type="button" class="btn btn-secondary btn-sm" id="wf-btn-voice-link" title="Open full-page voice room + Jitsi (copy link)">Shareable voice link</button>
+                            </div>
+                            <div class="wf-meeting-divider"><span>Or summarize a transcript</span></div>
+                            <p class="wf-hint wf-hint-tight">Paste Zoom / Meet notes — one combined summary from the assistant.</p>
+                            <textarea id="wf-meeting-text" class="wf-transcript-ta" placeholder="Meeting transcript or bullet notes…" rows="4"></textarea>
+                            <button type="button" class="btn btn-secondary" id="wf-meeting-submit" style="width:100%;margin-top:8px;">Summarize transcript</button>
                             <div class="wf-reply" id="wf-meeting-reply" style="display:none;"></div>
                         </div>
                     </div>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nigents — Voice meeting</title>
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --card: #1a1a20;
+      --border: #2a2a32;
+      --text: #e8e6e3;
+      --muted: #9a9590;
+      --accent: #ff570a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .mr-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(145deg, rgba(255, 87, 10, 0.08), var(--card));
+    }
+    .mr-header h1 { margin: 0 0 6px; font-size: 1.25rem; }
+    .mr-header p { margin: 0; font-size: 0.85rem; color: var(--muted); max-width: 720px; line-height: 1.45; }
+    .mr-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding: 16px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    @media (max-width: 960px) { .mr-grid { grid-template-columns: 1fr; } }
+    .mr-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 420px;
+    }
+    .mr-panel h2 {
+      margin: 0;
+      padding: 12px 14px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .mr-jitsi iframe {
+      width: 100%;
+      flex: 1;
+      min-height: 360px;
+      border: 0;
+      background: #000;
+    }
+    .mr-ai {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+      min-height: 0;
+    }
+    .mr-chat {
+      flex: 1;
+      overflow-y: auto;
+      max-height: 220px;
+      padding: 10px;
+      background: rgba(0,0,0,0.25);
+      border-radius: 8px;
+      font-size: 0.8rem;
+      line-height: 1.45;
+    }
+    .mr-msg { margin-bottom: 10px; padding: 8px 10px; border-radius: 8px; }
+    .mr-msg-user { background: rgba(255, 87, 10, 0.15); border-left: 3px solid var(--accent); }
+    .mr-msg-agent { background: rgba(255,255,255,0.04); border-left: 3px solid #6366f1; }
+    .mr-msg-meta { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+    .mr-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .mr-row label { font-size: 0.7rem; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+    textarea.mr-input {
+      width: 100%;
+      min-height: 72px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.85rem;
+      resize: vertical;
+    }
+    input.mr-ctx {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.8rem;
+    }
+    .mr-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .btn {
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { background: #333; color: var(--text); }
+    .btn-mic { background: #22c55e; color: #fff; }
+    .btn-mic.recording { background: #dc2626; animation: pulse 1s infinite; }
+    @keyframes pulse { 50% { opacity: 0.85; } }
+    .mr-err { color: #f87171; font-size: 0.85rem; padding: 12px; }
+    .mr-hint { font-size: 0.75rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header class="mr-header">
+    <h1>🎙️ Nigents voice meeting</h1>
+    <p>
+      <strong>Left:</strong> Jitsi — talk with people in real time (share the link). 
+      <strong>Right:</strong> AI team — speak or type; agents reply in turn with instant voice (Chrome / Edge recommended).
+    </p>
+  </header>
+  <div id="mr-error" class="mr-err" style="display:none;"></div>
+  <div class="mr-grid" id="mr-root" style="display:none;">
+    <section class="mr-panel mr-jitsi">
+      <h2>Human voice (Jitsi)</h2>
+      <iframe id="mr-jitsi-frame" title="Jitsi" allow="camera; microphone; fullscreen; display-capture; autoplay"></iframe>
+    </section>
+    <section class="mr-panel">
+      <h2>AI team (roundtable + voice)</h2>
+      <div class="mr-ai">
+        <p class="mr-hint">Select agents, then type or use the mic. Replies are spoken one after another.</p>
+        <div class="mr-row" id="mr-agents"></div>
+        <input type="text" class="mr-ctx" id="mr-context" placeholder="Project context (optional)" />
+        <div class="mr-chat" id="mr-chat"></div>
+        <textarea class="mr-input" id="mr-text" placeholder="Ask the team…"></textarea>
+        <div class="mr-actions">
+          <button type="button" class="btn btn-primary" id="mr-send">Send to AI team</button>
+          <button type="button" class="btn btn-mic" id="mr-mic" title="Speak (push to talk)">🎤 Hold to speak</button>
+          <button type="button" class="btn btn-secondary" id="mr-clear">Clear chat</button>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script src="/meeting-live.js" defer></script>
+</body>
+</html>

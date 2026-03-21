@@ -55,13 +55,14 @@ Available intents:
 8. APPROVE - User wants to approve a pending plan (e.g., "approve", "yes go ahead")
 9. ASK - User is asking a question about code (e.g., "how does auth work", "explain this function")
 10. CHAT - User wants to chat with a specific agent (e.g., "talk to backend dev", "ask planner")
-11. CANCEL - User wants to cancel a queued/approved task (e.g., "cancel task abc123", "remove from queue")
-12. STOP - User wants to stop a running task (e.g., "stop the running task", "stop task abc123")
-13. REMOVE - User wants to remove a pending plan (e.g., "remove pending plan", "delete plan abc123")
-14. CLEAR - User wants to clear completed tasks (e.g., "clear history", "clean up completed tasks")
-15. HELP - User wants help or command list (e.g., "help", "what can you do")
-16. GREETING - User is just greeting (e.g., "hello", "hi", "good morning")
-17. UNKNOWN - Cannot determine intent
+11. MEETING - User wants a voice / multi-agent team meeting with browser links (e.g., "start a meeting", "voice meeting", "team meeting", "open meeting room", "I want a meeting with the agents")
+12. CANCEL - User wants to cancel a queued/approved task (e.g., "cancel task abc123", "remove from queue")
+13. STOP - User wants to stop a running task (e.g., "stop the running task", "stop task abc123")
+14. REMOVE - User wants to remove a pending plan (e.g., "remove pending plan", "delete plan abc123")
+15. CLEAR - User wants to clear completed tasks (e.g., "clear history", "clean up completed tasks")
+16. HELP - User wants help or command list (e.g., "help", "what can you do")
+17. GREETING - User is just greeting (e.g., "hello", "hi", "good morning")
+18. UNKNOWN - Cannot determine intent
 
 Extract:
 - intent: The primary intent from the list above
@@ -75,7 +76,7 @@ Extract:
 
 Respond with JSON only:
 {
-  "intent": "PLAN|PROJECT_SWITCH|PROJECT_LIST|MODEL_SWITCH|MODEL_LIST|STATUS|QUEUE|APPROVE|ASK|CHAT|CANCEL|STOP|REMOVE|CLEAR|HELP|GREETING|UNKNOWN",
+  "intent": "PLAN|PROJECT_SWITCH|PROJECT_LIST|MODEL_SWITCH|MODEL_LIST|STATUS|QUEUE|APPROVE|ASK|CHAT|MEETING|CANCEL|STOP|REMOVE|CLEAR|HELP|GREETING|UNKNOWN",
   "confidence": "high|medium|low",
   "extracted_task": "the task if PLAN",
   "extracted_project": "project name if PROJECT_SWITCH",

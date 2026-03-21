@@ -72,6 +72,7 @@ const publicApiPaths = new Set([
 function isPublicApiPath(p) {
   const raw = (p || '').trim();
   const pathNorm = raw.replace(/\/+$/, '') || '/';
+  if (pathNorm.startsWith('/api/meeting/session/')) return true;
   if (publicApiPaths.has(pathNorm) || publicApiPaths.has(raw)) return true;
   if (pathNorm.endsWith('/api/materials/subscribe') || pathNorm.endsWith('/api/materials/download')) return true;
   if (raw.endsWith('/api/materials/subscribe') || raw.endsWith('/api/materials/download')) return true;
@@ -80,6 +81,30 @@ function isPublicApiPath(p) {
       pathNorm.includes('/api/materials/download')) return true;
   return false;
 }
+
+/** Telegram bot (or other services) creates sessions on the dashboard host — no browser cookie. */
+const meetingSessionsMod = require('../utils/meeting-sessions');
+app.post('/api/meeting/sessions/internal', (req, res) => {
+  try {
+    const secret = process.env.MEETING_INTERNAL_SECRET;
+    if (!secret || req.headers['x-meeting-secret'] !== secret) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    const session = meetingSessionsMod.createSession({ telegramUserId: req.body && req.body.telegramUserId });
+    const base = meetingSessionsMod.getPublicDashboardUrl();
+    res.json({
+      success: true,
+      token: session.token,
+      meetingRoomUrl: `${base}/meeting-room.html?token=${encodeURIComponent(session.token)}`,
+      jitsiUrl: session.jitsiUrl,
+      expiresAt: session.expiresAt,
+    });
+  } catch (e) {
+    logger.error('[Meeting] internal session:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 app.use((req, res, next) => {
   if (!req.path.startsWith('/api/')) return next();
   if (isPublicApiPath(req.path)) return next();
@@ -2414,6 +2439,120 @@ app.post('/api/meeting/transcript', async (req, res) => {
     });
   } catch (e) {
     logger.error('[Meeting] transcript error:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+const { runRoundtable } = require('../utils/meeting-roundtable');
+
+/** Authenticated: generate shareable links from Workflow Studio */
+app.post('/api/meeting/sessions', (req, res) => {
+  try {
+    const session = meetingSessionsMod.createSession({ source: 'dashboard' });
+    const base = meetingSessionsMod.getPublicDashboardUrl();
+    res.json({
+      success: true,
+      token: session.token,
+      meetingRoomUrl: `${base}/meeting-room.html?token=${encodeURIComponent(session.token)}`,
+      jitsiUrl: session.jitsiUrl,
+      expiresAt: session.expiresAt,
+    });
+  } catch (e) {
+    logger.error('[Meeting] dashboard session:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/** Public: validate token from Telegram / email link */
+app.get('/api/meeting/session/:token', (req, res) => {
+  try {
+    const s = meetingSessionsMod.getSession(req.params.token);
+    if (!s) {
+      return res.status(404).json({ success: false, error: 'Invalid or expired session' });
+    }
+    const base = meetingSessionsMod.getPublicDashboardUrl();
+    res.json({
+      success: true,
+      jitsiUrl: s.jitsiUrl,
+      roomSlug: s.roomSlug,
+      expiresAt: s.expiresAt,
+      meetingRoomUrl: `${base}/meeting-room.html?token=${encodeURIComponent(s.token)}`,
+    });
+  } catch (e) {
+    logger.error('[Meeting] session get:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/** Public: same roundtable as dashboard, but gated by session token (no login). */
+app.post('/api/meeting/session/:token/roundtable', async (req, res) => {
+  try {
+    const s = meetingSessionsMod.getSession(req.params.token);
+    if (!s) {
+      return res.status(404).json({ success: false, error: 'Invalid or expired session' });
+    }
+    const out = await runRoundtable({
+      message: req.body.message,
+      context: req.body.context,
+      agents: req.body.agents,
+      history: Array.isArray(req.body.history) ? req.body.history : [],
+    });
+    res.json({
+      success: true,
+      turns: out.turns,
+      agentsOrder: out.agentsOrder,
+      provider: out.provider,
+      model: out.model,
+    });
+  } catch (e) {
+    if (e.code === 'VALIDATION') {
+      return res.status(400).json({ success: false, error: e.message });
+    }
+    if (e.code === 'PARSE') {
+      logger.error('[Meeting] session roundtable parse:', e.message);
+      return res.status(422).json({
+        success: false,
+        error: 'AI did not return valid JSON. Try again.',
+        raw: (e.raw || '').toString().slice(0, 2000),
+      });
+    }
+    logger.error('[Meeting] session roundtable:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/**
+ * Multi-agent roundtable: user message → agents reply in strict order (no cross-talk).
+ * Body: { message, context?, agents?: string[], history?: { role, content, agentType? }[] }
+ */
+app.post('/api/meeting/roundtable', async (req, res) => {
+  try {
+    const out = await runRoundtable({
+      message: req.body.message,
+      context: req.body.context,
+      agents: req.body.agents,
+      history: Array.isArray(req.body.history) ? req.body.history : [],
+    });
+    res.json({
+      success: true,
+      turns: out.turns,
+      agentsOrder: out.agentsOrder,
+      provider: out.provider,
+      model: out.model,
+    });
+  } catch (e) {
+    if (e.code === 'VALIDATION') {
+      return res.status(400).json({ success: false, error: e.message });
+    }
+    if (e.code === 'PARSE') {
+      logger.error('[Meeting] roundtable parse:', e.message);
+      return res.status(422).json({
+        success: false,
+        error: 'AI did not return valid JSON. Try again or shorten the message.',
+        raw: (e.raw || '').toString().slice(0, 2000),
+      });
+    }
+    logger.error('[Meeting] roundtable error:', e.message);
     res.status(500).json({ success: false, error: e.message });
   }
 });

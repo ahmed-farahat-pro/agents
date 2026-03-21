@@ -16,13 +16,15 @@
   let currentId = null;
   let nodes = [];
   let edges = [];
-  let connectFrom = null;
+  let wireDrag = null; /* { fromId, x0, y0, curX, curY } while dragging a connection */
   let dragState = null;
   let wfBound = false;
   const NODE_W = 168;
   const CANVAS_PAD = 48;
   let gitlabRepos = [];
   let wfCanvasResizeObserver = null;
+  /** { role:'user'|'agent', content, agentType?, label? } — multi-agent meeting thread */
+  let roundtableHistory = [];
 
   function el(id) {
     return document.getElementById(id);
@@ -41,20 +43,36 @@
       .filter(e => e && e.from && e.to && e.from !== e.to && idSet.has(e.from) && idSet.has(e.to));
   }
 
-  /** Port positions in the same coordinate space as the SVG (canvas-local px) */
-  function portCoords(canvas, nodeEl, side) {
+  function clientToCanvas(canvas, clientX, clientY) {
     const c = canvas.getBoundingClientRect();
+    return { x: clientX - c.left, y: clientY - c.top };
+  }
+
+  /** Port center in canvas-local px (uses real .wf-port-* elements when present) */
+  function portCenterForNode(canvas, nodeEl, side) {
+    const sel = side === 'out' ? '.wf-port-out' : '.wf-port-in';
+    const port = nodeEl.querySelector(sel);
+    const c = canvas.getBoundingClientRect();
+    if (port) {
+      const r = port.getBoundingClientRect();
+      return { x: r.left + r.width / 2 - c.left, y: r.top + r.height / 2 - c.top };
+    }
     const r = nodeEl.getBoundingClientRect();
     if (side === 'out') {
-      return {
-        x: r.right - c.left,
-        y: r.top - c.top + r.height / 2,
-      };
+      return { x: r.right - c.left, y: r.top - c.top + r.height / 2 };
     }
-    return {
-      x: r.left - c.left,
-      y: r.top - c.top + r.height / 2,
-    };
+    return { x: r.left - c.left, y: r.top - c.top + r.height / 2 };
+  }
+
+  function clearPortHoverHighlight() {
+    document.querySelectorAll('.wf-port-in.wf-port-hover').forEach(p => p.classList.remove('wf-port-hover'));
+  }
+
+  function highlightPortUnder(clientX, clientY) {
+    clearPortHoverHighlight();
+    const hit = document.elementFromPoint(clientX, clientY);
+    const pin = hit && hit.closest && hit.closest('.wf-port-in');
+    if (pin) pin.classList.add('wf-port-hover');
   }
 
   function scheduleRedrawEdges() {
@@ -62,6 +80,126 @@
       drawEdges();
       requestAnimationFrame(() => drawEdges());
     });
+  }
+
+  function getSelectedRoundtableAgents() {
+    const boxes = document.querySelectorAll('[name="wf-rt-agent"]:checked');
+    return Array.from(boxes).map(b => b.value);
+  }
+
+  function scrollChatToBottom() {
+    const log = el('wf-chat-log');
+    if (log) log.scrollTop = log.scrollHeight;
+  }
+
+  function renderChatLog() {
+    const log = el('wf-chat-log');
+    if (!log) return;
+    log.innerHTML = '';
+    if (roundtableHistory.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'wf-chat-empty';
+      empty.textContent =
+        'Ask the team a question. Selected agents reply one after another — orchestrated turns, no cross-talk.';
+      log.appendChild(empty);
+      return;
+    }
+    roundtableHistory.forEach(m => {
+      const row = document.createElement('div');
+      if (m.role === 'user') {
+        row.className = 'wf-msg wf-msg-user';
+        const body = document.createElement('div');
+        body.className = 'wf-msg-body';
+        body.textContent = m.content;
+        row.appendChild(body);
+      } else {
+        row.className = 'wf-msg wf-msg-agent';
+        if (m.agentType) row.dataset.agent = m.agentType;
+        const meta = document.createElement('div');
+        meta.className = 'wf-msg-meta';
+        meta.textContent = m.label || m.agentType || 'Agent';
+        const body = document.createElement('div');
+        body.className = 'wf-msg-body';
+        body.textContent = m.content;
+        row.appendChild(meta);
+        row.appendChild(body);
+      }
+      log.appendChild(row);
+    });
+    scrollChatToBottom();
+  }
+
+  function syncAgentsFromCanvas() {
+    const types = [...new Set(nodes.map(n => n.agentType).filter(Boolean))];
+    if (!types.length) {
+      alert('Add agents to the canvas first.');
+      return;
+    }
+    document.querySelectorAll('[name="wf-rt-agent"]').forEach(cb => {
+      cb.checked = types.includes(cb.value);
+    });
+    if (typeof showNotification === 'function') showNotification('Speaker list matched to canvas', 'success');
+  }
+
+  function sendRoundtable() {
+    const ta = el('wf-user-message');
+    const msg = (ta && ta.value.trim()) || '';
+    if (!msg) {
+      alert('Type a message for the team');
+      return;
+    }
+    const agents = getSelectedRoundtableAgents();
+    if (!agents.length) {
+      alert('Select at least one agent');
+      return;
+    }
+    const context =
+      (el('wf-meeting-context') && el('wf-meeting-context').value.trim()) ||
+      (currentId ? projects.find(p => p.id === currentId)?.name : '') ||
+      '';
+    const prior = roundtableHistory.slice();
+    roundtableHistory.push({ role: 'user', content: msg });
+    if (ta) ta.value = '';
+    renderChatLog();
+
+    const btn = el('wf-roundtable-send');
+    if (btn) btn.disabled = true;
+
+    fetch('/api/meeting/roundtable', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg, context, agents, history: prior }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (!d.success) throw new Error(d.error || 'Roundtable failed');
+        const turns = d.turns || [];
+        if (!turns.length) throw new Error('No replies');
+        turns.forEach((t, i) => {
+          setTimeout(() => {
+            roundtableHistory.push({
+              role: 'agent',
+              agentType: t.agentType,
+              label: t.label,
+              content: t.content,
+            });
+            renderChatLog();
+            if (i === turns.length - 1 && typeof showNotification === 'function') {
+              showNotification('Team replied', 'success');
+            }
+          }, i * 240);
+        });
+      })
+      .catch(err => {
+        roundtableHistory.pop();
+        renderChatLog();
+        if (ta) ta.value = msg;
+        alert(err.message || 'Failed');
+      })
+      .finally(() => {
+        if (btn) btn.disabled = false;
+      });
   }
 
   function loadGitlabRepos() {
@@ -146,19 +284,23 @@
     canvas.querySelectorAll('.wf-node').forEach(n => n.remove());
     nodes.forEach(n => {
       const div = document.createElement('div');
-      div.className = 'wf-node' + (connectFrom === n.id ? ' selected' : '');
+      div.className = 'wf-node';
       div.dataset.id = n.id;
       div.dataset.agent = n.agentType || 'backend-dev';
       div.style.left = n.x + 'px';
       div.style.top = n.y + 'px';
       const agent = AGENTS.find(a => a.type === n.agentType) || { label: n.agentType };
       div.innerHTML =
+        '<button type="button" class="wf-port wf-port-in" aria-label="Input — drop connection here" title="Input"></button>' +
+        '<button type="button" class="wf-port wf-port-out" aria-label="Output — drag to connect" title="Drag to another node"></button>' +
         '<button type="button" class="wf-remove" title="Remove">&times;</button>' +
+        '<div class="wf-node-body">' +
         '<div class="wf-node-type">' +
         agent.label +
         '</div>' +
         '<div class="wf-node-label">' +
         (n.note || n.agentType) +
+        '</div>' +
         '</div>';
       div.querySelector('.wf-remove').addEventListener('click', ev => {
         ev.stopPropagation();
@@ -167,27 +309,74 @@
         renderNodes();
         drawEdges();
       });
+      const portOut = div.querySelector('.wf-port-out');
+      if (portOut) {
+        portOut.addEventListener('pointerdown', e => startWireFromPort(e, div, n.id));
+      }
       div.addEventListener('mousedown', startDrag);
-      div.addEventListener('click', ev => {
-        ev.stopPropagation();
-        if (!el('wf-connect-mode') || !el('wf-connect-mode').checked) return;
-        if (!connectFrom) {
-          connectFrom = n.id;
-          renderNodes();
-        } else if (connectFrom !== n.id) {
-          const exists = edges.some(e => e.from === connectFrom && e.to === n.id);
-          if (!exists) edges.push({ from: connectFrom, to: n.id });
-          connectFrom = null;
-          el('wf-connect-mode').checked = false;
-          renderNodes();
-          drawEdges();
-        }
-      });
       canvas.appendChild(div);
     });
     normalizeWorkflowEdges();
     syncCanvasExtent();
     scheduleRedrawEdges();
+  }
+
+  function startWireFromPort(e, nodeDiv, nodeId) {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    e.preventDefault();
+    const canvas = el('wf-canvas');
+    if (!canvas) return;
+    const p = portCenterForNode(canvas, nodeDiv, 'out');
+    wireDrag = {
+      fromId: String(nodeId),
+      x0: p.x,
+      y0: p.y,
+      curX: p.x,
+      curY: p.y,
+    };
+    canvas.classList.add('wf-wiring');
+    nodeDiv.classList.add('wf-node-wiring-source');
+
+    function onMove(ev) {
+      if (!wireDrag) return;
+      const c = clientToCanvas(canvas, ev.clientX, ev.clientY);
+      wireDrag.curX = c.x;
+      wireDrag.curY = c.y;
+      highlightPortUnder(ev.clientX, ev.clientY);
+      drawEdges();
+    }
+
+    function endWire(ev) {
+      document.removeEventListener('pointermove', onMove, true);
+      document.removeEventListener('pointerup', endWire, true);
+      document.removeEventListener('pointercancel', endWire, true);
+      clearPortHoverHighlight();
+      canvas.classList.remove('wf-wiring');
+      nodeDiv.classList.remove('wf-node-wiring-source');
+
+      const fromId = wireDrag && wireDrag.fromId;
+      wireDrag = null;
+
+      const hit = document.elementFromPoint(ev.clientX, ev.clientY);
+      const portIn = hit && hit.closest && hit.closest('.wf-port-in');
+      const targetNode = portIn && portIn.closest('.wf-node');
+      const toId = targetNode && targetNode.dataset.id && String(targetNode.dataset.id);
+
+      if (fromId && toId && toId !== fromId) {
+        const exists = edges.some(ed => ed.from === fromId && ed.to === toId);
+        if (!exists) edges.push({ from: fromId, to: toId });
+        normalizeWorkflowEdges();
+      }
+
+      drawEdges();
+      scheduleRedrawEdges();
+    }
+
+    document.addEventListener('pointermove', onMove, true);
+    document.addEventListener('pointerup', endWire, true);
+    document.addEventListener('pointercancel', endWire, true);
+    drawEdges();
   }
 
   /** Expand canvas so absolute nodes affect scroll size; required for SVG 1:1 with node coords */
@@ -215,7 +404,7 @@
   }
 
   function startDrag(e) {
-    if (e.target.closest('.wf-remove')) return;
+    if (e.target.closest('.wf-remove') || e.target.closest('.wf-port')) return;
     const id = e.currentTarget.dataset.id;
     const node = nodes.find(n => n.id === id);
     if (!node) return;
@@ -251,7 +440,6 @@
     }
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', up);
-    document.addEventListener('pointerup', up);
     e.preventDefault();
   }
 
@@ -274,8 +462,8 @@
       const elA = canvas.querySelector('.wf-node[data-id="' + a.id + '"]');
       const elB = canvas.querySelector('.wf-node[data-id="' + b.id + '"]');
       if (!elA || !elB) return;
-      const p1 = portCoords(canvas, elA, 'out');
-      const p2 = portCoords(canvas, elB, 'in');
+      const p1 = portCenterForNode(canvas, elA, 'out');
+      const p2 = portCenterForNode(canvas, elB, 'in');
       const x1 = p1.x;
       const y1 = p1.y;
       const x2 = p2.x;
@@ -305,6 +493,38 @@
         d +
         '" fill="none" stroke="url(#wf-edge-glow)" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" opacity="0.95" marker-end="url(#wf-arrow)" />';
     });
+
+    if (wireDrag) {
+      const x1 = wireDrag.x0;
+      const y1 = wireDrag.y0;
+      const x2 = wireDrag.curX;
+      const y2 = wireDrag.curY;
+      const dist = Math.abs(x2 - x1);
+      const dx = Math.min(140, Math.max(56, dist * 0.45));
+      const sign = x2 >= x1 ? 1 : -1;
+      const wd =
+        'M ' +
+        x1 +
+        ' ' +
+        y1 +
+        ' C ' +
+        (x1 + sign * dx) +
+        ' ' +
+        y1 +
+        ', ' +
+        (x2 - sign * dx) +
+        ' ' +
+        y2 +
+        ', ' +
+        x2 +
+        ' ' +
+        y2;
+      pathsHtml +=
+        '<path d="' +
+        wd +
+        '" fill="none" stroke="#ff570a" stroke-width="2.5" stroke-dasharray="8 5" stroke-linecap="round" opacity="0.85" />';
+    }
+
     svg.innerHTML =
       '<defs>' +
       '<linearGradient id="wf-edge-glow" x1="0%" y1="0%" x2="100%" y2="0%">' +
@@ -346,7 +566,8 @@
       nodes = [];
       edges = [];
     }
-    connectFrom = null;
+    roundtableHistory = [];
+    renderChatLog();
     renderNodes();
   }
 
@@ -394,7 +615,6 @@
         if (!d.success) throw new Error(d.error || 'Draft failed');
         nodes = d.nodes || [];
         edges = d.edges || [];
-        connectFrom = null;
         normalizeWorkflowEdges();
         if (pathInput) pathInput.value = gitlabPath;
         renderNodes();
@@ -499,6 +719,53 @@
       });
     }
 
+    const btnRt = el('wf-roundtable-send');
+    if (btnRt) {
+      btnRt.addEventListener('click', sendRoundtable);
+    }
+    const taUser = el('wf-user-message');
+    if (taUser) {
+      taUser.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+          e.preventDefault();
+          sendRoundtable();
+        }
+      });
+    }
+    const btnSyncCanvas = el('wf-sync-canvas-agents');
+    if (btnSyncCanvas) btnSyncCanvas.addEventListener('click', syncAgentsFromCanvas);
+    const btnClearChat = el('wf-chat-clear');
+    if (btnClearChat) {
+      btnClearChat.addEventListener('click', () => {
+        if (roundtableHistory.length && !confirm('Clear the meeting chat?')) return;
+        roundtableHistory = [];
+        renderChatLog();
+      });
+    }
+
+    const btnVoiceLink = el('wf-btn-voice-link');
+    if (btnVoiceLink) {
+      btnVoiceLink.addEventListener('click', () => {
+        fetch('/api/meeting/sessions', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+        })
+          .then(r => r.json())
+          .then(d => {
+            if (!d.success) throw new Error(d.error || 'Failed');
+            const lines = `Meeting room (AI + voice):\n${d.meetingRoomUrl}\n\nJitsi (humans):\n${d.jitsiUrl}`;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(d.meetingRoomUrl).catch(() => {});
+            }
+            alert(lines + '\n\n(Meeting URL copied to clipboard if permitted.)');
+            if (typeof showNotification === 'function') showNotification('Voice links ready — check alert', 'success');
+          })
+          .catch(err => alert(err.message || 'Request failed'));
+      });
+    }
+
     const btnMeet = el('wf-meeting-submit');
     if (btnMeet) {
       btnMeet.addEventListener('click', () => {
@@ -544,6 +811,8 @@
       wfCanvasResizeObserver = new ResizeObserver(() => scheduleRedrawEdges());
       wfCanvasResizeObserver.observe(canvasEl);
     }
+
+    renderChatLog();
   }
 
   window.initWorkflowStudio = initWorkflowStudio;

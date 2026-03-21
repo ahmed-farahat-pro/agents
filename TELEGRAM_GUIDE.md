@@ -24,6 +24,23 @@ Step 7: Wake up to Merge Request
 
 ---
 
+## 🎙️ Voice team meeting (browser + Jitsi)
+
+Send **`/meeting`** or say **“start a meeting”** / **“voice meeting”** in a voice note.
+
+The bot replies with:
+
+1. **Nigents meeting room** — opens the dashboard page with **Jitsi** (talk with people) and **AI roundtable** (speak or type; agents answer in turn with **instant voice** in Chrome/Edge).  
+2. **Jitsi link** — share with teammates for real-time voice.
+
+**Setup**
+
+- Set **`PUBLIC_DASHBOARD_URL`** in `.env` to your real dashboard URL (HTTPS in production).  
+- If the **bot** and **dashboard** run on **different machines**, set the **same** **`MEETING_INTERNAL_SECRET`** on both and use the internal session API (see `.env.example`).  
+- Otherwise, run bot and dashboard on the **same host** so they share `data/meeting-sessions.json`.
+
+---
+
 ## 🤖 How to Contact the Bot
 
 ### 1. Find Your Bot

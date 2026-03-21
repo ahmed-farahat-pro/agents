@@ -193,6 +193,58 @@ async function getActiveProject() {
   return projects[0] || null;
 }
 
+/**
+ * Send voice meeting links (browser AI room + Jitsi).
+ * If MEETING_INTERNAL_SECRET + PUBLIC_DASHBOARD_URL are set, creates session on the dashboard host (works when bot and dashboard are separate processes).
+ * Otherwise creates session locally (same machine as dashboard, shared data dir).
+ */
+async function sendMeetingLinksToTelegram(chatId, telegramUserId) {
+  const meetingSessions = require('./utils/meeting-sessions');
+  let session;
+  let base;
+  const dashboardUrl = (process.env.PUBLIC_DASHBOARD_URL || process.env.SITE_URL || '').replace(/\/+$/, '');
+  const internalSecret = process.env.MEETING_INTERNAL_SECRET;
+  if (dashboardUrl && internalSecret) {
+    try {
+      const r = await axios.post(
+        `${dashboardUrl}/api/meeting/sessions/internal`,
+        { telegramUserId },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Meeting-Secret': internalSecret,
+          },
+          timeout: 20000,
+          validateStatus: s => s < 500,
+        }
+      );
+      if (r.data && r.data.success && r.data.token) {
+        session = { token: r.data.token, jitsiUrl: r.data.jitsiUrl };
+        base = dashboardUrl;
+      }
+    } catch (e) {
+      logger.warn('[Bot] meeting session via dashboard HTTP failed, using local file:', e.message);
+    }
+  }
+  if (!session) {
+    session = meetingSessions.createSession({ telegramUserId });
+    base = meetingSessions.getPublicDashboardUrl();
+  }
+  const roomUrl = `${base}/meeting-room.html?token=${encodeURIComponent(session.token)}`;
+  const text = `<b>🎙️ Team voice meeting</b>
+
+<b>1) AI roundtable + instant voice replies</b>
+<a href="${roomUrl}">Open Nigents meeting room</a>
+<i>Chrome/Edge: speak to the team; agents answer in turn with voice. Use HTTPS in production.</i>
+
+<b>2) Human voice room (Jitsi)</b>
+<a href="${session.jitsiUrl}">Join Jitsi</a>
+<i>Share with teammates for real-time voice.</i>
+
+Use <code>/meeting</code> again for a fresh link.`;
+  await bot.sendMessage(chatId, text, { parse_mode: 'HTML', disable_web_page_preview: false });
+}
+
 // Helper: Log user message to chat history
 function logUserMessage(userId, text, type = 'text', metadata = {}) {
   // Start session if not exists
@@ -277,6 +329,7 @@ Send voice notes or text naturally:
 <b>Agent Chat:</b>
 • /meet agent — Chat with specific agent
   (planner, backend, frontend, qa, reviewer)
+• /meeting — Voice meeting link (AI room + Jitsi)
 
 <b>Management:</b>
 • /run — Start implementation now
@@ -2333,6 +2386,17 @@ bot.onText(/\/meet (.+)/, async (msg, match) => {
   }
 });
 
+// /meeting — voice team meeting (browser + Jitsi links)
+bot.onText(/\/meeting(?:\s|$)/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+  try {
+    await sendMeetingLinksToTelegram(msg.chat.id, msg.from.id);
+  } catch (e) {
+    logger.error('[Bot] /meeting failed:', e.message);
+    await bot.sendMessage(msg.chat.id, `Could not create meeting links: ${e.message}`);
+  }
+});
+
 // /queue command
 bot.onText(/\/queue/, async (msg) => {
   if (!isAuthorized(msg.chat.id)) return;
@@ -2584,6 +2648,10 @@ bot.on('voice', async (msg) => {
         } else {
           await bot.sendMessage(msg.chat.id, 'Which agent do you want to chat with? Try: planner, backend, frontend, qa, reviewer');
         }
+        break;
+
+      case 'MEETING':
+        await sendMeetingLinksToTelegram(msg.chat.id, msg.from.id);
         break;
         
       case 'HELP':
