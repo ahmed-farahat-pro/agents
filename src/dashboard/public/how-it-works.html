@@ -960,6 +960,204 @@
         @media (max-width: 640px) {
             .flow-board svg { max-height: 360px; }
         }
+
+        /* Workflow Studio canvas (#workflow-studio) */
+        #workflow-studio { scroll-margin-top: 88px; }
+
+        .wf-studio .wf-canvas {
+            background: linear-gradient(180deg, rgba(20, 17, 24, 0.95) 0%, var(--bg-card) 100%);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px 16px 24px;
+            overflow-x: auto;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        .wf-studio .wf-canvas::before {
+            content: '';
+            position: absolute;
+            inset: 12px;
+            border-radius: 10px;
+            background-image:
+                radial-gradient(circle at center, rgba(255, 87, 10, 0.06) 0%, transparent 70%),
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 24px 24px, 24px 24px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .wf-canvas svg {
+            display: block;
+            width: 100%;
+            min-width: 680px;
+            height: auto;
+            max-height: min(340px, 55vh);
+            position: relative;
+            z-index: 1;
+        }
+
+        .wf-node-box {
+            fill: var(--bg-secondary);
+            stroke: var(--border-light);
+            stroke-width: 1.5;
+            opacity: 0;
+        }
+
+        .wf-studio.visible .wf-node-box {
+            animation: wfNodeIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .wf-studio.visible .wf-node-box.wf-d1 { animation-delay: 0.05s; }
+        .wf-studio.visible .wf-node-box.wf-d2 { animation-delay: 0.2s; }
+        .wf-studio.visible .wf-node-box.wf-d3 { animation-delay: 0.35s; }
+        .wf-studio.visible .wf-node-box.wf-d4 { animation-delay: 0.5s; }
+        .wf-studio.visible .wf-node-box.wf-d5 { animation-delay: 0.65s; }
+        .wf-studio.visible .wf-node-box.wf-d6 { animation-delay: 0.8s; }
+
+        @keyframes wfNodeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .wf-node-title {
+            fill: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 12px;
+            font-weight: 700;
+            opacity: 0;
+        }
+
+        .wf-studio.visible .wf-node-title {
+            animation: wfFadeIn 0.45s ease forwards;
+        }
+
+        .wf-studio.visible .wf-node-title.wf-d1 { animation-delay: 0.12s; }
+        .wf-studio.visible .wf-node-title.wf-d2 { animation-delay: 0.27s; }
+        .wf-studio.visible .wf-node-title.wf-d3 { animation-delay: 0.42s; }
+        .wf-studio.visible .wf-node-title.wf-d4 { animation-delay: 0.57s; }
+        .wf-studio.visible .wf-node-title.wf-d5 { animation-delay: 0.72s; }
+        .wf-studio.visible .wf-node-title.wf-d6 { animation-delay: 0.87s; }
+
+        .wf-node-sub {
+            fill: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 9px;
+            opacity: 0;
+        }
+
+        .wf-studio.visible .wf-node-sub {
+            animation: wfFadeIn 0.45s ease forwards;
+        }
+
+        .wf-studio.visible .wf-node-sub.wf-d1 { animation-delay: 0.18s; }
+        .wf-studio.visible .wf-node-sub.wf-d2 { animation-delay: 0.33s; }
+        .wf-studio.visible .wf-node-sub.wf-d3 { animation-delay: 0.48s; }
+        .wf-studio.visible .wf-node-sub.wf-d4 { animation-delay: 0.63s; }
+        .wf-studio.visible .wf-node-sub.wf-d5 { animation-delay: 0.78s; }
+        .wf-studio.visible .wf-node-sub.wf-d6 { animation-delay: 0.93s; }
+
+        @keyframes wfFadeIn {
+            to { opacity: 1; }
+        }
+
+        .wf-edge {
+            fill: none;
+            stroke: #3a3a48;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-dasharray: 140;
+            stroke-dashoffset: 140;
+        }
+
+        .wf-studio.visible .wf-edge {
+            animation: wfEdgeDraw 0.85s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .wf-studio.visible .wf-edge.wf-e1 { animation-delay: 0.75s; }
+        .wf-studio.visible .wf-edge.wf-e2 { animation-delay: 0.95s; }
+        .wf-studio.visible .wf-edge.wf-e3 { animation-delay: 1.15s; }
+        .wf-studio.visible .wf-edge.wf-e4 { animation-delay: 1.35s; }
+
+        @keyframes wfEdgeDraw {
+            to { stroke-dashoffset: 0; }
+        }
+
+        .wf-edge-hot {
+            fill: none;
+            stroke: url(#wfGrad);
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-dasharray: 10 14;
+            opacity: 0;
+        }
+
+        .wf-studio.visible .wf-edge-hot.wf-e1 { animation: wfHotIn 0.45s ease forwards 2s, wfDash 1s linear infinite 2.35s; }
+        .wf-studio.visible .wf-edge-hot.wf-e2 { animation: wfHotIn 0.45s ease forwards 2.08s, wfDash 1s linear infinite 2.43s; }
+        .wf-studio.visible .wf-edge-hot.wf-e3 { animation: wfHotIn 0.45s ease forwards 2.16s, wfDash 1s linear infinite 2.51s; }
+        .wf-studio.visible .wf-edge-hot.wf-e4 { animation: wfHotIn 0.45s ease forwards 2.24s, wfDash 1s linear infinite 2.59s; }
+
+        @keyframes wfHotIn {
+            to { opacity: 0.9; }
+        }
+
+        @keyframes wfDash {
+            to { stroke-dashoffset: -48; }
+        }
+
+        .wf-port {
+            fill: var(--accent-orange);
+            opacity: 0;
+        }
+
+        .wf-studio.visible .wf-port {
+            animation: wfFadeIn 0.35s ease forwards 1.85s;
+        }
+
+        .wf-cursor-ghost {
+            fill: rgba(255, 87, 10, 0.35);
+            stroke: var(--accent-orange);
+            stroke-width: 1.5;
+            filter: drop-shadow(0 0 6px rgba(255, 87, 10, 0.6));
+        }
+
+        .wf-caption {
+            margin-top: 18px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.65;
+            max-width: 820px;
+        }
+
+        .wf-caption strong { color: var(--text-primary); }
+
+        .wf-bullets {
+            margin-top: 14px;
+            display: grid;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            max-width: 820px;
+        }
+
+        .wf-bullets li {
+            list-style: none;
+            padding-left: 22px;
+            position: relative;
+        }
+
+        .wf-bullets li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 7px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-orange);
+            opacity: 0.85;
+        }
     </style>
 </head>
 <body>
@@ -972,6 +1170,7 @@
                 <a href="#about" class="nav-link">About</a>
                 <a href="#features" class="nav-link">Features</a>
                 <a href="#agents" class="nav-link">Agents</a>
+                <a href="#workflow-studio" class="nav-link">Workflow</a>
                 <a href="#flow-viz" class="nav-link">Flow</a>
                 <a href="/materials.html" class="nav-link">Free Materials</a>
                 <a href="/login.html" class="nav-cta">Login</a>
@@ -987,7 +1186,8 @@
             </p>
             <div class="about-actions">
                 <a href="/login.html" class="btn btn-primary">Open dashboard</a>
-                <a href="#flow-viz" class="btn btn-ghost">See technical flow</a>
+                <a href="#workflow-studio" class="btn btn-ghost">Workflow Studio</a>
+                <a href="#flow-viz" class="btn btn-ghost">Technical flow</a>
             </div>
         </section>
 
@@ -1095,6 +1295,76 @@
                     </div>
                 </div>
             </div>
+        </section>
+
+        <section class="section wf-studio reveal" data-reveal id="workflow-studio">
+            <div class="section-head">
+                <div class="section-label">Dashboard</div>
+                <h2 class="section-title">Workflow Studio — agents you wire yourself</h2>
+                <p class="section-desc">
+                    Design how work flows through your team: drag agent nodes onto the canvas, connect outputs to inputs, and save layouts per GitLab project.
+                    AI can <strong>draft a graph</strong> from your repo tree. Same agents power <strong>live meetings</strong> and production runs.
+                </p>
+            </div>
+            <div class="wf-canvas" role="img" aria-label="Animated workflow: task flows through orchestrator, planner, backend, to merge request">
+                <svg viewBox="0 0 840 200" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="wfGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#ff570a"/>
+                            <stop offset="100%" style="stop-color:#a855f7"/>
+                        </linearGradient>
+                        <marker id="wfArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                            <path d="M0,0 L8,4 L0,8 Z" fill="#5a5a68"/>
+                        </marker>
+                    </defs>
+                    <!-- Agent nodes (canvas blocks) -->
+                    <rect class="wf-node-box wf-d1" x="32" y="70" width="88" height="56" rx="10"/>
+                    <text class="wf-node-title wf-d1" x="76" y="96" text-anchor="middle">Task</text>
+                    <text class="wf-node-sub wf-d1" x="76" y="112" text-anchor="middle">from Telegram / UI</text>
+                    <rect class="wf-node-box wf-d2" x="148" y="70" width="108" height="56" rx="10"/>
+                    <text class="wf-node-title wf-d2" x="202" y="96" text-anchor="middle">Orchestrator</text>
+                    <text class="wf-node-sub wf-d2" x="202" y="112" text-anchor="middle">route · branch · MR</text>
+                    <rect class="wf-node-box wf-d3" x="292" y="70" width="100" height="56" rx="10"/>
+                    <text class="wf-node-title wf-d3" x="342" y="96" text-anchor="middle">Planner</text>
+                    <text class="wf-node-sub wf-d3" x="342" y="112" text-anchor="middle">plan + steps</text>
+                    <rect class="wf-node-box wf-d4" x="424" y="70" width="100" height="56" rx="10"/>
+                    <text class="wf-node-title wf-d4" x="474" y="96" text-anchor="middle">Backend</text>
+                    <text class="wf-node-sub wf-d4" x="474" y="112" text-anchor="middle">code + push</text>
+                    <rect class="wf-node-box wf-d5" x="556" y="70" width="100" height="56" rx="10"/>
+                    <text class="wf-node-title wf-d5" x="606" y="96" text-anchor="middle">GitLab MR</text>
+                    <text class="wf-node-sub wf-d5" x="606" y="112" text-anchor="middle">review &amp; merge</text>
+                    <!-- Edges: arrows + animated “data” line -->
+                    <path class="wf-edge wf-e1" d="M 120 98 L 148 98" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge wf-e2" d="M 256 98 L 292 98" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge wf-e3" d="M 392 98 L 424 98" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge wf-e4" d="M 524 98 L 556 98" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge-hot wf-e1" d="M 120 98 L 148 98"/>
+                    <path class="wf-edge-hot wf-e2" d="M 256 98 L 292 98"/>
+                    <path class="wf-edge-hot wf-e3" d="M 392 98 L 424 98"/>
+                    <path class="wf-edge-hot wf-e4" d="M 524 98 L 556 98"/>
+                    <!-- Port dots on the wire -->
+                    <circle class="wf-port" cx="120" cy="98" r="4"/>
+                    <circle class="wf-port" cx="256" cy="98" r="4"/>
+                    <circle class="wf-port" cx="392" cy="98" r="4"/>
+                    <circle class="wf-port" cx="524" cy="98" r="4"/>
+                    <circle class="wf-port" cx="656" cy="98" r="4"/>
+                    <!-- Motion path + “hand” dot (dragging connection metaphor) -->
+                    <path id="wf-drag-path" d="M 120 98 L 148 98 L 256 98 L 292 98 L 392 98 L 424 98 L 524 98 L 556 98 L 656 98" fill="none" stroke="none"/>
+                    <circle class="wf-cursor-ghost" r="8">
+                        <animateMotion dur="5s" repeatCount="indefinite" rotate="auto" calcMode="linear">
+                            <mpath xlink:href="#wf-drag-path"/>
+                        </animateMotion>
+                    </circle>
+                </svg>
+            </div>
+            <p class="wf-caption">
+                In the real <strong>Workflow Studio</strong> (dashboard → sidebar), you drag nodes such as <em>Orchestrator</em>, <em>Planner</em>, and <em>Backend</em> onto a canvas, connect ports to define order and hand-offs, and attach a <strong>GitLab project</strong> so the graph stays with the repo. Optional steps: <strong>AI draft flow</strong> from the file tree, <strong>team meeting</strong> roundtable with the same agents, and <strong>voice room</strong> for humans + AI.
+            </p>
+            <ul class="wf-bullets">
+                <li><strong>Visual</strong> — See the pipeline before a task runs; reorder by rewiring edges.</li>
+                <li><strong>Project-scoped</strong> — Saved workflows live next to your linked repository.</li>
+                <li><strong>Same agents</strong> — Canvas roles map to the seven production agents you use from Telegram.</li>
+            </ul>
         </section>
 
         <div class="cta-bar reveal" data-reveal>
