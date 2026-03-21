@@ -2444,6 +2444,7 @@ app.post('/api/meeting/transcript', async (req, res) => {
 });
 
 const { runRoundtable } = require('../utils/meeting-roundtable');
+const meetingRoomState = require('../utils/meeting-room-state');
 
 /** Authenticated: generate shareable links from Workflow Studio */
 app.post('/api/meeting/sessions', (req, res) => {
@@ -2564,6 +2565,14 @@ app.post('/api/meeting/roundtable', async (req, res) => {
 io.on('connection', async (socket) => {
   logger.info('Dashboard client connected:', socket.id);
 
+  /** Broadcast shared meeting state to everyone in the room (multi-tab / multi-user). */
+  function emitMeetingSync(token) {
+    io.to('meeting:' + token).emit('meeting-sync', {
+      history: meetingRoomState.getHistory(token),
+      processing: meetingRoomState.isProcessing(token),
+    });
+  }
+
   const state = await getDashboardState();
   socket.emit('init', state);
 
@@ -2580,6 +2589,88 @@ io.on('connection', async (socket) => {
       message: data.message,
       timestamp: new Date(),
     });
+  });
+
+  /** Multi-participant meeting room — shared AI chat (same token = same room) */
+  socket.on('join-meeting', ({ token }) => {
+    try {
+      if (!token || !meetingSessionsMod.getSession(token)) {
+        socket.emit('meeting-error', { error: 'Invalid or expired session' });
+        return;
+      }
+      socket.join('meeting:' + token);
+      socket.emit('meeting-sync', {
+        history: meetingRoomState.getHistory(token),
+        processing: meetingRoomState.isProcessing(token),
+      });
+    } catch (e) {
+      logger.error('[Meeting] join-meeting:', e.message);
+      socket.emit('meeting-error', { error: e.message });
+    }
+  });
+
+  socket.on('leave-meeting', ({ token }) => {
+    if (token) socket.leave('meeting:' + token);
+  });
+
+  socket.on('meeting-clear', ({ token }) => {
+    try {
+      if (!token || !meetingSessionsMod.getSession(token)) return;
+      meetingRoomState.clearHistory(token);
+      emitMeetingSync(token);
+    } catch (e) {
+      logger.error('[Meeting] meeting-clear:', e.message);
+    }
+  });
+
+  socket.on('meeting-roundtable', async ({ token, message, context, agents, displayName }) => {
+    const msg = (message || '').trim();
+    if (!msg || !token) return;
+    if (!meetingSessionsMod.getSession(token)) {
+      socket.emit('meeting-error', { error: 'Invalid or expired session' });
+      return;
+    }
+    if (meetingRoomState.isProcessing(token)) {
+      socket.emit('meeting-error', { error: 'Agents are still replying — wait a moment.' });
+      return;
+    }
+    try {
+      meetingRoomState.setProcessing(token, true);
+      const from = (displayName && String(displayName).trim().slice(0, 48)) || 'Guest';
+      meetingRoomState.appendUserMessage(token, { content: msg, from });
+      emitMeetingSync(token);
+
+      const full = meetingRoomState.getHistory(token);
+      const prior = meetingRoomState.historyForAi(full.slice(0, -1));
+
+      const out = await runRoundtable({
+        message: msg,
+        context: (context || '').trim(),
+        agents: Array.isArray(agents) && agents.length ? agents : ['orchestrator', 'planner', 'backend-dev'],
+        history: prior,
+      });
+
+      meetingRoomState.appendAgentTurns(token, out.turns);
+      meetingRoomState.setProcessing(token, false);
+
+      emitMeetingSync(token);
+      io.to('meeting:' + token).emit('meeting-roundtable-done', {
+        requesterSocketId: socket.id,
+        history: meetingRoomState.getHistory(token),
+        turns: out.turns,
+        error: null,
+      });
+    } catch (e) {
+      meetingRoomState.setProcessing(token, false);
+      meetingRoomState.popLastUserMessage(token);
+      emitMeetingSync(token);
+      const errMsg =
+        e.code === 'PARSE' || (e.message && String(e.message).includes('JSON'))
+          ? 'AI did not return valid JSON. Try again.'
+          : e.message || 'Roundtable failed';
+      socket.emit('meeting-error', { error: errMsg });
+      logger.error('[Meeting] socket roundtable:', e.message);
+    }
   });
 
   socket.on('disconnect', () => {

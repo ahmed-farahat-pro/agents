@@ -10,24 +10,25 @@ Your personal AI development company running on AWS EC2. 7 specialized agents co
 
 1. [🚀 Quick Setup](#-quick-setup)
 2. [What is Nigents?](#what-is-nigents)
-3. [Steps and workflow (current)](#steps-and-workflow-current)
-4. [How the app works: repo access, OpenHands, agents, end-to-end](#how-the-app-works-repo-access-openhands-agents-end-to-end)
-5. [What is OpenHands?](#what-is-openhands)
-6. [The 7-Agent Team](#the-7-agent-team)
-7. [App Flow & Workflow](#app-flow--workflow)
-8. [MCP Servers](#mcp-servers)
-9. [Custom MCP Servers We Built](#custom-mcp-servers-we-built)
-10. [Telegram Integration](#telegram-integration)
-11. [Dashboard Features](#dashboard-features)
-12. [Multi-User Support & Admin](#multi-user-support--admin)
-13. [Tech Stack](#tech-stack)
-14. [Future work](#future-work)
-15. [💰 Nigents Cloud (Coming Soon)](#-nigents-cloud-coming-soon)
-16. [Quick Start (Local)](#quick-start-local)
-17. [Deploy on AWS EC2](#deploy-on-aws-ec2)
-18. [Configuration](#configuration)
-19. [MySQL Database Configuration](#mysql-database-configuration)
-20. [Troubleshooting](#troubleshooting)
+3. [Runtime map: stack, URLs, and integrations](#runtime-map-stack-urls-and-how-pieces-connect)
+4. [Steps and workflow (current)](#steps-and-workflow-current)
+5. [How the app works: repo access, OpenHands, agents, end-to-end](#how-the-app-works-repo-access-openhands-agents-end-to-end)
+6. [What is OpenHands?](#what-is-openhands)
+7. [The 7-Agent Team](#the-7-agent-team)
+8. [App Flow & Workflow](#app-flow--workflow)
+9. [MCP Servers](#mcp-servers)
+10. [Custom MCP Servers We Built](#custom-mcp-servers-we-built)
+11. [Telegram Integration](#telegram-integration)
+12. [Dashboard Features](#dashboard-features)
+13. [Multi-User Support & Admin](#multi-user-support--admin)
+14. [Tech Stack](#tech-stack)
+15. [Future work](#future-work)
+16. [💰 Nigents Cloud (Coming Soon)](#-nigents-cloud-coming-soon)
+17. [Quick Start (Local)](#quick-start-local)
+18. [Deploy on AWS EC2](#deploy-on-aws-ec2)
+19. [Configuration](#configuration)
+20. [MySQL Database Configuration](#mysql-database-configuration)
+21. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -165,6 +166,89 @@ Nigents (Night Agents) is a self-hosted AI agent team that runs 24/7 on your AWS
 | 🌙 **24/7 Operation** | Runs on EC2 with PM2 process manager, never sleeps |
 | 🔀 **GitLab Integration** | Clone selected repo, edit on **task branch** (`plan.branch`), push to GitLab; MR = task branch → default branch |
 | 🐳 **Code Sandbox** | OpenHands for Backend Dev when available; else **repo-clone-push** (clone repo, write files, push to task branch) or GitLab API fallback |
+
+---
+
+## Runtime map: stack, URLs, and how pieces connect
+
+Single place to see **what talks to what**: processes, external services, **Workflow Studio**, **voice meeting room**, and **GitLab**.
+
+### Architecture diagram
+
+```mermaid
+flowchart LR
+  subgraph clients["Clients"]
+    TG[Telegram]
+    BR[Dashboard browser]
+    MR[meeting-room.html]
+  end
+
+  subgraph processes["Nigents Node processes"]
+    BOT["src/bot.js\n(Telegram bot)"]
+    WEB["src/dashboard/server.js\n(Express + Socket.IO)"]
+  end
+
+  subgraph external["External services"]
+    GL[("GitLab API")]
+    LLM[("LLM providers\n(OpenAI, Anthropic, …)")]
+    OH[("OpenHands\nDocker sandbox")]
+    JIT[("Jitsi\nmeet.jit.si")]
+    DB[("MySQL")]
+  end
+
+  TG --> BOT
+  BR --> WEB
+  MR --> WEB
+
+  BOT --> GL
+  BOT --> LLM
+  BOT --> OH
+  BOT --> DB
+  WEB --> GL
+  WEB --> LLM
+  WEB --> DB
+  MR -. WebRTC / voice .-> JIT
+```
+
+> **Note:** `src/bot.js` and `src/dashboard/server.js` are usually **two PM2 processes** on the same host. They share **MySQL** and **GitLab** config; they do not share memory. The **meeting room** page uses **Socket.IO** on the **dashboard** server only—see [docs/EC2_NETWORK_MEETING.md](docs/EC2_NETWORK_MEETING.md) for HTTPS + WebSocket proxy.
+
+### Main URLs & entry points
+
+| What | Where | Purpose |
+|------|--------|---------|
+| **Telegram bot** | Long-poll to `api.telegram.org` | `/plan`, `/approve`, `/meeting`, voice, per-user config |
+| **Dashboard** | `http(s)://<host>:4000` or `PUBLIC_DASHBOARD_URL` | Login, tasks, agents, charts, **Workflow Studio**, admin |
+| **Workflow Studio** | Dashboard → sidebar **Workflow Studio** | Canvas, GitLab-linked projects, AI draft, **team meeting** roundtable, **shareable voice link** |
+| **Voice meeting room** | `{PUBLIC_DASHBOARD_URL}/meeting-room.html?token=…` | **Jitsi** (humans) + **shared AI roundtable** via Socket.IO (`same token` = same thread for everyone) |
+| **OpenHands** | `OPENHANDS_URL` (e.g. `http://127.0.0.1:3000`) | Backend Dev: clone, edit, test, push |
+
+### How Workflow Studio links to the rest
+
+| Piece | Connects to |
+|-------|-------------|
+| **GitLab repo list** | `GET /api/gitlab/repos` — needs `GITLAB_TOKEN` + `GITLAB_NAMESPACE` |
+| **AI draft flow** | `POST /api/workflow-projects/draft-from-repo` → repo tree + README → LLM → suggested nodes/edges |
+| **Saved canvas** | `PUT /api/workflow-projects/:id` → `data/workflow-projects.json` |
+| **Team meeting (roundtable)** | `POST /api/meeting/roundtable` — same engine as [`src/utils/meeting-roundtable.js`](src/utils/meeting-roundtable.js) |
+| **Shareable voice link** | `POST /api/meeting/sessions` (authenticated) → token → `meeting-room.html?token=…` |
+| **Voice meeting (browser)** | Socket.IO: `join-meeting`, `meeting-roundtable`, `meeting-sync` — shared state in [`src/utils/meeting-room-state.js`](src/utils/meeting-room-state.js) |
+
+See **[docs/WORKFLOW_STUDIO.md](docs/WORKFLOW_STUDIO.md)** for full API table and **Workflow Studio** behavior.
+
+### npm dependencies (what they power)
+
+| Area | Packages |
+|------|----------|
+| **Web** | `express`, `socket.io`, `cookie-parser` |
+| **AI** | `openai`, `@anthropic-ai/sdk`, `axios` |
+| **DB** | `mysql2` |
+| **Telegram** | `node-telegram-bot-api` |
+| **Git / containers** | `simple-git`, `dockerode` |
+| **MCP** | `@modelcontextprotocol/sdk` |
+| **Voice (Telegram)** | `gtts` (+ Whisper via configured provider where applicable) |
+| **Utilities** | `uuid`, `dotenv`, `winston`, `node-cron`, `nodemailer`, `fs-extra`, `lodash`, `date-fns`, `form-data` |
+
+Full list: [`package.json`](package.json).
 
 ---
 
@@ -1585,6 +1669,18 @@ The Nigents Dashboard runs at `http://EC2_IP:4000` and provides:
 - **Select user:** Choose any user (Telegram users who have used the bot, or users you add) to view and edit their **per-user config** (API keys, GitLab token/namespace/URL, custom AI models).
 - **Add user:** Create a user by **User ID** (e.g. Telegram ID or a custom ID like `user-alice`) and optional display name. Useful to pre-create users and assign config before they use the bot.
 - **Copy config:** Copy one user’s full config (API keys, GitLab, custom models) to another user. Source and target are selected from dropdowns; the target user is created automatically if missing.
+
+### 8. Workflow Studio (Projects)
+- **Sidebar → Workflow Studio:** drag-and-drop **agent nodes**, wire **output → input** ports, save workflows per **project** (stored in `data/workflow-projects.json`).
+- **GitLab:** link a repo; **✨ AI draft flow** analyzes the repo tree and suggests a canvas layout.
+- **Team meeting:** roundtable chat with selected agents (same order as production agents); **Shareable voice link** opens the full **meeting room** page (Jitsi + voice/text + AI).
+- **Transcript summary:** paste meeting notes; get a Markdown summary.
+
+### 9. Voice meeting room (`/meeting-room.html`)
+- **Public URL** with `?token=` from a Telegram `/meeting` link or from **Shareable voice link** in Workflow Studio (no dashboard login required for that page).
+- **Left:** Jitsi for **human** voice/video (share one Jitsi link with your team).
+- **Right:** **Shared AI thread** for everyone with the same token — **Socket.IO** syncs chat; agents reply in roundtable order; **TTS** plays on the browser that sent the message.
+- **Requires HTTPS** in production for mic + Web Speech (see [docs/EC2_NETWORK_MEETING.md](docs/EC2_NETWORK_MEETING.md)).
 
 ---
 

@@ -1,6 +1,6 @@
 /**
- * Standalone meeting room: Jitsi + roundtable + Web Speech (STT + TTS).
- * Requires ?token= from Telegram or dashboard "voice link".
+ * Standalone meeting room: Jitsi + shared Socket.IO roundtable + Web Speech (STT + TTS).
+ * Same ?token= = same AI thread for all participants (multi-user / multi-tab).
  */
 (function () {
   const AGENTS = [
@@ -13,12 +13,16 @@
     { type: 'reporter', label: 'Report' },
   ];
 
+  const NAME_KEY = 'mr-display-name';
+
   const params = new URLSearchParams(window.location.search);
   const token = params.get('token');
   const errEl = document.getElementById('mr-error');
   const rootEl = document.getElementById('mr-root');
 
   let history = [];
+  let processing = false;
+  let socket = null;
 
   function showErr(msg) {
     errEl.style.display = 'block';
@@ -38,17 +42,40 @@
     return Array.from(boxes).map(b => b.value);
   }
 
+  function getDisplayName() {
+    const n = el('mr-name');
+    const v = (n && n.value.trim()) || localStorage.getItem(NAME_KEY) || '';
+    if (n && v) localStorage.setItem(NAME_KEY, v);
+    return v || 'Guest';
+  }
+
+  function updateBusy() {
+    const sendBtn = el('mr-send');
+    const text = el('mr-text');
+    const busy = el('mr-busy');
+    if (sendBtn) sendBtn.disabled = processing;
+    if (text) text.disabled = processing;
+    if (busy) busy.style.display = processing ? 'block' : 'none';
+  }
+
   function renderChat() {
     const box = el('mr-chat');
     if (!box) return;
     box.innerHTML = '';
     if (!history.length) {
-      box.innerHTML = '<div class="mr-hint">Messages appear here. Use Send or the microphone.</div>';
+      box.innerHTML =
+        '<div class="mr-hint">Messages appear here for <strong>everyone</strong> with this link. Type, hold mic, or use Always listen.</div>';
       return;
     }
     history.forEach(m => {
       const d = document.createElement('div');
       d.className = 'mr-msg ' + (m.role === 'user' ? 'mr-msg-user' : 'mr-msg-agent');
+      if (m.role === 'user' && m.from) {
+        const from = document.createElement('div');
+        from.className = 'mr-msg-from';
+        from.textContent = m.from;
+        d.appendChild(from);
+      }
       if (m.role === 'agent') {
         const meta = document.createElement('div');
         meta.className = 'mr-msg-meta';
@@ -88,58 +115,32 @@
     });
   }
 
-  async function sendToTeam(text) {
+  function sendToTeam(text) {
     if (errEl) {
       errEl.style.display = 'none';
       errEl.textContent = '';
     }
     const msg = (text || '').trim();
     if (!msg) return;
+    if (!socket || !socket.connected) {
+      showErr('Not connected — wait a moment or refresh.');
+      return;
+    }
     const agents = selectedAgents();
     if (!agents.length) {
       showErr('Select at least one agent.');
       return;
     }
     const context = (el('mr-context') && el('mr-context').value.trim()) || '';
-    const prior = history.slice();
-    history.push({ role: 'user', content: msg });
-    renderChat();
     el('mr-text').value = '';
 
-    const res = await fetch('/api/meeting/session/' + encodeURIComponent(token) + '/roundtable', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: msg,
-        context,
-        agents,
-        history: prior,
-      }),
+    socket.emit('meeting-roundtable', {
+      token,
+      message: msg,
+      context,
+      agents,
+      displayName: getDisplayName(),
     });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.success) {
-      history.pop();
-      renderChat();
-      el('mr-text').value = msg;
-      showErr(data.error || res.statusText || 'Request failed');
-      return;
-    }
-    const turns = data.turns || [];
-    const lines = [];
-    turns.forEach(t => {
-      history.push({
-        role: 'agent',
-        agentType: t.agentType,
-        label: t.label,
-        content: t.content,
-      });
-      lines.push((t.label || t.agentType) + ' says: ' + t.content);
-      renderChat();
-    });
-    if (lines.length && 'speechSynthesis' in window) {
-      await speakSequential(lines);
-    }
   }
 
   function initAgents() {
@@ -155,6 +156,50 @@
       lab.appendChild(cb);
       lab.appendChild(document.createTextNode(' ' + a.label));
       wrap.appendChild(lab);
+    });
+  }
+
+  function bindSocket() {
+    if (typeof io !== 'function') {
+      showErr('Socket.IO not loaded. Ensure the dashboard serves /socket.io/socket.io.js');
+      return;
+    }
+
+    socket = io({ transports: ['websocket', 'polling'] });
+
+    socket.on('connect', () => {
+      socket.emit('join-meeting', { token });
+    });
+
+    socket.on('meeting-sync', payload => {
+      const h = payload && payload.history;
+      const p = payload && payload.processing;
+      if (Array.isArray(h)) history = h;
+      if (typeof p === 'boolean') processing = p;
+      renderChat();
+      updateBusy();
+    });
+
+    socket.on('meeting-roundtable-done', ({ requesterSocketId, history: h, turns }) => {
+      if (Array.isArray(h)) history = h;
+      processing = false;
+      renderChat();
+      updateBusy();
+      if (socket.id === requesterSocketId && turns && turns.length && 'speechSynthesis' in window) {
+        const lines = turns.map(t => (t.label || t.agentType) + ' says: ' + t.content);
+        speakSequential(lines);
+      }
+    });
+
+    socket.on('meeting-error', ({ error: err }) => {
+      showErr(err || 'Meeting error');
+      processing = false;
+      updateBusy();
+    });
+
+    socket.on('disconnect', () => {
+      processing = false;
+      updateBusy();
     });
   }
 
@@ -176,8 +221,20 @@
     const url = data.jitsiUrl + '#config.prejoinPageEnabled=false';
     iframe.src = url;
 
+    const nameInput = el('mr-name');
+    if (nameInput) {
+      nameInput.value = localStorage.getItem(NAME_KEY) || '';
+      nameInput.addEventListener('change', () => {
+        const v = nameInput.value.trim().slice(0, 48);
+        if (v) localStorage.setItem(NAME_KEY, v);
+      });
+    }
+
     initAgents();
     renderChat();
+    updateBusy();
+
+    bindSocket();
 
     el('mr-send').addEventListener('click', () => sendToTeam(el('mr-text').value));
     el('mr-text').addEventListener('keydown', e => {
@@ -187,24 +244,97 @@
       }
     });
     el('mr-clear').addEventListener('click', () => {
-      if (history.length && !confirm('Clear AI chat?')) return;
-      history = [];
-      renderChat();
+      if (history.length && !confirm('Clear AI chat for everyone in this room?')) return;
+      if (socket && socket.connected) socket.emit('meeting-clear', { token });
+    });
+
+    window.addEventListener('beforeunload', () => {
+      try {
+        if (socket && socket.connected) socket.emit('leave-meeting', { token });
+      } catch (_) {}
     });
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const mic = el('mr-mic');
+    const alwaysBtn = el('mr-always');
+    let debounceTimer = null;
+    let recAlways = null;
+    let alwaysOn = false;
+
+    function setMicEnabled(on) {
+      if (mic) {
+        mic.disabled = !on;
+        mic.style.opacity = on ? '1' : '0.45';
+      }
+    }
+
+    function stopAlwaysListen() {
+      alwaysOn = false;
+      if (alwaysBtn) {
+        alwaysBtn.classList.remove('on');
+        alwaysBtn.textContent = '🎧 Always listen';
+      }
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = null;
+      if (recAlways) {
+        try {
+          recAlways.stop();
+        } catch (_) {}
+      }
+      setMicEnabled(!!SpeechRecognition);
+    }
+
+    function startAlwaysListen() {
+      if (!SpeechRecognition) return;
+      alwaysOn = true;
+      if (alwaysBtn) {
+        alwaysBtn.classList.add('on');
+        alwaysBtn.textContent = '🎧 Listening…';
+      }
+      setMicEnabled(false);
+      recAlways = new SpeechRecognition();
+      recAlways.lang = navigator.language || 'en-US';
+      recAlways.continuous = true;
+      recAlways.interimResults = true;
+      recAlways.onresult = ev => {
+        let chunk = '';
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+          if (ev.results[i].isFinal) chunk += ev.results[i][0].transcript;
+        }
+        const t = chunk.trim();
+        if (!t) return;
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          debounceTimer = null;
+          sendToTeam(t);
+        }, 1400);
+      };
+      recAlways.onerror = () => {
+        if (alwaysOn) {
+          try {
+            recAlways.start();
+          } catch (_) {}
+        }
+      };
+      try {
+        recAlways.start();
+      } catch (_) {}
+    }
+
     if (!SpeechRecognition) {
       mic.disabled = true;
       mic.title = 'Speech recognition not supported in this browser';
+      if (alwaysBtn) alwaysBtn.disabled = true;
       return;
     }
+
     const rec = new SpeechRecognition();
     rec.lang = navigator.language || 'en-US';
     rec.interimResults = false;
     rec.continuous = false;
 
     mic.addEventListener('mousedown', e => {
+      if (alwaysOn) return;
       e.preventDefault();
       try {
         mic.classList.add('recording');
@@ -224,6 +354,7 @@
       } catch (_) {}
     });
     mic.addEventListener('touchstart', e => {
+      if (alwaysOn) return;
       e.preventDefault();
       try {
         mic.classList.add('recording');
@@ -245,6 +376,16 @@
     rec.onerror = () => {
       mic.classList.remove('recording');
     };
+
+    if (alwaysBtn) {
+      alwaysBtn.addEventListener('click', () => {
+        if (alwaysOn) {
+          stopAlwaysListen();
+        } else {
+          startAlwaysListen();
+        }
+      });
+    }
   }
 
   boot();

@@ -40,6 +40,10 @@ location / {
 
 Socket.IO default path is `/socket.io/` — same `location /` usually works.
 
+### Multi-user AI meeting room (`/meeting-room.html`)
+
+Everyone who opens **`meeting-room.html?token=<same token>`** joins the **same** server-side AI thread: history is shared via Socket.IO rooms (`join-meeting` → `meeting-sync`). Any participant can send text or voice; **TTS** plays only on the browser that sent that message (so multiple tabs don’t all speak at once). **Jitsi** (left panel) is separate from the AI thread — humans hear each other in Jitsi; agents only see what is typed or transcribed in the right panel unless you add extra STT from Jitsi.
+
 ## Environment on the server
 
 ```bash

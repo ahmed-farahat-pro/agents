@@ -94,7 +94,10 @@ function buildHistoryBlock(history) {
   return history
     .slice(-20)
     .map(h => {
-      if (h.role === 'user') return `User: ${h.content || ''}`;
+      if (h.role === 'user') {
+        const who = h.from ? ` (${h.from})` : '';
+        return `User${who}: ${h.content || ''}`;
+      }
       if (h.role === 'agent') return `${LABELS[h.agentType] || h.agentType}: ${h.content || ''}`;
       return '';
     })

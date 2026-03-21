@@ -34,6 +34,7 @@ Dashboard: **Workflow Studio** (sidebar under Projects).
 | POST | `/api/meeting/sessions` | (auth) Create token → `{ meetingRoomUrl, jitsiUrl, token, expiresAt }` |
 | GET | `/api/meeting/session/:token` | (public) Validate token → Jitsi URL + room metadata |
 | POST | `/api/meeting/session/:token/roundtable` | (public) Same as roundtable, gated by session token (for `meeting-room.html` without login) |
+| Socket.IO | `join-meeting`, `meeting-roundtable`, `meeting-sync`, `meeting-clear` | **Preferred** for `meeting-room.html`: shared chat for all clients with the same `token` (see `src/dashboard/server.js` + `meeting-room-state.js`) |
 | POST | `/api/meeting/sessions/internal` | Bot only: header `X-Meeting-Secret: MEETING_INTERNAL_SECRET` |
 | GET | `/api/gitlab/repos` | List repos in configured namespace |
 | POST | `/api/workflow-projects/draft-from-repo` | `{ gitlabPath }` → `{ nodes, edges, summary, rationale, stackHints }` |
