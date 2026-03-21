@@ -145,6 +145,20 @@
             .hero { grid-template-columns: 1fr; padding-top: 100px; }
         }
 
+        .tech-hero-inner {
+            padding: 8px 32px 64px;
+            max-width: 1280px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            align-items: center;
+        }
+
+        @media (max-width: 1024px) {
+            .tech-hero-inner { grid-template-columns: 1fr; padding-top: 16px; }
+        }
+
         .hero-badge {
             display: inline-flex;
             align-items: center;
@@ -814,6 +828,138 @@
             color: var(--text-secondary);
             margin-bottom: 20px;
         }
+
+        /* Interactive runtime flow (#flow-viz) */
+        #flow-viz { scroll-margin-top: 88px; }
+
+        .technical-block {
+            padding-top: 72px;
+        }
+
+        .flow-viz {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 32px 8px;
+        }
+
+        .flow-viz .section-head {
+            margin-bottom: 20px;
+        }
+
+        .flow-board {
+            position: relative;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .flow-board svg {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-height: min(420px, 70vh);
+        }
+
+        .flow-node-rect {
+            fill: var(--bg-secondary);
+            stroke: var(--border-light);
+            stroke-width: 1.5;
+            rx: 8;
+            transition: stroke 0.25s, filter 0.25s;
+        }
+
+        .flow-viz.visible .flow-node-rect {
+            animation: nodeGlow 5s ease-in-out infinite;
+        }
+
+        @keyframes nodeGlow {
+            0%, 100% { stroke: var(--border-light); }
+            50% { stroke: rgba(255, 87, 10, 0.45); }
+        }
+
+        .flow-node-text {
+            fill: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .flow-node-sub {
+            fill: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 9px;
+        }
+
+        .flow-path {
+            fill: none;
+            stroke: #3a3a48;
+            stroke-width: 1.5;
+            stroke-linecap: round;
+        }
+
+        .flow-path-active {
+            fill: none;
+            stroke: url(#flowGrad);
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-dasharray: 8 12;
+            animation: flowDash 1.2s linear infinite;
+        }
+
+        @keyframes flowDash {
+            to { stroke-dashoffset: -40; }
+        }
+
+        .flow-packet {
+            fill: var(--accent-orange);
+            filter: drop-shadow(0 0 4px rgba(255, 87, 10, 0.8));
+        }
+
+        .flow-legend {
+            margin-top: 14px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.55;
+            max-width: 720px;
+        }
+
+        .flow-legend code {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--accent-green);
+        }
+
+        .flow-replay {
+            margin-top: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent-orange);
+            background: rgba(255, 87, 10, 0.1);
+            border: 1px solid rgba(255, 87, 10, 0.35);
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: var(--font-sans);
+        }
+
+        .flow-replay:hover {
+            background: rgba(255, 87, 10, 0.18);
+        }
+
+        .flow-replay:focus {
+            outline: 2px solid var(--accent-orange);
+            outline-offset: 2px;
+        }
+
+        @media (max-width: 640px) {
+            .flow-board svg { max-height: 360px; }
+        }
     </style>
 </head>
 <body>
@@ -826,7 +972,7 @@
                 <a href="#about" class="nav-link">About</a>
                 <a href="#features" class="nav-link">Features</a>
                 <a href="#agents" class="nav-link">Agents</a>
-                <a href="#technical" class="nav-link">Flow</a>
+                <a href="#flow-viz" class="nav-link">Flow</a>
                 <a href="/materials.html" class="nav-link">Free Materials</a>
                 <a href="/login.html" class="nav-cta">Login</a>
             </div>
@@ -841,7 +987,7 @@
             </p>
             <div class="about-actions">
                 <a href="/login.html" class="btn btn-primary">Open dashboard</a>
-                <a href="#technical" class="btn btn-ghost">See technical flow</a>
+                <a href="#flow-viz" class="btn btn-ghost">See technical flow</a>
             </div>
         </section>
 
@@ -957,7 +1103,93 @@
             <a href="/login.html" class="btn btn-primary">Launch dashboard</a>
         </div>
 
-        <section class="hero" id="technical">
+        <section class="technical-block" id="technical">
+        <div id="flow-viz" class="flow-viz reveal" data-reveal>
+            <div class="section-head">
+                <div class="section-label">Live map</div>
+                <h2 class="section-title">What talks to what</h2>
+                <p class="section-desc">Orange dots move along the paths on a loop. Solid lines: HTTP / APIs. Dashed: WebRTC to Jitsi (browser only). Two Node processes do not share memory.</p>
+            </div>
+            <div class="flow-board" role="img" aria-label="Architecture diagram: Telegram and browser connect to bot and server processes, which call LLM, GitLab, MySQL, OpenHands, and Jitsi">
+                <svg viewBox="0 0 840 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="flowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#ff570a"/>
+                            <stop offset="100%" style="stop-color:#a855f7"/>
+                        </linearGradient>
+                    </defs>
+                    <!-- Nodes (under edges) -->
+                    <rect class="flow-node-rect" x="15" y="58" width="98" height="38" rx="8"/>
+                    <text class="flow-node-text" x="64" y="78" text-anchor="middle">Telegram</text>
+                    <text class="flow-node-sub" x="64" y="90" text-anchor="middle">user</text>
+                    <rect class="flow-node-rect" x="175" y="58" width="108" height="38" rx="8"/>
+                    <text class="flow-node-text" x="229" y="78" text-anchor="middle">bot.js</text>
+                    <text class="flow-node-sub" x="229" y="90" text-anchor="middle">src/bot.js</text>
+                    <rect class="flow-node-rect" x="345" y="12" width="92" height="34" rx="8"/>
+                    <text class="flow-node-text" x="391" y="32" text-anchor="middle">LLM APIs</text>
+                    <rect class="flow-node-rect" x="488" y="92" width="118" height="46" rx="8"/>
+                    <text class="flow-node-text" x="547" y="114" text-anchor="middle">GitLab</text>
+                    <text class="flow-node-sub" x="547" y="128" text-anchor="middle">repos · MRs</text>
+                    <rect class="flow-node-rect" x="342" y="228" width="100" height="36" rx="8"/>
+                    <text class="flow-node-text" x="392" y="248" text-anchor="middle">MySQL</text>
+                    <rect class="flow-node-rect" x="15" y="192" width="98" height="38" rx="8"/>
+                    <text class="flow-node-text" x="64" y="212" text-anchor="middle">Browser</text>
+                    <rect class="flow-node-rect" x="168" y="192" width="118" height="38" rx="8"/>
+                    <text class="flow-node-text" x="227" y="212" text-anchor="middle">server.js</text>
+                    <text class="flow-node-sub" x="227" y="224" text-anchor="middle">Express + Socket.IO</text>
+                    <rect class="flow-node-rect" x="668" y="58" width="118" height="38" rx="8"/>
+                    <text class="flow-node-text" x="727" y="78" text-anchor="middle">OpenHands</text>
+                    <text class="flow-node-sub" x="727" y="90" text-anchor="middle">optional</text>
+                    <rect class="flow-node-rect" x="668" y="192" width="118" height="38" rx="8"/>
+                    <text class="flow-node-text" x="727" y="212" text-anchor="middle">Jitsi</text>
+                    <text class="flow-node-sub" x="727" y="224" text-anchor="middle">WebRTC</text>
+                    <!-- Edges -->
+                    <path class="flow-path" d="M 113 77 L 175 77"/>
+                    <path class="flow-path" d="M 283 77 Q 390 60 488 108"/>
+                    <path class="flow-path" d="M 391 50 L 391 82 Q 440 95 488 108"/>
+                    <path class="flow-path" d="M 230 96 L 230 228 L 345 246"/>
+                    <path class="flow-path" d="M 547 138 L 392 228"/>
+                    <path class="flow-path" d="M 113 211 L 168 211"/>
+                    <path class="flow-path" d="M 286 211 Q 390 175 488 125"/>
+                    <path class="flow-path" d="M 230 230 L 345 246"/>
+                    <path class="flow-path" d="M 283 77 L 668 77"/>
+                    <path class="flow-path" stroke-dasharray="6 6" d="M 113 195 Q 390 175 668 211"/>
+                    <path class="flow-path-active" d="M 113 77 L 175 77"/>
+                    <path class="flow-path-active" d="M 283 77 Q 390 60 488 108" opacity="0.85"/>
+                    <path class="flow-path-active" d="M 113 211 L 168 211"/>
+                    <path class="flow-path-active" d="M 286 211 Q 390 175 488 125" opacity="0.85"/>
+                    <!-- Moving packets (on top) -->
+                    <circle class="flow-packet" r="5" fill="#ff570a">
+                        <animateMotion dur="2.8s" repeatCount="indefinite" path="M 113 77 L 175 77"/>
+                    </circle>
+                    <circle class="flow-packet" r="4" fill="#ff570a" opacity="0.9">
+                        <animateMotion dur="3.2s" repeatCount="indefinite" path="M 283 77 Q 390 60 488 108"/>
+                    </circle>
+                    <circle class="flow-packet" r="4" fill="#a855f7" opacity="0.95">
+                        <animateMotion dur="2.4s" repeatCount="indefinite" path="M 391 50 L 391 82 Q 440 95 488 108"/>
+                    </circle>
+                    <circle class="flow-packet" r="4" fill="#ff570a">
+                        <animateMotion dur="3.6s" repeatCount="indefinite" path="M 230 96 L 230 228 L 345 246"/>
+                    </circle>
+                    <circle class="flow-packet" r="4" fill="#19d59e" opacity="0.9">
+                        <animateMotion dur="3s" repeatCount="indefinite" path="M 113 211 L 168 211"/>
+                    </circle>
+                    <circle class="flow-packet" r="4" fill="#19d59e">
+                        <animateMotion dur="3.4s" repeatCount="indefinite" path="M 286 211 Q 390 175 488 125"/>
+                    </circle>
+                    <circle class="flow-packet" r="3" fill="#94a3b8" opacity="0.85">
+                        <animateMotion dur="4s" repeatCount="indefinite" path="M 113 195 Q 390 175 668 211"/>
+                    </circle>
+                </svg>
+            </div>
+            <p class="flow-legend">
+                <strong style="color:var(--text-primary);">Top path:</strong> Telegram → bot → LLM / GitLab / MySQL; Backend Dev may use <code>OpenHands</code> for real git in a container.<br>
+                <strong style="color:var(--text-primary);">Bottom path:</strong> Browser → dashboard server → same GitLab &amp; MySQL; meeting page uses <code>Socket.IO</code> on this server and <code>Jitsi</code> for human audio (dashed).
+            </p>
+            <button type="button" class="flow-replay" id="flow-replay">Replay motion</button>
+        </div>
+
+        <div class="hero tech-hero-inner">
             <div>
                 <div class="hero-badge"><span class="dot"></span> Product walkthrough</div>
                 <h1>From Telegram to <em>GitLab MR</em> — the full loop</h1>
@@ -978,6 +1210,7 @@
                 </div>
                 <div class="code-body" id="typewriter" aria-live="polite"></div>
             </div>
+        </div>
         </section>
 
         <!-- Stats mock -->
@@ -1015,7 +1248,7 @@
         <section class="section reveal" data-reveal>
             <div class="section-head">
                 <div class="section-label">Runtime map</div>
-                <h2 class="section-title">What talks to what</h2>
+                <h2 class="section-title">Same topology (detailed)</h2>
                 <p class="section-desc">No shared memory between bot and dashboard. Both use MySQL (when configured), GitLab API, and LLM providers. Meeting room uses Socket.IO on the dashboard server only.</p>
             </div>
             <div class="arch-grid">
@@ -1265,6 +1498,21 @@
             }
 
             typeLine();
+
+            var replay = document.getElementById('flow-replay');
+            if (replay) {
+                replay.addEventListener('click', function () {
+                    document.querySelectorAll('.flow-board animateMotion').forEach(function (el) {
+                        try {
+                            el.beginElement();
+                        } catch (e) {}
+                    });
+                    var fv = document.getElementById('flow-viz');
+                    if (fv) {
+                        fv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
+            }
 
             document.querySelectorAll('[data-reveal]').forEach(function (section) {
                 var io = new IntersectionObserver(function (entries) {
