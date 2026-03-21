@@ -340,3 +340,10 @@ INSERT INTO system_config (config_key, config_value) VALUES
 ('version', '1.0.0'),
 ('db_schema_version', '2')
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value);
+
+-- =====================================================
+-- Dashboard web logins (optional; also auto-created on dashboard boot)
+-- =====================================================
+-- See src/database/migrations/003_dashboard_accounts.sql
+-- dashboard_accounts: username/password for /login.html (scrypt hash)
+-- dashboard_key_requests: users request org API keys; admin approves → copy from shared-config into user_config

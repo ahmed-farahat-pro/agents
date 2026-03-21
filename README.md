@@ -217,8 +217,8 @@ flowchart LR
 | What | Where | Purpose |
 |------|--------|---------|
 | **Telegram bot** | Long-poll to `api.telegram.org` | `/plan`, `/approve`, `/meeting`, voice, per-user config |
-| **Dashboard** | `http(s)://<host>:4000` or `PUBLIC_DASHBOARD_URL` | Login, tasks, agents, charts, **Workflow Studio**, admin |
-| **How it works (public)** | `{PUBLIC_DASHBOARD_URL}/how-it-works.html` or `/how-it-works` | **About** + product features + agents + full technical flow on one page (`#about`, `#features`, `#agents`, `#technical`). Old `/overview` redirects here. |
+| **Dashboard** | `http(s)://<host>:4000` or `PUBLIC_DASHBOARD_URL` | Env or **named** login (MySQL), tasks, agents, charts, **Workflow Studio**, **onboarding**, admin, **dashboard accounts** + **key requests** |
+| **How it works (public)** | `{PUBLIC_DASHBOARD_URL}/how-it-works.html` or `/how-it-works` | **About** + product features + agents + **animated “what talks to what”** diagram (`#flow-viz`) + technical section (`#about`, `#features`, `#agents`, `#flow-viz`, `#technical`). Old `/overview` redirects here. |
 | **Workflow Studio** | Dashboard → sidebar **Workflow Studio** | Canvas, GitLab-linked projects, AI draft, **team meeting** roundtable, **shareable voice link** |
 | **Voice meeting room** | `{PUBLIC_DASHBOARD_URL}/meeting-room.html?token=…` | **Jitsi** (humans) + **shared AI roundtable** via Socket.IO (`same token` = same thread for everyone) |
 | **OpenHands** | `OPENHANDS_URL` (e.g. `http://127.0.0.1:3000`) | Backend Dev: clone, edit, test, push |
@@ -897,16 +897,24 @@ gitlab.createMergeRequest({ sourceBranch: task.plan.branch, targetBranch })
 | `/api/ai/test` | POST | Test AI provider |
 | `/api/materials/stats` | GET | Subscribers stats |
 | `/api/materials/subscribers` | GET | List subscribers |
-| `/api/auth/login` | POST | Dashboard login (body: `username`, `password`); sets session cookie |
-| `/api/auth/check` | GET | Check if session is valid (no auth required) |
+| `/api/auth/login` | POST | Dashboard login (body: `username`, `password`); **env admin** or **`dashboard_accounts`** user; sets session cookie |
+| `/api/auth/check` | GET | Session valid; returns `sessionType`, `role`, `needsOnboarding`, `telegramUserId` when applicable |
 | `/api/auth/logout` | POST | Log out and clear session |
+| `/api/me/onboarding` | POST | **Account** session: link Telegram id + GitLab (+ optional API keys); completes first-time setup |
+| `/api/me/key-request` | POST | Request an org API key (provider + optional note) |
+| `/api/me/key-requests` | GET | List current user’s key requests |
 | `/api/admin/users` | GET | List all users (admin) |
 | `/api/admin/users` | POST | Create user (admin; body: `userId`, `displayName`) |
 | `/api/admin/copy-config` | POST | Copy one user's config to another (admin; body: `fromUserId`, `toUserId`) |
-| `/api/config?userId=X` | GET | Get config for user `X` (sanitized; optional `userId` for per-user) |
-| `/api/config/apikeys` | POST | Update API keys (body may include `userId` for per-user) |
-| `/api/config/gitlab` | POST | Update GitLab config (body may include `userId` for per-user) |
-| `/api/config/custommodels` | POST | Update custom models (body may include `userId` for per-user) |
+| `/api/admin/dashboard-accounts` | GET/POST | **Admin only:** list or create **dashboard** username/password accounts (MySQL) |
+| `/api/admin/dashboard-key-requests` | GET | **Admin only:** list key requests (optional `?status=pending`) |
+| `/api/admin/dashboard-key-requests/:id/review` | POST | **Admin only:** approve/reject; approve copies shared key into user `user_config` |
+| `/api/config?userId=X` | GET | Sanitized config; **named users** without `userId` get their linked Telegram user’s config |
+| `/api/config/apikeys` | POST | Update API keys (per logged-in Telegram user, or `userId` when admin) |
+| `/api/config/gitlab` | POST | Update GitLab config (same scoping) |
+| `/api/config/custommodels` | POST | Update custom models (same scoping) |
+| `/api/gitlab/config` | GET | GitLab status; uses **effective** token/namespace (user config or env) |
+| `/api/gitlab/repos` | GET | List repos; uses **effective** GitLab credentials |
 
 ### Socket.io Events
 
@@ -1658,29 +1666,36 @@ The Nigents Dashboard runs at `http://EC2_IP:4000` and provides:
 - Hamburger menu on mobile
 - Touch-friendly interface
 
-### 6. Dashboard Login (Admin)
-- The dashboard is protected by **admin credentials**.
-- **Default login:** username `admin`, password `admin`.
-- Override via environment: `DASHBOARD_ADMIN_USERNAME` and `DASHBOARD_ADMIN_PASSWORD`.
-- Session is stored in an HTTP-only cookie; all `/api/*` routes (except `/api/auth/login` and `/api/auth/check`) require a valid session.
-- Logout clears the session and redirects to the login page.
+### 6. Dashboard login (env admin + optional named accounts)
+- The dashboard is protected by a **session cookie**; `/api/*` (except public routes) requires a valid session.
+- **Server admin (env):** `DASHBOARD_ADMIN_USERNAME` / `DASHBOARD_ADMIN_PASSWORD` (defaults: `admin` / `admin`). Full access to shared config and all admin tools.
+- **Named dashboard accounts (MySQL):** When `DB_HOST`, `DB_USER`, and `DB_PASSWORD` are set, the **env admin** can create **username/password** users under **Admin → Dashboard logins** (`dashboard_accounts` table). Roles: **User** or **Admin** (dashboard-only admin).
+- **Regular users** log in with **their** credentials; their **GitLab / API keys** are stored in **`user_config`** keyed by **Telegram user ID** (same id the bot uses)—not mixed with other users.
+- **Logout** clears the session cookie.
 
-### 7. Admin Panel (Multi-User)
-- **Admin** tab (after login): manage users and their config.
-- **Select user:** Choose any user (Telegram users who have used the bot, or users you add) to view and edit their **per-user config** (API keys, GitLab token/namespace/URL, custom AI models).
-- **Add user:** Create a user by **User ID** (e.g. Telegram ID or a custom ID like `user-alice`) and optional display name. Useful to pre-create users and assign config before they use the bot.
-- **Copy config:** Copy one user’s full config (API keys, GitLab, custom models) to another user. Source and target are selected from dropdowns; the target user is created automatically if missing.
+### 7. First-time onboarding (new dashboard users)
+- After first login with a **User** account (not the env admin), a **wizard** runs: link **Telegram user ID** (from `@userinfobot` or similar), paste **GitLab URL / token / namespace**, optionally add **OpenAI** key, and optionally **request an org API key** for approval.
+- On completion, data is written to MySQL **`users`**, **`user_settings`**, and **`user_config`** for that Telegram id. Users can change keys later in **Settings**; **Settings → Your profile** shows the linked Telegram id and **API key request** status.
 
-### 8. Workflow Studio (Projects)
+### 8. Admin Panel (Telegram users + dashboard accounts)
+- **Admin** tab (after login, visible to **env admin** or **dashboard role admin**):
+  - **Telegram user config:** **Select user** (Telegram users from the bot, or IDs you add) to view/edit **per-user config** (API keys, GitLab, custom models).
+  - **Add user:** Create a row in **`users`** by **User ID** (e.g. Telegram ID) for pre-assigning config.
+  - **Copy config:** Copy one user’s full config to another user.
+  - **Dashboard logins:** Create **username/password** accounts for the web UI (see §6).
+  - **API key requests:** Users can request **organization keys**; **Approve** copies the matching key from **shared** config (`data/shared-config.json` / env) into that user’s **`user_config`** (user must have finished onboarding so a Telegram id is linked). See [OPERATIONS.md](OPERATIONS.md#dashboard-multi-user--onboarding).
+
+### 9. Workflow Studio (Projects)
 - **Sidebar → Workflow Studio:** drag-and-drop **agent nodes**, wire **output → input** ports, save workflows per **project** (stored in `data/workflow-projects.json`).
 - **GitLab:** link a repo; **✨ AI draft flow** analyzes the repo tree and suggests a canvas layout.
 - **Team meeting:** roundtable chat with selected agents (same order as production agents); **Shareable voice link** opens the full **meeting room** page (Jitsi + voice/text + AI).
 - **Transcript summary:** paste meeting notes; get a Markdown summary.
 
-### 9. Voice meeting room (`/meeting-room.html`)
+### 10. Voice meeting room (`/meeting-room.html`)
 - **Public URL** with `?token=` from a Telegram `/meeting` link or from **Shareable voice link** in Workflow Studio (no dashboard login required for that page).
 - **Left:** Jitsi for **human** voice/video (share one Jitsi link with your team).
 - **Right:** **Shared AI thread** for everyone with the same token — **Socket.IO** syncs chat; agents reply in roundtable order; **TTS** plays on the browser that sent the message.
+- **UI:** Glass-style panels, Outfit + Fraunces typography, animated ambient background, SVG icons (Jitsi vs AI roundtable).
 - **Requires HTTPS** in production for mic + Web Speech (see [docs/EC2_NETWORK_MEETING.md](docs/EC2_NETWORK_MEETING.md)).
 
 ---
@@ -1689,11 +1704,19 @@ The Nigents Dashboard runs at `http://EC2_IP:4000` and provides:
 
 Nigents supports **multiple users**, each with their own API keys, GitLab credentials, and custom AI models. The bot and dashboard use **per-user config** when available; otherwise they fall back to the global shared config (e.g. `data/shared-config.json` or env).
 
+### Web dashboard logins vs Telegram users
+
+| Aspect | Description |
+|--------|-------------|
+| **Telegram user** | Primary id for **`user_config`**: numeric `users.id` from Telegram (`from.id`). Used by the bot and by dashboard users after **onboarding**. |
+| **Dashboard account** | Optional **username/password** rows in **`dashboard_accounts`** (MySQL). Used only to sign into the browser UI. Linked to one **Telegram user ID** after onboarding so GitLab/API keys apply to the correct `user_config` row. |
+| **Org API key requests** | **`dashboard_key_requests`**: a user asks for a provider key; an **admin approves** and the server copies the key from **shared** config into that Telegram user’s **`user_config`**. |
+
 ### How Multi-User Works
 
 | Aspect | Description |
 |--------|-------------|
-| **User identity** | Bot: Telegram `from.id` is the user ID. Dashboard: admin selects a user by ID when viewing/editing config. |
+| **User identity** | Bot: Telegram `from.id` is the user ID. Dashboard (named account): after onboarding, API calls use that linked Telegram id for **`user_config`**. Env admin can still **select user by ID** in Admin for Telegram users. |
 | **Per-user config** | Stored in MySQL table `user_config` (when DB is configured): `api_keys`, `gitlab`, `custom_models` (JSON). |
 | **Fallback** | If a user has no row in `user_config` or a key is missing, the app uses the global shared config (file or env). |
 | **Agents** | Every command (e.g. `/plan`, `/run`) resolves config for that Telegram user and passes it to the orchestrator and agents. GitLab and AI calls use that user’s credentials. |
@@ -1720,11 +1743,13 @@ CREATE TABLE IF NOT EXISTS user_config (
 
 ### Admin Panel (Dashboard)
 
-1. Log in with admin credentials (default `admin` / `admin`).
+1. Log in with **env admin** credentials (default `admin` / `admin`) or a **dashboard account** with role **Admin**.
 2. Open the **Admin** tab.
 3. **Select user** — View and edit that user’s API keys, GitLab settings, and custom models (custom models shown as read-only JSON; edit via API keys / GitLab forms).
 4. **Add user** — Enter a **User ID** (required) and optional **Display name**. Creates the user in the `users` table and ensures `user_settings` exists so you can assign config.
 5. **Copy config** — Choose **From user** (source) and **To user** (target). Copies API keys, GitLab, and custom models from source to target. The target user is created if they do not exist.
+6. **Dashboard logins** — Create username/password **User** or **Admin** accounts for the web UI (requires MySQL).
+7. **API key requests** — Review pending requests; **Approve** copies the matching key from shared/org config into the requester’s **`user_config`** (only if that key exists in shared config and the user has linked a Telegram id).
 
 ### Bot: Per-User Config
 

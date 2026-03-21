@@ -458,6 +458,9 @@
             <div class="error-message" id="error-message">
                 Invalid username or password
             </div>
+            <p style="font-size:13px;color:rgba(255,255,255,0.45);margin:-8px 0 18px;line-height:1.45;">
+                Use the server admin account, or credentials your admin created under <strong>Admin → Dashboard logins</strong>. First sign-in opens setup for Telegram + GitLab.
+            </p>
             
             <form id="login-form">
                 <div class="form-group">
@@ -558,7 +561,8 @@
             if (localStorage.getItem('nigents_auth') !== 'true') return;
             try {
                 const res = await fetch('/api/auth/check', { credentials: 'include' });
-                if (res.ok) {
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && data.success) {
                     window.location.href = '/dashboard.html';
                 }
             } catch (_) {}

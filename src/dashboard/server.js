@@ -29,16 +29,49 @@ const PORT = process.env.DASHBOARD_PORT || 4000;
 const ADMIN_USERNAME = (process.env.DASHBOARD_ADMIN_USERNAME || 'admin').trim();
 const ADMIN_PASSWORD = (process.env.DASHBOARD_ADMIN_PASSWORD || 'admin').trim();
 const SESSION_COOKIE_NAME = 'nigents_session';
-const sessions = new Set();
+/** @type {Map<string, { kind: string, username?: string, role?: string, accountId?: number, onboardingCompleted?: boolean, telegramUserId?: string|null }>} */
+const sessions = new Map();
 
-function createSession() {
+function createSession(payload) {
   const token = crypto.randomBytes(24).toString('hex');
-  sessions.add(token);
+  sessions.set(token, payload);
   return token;
 }
 
+function getSessionPayload(token) {
+  if (!token) return null;
+  return sessions.get(token) || null;
+}
+
+function getDashboardSession(req) {
+  const token = req.cookies && req.cookies[SESSION_COOKIE_NAME];
+  return getSessionPayload(token);
+}
+
 function isValidSession(token) {
-  return token && sessions.has(token);
+  return Boolean(token && sessions.has(token));
+}
+
+function deleteSession(token) {
+  if (token) sessions.delete(token);
+}
+
+function sessionIsAdmin(s) {
+  if (!s) return false;
+  if (s.kind === 'env') return true;
+  return s.kind === 'account' && s.role === 'admin';
+}
+
+function requireDashboardAdmin(req, res, next) {
+  const token = req.cookies && req.cookies[SESSION_COOKIE_NAME];
+  if (!isValidSession(token)) {
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
+  const s = getDashboardSession(req);
+  if (!sessionIsAdmin(s)) {
+    return res.status(403).json({ success: false, error: 'Admin only' });
+  }
+  return next();
 }
 
 // Middleware
@@ -136,11 +169,13 @@ let dbTaskQueue = null;
 let dbChatStorage = null;
 
 let userConfigModule = null;
+let dashboardAccountsMod = null;
 if (useDatabase) {
   try {
     dbTaskQueue = require('../database/task-queue-mysql');
     dbChatStorage = require('../database/chat-storage-mysql');
     userConfigModule = require('../database/user-config');
+    dashboardAccountsMod = require('../database/dashboard-accounts');
     logger.info('[Dashboard] Database integration enabled (MySQL)');
   } catch (error) {
     logger.error('[Dashboard] Failed to load database modules:', error.message);
@@ -163,6 +198,48 @@ function sanitizeConfig(config) {
     telegram: config.telegram || {},
     updatedAt: config.updatedAt,
   };
+}
+
+/** GitLab credentials for current browser session (per-Telegram-user or env). */
+async function getEffectiveGitlabForRequest(req) {
+  const s = getDashboardSession(req);
+  const baseUrl = process.env.GITLAB_URL || 'https://gitlab.com';
+  const envTok = process.env.GITLAB_TOKEN || '';
+  const envNs = process.env.GITLAB_NAMESPACE || '';
+  if (s && s.kind === 'account' && s.telegramUserId && userConfigModule) {
+    const full = await userConfigModule.getConfigForUser(s.telegramUserId);
+    const g = full.gitlab || {};
+    return {
+      token: (g.token && String(g.token).trim()) || envTok,
+      namespace: (g.namespace && String(g.namespace).trim()) || envNs,
+      url: (g.url && String(g.url).trim()) || baseUrl,
+      scope: 'user',
+    };
+  }
+  return {
+    token: envTok,
+    namespace: envNs,
+    url: baseUrl,
+    scope: 'env',
+  };
+}
+
+/** Resolve target Telegram user id for config writes (per-user row in user_config). */
+function resolveConfigTargetUserId(req, bodyUserId) {
+  const s = getDashboardSession(req);
+  if (s && s.kind === 'account') {
+    if (sessionIsAdmin(s)) {
+      return bodyUserId ? String(bodyUserId).trim() : null;
+    }
+    if (!s.telegramUserId) {
+      return { error: 'Complete onboarding (link your Telegram user ID) before saving keys.' };
+    }
+    if (bodyUserId && String(bodyUserId).trim() !== String(s.telegramUserId)) {
+      return { error: 'Cannot set config for another user' };
+    }
+    return String(s.telegramUserId);
+  }
+  return bodyUserId ? String(bodyUserId).trim() : null;
 }
 
 /** Build state for dashboard: from MySQL when available, else in-memory */
@@ -199,36 +276,228 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body || {};
-  if (String(username).trim() === ADMIN_USERNAME && String(password) === ADMIN_PASSWORD) {
-    const token = createSession();
+  const u = String(username || '').trim();
+  const p = String(password || '');
+
+  if (u === ADMIN_USERNAME && p === ADMIN_PASSWORD) {
+    const token = createSession({ kind: 'env', username: ADMIN_USERNAME, role: 'admin' });
     res.cookie(SESSION_COOKIE_NAME, token, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
       sameSite: 'lax',
       path: '/',
     });
-    logger.info('[Dashboard] Admin login success');
-    return res.json({ success: true, user: ADMIN_USERNAME });
+    logger.info('[Dashboard] Env admin login success');
+    return res.json({
+      success: true,
+      user: ADMIN_USERNAME,
+      sessionType: 'env',
+      role: 'admin',
+      onboardingCompleted: true,
+      needsOnboarding: false,
+      telegramUserId: null,
+    });
   }
-  logger.warn('[Dashboard] Admin login failed');
+
+  if (dashboardAccountsMod && useDatabase) {
+    try {
+      const acc = await dashboardAccountsMod.verifyLogin(u, p);
+      if (acc) {
+        const token = createSession({
+          kind: 'account',
+          accountId: acc.id,
+          username: acc.username,
+          role: acc.role,
+          onboardingCompleted: !!acc.onboarding_completed,
+          telegramUserId: acc.telegram_user_id || null,
+        });
+        res.cookie(SESSION_COOKIE_NAME, token, {
+          httpOnly: true,
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+          sameSite: 'lax',
+          path: '/',
+        });
+        logger.info('[Dashboard] Account login success', acc.username);
+        const needsOnboarding = acc.role !== 'admin' && !acc.onboarding_completed;
+        return res.json({
+          success: true,
+          user: acc.username,
+          sessionType: 'account',
+          role: acc.role,
+          onboardingCompleted: !!acc.onboarding_completed,
+          needsOnboarding,
+          telegramUserId: acc.telegram_user_id || null,
+        });
+      }
+    } catch (e) {
+      logger.error('[Dashboard] Account login error:', e.message);
+    }
+  }
+
+  logger.warn('[Dashboard] Login failed');
   res.status(401).json({ success: false, error: 'Invalid username or password' });
 });
 
 app.get('/api/auth/check', (req, res) => {
   const token = req.cookies && req.cookies[SESSION_COOKIE_NAME];
-  if (isValidSession(token)) {
-    return res.json({ success: true, user: ADMIN_USERNAME });
+  const s = getSessionPayload(token);
+  if (!s) {
+    return res.status(401).json({ success: false });
   }
-  res.status(401).json({ success: false });
+  if (s.kind === 'env') {
+    return res.json({
+      success: true,
+      user: s.username,
+      sessionType: 'env',
+      role: 'admin',
+      onboardingCompleted: true,
+      needsOnboarding: false,
+      telegramUserId: null,
+    });
+  }
+  const needsOnboarding = s.role !== 'admin' && !s.onboardingCompleted;
+  return res.json({
+    success: true,
+    user: s.username,
+    sessionType: 'account',
+    role: s.role,
+    onboardingCompleted: !!s.onboardingCompleted,
+    needsOnboarding,
+    telegramUserId: s.telegramUserId || null,
+  });
 });
 
 app.post('/api/auth/logout', (req, res) => {
   const token = req.cookies && req.cookies[SESSION_COOKIE_NAME];
-  if (token) sessions.delete(token);
+  deleteSession(token);
   res.clearCookie(SESSION_COOKIE_NAME, { path: '/' });
   res.json({ success: true });
+});
+
+// First-time setup: link Telegram user id + GitLab (stored in user_config for bot + dashboard).
+app.post('/api/me/onboarding', async (req, res) => {
+  try {
+    const token = req.cookies && req.cookies[SESSION_COOKIE_NAME];
+    const s = getSessionPayload(token);
+    if (!isValidSession(token) || !s || s.kind !== 'account') {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    if (!dashboardAccountsMod || !userConfigModule || !useDatabase) {
+      return res.status(400).json({ success: false, error: 'Database not configured' });
+    }
+    const { telegramUserId, gitlab: gitlabPayload, apiKeys } = req.body || {};
+    await dashboardAccountsMod.completeOnboarding(
+      s.accountId,
+      telegramUserId,
+      { gitlab: gitlabPayload || {}, apiKeys: apiKeys || {} },
+      userConfigModule
+    );
+    const tg = String(telegramUserId).trim();
+    s.telegramUserId = tg;
+    s.onboardingCompleted = true;
+    sessions.set(token, s);
+    res.json({
+      success: true,
+      telegramUserId: tg,
+      message: 'Onboarding complete. Use /reload in Telegram if the bot is running.',
+    });
+  } catch (e) {
+    logger.error('[Dashboard] onboarding:', e.message);
+    res.status(400).json({ success: false, error: e.message });
+  }
+});
+
+app.post('/api/me/key-request', async (req, res) => {
+  try {
+    const token = req.cookies && req.cookies[SESSION_COOKIE_NAME];
+    const s = getSessionPayload(token);
+    if (!isValidSession(token) || !s || s.kind !== 'account') {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    if (!dashboardAccountsMod) {
+      return res.status(400).json({ success: false, error: 'Database not configured' });
+    }
+    const { provider, notes } = req.body || {};
+    const r = await dashboardAccountsMod.createKeyRequest(s.accountId, provider, notes);
+    res.json({ success: true, request: r });
+  } catch (e) {
+    res.status(400).json({ success: false, error: e.message });
+  }
+});
+
+app.get('/api/me/key-requests', async (req, res) => {
+  try {
+    const token = req.cookies && req.cookies[SESSION_COOKIE_NAME];
+    const s = getSessionPayload(token);
+    if (!isValidSession(token) || !s || s.kind !== 'account') {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    if (!dashboardAccountsMod) {
+      return res.json({ success: true, requests: [] });
+    }
+    const requests = await dashboardAccountsMod.listKeyRequestsForAccount(s.accountId);
+    res.json({ success: true, requests });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.get('/api/admin/dashboard-accounts', requireDashboardAdmin, async (req, res) => {
+  try {
+    if (!dashboardAccountsMod) {
+      return res.json({ success: true, accounts: [] });
+    }
+    const accounts = await dashboardAccountsMod.listAccounts();
+    res.json({ success: true, accounts });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.post('/api/admin/dashboard-accounts', requireDashboardAdmin, async (req, res) => {
+  try {
+    if (!dashboardAccountsMod) {
+      return res.status(400).json({ success: false, error: 'Database not configured' });
+    }
+    const { username, password, role, displayName } = req.body || {};
+    const created = await dashboardAccountsMod.createAccount({ username, password, role, displayName });
+    res.json({ success: true, account: created });
+  } catch (e) {
+    res.status(400).json({ success: false, error: e.message });
+  }
+});
+
+app.get('/api/admin/dashboard-key-requests', requireDashboardAdmin, async (req, res) => {
+  try {
+    if (!dashboardAccountsMod) {
+      return res.json({ success: true, requests: [] });
+    }
+    const status = req.query.status || null;
+    const requests = await dashboardAccountsMod.listKeyRequests(status || undefined);
+    res.json({ success: true, requests });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.post('/api/admin/dashboard-key-requests/:id/review', requireDashboardAdmin, async (req, res) => {
+  try {
+    if (!dashboardAccountsMod || !userConfigModule) {
+      return res.status(400).json({ success: false, error: 'Database not configured' });
+    }
+    const { status, adminNote } = req.body || {};
+    const result = await dashboardAccountsMod.reviewKeyRequest(
+      req.params.id,
+      status,
+      adminNote,
+      userConfigModule
+    );
+    res.json({ success: true, ...result });
+  } catch (e) {
+    res.status(400).json({ success: false, error: e.message });
+  }
 });
 
 app.get('/login', (req, res) => {
@@ -684,26 +953,32 @@ async function addActivity(data) {
 // GitLab API Routes
 // ============================================================================
 
-// Get GitLab configuration status
-app.get('/api/gitlab/config', (req, res) => {
-  const hasToken = !!process.env.GITLAB_TOKEN;
-  const hasNamespace = !!process.env.GITLAB_NAMESPACE;
-  
-  res.json({
-    configured: hasToken && hasNamespace,
-    hasToken,
-    hasNamespace,
-    namespace: process.env.GITLAB_NAMESPACE || null,
-    url: process.env.GITLAB_URL || 'https://gitlab.com',
-  });
+// Get GitLab configuration status (env or logged-in user's user_config)
+app.get('/api/gitlab/config', async (req, res) => {
+  try {
+    const g = await getEffectiveGitlabForRequest(req);
+    const hasToken = Boolean(g.token);
+    const hasNamespace = Boolean(g.namespace);
+    res.json({
+      configured: hasToken && hasNamespace,
+      hasToken,
+      hasNamespace,
+      namespace: g.namespace || null,
+      url: g.url || 'https://gitlab.com',
+      scope: g.scope || 'env',
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
 });
 
 // Fetch repositories from GitLab
 app.get('/api/gitlab/repos', async (req, res) => {
   try {
-    const token = process.env.GITLAB_TOKEN;
-    const namespace = process.env.GITLAB_NAMESPACE;
-    const baseUrl = process.env.GITLAB_URL || 'https://gitlab.com';
+    const g = await getEffectiveGitlabForRequest(req);
+    const token = g.token;
+    const namespace = g.namespace;
+    const baseUrl = g.url || 'https://gitlab.com';
     
     logger.info('[Dashboard] Fetching GitLab repos...');
     logger.info(`[Dashboard] Namespace: ${namespace}`);
@@ -711,20 +986,20 @@ app.get('/api/gitlab/repos', async (req, res) => {
     logger.info(`[Dashboard] Base URL: ${baseUrl}`);
     
     if (!token) {
-      logger.error('[Dashboard] GITLAB_TOKEN not configured');
+      logger.error('[Dashboard] GitLab token not configured (env or your Settings / onboarding)');
       return res.status(400).json({ 
         success: false, 
         error: 'GITLAB_TOKEN not configured',
-        message: 'Add GITLAB_TOKEN to your .env file'
+        message: 'Add a GitLab token in Settings (or complete onboarding), or set GITLAB_TOKEN in .env'
       });
     }
     
     if (!namespace) {
-      logger.error('[Dashboard] GITLAB_NAMESPACE not configured');
+      logger.error('[Dashboard] GitLab namespace not configured');
       return res.status(400).json({ 
         success: false, 
         error: 'GITLAB_NAMESPACE not configured',
-        message: 'Add GITLAB_NAMESPACE to your .env file'
+        message: 'Set default namespace in Settings / onboarding, or GITLAB_NAMESPACE in .env'
       });
     }
     
@@ -794,8 +1069,9 @@ app.get('/api/gitlab/repos', async (req, res) => {
 app.get('/api/gitlab/repos/:projectPath', async (req, res) => {
   try {
     const { projectPath } = req.params;
-    const token = process.env.GITLAB_TOKEN;
-    const baseUrl = process.env.GITLAB_URL || 'https://gitlab.com';
+    const g = await getEffectiveGitlabForRequest(req);
+    const token = g.token;
+    const baseUrl = g.url || 'https://gitlab.com';
     
     if (!token) {
       return res.status(400).json({ success: false, error: 'GITLAB_TOKEN not configured' });
@@ -866,17 +1142,22 @@ app.post('/api/config/apikeys', async (req, res) => {
   try {
     const { apiKeys, userId } = req.body;
     const sharedConfig = require('../utils/shared-config');
-    if (userId && userConfigModule) {
-      const existing = await userConfigModule.getUserConfig(userId) || {};
+    const resolved = resolveConfigTargetUserId(req, userId);
+    if (resolved && resolved.error) {
+      return res.status(400).json({ success: false, error: resolved.error });
+    }
+    const targetUserId = resolved;
+    if (targetUserId && userConfigModule) {
+      const existing = await userConfigModule.getUserConfig(targetUserId) || {};
       const merged = { ...existing.apiKeys, ...apiKeys };
-      await userConfigModule.setUserConfig(userId, { ...existing, apiKeys: merged });
-      const full = await userConfigModule.getConfigForUser(userId);
-      logger.info('[Dashboard] API keys updated for user', userId);
+      await userConfigModule.setUserConfig(targetUserId, { ...existing, apiKeys: merged });
+      const full = await userConfigModule.getConfigForUser(targetUserId);
+      logger.info('[Dashboard] API keys updated for user', targetUserId);
       return res.json({
         success: true,
         message: 'API keys updated successfully',
         config: sanitizeConfig(full),
-        userId,
+        userId: targetUserId,
       });
     }
     sharedConfig.updateApiKeys(apiKeys);
@@ -901,19 +1182,24 @@ app.post('/api/config/gitlab', async (req, res) => {
   try {
     const { gitlab: gitlabPayload, userId } = req.body;
     const sharedConfig = require('../utils/shared-config');
-    if (userId && userConfigModule) {
-      const existing = await userConfigModule.getUserConfig(userId) || {};
-      await userConfigModule.setUserConfig(userId, {
+    const resolved = resolveConfigTargetUserId(req, userId);
+    if (resolved && resolved.error) {
+      return res.status(400).json({ success: false, error: resolved.error });
+    }
+    const targetUserId = resolved;
+    if (targetUserId && userConfigModule) {
+      const existing = await userConfigModule.getUserConfig(targetUserId) || {};
+      await userConfigModule.setUserConfig(targetUserId, {
         ...existing,
         gitlab: { ...(existing.gitlab || {}), ...gitlabPayload },
       });
-      const full = await userConfigModule.getConfigForUser(userId);
-      logger.info('[Dashboard] GitLab config updated for user', userId);
+      const full = await userConfigModule.getConfigForUser(targetUserId);
+      logger.info('[Dashboard] GitLab config updated for user', targetUserId);
       return res.json({
         success: true,
         message: 'GitLab config updated',
         config: sanitizeConfig(full),
-        userId,
+        userId: targetUserId,
       });
     }
     const config = sharedConfig.getFullConfig();
@@ -936,15 +1222,20 @@ app.post('/api/config/custommodels', async (req, res) => {
   try {
     const { customModels, userId } = req.body;
     const sharedConfig = require('../utils/shared-config');
-    if (userId && userConfigModule) {
-      await userConfigModule.setUserConfig(userId, { customModels: customModels || {} });
-      const full = await userConfigModule.getConfigForUser(userId);
-      logger.info('[Dashboard] Custom models updated for user', userId);
+    const resolved = resolveConfigTargetUserId(req, userId);
+    if (resolved && resolved.error) {
+      return res.status(400).json({ success: false, error: resolved.error });
+    }
+    const targetUserId = resolved;
+    if (targetUserId && userConfigModule) {
+      await userConfigModule.setUserConfig(targetUserId, { customModels: customModels || {} });
+      const full = await userConfigModule.getConfigForUser(targetUserId);
+      logger.info('[Dashboard] Custom models updated for user', targetUserId);
       return res.json({
         success: true,
         message: 'Custom models updated',
         config: sanitizeConfig(full),
-        userId,
+        userId: targetUserId,
       });
     }
     const config = sharedConfig.getFullConfig();
@@ -967,7 +1258,32 @@ app.get('/api/config', async (req, res) => {
   try {
     const userId = req.query.userId;
     const sharedConfig = require('../utils/shared-config');
+    const s = getDashboardSession(req);
+
+    if (s && s.kind === 'account' && !sessionIsAdmin(s)) {
+      if (!s.telegramUserId) {
+        return res.json({
+          success: true,
+          config: sanitizeConfig({ apiKeys: {}, gitlab: {}, customModels: {} }),
+          needsProfile: true,
+          scope: 'account',
+        });
+      }
+      if (userConfigModule) {
+        const merged = await userConfigModule.getConfigForUser(s.telegramUserId);
+        return res.json({
+          success: true,
+          config: sanitizeConfig(merged),
+          userId: s.telegramUserId,
+          scope: 'account',
+        });
+      }
+    }
+
     if (userId && userConfigModule) {
+      if (s && s.kind === 'account' && !sessionIsAdmin(s)) {
+        return res.status(403).json({ success: false, error: 'Forbidden' });
+      }
       const merged = await userConfigModule.getConfigForUser(userId);
       res.json({
         success: true,
@@ -2703,29 +3019,44 @@ app.get('*', (req, res) => {
 // Start Server
 // ============================================================================
 
-server.listen(PORT, () => {
-  logger.info(`NIGENTS DASHBOARD v2 - Free Materials API Enabled`);
-  logger.info(`Running on port ${PORT}`);
-  logger.info(`Dashboard URL: http://localhost:${PORT}`);
-  
-  // Verify critical routes are loaded
-  const routes = app._router?.stack || [];
-  const hasSubscribeRoute = routes.some(r => r.route?.path === '/api/materials/subscribe');
-  logger.info(`Subscribe API route loaded: ${hasSubscribeRoute}`);
-  
-  // Check email config
-  const gmailUser = process.env.GMAIL_USER;
-  const gmailPass = process.env.GMAIL_PASS;
-  logger.info(`Email configured: ${!!(gmailUser && gmailPass)}`);
-  
-  // Check materials directory
-  const materialsDir = path.join(__dirname, 'public', 'materials');
-  if (fs.existsSync(materialsDir)) {
-    const pdfs = fs.readdirSync(materialsDir).filter(f => f.endsWith('.pdf'));
-    logger.info(`PDFs available: ${pdfs.length} (${pdfs.join(', ')})`);
-  } else {
-    logger.warn(`Materials directory not found: ${materialsDir}`);
+async function startDashboardServer() {
+  if (useDatabase && dashboardAccountsMod) {
+    try {
+      await dashboardAccountsMod.ensureTables();
+    } catch (e) {
+      logger.error('[Dashboard] dashboard_accounts ensureTables:', e.message);
+    }
   }
-});
+
+  server.listen(PORT, () => {
+    logger.info(`NIGENTS DASHBOARD v2 - Free Materials API Enabled`);
+    logger.info(`Running on port ${PORT}`);
+    logger.info(`Dashboard URL: http://localhost:${PORT}`);
+    if (useDatabase && dashboardAccountsMod) {
+      logger.info('[Dashboard] Multi-user accounts: enabled (MySQL). Create users from Admin → Dashboard logins.');
+    }
+
+    // Verify critical routes are loaded
+    const routes = app._router?.stack || [];
+    const hasSubscribeRoute = routes.some(r => r.route?.path === '/api/materials/subscribe');
+    logger.info(`Subscribe API route loaded: ${hasSubscribeRoute}`);
+
+    // Check email config
+    const gmailUser = process.env.GMAIL_USER;
+    const gmailPass = process.env.GMAIL_PASS;
+    logger.info(`Email configured: ${!!(gmailUser && gmailPass)}`);
+
+    // Check materials directory
+    const materialsDir = path.join(__dirname, 'public', 'materials');
+    if (fs.existsSync(materialsDir)) {
+      const pdfs = fs.readdirSync(materialsDir).filter(f => f.endsWith('.pdf'));
+      logger.info(`PDFs available: ${pdfs.length} (${pdfs.join(', ')})`);
+    } else {
+      logger.warn(`Materials directory not found: ${materialsDir}`);
+    }
+  });
+}
+
+startDashboardServer();
 
 module.exports = { app, server, io, addActivity };

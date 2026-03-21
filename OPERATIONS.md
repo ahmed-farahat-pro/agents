@@ -15,6 +15,19 @@
 6. [GitLab Connection Fix](#gitlab-connection-fix)
 7. [Common Commands](#common-commands)
 8. [Troubleshooting](#troubleshooting)
+9. [Dashboard multi-user & onboarding](#dashboard-multi-user--onboarding)
+
+---
+
+## Dashboard multi-user & onboarding
+
+When **MySQL** is configured (`DB_HOST`, `DB_USER`, `DB_PASSWORD`), the dashboard can use **named accounts** (not only the env `DASHBOARD_ADMIN_USERNAME` / `DASHBOARD_ADMIN_PASSWORD`).
+
+1. **Env admin** logs in → **Admin** → **Dashboard logins** → create username / password (role **User** or **Admin**).
+2. New **User** signs in → **first-login wizard** links their **Telegram user ID** (same id as in the `users` table / bot) and **GitLab** token + namespace. Data is stored in `user_config` for that Telegram id (bot + dashboard GitLab repo list).
+3. Users can **request org API keys** (Settings, or last step of onboarding). An **admin** approves under **Admin** → **API key requests**; the matching key is copied from **shared/org** config (`data/shared-config.json` / env) into that user’s `user_config` (only if the shared key exists).
+
+Tables: `dashboard_accounts`, `dashboard_key_requests` (see `src/database/migrations/003_dashboard_accounts.sql`). The dashboard server runs `ensureTables` on startup.
 
 ---
 

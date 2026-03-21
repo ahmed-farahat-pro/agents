@@ -6,35 +6,36 @@
   <title>Nigents — Voice meeting</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;0,9..144,800&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #08090d;
-      --bg-elev: #101218;
-      --card: #141821;
-      --card-edge: rgba(255, 255, 255, 0.06);
-      --border: #2a3140;
-      --text: #eef0f4;
-      --muted: #8b92a5;
-      --accent: #ff570a;
-      --accent-soft: rgba(255, 87, 10, 0.14);
-      --violet: #7c6cf0;
-      --green: #22c55e;
-      --radius: 14px;
-      --radius-sm: 10px;
-      --shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
-      --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      --bg: #050608;
+      --bg-elev: #0c0e14;
+      --card: rgba(18, 22, 32, 0.72);
+      --card-edge: rgba(255, 255, 255, 0.08);
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #f2f4f8;
+      --muted: #949db3;
+      --accent: #ff5c1a;
+      --accent-soft: rgba(255, 92, 26, 0.16);
+      --violet: #8b7cf8;
+      --green: #34d399;
+      --cyan: #22d3ee;
+      --radius: 18px;
+      --radius-sm: 12px;
+      --shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04);
+      --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     body {
       margin: 0;
-      font-family: 'DM Sans', system-ui, sans-serif;
+      font-family: 'Outfit', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
       font-size: 15px;
-      line-height: 1.5;
+      line-height: 1.55;
       -webkit-font-smoothing: antialiased;
     }
     body::before {
@@ -42,11 +43,17 @@
       position: fixed;
       inset: 0;
       background:
-        radial-gradient(ellipse 120% 80% at 100% -20%, rgba(255, 87, 10, 0.12), transparent 50%),
-        radial-gradient(ellipse 80% 60% at -10% 100%, rgba(124, 108, 240, 0.08), transparent 45%),
-        linear-gradient(180deg, #06070b 0%, var(--bg) 35%);
+        radial-gradient(ellipse 90% 70% at 85% 15%, rgba(255, 92, 26, 0.18), transparent 42%),
+        radial-gradient(ellipse 70% 55% at 10% 90%, rgba(139, 124, 248, 0.14), transparent 40%),
+        radial-gradient(ellipse 50% 40% at 50% 50%, rgba(34, 211, 238, 0.05), transparent 55%),
+        linear-gradient(165deg, #030406 0%, var(--bg) 45%, #0a0c12 100%);
       pointer-events: none;
       z-index: 0;
+      animation: mr-bg-shift 18s ease-in-out infinite alternate;
+    }
+    @keyframes mr-bg-shift {
+      0% { filter: hue-rotate(0deg) saturate(1); }
+      100% { filter: hue-rotate(12deg) saturate(1.08); }
     }
     body::after {
       content: '';
@@ -81,22 +88,22 @@
       min-width: 280px;
     }
     .mr-kicker {
-      font-family: 'Syne', sans-serif;
-      font-size: 0.7rem;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.68rem;
       font-weight: 700;
-      letter-spacing: 0.2em;
+      letter-spacing: 0.24em;
       text-transform: uppercase;
       color: var(--accent);
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
     .mr-header h1 {
-      font-family: 'Syne', sans-serif;
-      font-size: clamp(1.5rem, 3vw, 2rem);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      margin: 0 0 10px;
-      line-height: 1.15;
-      background: linear-gradient(135deg, #fff 0%, #c8ccd8 100%);
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: clamp(1.65rem, 3.2vw, 2.15rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0 0 12px;
+      line-height: 1.12;
+      background: linear-gradient(118deg, #fff 0%, #e2e6ef 45%, rgba(255, 180, 140, 0.95) 100%);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
@@ -136,21 +143,39 @@
 
     .mr-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-top: 24px;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 22px;
+      margin-top: 28px;
+      align-items: stretch;
     }
     @media (max-width: 960px) { .mr-grid { grid-template-columns: 1fr; } }
 
     .mr-panel {
-      background: linear-gradient(165deg, rgba(26, 32, 44, 0.95) 0%, var(--card) 100%);
+      position: relative;
+      background: var(--card);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      min-height: 440px;
+      min-height: 460px;
       box-shadow: var(--shadow), var(--shadow-inset);
+    }
+    .mr-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(145deg, rgba(255, 92, 26, 0.35), transparent 40%, rgba(139, 124, 248, 0.25));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+      opacity: 0.65;
     }
     .mr-panel-hd {
       display: flex;
@@ -162,23 +187,25 @@
     }
     .mr-panel-hd--jitsi { background: linear-gradient(90deg, rgba(124, 108, 240, 0.08) 0%, transparent 55%); }
     .mr-panel-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
       display: grid;
       place-items: center;
-      font-size: 1.1rem;
-      background: rgba(255, 255, 255, 0.05);
+      flex-shrink: 0;
+      background: rgba(255, 255, 255, 0.06);
       border: 1px solid var(--card-edge);
+      color: var(--accent);
     }
+    .mr-panel-icon svg { width: 20px; height: 20px; }
     .mr-panel-hd h2 {
       margin: 0;
-      font-family: 'Syne', sans-serif;
-      font-size: 0.8rem;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.78rem;
       font-weight: 700;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: #b8c0d4;
+      color: #c5ccdc;
     }
     .mr-panel-hd span {
       display: block;
@@ -460,10 +487,9 @@
       <div class="mr-header-inner">
         <div class="mr-brand">
           <div class="mr-kicker">Nigents · live session</div>
-          <h1>Voice meeting</h1>
+          <h1>Voice meeting room</h1>
           <p>
-            <strong>Humans</strong> on the left (Jitsi) — share one link so everyone joins the same room.
-            <strong>AI team</strong> on the right — one shared thread for all; set your name, pick agents, type or speak.
+            One <strong>shared link</strong> keeps humans in sync on video, while the <strong>AI roundtable</strong> answers in order on the same thread — type, speak, or use always-on listening.
           </p>
         </div>
         <div class="mr-pill-row" aria-hidden="true">
@@ -481,10 +507,12 @@
     <div class="mr-grid" id="mr-root" style="display:none;">
       <section class="mr-panel mr-jitsi">
         <div class="mr-panel-hd mr-panel-hd--jitsi">
-          <div class="mr-panel-icon" aria-hidden="true">🎥</div>
+          <div class="mr-panel-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l4-2v8l-4-2"/></svg>
+          </div>
           <div>
             <h2>Human voice</h2>
-            <span>Camera & mic — your team</span>
+            <span>Jitsi · camera, mic & screen</span>
           </div>
         </div>
         <iframe id="mr-jitsi-frame" title="Jitsi" allow="camera; microphone; fullscreen; display-capture; autoplay"></iframe>
@@ -492,10 +520,12 @@
 
       <section class="mr-panel">
         <div class="mr-panel-hd">
-          <div class="mr-panel-icon" aria-hidden="true">⚡</div>
+          <div class="mr-panel-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><path d="M5 19h14M8 17v2M12 17v2M16 17v2"/></svg>
+          </div>
           <div>
             <h2>AI team</h2>
-            <span>Shared thread · Socket.IO sync</span>
+            <span>Shared thread · real-time sync</span>
           </div>
         </div>
         <div class="mr-ai">
@@ -511,8 +541,8 @@
           <textarea class="mr-input" id="mr-text" placeholder="Ask the team… (⌘/Ctrl + Enter to send)"></textarea>
           <div class="mr-actions">
             <button type="button" class="btn btn-primary" id="mr-send">Send to AI team</button>
-            <button type="button" class="btn btn-mic" id="mr-mic" title="Hold to speak">🎤 Hold to speak</button>
-            <button type="button" class="btn btn-always" id="mr-always" title="Continuous mic — pauses send a message">🎧 Always listen</button>
+            <button type="button" class="btn btn-mic" id="mr-mic" title="Hold to speak">Hold to speak</button>
+            <button type="button" class="btn btn-always" id="mr-always" title="Continuous mic — pauses send a message">Always listen</button>
             <button type="button" class="btn btn-secondary" id="mr-clear">Clear chat</button>
           </div>
         </div>

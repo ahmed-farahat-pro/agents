@@ -13,11 +13,14 @@
             }
             try {
                 const res = await fetch('/api/auth/check', { credentials: 'include' });
-                if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.success) {
                     localStorage.removeItem('nigents_auth');
                     localStorage.removeItem('nigents_user');
                     window.location.href = '/login.html';
+                    return;
                 }
+                window.__NIGENTS_SESSION = data;
             } catch (_) {
                 localStorage.removeItem('nigents_auth');
                 localStorage.removeItem('nigents_user');
@@ -457,6 +460,131 @@
             from { opacity: 0; transform: translateX(100%); }
             to { opacity: 1; transform: translateX(0); }
         }
+
+        /* First-login onboarding */
+        .onb-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 10050;
+            background: rgba(6, 8, 12, 0.92);
+            backdrop-filter: blur(12px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: onbFade 0.45s ease;
+        }
+        .onb-overlay.show { display: flex; }
+        @keyframes onbFade {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .onb-card {
+            width: 100%;
+            max-width: 520px;
+            background: linear-gradient(165deg, rgba(28, 32, 42, 0.98) 0%, var(--bg-card) 100%);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 28px 28px 22px;
+            box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255, 87, 10, 0.08);
+            max-height: min(90vh, 720px);
+            overflow-y: auto;
+        }
+        .onb-kicker {
+            font-family: 'Syne', sans-serif;
+            font-size: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+        .onb-card h2 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.45rem;
+            margin: 0 0 12px;
+            letter-spacing: -0.02em;
+        }
+        .onb-card p, .onb-card li {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.55;
+            margin: 0 0 12px;
+        }
+        .onb-steps {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 22px;
+        }
+        .onb-steps i {
+            flex: 1;
+            height: 4px;
+            border-radius: 4px;
+            background: var(--border);
+            transition: background 0.35s ease, transform 0.35s ease;
+        }
+        .onb-steps i.on { background: linear-gradient(90deg, var(--accent), #ff9148); transform: scaleY(1.4); }
+        .onb-panel {
+            display: none;
+            animation: onbSlide 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .onb-panel.active { display: block; }
+        @keyframes onbSlide {
+            from { opacity: 0; transform: translateX(18px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .onb-anim {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            padding: 20px;
+            margin: 16px 0;
+            border-radius: 14px;
+            background: var(--bg-hover);
+            border: 1px dashed var(--border);
+            min-height: 100px;
+        }
+        .onb-anim .bubble {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            font-weight: 800;
+            font-size: 0.75rem;
+            animation: onbBounce 1.4s ease-in-out infinite;
+        }
+        .onb-anim .bubble.tg { background: linear-gradient(135deg, #229ed9, #0088cc); color: #fff; animation-delay: 0s; }
+        .onb-anim .bubble.bot { background: linear-gradient(135deg, #ff6b24, var(--accent)); color: #fff; animation-delay: 0.2s; }
+        .onb-anim .arrow {
+            font-size: 1.4rem;
+            color: var(--accent);
+            animation: onbPulseArr 1.2s ease-in-out infinite;
+        }
+        @keyframes onbBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        @keyframes onbPulseArr {
+            0%, 100% { opacity: 0.4; transform: translateX(0); }
+            50% { opacity: 1; transform: translateX(4px); }
+        }
+        .onb-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 22px;
+            padding-top: 18px;
+            border-top: 1px solid var(--border);
+        }
+        .onb-err {
+            color: var(--error);
+            font-size: 0.85rem;
+            margin-top: 10px;
+            display: none;
+        }
+        .onb-err.show { display: block; }
 
         /* Content Area */
         .content {
@@ -2020,6 +2148,75 @@
     </style>
 </head>
 <body>
+    <div id="onboarding-overlay" class="onb-overlay" aria-hidden="true">
+        <div class="onb-card" role="dialog" aria-labelledby="onb-title">
+            <div class="onb-kicker">First-time setup</div>
+            <div class="onb-steps" id="onb-steps-bar" aria-hidden="true">
+                <i class="on"></i><i></i><i></i><i></i>
+            </div>
+            <div class="onb-panel active" data-onb="0">
+                <h2 id="onb-title">Welcome to Nigents</h2>
+                <p>We’ll link your <strong>Telegram user ID</strong> (same identity the bot uses) and your <strong>GitLab</strong> token so the dashboard and agents can work on your repos.</p>
+                <p style="margin-top:16px;">This takes about a minute. You can change keys later in <strong>Settings</strong>.</p>
+            </div>
+            <div class="onb-panel" data-onb="1">
+                <h2>Your Telegram user ID</h2>
+                <p>Open Telegram, search for <code>@userinfobot</code> (or any ID bot), tap <strong>Start</strong>, and copy your numeric ID.</p>
+                <div class="onb-anim" aria-hidden="true">
+                    <span class="bubble tg">TG</span>
+                    <span class="arrow">→</span>
+                    <span class="bubble bot">BOT</span>
+                </div>
+                <label class="form-label" for="onb-telegram-id">Telegram user ID (numbers only)</label>
+                <input type="text" class="form-input" id="onb-telegram-id" placeholder="e.g. 123456789" inputmode="numeric" autocomplete="off" />
+            </div>
+            <div class="onb-panel" data-onb="2">
+                <h2>GitLab access</h2>
+                <p>Create a <strong>Personal Access Token</strong> with <code>api</code> scope. Paste it here with your GitLab URL and default group or username (namespace).</p>
+                <div class="form-group">
+                    <label class="form-label" for="onb-gl-url">GitLab URL</label>
+                    <input type="text" class="form-input" id="onb-gl-url" value="https://gitlab.com" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="onb-gl-token">Token</label>
+                    <input type="password" class="form-input" id="onb-gl-token" placeholder="glpat-..." autocomplete="off" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="onb-gl-ns">Namespace</label>
+                    <input type="text" class="form-input" id="onb-gl-ns" placeholder="group-or-username" />
+                </div>
+            </div>
+            <div class="onb-panel" data-onb="3">
+                <h2>AI keys (optional)</h2>
+                <p>Add your own <strong>OpenAI</strong> key now, or request access to <strong>organization keys</strong> — an admin must approve.</p>
+                <div class="form-group">
+                    <label class="form-label" for="onb-openai">OpenAI API key (optional)</label>
+                    <input type="password" class="form-input" id="onb-openai" placeholder="sk-..." autocomplete="off" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="onb-req-provider">Request org key for</label>
+                    <select class="form-select" id="onb-req-provider">
+                        <option value="">— Skip —</option>
+                        <option value="openai">OpenAI</option>
+                        <option value="anthropic">Anthropic</option>
+                        <option value="zhipu">Zhipu</option>
+                        <option value="moonshot">Moonshot</option>
+                        <option value="deepseek">DeepSeek</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="onb-req-note">Note to admin (optional)</label>
+                    <input type="text" class="form-input" id="onb-req-note" placeholder="e.g. Need for planner trials" />
+                </div>
+            </div>
+            <div class="onb-err" id="onb-err"></div>
+            <div class="onb-actions">
+                <button type="button" class="btn btn-secondary" id="onb-back">Back</button>
+                <button type="button" class="btn btn-primary" id="onb-next">Next</button>
+            </div>
+        </div>
+    </div>
+
     <div class="app">
         <!-- Sidebar Overlay for Mobile -->
         <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
@@ -2093,7 +2290,7 @@
                         <div class="nav-indicator"></div>
                         <span>Settings</span>
                     </div>
-                    <div class="nav-item" data-view="admin">
+                    <div class="nav-item" data-view="admin" id="nav-item-admin">
                         <div class="nav-indicator"></div>
                         <span>Admin</span>
                     </div>
@@ -2591,12 +2788,63 @@
                             <p class="text-sm text-muted" style="margin-bottom: 10px;">Keys and config are stored per user. User adds models via Telegram /addmodel or /addglm.</p>
                             <pre id="admin-custom-models-list" style="background: var(--bg-hover); padding: 12px; border-radius: 8px; font-size: 12px; max-height: 200px; overflow: auto;"></pre>
                         </div>
+                        <div class="config-card" id="admin-dashboard-accounts-card" style="grid-column: 1 / -1; display: none;">
+                            <h3 class="config-title">Dashboard logins</h3>
+                            <p class="text-sm text-muted" style="margin-bottom: 12px;">Create username/password accounts for the web dashboard. New users complete onboarding to link Telegram + GitLab.</p>
+                            <div class="form-group">
+                                <label class="form-label">Username</label>
+                                <input type="text" class="form-input" id="admin-da-username" placeholder="alice" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Password (min 8 chars)</label>
+                                <input type="password" class="form-input" id="admin-da-password" autocomplete="new-password">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Role</label>
+                                <select class="form-select" id="admin-da-role">
+                                    <option value="user">User</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="adminCreateDashboardAccount()">Create dashboard account</button>
+                            <div id="admin-da-status" style="margin-top: 10px; font-size: 13px; display: none;"></div>
+                            <div style="margin-top: 18px; max-height: 220px; overflow: auto; font-size: 13px;" id="admin-da-list"></div>
+                        </div>
+                        <div class="config-card" id="admin-key-requests-card" style="grid-column: 1 / -1; display: none;">
+                            <h3 class="config-title">API key requests</h3>
+                            <p class="text-sm text-muted" style="margin-bottom: 12px;">Approve to copy the matching key from shared/org config into the user’s Telegram profile (after onboarding).</p>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="loadAdminKeyRequests()">Refresh</button>
+                            <div id="admin-kr-list" style="margin-top: 14px; font-size: 13px;"></div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Settings View -->
                 <div class="view" id="view-settings">
                     <div class="config-grid">
+                        <div class="config-card" id="settings-profile-card" style="display: none; grid-column: 1 / -1;">
+                            <h3 class="config-title">Your profile</h3>
+                            <p class="text-sm text-muted" style="margin-bottom: 10px;">Linked Telegram user ID (used by the bot and dashboard). GitLab and API keys below apply to this ID.</p>
+                            <p style="font-size: 14px;"><strong>Telegram user ID:</strong> <span id="settings-tg-id">—</span></p>
+                            <p class="text-sm text-muted" style="margin-top: 12px;">Request organization API keys (admin must approve).</p>
+                            <div class="form-group">
+                                <label class="form-label">Provider</label>
+                                <select class="form-select" id="settings-req-provider">
+                                    <option value="openai">OpenAI</option>
+                                    <option value="anthropic">Anthropic</option>
+                                    <option value="zhipu">Zhipu</option>
+                                    <option value="moonshot">Moonshot</option>
+                                    <option value="deepseek">DeepSeek</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Note (optional)</label>
+                                <input type="text" class="form-input" id="settings-req-note" placeholder="Why you need access">
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="settingsSubmitKeyRequest()">Submit request</button>
+                            <div id="settings-req-status" style="margin-top: 10px; font-size: 13px; display: none;"></div>
+                            <div style="margin-top: 16px; font-size: 13px;" id="settings-my-requests"></div>
+                        </div>
                         <div class="config-card">
                             <h3 class="config-title">Features</h3>
                             <div class="toggle-wrapper">
@@ -3093,7 +3341,12 @@
             }
             if (view === 'agent-detail' && selectedAgent) renderAgentDetail();
             if (view === 'subscribers') loadSubscribersData();
-            if (view === 'admin') loadAdminUsers();
+            if (view === 'admin') {
+                loadAdminUsers();
+                loadAdminDashboardAccountsUi();
+                loadAdminKeyRequests();
+            }
+            if (view === 'settings') refreshSettingsProfile();
         }
 
         // Agent Monitor Functions
@@ -3529,8 +3782,19 @@
 
         async function loadGitLabConfig() {
             try {
-                const response = await fetch('/api/gitlab/config');
+                const response = await fetch('/api/gitlab/config', { credentials: 'include' });
                 gitlabConfig = await response.json();
+                const cfgRes = await fetch('/api/config', { credentials: 'include' });
+                const cfgData = await cfgRes.json();
+                if (cfgData.success && cfgData.config && cfgData.config.gitlab) {
+                    const g = cfgData.config.gitlab;
+                    const u = document.getElementById('gitlab-url');
+                    const t = document.getElementById('gitlab-token');
+                    const n = document.getElementById('gitlab-namespace');
+                    if (u && g.url) u.value = g.url;
+                    if (n && g.namespace) n.value = g.namespace;
+                    if (t && g.token === 'SET') t.placeholder = '•••••• (saved — leave blank to keep)';
+                }
             } catch (error) {
                 console.error('Failed to load GitLab config:', error);
             }
@@ -3542,7 +3806,7 @@
             
             try {
                 console.log('[GitLab] Calling /api/gitlab/repos...');
-                const response = await fetch('/api/gitlab/repos');
+                const response = await fetch('/api/gitlab/repos', { credentials: 'include' });
                 console.log('[GitLab] Response status:', response.status);
                 
                 const data = await response.json();
@@ -4180,7 +4444,7 @@
             `).join('');
         }
 
-        function saveGitLabConfig() {
+        async function saveGitLabConfig() {
             const url = document.getElementById('gitlab-url').value;
             const token = document.getElementById('gitlab-token').value;
             const namespace = document.getElementById('gitlab-namespace').value;
@@ -4189,7 +4453,24 @@
             localStorage.setItem('nigents_gitlab_token', token);
             localStorage.setItem('nigents_gitlab_namespace', namespace);
             
-            showNotification('GitLab settings saved!');
+            try {
+                const gitlab = { url, namespace };
+                if (token) gitlab.token = token;
+                const res = await fetch('/api/config/gitlab', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ gitlab }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showNotification('GitLab saved to server');
+                } else {
+                    showNotification(data.error || 'Failed to save GitLab', 'error');
+                }
+            } catch (e) {
+                showNotification('GitLab save failed: ' + e.message, 'error');
+            }
         }
 
         function refreshData() {
@@ -4242,6 +4523,249 @@
         document.getElementById('cfg-temp')?.addEventListener('input', (e) => {
             document.getElementById('temp-value').textContent = e.target.value;
         });
+
+        function applySessionNav() {
+            const s = window.__NIGENTS_SESSION;
+            const nav = document.getElementById('nav-item-admin');
+            if (nav) {
+                if (!s) nav.style.display = 'none';
+                else nav.style.display = (s.sessionType === 'env' || s.role === 'admin') ? '' : 'none';
+            }
+            const show = s && (s.sessionType === 'env' || s.role === 'admin');
+            const da = document.getElementById('admin-dashboard-accounts-card');
+            const kr = document.getElementById('admin-key-requests-card');
+            if (da) da.style.display = show ? 'block' : 'none';
+            if (kr) kr.style.display = show ? 'block' : 'none';
+        }
+
+        let onbStep = 0;
+        let onbWired = false;
+        function openOnboardingWizard() {
+            const el = document.getElementById('onboarding-overlay');
+            if (!el) return;
+            onbStep = 0;
+            onbRender();
+            el.classList.add('show');
+            el.setAttribute('aria-hidden', 'false');
+        }
+        function closeOnboardingWizard() {
+            const el = document.getElementById('onboarding-overlay');
+            if (!el) return;
+            el.classList.remove('show');
+            el.setAttribute('aria-hidden', 'true');
+        }
+        function onbRender() {
+            document.querySelectorAll('.onb-panel').forEach(function (p) {
+                p.classList.toggle('active', parseInt(p.getAttribute('data-onb'), 10) === onbStep);
+            });
+            document.querySelectorAll('#onb-steps-bar i').forEach(function (d, i) {
+                d.classList.toggle('on', i <= onbStep);
+            });
+            var next = document.getElementById('onb-next');
+            if (next) next.textContent = onbStep >= 3 ? 'Finish' : 'Next';
+            var err = document.getElementById('onb-err');
+            if (err) { err.classList.remove('show'); err.textContent = ''; }
+        }
+        async function onbFinish() {
+            var tg = (document.getElementById('onb-telegram-id') && document.getElementById('onb-telegram-id').value || '').trim();
+            var url = document.getElementById('onb-gl-url').value.trim() || 'https://gitlab.com';
+            var token = document.getElementById('onb-gl-token').value.trim();
+            var ns = document.getElementById('onb-gl-ns').value.trim();
+            var openai = document.getElementById('onb-openai').value.trim();
+            var err = document.getElementById('onb-err');
+            if (!/^\d+$/.test(tg)) {
+                err.textContent = 'Enter a numeric Telegram user ID.';
+                err.classList.add('show');
+                return;
+            }
+            if (!token || !ns) {
+                err.textContent = 'GitLab token and namespace are required.';
+                err.classList.add('show');
+                return;
+            }
+            var apiKeys = {};
+            if (openai) apiKeys.OPENAI_API_KEY = openai;
+            try {
+                var res = await fetch('/api/me/onboarding', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        telegramUserId: tg,
+                        gitlab: { url: url, token: token, namespace: ns },
+                        apiKeys: apiKeys,
+                    }),
+                });
+                var data = await res.json();
+                if (!data.success) {
+                    err.textContent = data.error || 'Failed';
+                    err.classList.add('show');
+                    return;
+                }
+                var reqProv = document.getElementById('onb-req-provider').value;
+                var reqNote = document.getElementById('onb-req-note').value.trim();
+                if (reqProv) {
+                    await fetch('/api/me/key-request', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ provider: reqProv, notes: reqNote }),
+                    });
+                }
+                window.__NIGENTS_SESSION = Object.assign({}, window.__NIGENTS_SESSION, {
+                    needsOnboarding: false,
+                    telegramUserId: tg,
+                    onboardingCompleted: true,
+                });
+                closeOnboardingWizard();
+                applySessionNav();
+                refreshSettingsProfile();
+                showNotification('Setup complete — you can change keys anytime in Settings.');
+                loadGitLabConfig().then(function () { renderRepos(); });
+                loadApiKeys();
+            } catch (e) {
+                err.textContent = e.message || 'Network error';
+                err.classList.add('show');
+            }
+        }
+        function wireOnboarding() {
+            if (onbWired) return;
+            onbWired = true;
+            var next = document.getElementById('onb-next');
+            var back = document.getElementById('onb-back');
+            if (next) next.addEventListener('click', function () {
+                if (onbStep < 3) { onbStep++; onbRender(); }
+                else onbFinish();
+            });
+            if (back) back.addEventListener('click', function () {
+                if (onbStep > 0) { onbStep--; onbRender(); }
+            });
+        }
+        async function initSessionAndOnboarding() {
+            try {
+                var res = await fetch('/api/auth/check', { credentials: 'include' });
+                var data = await res.json();
+                if (res.ok && data.success) window.__NIGENTS_SESSION = data;
+            } catch (_) {}
+            applySessionNav();
+            wireOnboarding();
+            if (window.__NIGENTS_SESSION && window.__NIGENTS_SESSION.needsOnboarding) {
+                openOnboardingWizard();
+            }
+            refreshSettingsProfile();
+        }
+        document.addEventListener('DOMContentLoaded', initSessionAndOnboarding);
+
+        async function adminCreateDashboardAccount() {
+            var st = document.getElementById('admin-da-status');
+            var u = document.getElementById('admin-da-username').value.trim();
+            var p = document.getElementById('admin-da-password').value;
+            var role = document.getElementById('admin-da-role').value;
+            st.style.display = 'block';
+            try {
+                var res = await fetch('/api/admin/dashboard-accounts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username: u, password: p, role: role }),
+                });
+                var data = await res.json();
+                st.textContent = data.success ? ('Created: ' + u) : (data.error || 'Failed');
+                st.style.color = data.success ? 'var(--success)' : 'var(--error)';
+                if (data.success) {
+                    document.getElementById('admin-da-password').value = '';
+                    loadAdminDashboardAccountsUi();
+                }
+            } catch (e) {
+                st.textContent = e.message;
+            }
+        }
+        async function loadAdminDashboardAccountsUi() {
+            var list = document.getElementById('admin-da-list');
+            if (!list) return;
+            try {
+                var res = await fetch('/api/admin/dashboard-accounts', { credentials: 'include' });
+                var data = await res.json();
+                if (!data.success) return;
+                list.innerHTML = (data.accounts || []).map(function (a) {
+                    return '<div style="padding:8px 0;border-bottom:1px solid var(--border);">' + a.username + ' · ' + a.role + ' · TG: ' + (a.telegramUserId || '—') + ' · setup: ' + (a.onboardingCompleted ? 'done' : 'pending') + '</div>';
+                }).join('') || '<span class="text-muted">No dashboard accounts yet.</span>';
+            } catch (_) { list.innerHTML = '—'; }
+        }
+        async function loadAdminKeyRequests() {
+            var list = document.getElementById('admin-kr-list');
+            if (!list) return;
+            try {
+                var res = await fetch('/api/admin/dashboard-key-requests', { credentials: 'include' });
+                var data = await res.json();
+                if (!data.success) return;
+                list.innerHTML = (data.requests || []).map(function (r) {
+                    var btns = r.status === 'pending'
+                        ? '<button class="btn btn-sm btn-primary" type="button" onclick="reviewAdminKeyRequest(' + r.id + ',\'approved\')">Approve</button> <button class="btn btn-sm btn-secondary" type="button" onclick="reviewAdminKeyRequest(' + r.id + ',\'rejected\')">Reject</button>'
+                        : '';
+                    return '<div style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:8px;align-items:center;"><span><strong>#' + r.id + '</strong> ' + (r.account_username || '') + ' · ' + r.provider + ' · <em>' + r.status + '</em></span> ' + btns + '</div>';
+                }).join('') || '<span class="text-muted">No requests.</span>';
+            } catch (_) { list.innerHTML = 'Failed to load.'; }
+        }
+        async function reviewAdminKeyRequest(id, status) {
+            var note = window.prompt(status === 'approved' ? 'Optional note for user:' : 'Rejection reason (optional):', '') || '';
+            try {
+                var res = await fetch('/api/admin/dashboard-key-requests/' + id + '/review', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ status: status, adminNote: note }),
+                });
+                var data = await res.json();
+                showNotification(data.success ? 'Request updated' : (data.error || 'Failed'));
+                loadAdminKeyRequests();
+            } catch (e) {
+                showNotification(e.message);
+            }
+        }
+        async function refreshSettingsProfile() {
+            var s = window.__NIGENTS_SESSION;
+            var card = document.getElementById('settings-profile-card');
+            if (!card) return;
+            if (!s || s.sessionType !== 'account') {
+                card.style.display = 'none';
+                return;
+            }
+            card.style.display = 'block';
+            var tgEl = document.getElementById('settings-tg-id');
+            if (tgEl) tgEl.textContent = s.telegramUserId || '— (complete onboarding wizard)';
+            try {
+                var res = await fetch('/api/me/key-requests', { credentials: 'include' });
+                var data = await res.json();
+                var box = document.getElementById('settings-my-requests');
+                if (data.success && data.requests && box) {
+                    box.innerHTML = data.requests.length ? ('<strong>Your requests</strong><ul style="margin:8px 0 0 16px;">' +
+                        data.requests.map(function (r) {
+                            return '<li>' + r.provider + ' — ' + r.status + (r.admin_note ? ': ' + r.admin_note : '') + '</li>';
+                        }).join('') + '</ul>') : '<span class="text-muted">No requests yet.</span>';
+                }
+            } catch (_) {}
+        }
+        async function settingsSubmitKeyRequest() {
+            var prov = document.getElementById('settings-req-provider').value;
+            var note = document.getElementById('settings-req-note').value.trim();
+            var st = document.getElementById('settings-req-status');
+            st.style.display = 'block';
+            try {
+                var res = await fetch('/api/me/key-request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ provider: prov, notes: note }),
+                });
+                var data = await res.json();
+                st.textContent = data.success ? 'Request submitted.' : (data.error || 'Failed');
+                st.style.color = data.success ? 'var(--success)' : 'var(--error)';
+                refreshSettingsProfile();
+            } catch (e) {
+                st.textContent = e.message;
+            }
+        }
 
         // Logout function (clear server session and redirect)
         async function logout() {
@@ -4311,7 +4835,7 @@
             const sel = document.getElementById('admin-user-select');
             if (!sel) return;
             try {
-                const res = await fetch('/api/admin/users');
+                const res = await fetch('/api/admin/users', { credentials: 'include' });
                 const data = await res.json();
                 if (data.success && data.users) {
                     fillAdminUserDropdowns(data.users);
@@ -4423,7 +4947,7 @@
         async function loadAdminConfig(userId) {
             if (!userId) return;
             try {
-                const res = await fetch('/api/config?userId=' + encodeURIComponent(userId));
+                const res = await fetch('/api/config?userId=' + encodeURIComponent(userId), { credentials: 'include' });
                 const data = await res.json();
                 if (!data.success || !data.config) return;
                 const c = data.config;
@@ -4456,6 +4980,7 @@
                 const res = await fetch('/api/config/apikeys', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ apiKeys, userId: adminSelectedUserId }),
                 });
                 const data = await res.json();
@@ -4482,6 +5007,7 @@
                 const res = await fetch('/api/config/gitlab', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ gitlab, userId: adminSelectedUserId }),
                 });
                 const data = await res.json();
@@ -4506,6 +5032,7 @@
                 const response = await fetch('/api/config/apikeys', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ apiKeys }),
                 });
                 
