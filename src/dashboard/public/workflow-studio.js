@@ -108,8 +108,26 @@
   function feedAgentStream(agentKey, payload) {
     if (!agentKey || agentKey === '?') return;
     if (!wfStreamsByAgent[agentKey]) wfStreamsByAgent[agentKey] = [];
-    wfStreamsByAgent[agentKey].push({ ...payload, t: Date.now() });
-    while (wfStreamsByAgent[agentKey].length > WF_AGENT_STREAM_MAX) wfStreamsByAgent[agentKey].shift();
+    const rows = wfStreamsByAgent[agentKey];
+    const kind = payload && payload.kind;
+    /* Merge consecutive shell/terminal chunks so the popover shows one growing stream (live PTY style). */
+    if (
+      kind === 'shell' &&
+      rows.length > 0 &&
+      rows[rows.length - 1].kind === 'shell'
+    ) {
+      const last = rows[rows.length - 1];
+      last.streamLine =
+        String(last.streamLine || '') + String((payload && payload.streamLine) || (payload && payload.text) || '');
+      last.t = Date.now();
+      while (rows.length > WF_AGENT_STREAM_MAX) rows.shift();
+      if (livePopoverOpen && livePopoverAgent === agentKey) {
+        renderAgentPopoverBody();
+      }
+      return;
+    }
+    rows.push({ ...payload, t: Date.now() });
+    while (rows.length > WF_AGENT_STREAM_MAX) rows.shift();
     if (livePopoverOpen && livePopoverAgent === agentKey) {
       renderAgentPopoverBody();
     }
@@ -128,6 +146,14 @@
     if (!body || !livePopoverAgent) return;
     const rows = wfStreamsByAgent[livePopoverAgent] || [];
     body.textContent = '';
+    if (!rows.length) {
+      const empty = document.createElement('p');
+      empty.className = 'wf-pop-empty';
+      empty.textContent =
+        'Waiting for live events… Lines appear here as codeEdit / shell / agentStatus arrive over the socket.';
+      body.appendChild(empty);
+      return;
+    }
     rows.forEach(r => {
       const wrap = document.createElement('div');
       wrap.className = 'wf-pop-entry wf-pop-' + (r.kind || 'line');
@@ -198,7 +224,7 @@
     const title = el('wf-agent-popover-title');
     if (title) {
       const label = AGENTS.find(a => a.type === ag)?.label || ag;
-      title.textContent = label + ' — flux temps réel';
+      title.textContent = label + ' — live stream';
     }
     if (pop) pop.hidden = false;
     renderAgentPopoverBody();
@@ -583,7 +609,9 @@
         '<button type="button" class="wf-port wf-port-in" aria-label="Input — drop connection here" title="Input"></button>' +
         '<button type="button" class="wf-port wf-port-out" aria-label="Output — drag to connect" title="Drag to another node"></button>' +
         '<button type="button" class="wf-remove" title="Remove">&times;</button>' +
-        '<span class="wf-node-led" aria-hidden="true" title="Agent active"></span>' +
+        '<button type="button" class="wf-node-led" aria-label="Open live stream for this agent" title="Click for live stream (only while this LED is pulsing)">' +
+        '<span class="wf-node-led-dot" aria-hidden="true"></span>' +
+        '</button>' +
         '<div class="wf-node-body">' +
         '<div class="wf-node-type">' +
         agent.label +
@@ -599,6 +627,14 @@
         renderNodes();
         drawEdges();
       });
+      const ledBtn = div.querySelector('.wf-node-led');
+      if (ledBtn) {
+        ledBtn.addEventListener('click', ev => {
+          ev.stopPropagation();
+          ev.preventDefault();
+          maybeOpenWorkflowAgentPanel(div);
+        });
+      }
       const portOut = div.querySelector('.wf-port-out');
       if (portOut) {
         portOut.addEventListener('pointerdown', e => startWireFromPort(e, div, n.id));
@@ -695,7 +731,7 @@
   }
 
   function startDrag(e) {
-    if (e.target.closest('.wf-remove') || e.target.closest('.wf-port')) return;
+    if (e.target.closest('.wf-remove') || e.target.closest('.wf-port') || e.target.closest('.wf-node-led')) return;
     const id = e.currentTarget.dataset.id;
     const node = nodes.find(n => n.id === id);
     if (!node) return;
@@ -735,12 +771,6 @@
       syncCanvasExtent();
       scheduleRedrawEdges();
       repositionPopoverIfOpen();
-      if (!moved && sid && canvas) {
-        const nodeDiv = canvas.querySelector('.wf-node[data-id="' + sid + '"]');
-        if (nodeDiv) {
-          maybeOpenWorkflowAgentPanel(nodeDiv);
-        }
-      }
     }
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', up);
