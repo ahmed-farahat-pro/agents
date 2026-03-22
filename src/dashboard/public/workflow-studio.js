@@ -26,6 +26,168 @@
   /** { role:'user'|'agent', content, agentType?, label? } — multi-agent meeting thread */
   let roundtableHistory = [];
 
+  /** Real-time link: tasks + agent highlight + stream panel */
+  let wfTasks = [];
+  let wfSocketAttached = false;
+  /** @type {string|null} */
+  let liveAgentFromSocket = null;
+  const WF_STREAM_MAX = 120;
+
+  function normalizeRepoPath(p) {
+    if (p == null) return '';
+    let s = String(p).trim();
+    if (!s) return '';
+    s = s.replace(/\.git$/i, '');
+    if (s.includes('://')) {
+      try {
+        const u = new URL(s);
+        s = u.pathname.replace(/^\/+/, '');
+      } catch (_) {
+        /* keep */
+      }
+    }
+    return s.toLowerCase();
+  }
+
+  function currentWorkflowRepoPath() {
+    const inp = el('wf-gitlab-path');
+    const manual = inp && inp.value.trim();
+    if (manual) return manual;
+    const p = currentId && projects.find(x => x.id === currentId);
+    return (p && p.gitlabPath) || '';
+  }
+
+  function taskRepo(t) {
+    if (!t || !t.plan) return '';
+    const pl = t.plan;
+    return pl.project || pl.projectId || pl.projectName || pl.repo || '';
+  }
+
+  function hasRunningTaskForRepo(repoPath) {
+    const want = normalizeRepoPath(repoPath);
+    if (!want) return false;
+    return wfTasks.some(t => {
+      const st = (t.status || '').toLowerCase();
+      if (st !== 'running' && st !== 'in_progress') return false;
+      return normalizeRepoPath(taskRepo(t)) === want;
+    });
+  }
+
+  function eventMatchesLinkedRepo(ev, repoPath) {
+    const want = normalizeRepoPath(repoPath);
+    const filterOn = el('wf-live-filter') && el('wf-live-filter').checked;
+    if (!filterOn || !want) return true;
+    if (ev && ev.project && normalizeRepoPath(ev.project) === want) return true;
+    if (hasRunningTaskForRepo(repoPath)) {
+      if (!ev || !ev.project) return true;
+      return normalizeRepoPath(ev.project) === want;
+    }
+    if (ev && ev.project) return normalizeRepoPath(ev.project) === want;
+    return false;
+  }
+
+  function appendLiveLine(kind, text) {
+    const pre = el('wf-live-stream');
+    if (!pre) return;
+    const line = document.createElement('div');
+    line.className = 'wf-live-line wf-live-line--' + kind;
+    line.textContent = text;
+    pre.appendChild(line);
+    while (pre.childNodes.length > WF_STREAM_MAX) pre.removeChild(pre.firstChild);
+    pre.scrollTop = pre.scrollHeight;
+  }
+
+  function applyLiveHighlight() {
+    const canvas = el('wf-canvas');
+    if (!canvas) return;
+    canvas.querySelectorAll('.wf-node').forEach(node => {
+      const ag = node.dataset.agent;
+      node.classList.toggle('wf-node-live', Boolean(liveAgentFromSocket && ag === liveAgentFromSocket));
+    });
+  }
+
+  function workflowAttachSocket(socket) {
+    if (!socket || wfSocketAttached) return;
+    wfSocketAttached = true;
+
+    socket.on('init', state => {
+      wfTasks = (state && state.tasks) || [];
+      updateLiveMeta();
+    });
+
+    socket.on('task', t => {
+      if (!t || !t.id) return;
+      const i = wfTasks.findIndex(x => x.id === t.id);
+      if (i >= 0) wfTasks[i] = { ...wfTasks[i], ...t };
+      else wfTasks.unshift(t);
+      updateLiveMeta();
+    });
+
+    socket.on('agentStatus', data => {
+      liveAgentFromSocket = (data && data.name) || null;
+      applyLiveHighlight();
+      const path = currentWorkflowRepoPath();
+      if (data && data.activity && eventMatchesLinkedRepo({ agent: data.name, project: null }, path)) {
+        appendLiveLine('status', '[' + (data.name || 'agent') + '] ' + data.activity);
+      }
+      updateLiveMeta();
+    });
+
+    socket.on('codeEdit', edit => {
+      const path = currentWorkflowRepoPath();
+      if (!eventMatchesLinkedRepo(edit, path)) return;
+      const k = (edit && edit.kind) || 'code';
+      const agent = (edit && edit.agent) || '?';
+      const file = (edit && edit.file) || '';
+      const action = (edit && edit.action) || '';
+      const proj = (edit && edit.project) ? ' @' + edit.project : '';
+      if (k === 'shell' || k === 'terminal') {
+        const chunk = (edit && (edit.stream || edit.code)) || '';
+        appendLiveLine('shell', '[' + agent + '] $ ' + chunk + proj);
+      } else {
+        const snippet = (edit && edit.code) ? String(edit.code).replace(/\s+/g, ' ').trim().slice(0, 220) : '';
+        appendLiveLine('code', '[' + agent + '] ' + action + ' ' + file + proj + (snippet ? ' — ' + snippet : ''));
+      }
+    });
+
+    socket.on('agentCommunication', c => {
+      const path = currentWorkflowRepoPath();
+      if (!eventMatchesLinkedRepo(c, path)) return;
+      const msg = '[' + (c.from || '?') + ' → ' + (c.to || '?') + '] ' + (c.message || '') + (c.type ? ' (' + c.type + ')' : '');
+      appendLiveLine('comm', msg);
+    });
+
+    socket.on('activity', a => {
+      const path = currentWorkflowRepoPath();
+      if (!eventMatchesLinkedRepo({ project: a && a.project, agent: a && a.agent }, path)) return;
+      const msg =
+        (a && a.message) ||
+        (a && a.type === 'task-progress' && a.taskId ? 'Task ' + a.taskId + ': ' + (a.message || '') : '');
+      if (msg) appendLiveLine('act', String(msg));
+    });
+
+    updateLiveMeta();
+    try {
+      socket.emit('requestStatus');
+    } catch (_) {}
+  }
+
+  function updateLiveMeta() {
+    const meta = el('wf-live-meta');
+    if (!meta) return;
+    const path = currentWorkflowRepoPath();
+    const running = path ? hasRunningTaskForRepo(path) : wfTasks.some(t => /running|in_progress/i.test(t.status || ''));
+    if (running) {
+      meta.textContent = path
+        ? 'Run in progress for ' + path + ' — streaming below when agents emit code/shell/events.'
+        : 'A task is running — streaming below.';
+    } else {
+      meta.textContent = path
+        ? 'Idle for ' + path + ' — start a task (dashboard or Telegram) to see live streams here.'
+        : 'Link a GitLab repo or select a workflow project to focus the stream.';
+    }
+  }
+
   function el(id) {
     return document.getElementById(id);
   }
@@ -317,6 +479,7 @@
       canvas.appendChild(div);
     });
     normalizeWorkflowEdges();
+    applyLiveHighlight();
     syncCanvasExtent();
     scheduleRedrawEdges();
   }
@@ -569,6 +732,7 @@
     roundtableHistory = [];
     renderChatLog();
     renderNodes();
+    updateLiveMeta();
   }
 
   function showAiInsights(data) {
@@ -813,7 +977,24 @@
     }
 
     renderChatLog();
+
+    const wfLiveFilter = el('wf-live-filter');
+    if (wfLiveFilter) wfLiveFilter.addEventListener('change', () => updateLiveMeta());
+    const wfLiveClear = el('wf-live-clear');
+    if (wfLiveClear) {
+      wfLiveClear.addEventListener('click', () => {
+        const pre = el('wf-live-stream');
+        if (pre) pre.innerHTML = '';
+      });
+    }
+    const wfPathLive = el('wf-gitlab-path');
+    if (wfPathLive) wfPathLive.addEventListener('input', () => updateLiveMeta());
+
+    if (typeof window !== 'undefined' && window.__NIGENTS_DASHBOARD_SOCKET) {
+      workflowAttachSocket(window.__NIGENTS_DASHBOARD_SOCKET);
+    }
   }
 
+  window.workflowAttachSocket = workflowAttachSocket;
   window.initWorkflowStudio = initWorkflowStudio;
 })();

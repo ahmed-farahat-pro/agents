@@ -2584,7 +2584,7 @@
                     <div class="wf-hero">
                         <div class="wf-hero-kicker">Build · connect · ship</div>
                         <div class="wf-hero-title">Workflow Studio</div>
-                        <p class="wf-hero-sub">Map agents to a GitLab repo. AI analyzes the codebase and drafts a flow; edit, connect, and save.</p>
+                        <p class="wf-hero-sub">Map agents to a GitLab repo. AI analyzes the codebase and drafts a flow; edit, connect, and save. With MySQL, graphs are stored in the database (and seeded per repo on first run); the <strong>Live run</strong> panel streams code, shell, and agent messages while tasks execute.</p>
                     </div>
                     <div class="wf-toolbar wf-toolbar-main">
                         <div class="wf-toolbar-group">
@@ -2616,8 +2616,22 @@
                         <div id="wf-ai-hints" class="wf-chip-row"></div>
                     </div>
                     <p class="wf-help-line">
-                        <strong>Manual:</strong> drag agents from the palette onto the canvas. <strong>Connect:</strong> drag from the <strong>orange output</strong> dot on one card to the <strong>gray input</strong> dot on another. <strong>Duplicate roles:</strong> AI may add when the repo warrants it (see text on the card).
+                        <strong>Manual:</strong> drag agents from the palette onto the canvas. <strong>Connect:</strong> drag from the <strong>orange output</strong> dot on one card to the <strong>gray input</strong> dot on another — edges define handoffs; the orchestrator passes structured context between agents at runtime. <strong>Duplicate roles:</strong> AI may add when the repo warrants it (see text on the card).
                     </p>
+                    <div class="wf-live-panel" id="wf-live-panel">
+                        <div class="wf-live-head">
+                            <div>
+                                <h4 class="wf-live-title">Live run</h4>
+                                <p class="wf-live-desc">When a task is running on the linked repo (from Telegram or this dashboard), code edits, shell lines, agent-to-agent messages, and status stream here. The active agent card glows on the canvas.</p>
+                            </div>
+                            <div class="wf-live-actions">
+                                <label class="wf-live-check"><input type="checkbox" id="wf-live-filter" checked> Focus linked repo</label>
+                                <button type="button" class="btn btn-secondary btn-sm" id="wf-live-clear">Clear stream</button>
+                            </div>
+                        </div>
+                        <div class="wf-live-meta" id="wf-live-meta">Connect to the dashboard — waiting for socket…</div>
+                        <pre class="wf-live-stream" id="wf-live-stream" aria-live="polite"></pre>
+                    </div>
                     <div class="wf-wrap">
                         <div class="wf-palette">
                             <h4>Agents</h4>
@@ -4501,10 +4515,14 @@
 
         // Socket – real-time state from same backend as Telegram bot
         const socket = io();
+        window.__NIGENTS_DASHBOARD_SOCKET = socket;
         socket.on('connect', () => {
             const el = document.getElementById('status-text');
             if (el) el.textContent = 'Connected';
             socket.emit('requestStatus');
+            if (typeof window.workflowAttachSocket === 'function') {
+                window.workflowAttachSocket(socket);
+            }
         });
 
         socket.on('disconnect', () => {

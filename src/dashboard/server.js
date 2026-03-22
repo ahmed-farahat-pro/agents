@@ -170,12 +170,15 @@ let dbChatStorage = null;
 
 let userConfigModule = null;
 let dashboardAccountsMod = null;
+/** @type {import('../database/workflow-projects-mysql')|null} */
+let wfMysql = null;
 if (useDatabase) {
   try {
     dbTaskQueue = require('../database/task-queue-mysql');
     dbChatStorage = require('../database/chat-storage-mysql');
     userConfigModule = require('../database/user-config');
     dashboardAccountsMod = require('../database/dashboard-accounts');
+    wfMysql = require('../database/workflow-projects-mysql');
     logger.info('[Dashboard] Database integration enabled (MySQL)');
   } catch (error) {
     logger.error('[Dashboard] Failed to load database modules:', error.message);
@@ -779,10 +782,10 @@ app.post('/api/agents/:name/status', async (req, res) => {
   res.json({ success: true });
 });
 
-// Code edit streaming endpoint
+// Code edit streaming endpoint (optional: project / taskId / kind for Workflow Studio filtering)
 app.post('/api/code-edit', (req, res) => {
-  const { agent, file, code, action, lineNumbers } = req.body;
-  
+  const { agent, file, code, action, lineNumbers, project, taskId, stream, kind } = req.body;
+
   const editData = {
     id: Date.now().toString(),
     agent,
@@ -790,6 +793,10 @@ app.post('/api/code-edit', (req, res) => {
     code,
     action,
     lineNumbers,
+    project: project != null && String(project).trim() ? String(project).trim() : null,
+    taskId: taskId != null ? String(taskId) : null,
+    stream: stream != null ? String(stream) : null,
+    kind: kind && String(kind).trim() ? String(kind).trim() : 'code',
     timestamp: new Date(),
   };
   
@@ -813,16 +820,18 @@ app.post('/api/code-edit', (req, res) => {
   res.json({ success: true });
 });
 
-// Agent communication endpoint
+// Agent communication endpoint (optional project / taskId for Workflow Studio)
 app.post('/api/agent-communication', (req, res) => {
-  const { from, to, message, type } = req.body;
-  
+  const { from, to, message, type, project, taskId } = req.body;
+
   const commData = {
     id: Date.now().toString(),
     from,
     to,
     message,
     type,
+    project: project != null && String(project).trim() ? String(project).trim() : null,
+    taskId: taskId != null ? String(taskId) : null,
     timestamp: new Date(),
   };
   
@@ -2574,43 +2583,90 @@ function saveWorkflowProjects(data) {
   fs.writeFileSync(WORKFLOW_PROJECTS_FILE, JSON.stringify(data, null, 2), 'utf8');
 }
 
-app.get('/api/workflow-projects', (req, res) => {
+function projectToClient(p) {
+  if (!p) return p;
+  return {
+    id: p.id,
+    name: p.name,
+    gitlabPath: p.gitlabPath || '',
+    gitlabProjectId: p.gitlabProjectId || '',
+    nodes: p.nodes || [],
+    edges: p.edges || [],
+    meta: p.meta,
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+  };
+}
+
+app.get('/api/workflow-projects', async (req, res) => {
   try {
+    if (wfMysql) {
+      const projects = await wfMysql.listProjects();
+      return res.json({ success: true, projects: projects.map(projectToClient), storage: 'mysql' });
+    }
     const data = loadWorkflowProjects();
-    res.json({ success: true, projects: data.projects || [] });
+    res.json({ success: true, projects: data.projects || [], storage: 'file' });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }
 });
 
-app.post('/api/workflow-projects', (req, res) => {
+app.post('/api/workflow-projects', async (req, res) => {
   try {
     const name = (req.body.name || '').trim() || 'Untitled project';
     const gitlabPath = (req.body.gitlabPath || '').trim() || '';
     const gitlabProjectId = req.body.gitlabProjectId != null ? String(req.body.gitlabProjectId) : '';
-    const data = loadWorkflowProjects();
     const id = `wp_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    const row = {
+      id,
+      name,
+      gitlabPath: gitlabPath || null,
+      gitlabProjectId,
+      nodes: Array.isArray(req.body.nodes) ? req.body.nodes : [],
+      edges: Array.isArray(req.body.edges) ? req.body.edges : [],
+    };
+    if (wfMysql) {
+      await wfMysql.ensureTable();
+      const created = await wfMysql.createProject({
+        ...row,
+        meta: { createdFrom: 'dashboard' },
+      });
+      return res.json({ success: true, project: projectToClient(created), storage: 'mysql' });
+    }
+    const data = loadWorkflowProjects();
     const project = {
       id,
       name,
       gitlabPath,
       gitlabProjectId,
-      nodes: Array.isArray(req.body.nodes) ? req.body.nodes : [],
-      edges: Array.isArray(req.body.edges) ? req.body.edges : [],
+      nodes: row.nodes,
+      edges: row.edges,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
     data.projects = data.projects || [];
     data.projects.push(project);
     saveWorkflowProjects(data);
-    res.json({ success: true, project });
+    res.json({ success: true, project, storage: 'file' });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }
 });
 
-app.put('/api/workflow-projects/:id', (req, res) => {
+app.put('/api/workflow-projects/:id', async (req, res) => {
   try {
+    if (wfMysql) {
+      const updated = await wfMysql.updateProject(req.params.id, {
+        name: req.body.name,
+        gitlabPath: req.body.gitlabPath,
+        gitlabProjectId: req.body.gitlabProjectId,
+        nodes: req.body.nodes,
+        edges: req.body.edges,
+        meta: req.body.meta,
+      });
+      if (!updated) return res.status(404).json({ success: false, error: 'Project not found' });
+      return res.json({ success: true, project: projectToClient(updated), storage: 'mysql' });
+    }
     const data = loadWorkflowProjects();
     const idx = (data.projects || []).findIndex(p => p.id === req.params.id);
     if (idx < 0) return res.status(404).json({ success: false, error: 'Project not found' });
@@ -2622,20 +2678,25 @@ app.put('/api/workflow-projects/:id', (req, res) => {
     if (Array.isArray(req.body.edges)) p.edges = req.body.edges;
     p.updatedAt = new Date().toISOString();
     saveWorkflowProjects(data);
-    res.json({ success: true, project: p });
+    res.json({ success: true, project: p, storage: 'file' });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }
 });
 
-app.delete('/api/workflow-projects/:id', (req, res) => {
+app.delete('/api/workflow-projects/:id', async (req, res) => {
   try {
+    if (wfMysql) {
+      const ok = await wfMysql.deleteProject(req.params.id);
+      if (!ok) return res.status(404).json({ success: false, error: 'Not found' });
+      return res.json({ success: true, storage: 'mysql' });
+    }
     const data = loadWorkflowProjects();
     const before = (data.projects || []).length;
     data.projects = (data.projects || []).filter(p => p.id !== req.params.id);
     if (data.projects.length === before) return res.status(404).json({ success: false, error: 'Not found' });
     saveWorkflowProjects(data);
-    res.json({ success: true });
+    res.json({ success: true, storage: 'file' });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }
@@ -3025,6 +3086,16 @@ async function startDashboardServer() {
       await dashboardAccountsMod.ensureTables();
     } catch (e) {
       logger.error('[Dashboard] dashboard_accounts ensureTables:', e.message);
+    }
+  }
+
+  if (useDatabase && wfMysql) {
+    try {
+      await wfMysql.ensureTable();
+      await wfMysql.migrateFromJsonFile(WORKFLOW_PROJECTS_FILE);
+      await wfMysql.syncFromGitlabEnv();
+    } catch (e) {
+      logger.error('[Dashboard] workflow_projects init:', e.message);
     }
   }
 

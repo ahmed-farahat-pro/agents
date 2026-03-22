@@ -29,6 +29,8 @@ When **MySQL** is configured (`DB_HOST`, `DB_USER`, `DB_PASSWORD`), the dashboar
 
 Tables: `dashboard_accounts`, `dashboard_key_requests` (see `src/database/migrations/003_dashboard_accounts.sql`). The dashboard server runs `ensureTables` on startup.
 
+**Workflow Studio persistence:** `workflow_projects` stores saved graphs per GitLab path (`src/database/migrations/004_workflow_projects.sql`). On dashboard boot, the server creates the table, migrates legacy `data/workflow-projects.json` into MySQL if the table was empty, then **seeds a default linear agent flow for each GitLab project** returned by the API (requires `GITLAB_TOKEN` in env). Without MySQL, workflows continue to use the JSON file only.
+
 ---
 
 ## Quick Reference
