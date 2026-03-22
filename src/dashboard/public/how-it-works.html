@@ -1041,14 +1041,99 @@
             z-index: 0;
         }
 
-        .wf-canvas svg {
-            display: block;
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Graph + HTML HUDs (status + code) aligned to SVG viewBox 900×248 */
+        .wf-graph-wrap {
+            position: relative;
             width: 100%;
             min-width: 720px;
-            height: auto;
+            aspect-ratio: 900 / 248;
             max-height: min(420px, 62vh);
-            position: relative;
+            margin: 0 auto;
+        }
+        .wf-graph-wrap .wf-graph-svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
             z-index: 1;
+        }
+        .wf-graph-huds {
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            pointer-events: none;
+        }
+        .wf-hud {
+            position: absolute;
+            transform: translate(-50%, calc(-100% - 4px));
+            pointer-events: auto;
+            width: min(118px, 14vw);
+            padding: 5px 6px 6px;
+            text-align: left;
+            background: rgba(12, 10, 18, 0.92);
+            border: 1px solid rgba(255, 87, 10, 0.35);
+            border-radius: 8px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+            cursor: pointer;
+            font-family: var(--font-mono);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .wf-hud:hover {
+            border-color: rgba(255, 87, 10, 0.6);
+        }
+        .wf-hud:focus-visible {
+            outline: 2px solid var(--accent-orange);
+            outline-offset: 2px;
+        }
+        .wf-hud--hot {
+            border-color: rgba(25, 213, 158, 0.65);
+            box-shadow: 0 0 0 1px rgba(25, 213, 158, 0.25), 0 8px 28px rgba(25, 213, 158, 0.12);
+            animation: wf-hud-pulse 2.2s ease-in-out infinite;
+        }
+        .wf-hud--selected {
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 0 1px rgba(255, 87, 10, 0.4), 0 8px 28px rgba(255, 87, 10, 0.15);
+        }
+        @keyframes wf-hud-pulse {
+            0%, 100% { box-shadow: 0 0 0 1px rgba(25, 213, 158, 0.2), 0 6px 20px rgba(0, 0, 0, 0.45); }
+            50% { box-shadow: 0 0 0 2px rgba(25, 213, 158, 0.45), 0 10px 32px rgba(25, 213, 158, 0.15); }
+        }
+        .wf-hud-status {
+            font-size: 8px;
+            font-weight: 600;
+            color: #a5b4fc;
+            line-height: 1.3;
+            margin-bottom: 4px;
+            word-break: break-word;
+        }
+        .wf-hud-code {
+            font-size: 7px;
+            line-height: 1.35;
+            color: #e2e8f0;
+            opacity: 0.92;
+            word-break: break-word;
+            max-height: 3.2em;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+        .wf-hud-code.wf-hud-code--shell {
+            color: #6ee7b7;
         }
 
         .wf-node-box {
@@ -1290,6 +1375,13 @@
                 min-width: 560px;
                 max-height: min(380px, 55vh);
             }
+
+            .wf-hud {
+                width: min(72px, 19vw);
+                padding: 4px 4px 5px;
+            }
+            .wf-hud-status { font-size: 7px; }
+            .wf-hud-code { font-size: 6px; -webkit-line-clamp: 2; }
 
             .tech-hero-inner,
             .hero {
@@ -1668,8 +1760,10 @@
                     <strong>AI draft</strong> can propose a layout from your repo tree; the same roles power <strong>meetings</strong> and production runs.
                 </p>
             </div>
-            <div class="wf-canvas" role="img" aria-label="Animated workflow graph: task to orchestrator, split to planner and frontend, merge to backend, qa, reviewer, merge request">
-                <svg viewBox="0 0 900 248" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true">
+            <div class="wf-canvas" role="presentation">
+                <p class="wf-graph-a11y visually-hidden">Workflow graph: Task to Orchestrator, split to Planner and Frontend, merge to Backend, QA, Reviewer, GitLab merge request. Colored boxes above nodes show mock agentStatus and streamed code or shell.</p>
+                <div class="wf-graph-wrap">
+                <svg class="wf-graph-svg" viewBox="0 0 900 248" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true">
                     <defs>
                         <linearGradient id="wfGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" style="stop-color:#ff570a"/>
@@ -1746,9 +1840,44 @@
                         </animateMotion>
                     </circle>
                 </svg>
+                <div class="wf-graph-huds" id="wf-graph-huds" role="group" aria-label="Live status and stream preview per node">
+                    <button type="button" class="wf-hud" data-wf-map="task" data-wf-idx="0" style="left: 6.89%; top: 30.65%;" title="Task — click for streams">
+                        <div class="wf-hud-status" data-wf-hud-status>Task queued from Telegram</div>
+                        <div class="wf-hud-code" data-wf-hud-code>/task add: “auth middleware”</div>
+                    </button>
+                    <button type="button" class="wf-hud" data-wf-map="orchestrator" data-wf-idx="1" style="left: 20.78%; top: 30.65%;" title="Orchestrator">
+                        <div class="wf-hud-status" data-wf-hud-status>Orchestrator: routing…</div>
+                        <div class="wf-hud-code" data-wf-hud-code>bind plan.branch → nigents/task-…</div>
+                    </button>
+                    <button type="button" class="wf-hud" data-wf-map="planner" data-wf-idx="2" style="left: 38.67%; top: 11.29%;" title="Planner">
+                        <div class="wf-hud-status" data-wf-hud-status>Planner: drafting steps…</div>
+                        <div class="wf-hud-code" data-wf-hud-code>steps.json: backend + FE tasks</div>
+                    </button>
+                    <button type="button" class="wf-hud" data-wf-map="frontend-dev" data-wf-idx="3" style="left: 38.67%; top: 55.65%;" title="Frontend">
+                        <div class="wf-hud-status" data-wf-hud-status>frontend-dev: UI push…</div>
+                        <div class="wf-hud-code wf-hud-code--shell" data-wf-hud-code>$ git push origin nigents/task-…</div>
+                    </button>
+                    <button type="button" class="wf-hud wf-hud--hot" data-wf-map="backend-dev" data-wf-idx="4" style="left: 56.56%; top: 33.87%;" title="Backend">
+                        <div class="wf-hud-status" data-wf-hud-status>backend-dev: writing API…</div>
+                        <div class="wf-hud-code" data-wf-hud-code>export async function list() { … }</div>
+                    </button>
+                    <button type="button" class="wf-hud" data-wf-map="qa-tester" data-wf-idx="5" style="left: 56%; top: 67.74%;" title="QA">
+                        <div class="wf-hud-status" data-wf-hud-status>qa-tester: tests…</div>
+                        <div class="wf-hud-code wf-hud-code--shell" data-wf-hud-code>$ npm test -- --runInBand</div>
+                    </button>
+                    <button type="button" class="wf-hud" data-wf-map="code-reviewer" data-wf-idx="6" style="left: 72.67%; top: 33.87%;" title="Reviewer">
+                        <div class="wf-hud-status" data-wf-hud-status>Reviewer: diff main…task</div>
+                        <div class="wf-hud-code" data-wf-hud-code>comment: add pagination</div>
+                    </button>
+                    <button type="button" class="wf-hud" data-wf-map="reporter" data-wf-idx="7" style="left: 88.89%; top: 33.87%;" title="GitLab MR">
+                        <div class="wf-hud-status" data-wf-hud-status>Reporter: MR link…</div>
+                        <div class="wf-hud-code wf-hud-code--shell" data-wf-hud-code>MR !142 opened → Telegram</div>
+                    </button>
+                </div>
+                </div>
             </div>
             <p class="wf-caption">
-                In <strong>Workflow Studio</strong>, one node can feed <strong>many</strong> others: fork after Orchestrator, join at Backend, add QA and Reviewer on their own edges — same as wiring outputs to inputs on the real canvas. Link a <strong>GitLab project</strong> so each graph stays with the repo. Optional: <strong>AI draft</strong>, <strong>team meeting</strong>, <strong>voice room</strong>.
+                The <strong>boxes above each node</strong> (on the graph) illustrate live <strong>agentStatus</strong> plus a one-line <strong>codeEdit</strong> or <strong>shell</strong> stream — same idea as the dashboard Workflow Studio. <strong>Click</strong> a box to open the full streams below. In <strong>Workflow Studio</strong>, one node can feed <strong>many</strong> others: fork after Orchestrator, join at Backend, add QA and Reviewer on their own edges. Link a <strong>GitLab project</strong> so each graph stays with the repo. Optional: <strong>AI draft</strong>, <strong>team meeting</strong>, <strong>voice room</strong>.
             </p>
             <ul class="wf-bullets">
                 <li><strong>Branches &amp; merges</strong> — Parallel paths (e.g. Planner vs Frontend) reconnect where you draw the edge; data follows those edges at runtime.</li>
@@ -1769,7 +1898,7 @@
 
             <div class="hiw-live-interactive">
                 <p class="hiw-live-hint">
-                    <strong>Interactive demo:</strong> each card is an agent on the workflow. The <strong>small box above</strong> mirrors <kbd>agentStatus.activity</kbd> (what that node is doing right now). <strong>Click</strong> an agent to see example <strong>streamed code</strong> and <strong>streamed shell</strong> for that role — same channels as the real dashboard.
+                    <strong>Same data as the graph above:</strong> the <a href="#workflow-studio">Workflow Studio</a> diagram has live-style <strong>HUDs on each connected node</strong>. Here you can use the row below or keep using those boxes — <strong>click</strong> either place to load <strong>streamed code</strong> and <strong>streamed shell</strong> for that role (<kbd>codeEdit</kbd> / <kbd>agentStatus</kbd>).
                 </p>
                 <div class="hiw-live-row" id="hiw-live-board" role="group" aria-label="Agent workflow with live status chips">
                     <div class="hiw-live-node" data-agent="orchestrator">
@@ -2274,8 +2403,13 @@
                 });
             }
 
-            /* Live & data plane — agent chips + click → stream detail */
+            /* Live & data plane — agent chips + click → stream detail (+ graph HUDs #workflow-studio) */
             var HIW_AGENTS = {
+                task: {
+                    chip: 'Task: queued from Telegram',
+                    code: '[task] user message → orchestrator\n  "Add auth middleware to API"\n  taskId bound to plan.branch',
+                    shell: '[telegram] /task → bot forwards to dashboard Socket.IO'
+                },
                 orchestrator: {
                     chip: 'Orchestrator: splitting task…',
                     code: '[orchestrator] status: routing implementation\n  taskId: task-202503171430\n  next: planner → backend\n— same payload as agentStatus + task binding',
@@ -2285,6 +2419,11 @@
                     chip: 'Planner: drafting steps…',
                     code: '[planner] write plan/steps.json\n  { "branch": "nigents/task-…", "steps": [ … ] }\n— streamed as codeEdit chunks',
                     shell: '[planner] $ ls -la plan/\nsteps.json  schema.md'
+                },
+                'frontend-dev': {
+                    chip: 'frontend-dev: UI + push',
+                    code: '[frontend-dev] write src/components/Login.tsx\n  export function Login() { … }\n— codeEdit to dashboard',
+                    shell: '[frontend-dev] $ git push origin nigents/task-…\nCounting objects: 12, done.'
                 },
                 'backend-dev': {
                     chip: 'backend-dev: write src/api/users.ts',
@@ -2300,6 +2439,11 @@
                     chip: 'Reviewer: diff main…task',
                     code: '[code-reviewer] comment on src/api/users.ts\n  - consider pagination on list()\n— review notes as streamed text',
                     shell: '[code-reviewer] $ git diff main...task --stat\n src/api/users.ts | 14 +++++----\n 1 file changed'
+                },
+                reporter: {
+                    chip: 'Reporter: MR link to user',
+                    code: '[reporter] MR !142 ready for review\n  url: https://gitlab.com/…/merge_requests/142',
+                    shell: '[reporter] Telegram: "✅ MR opened: …"\n— same channel as task start'
                 }
             };
             var HIW_ORDER = ['orchestrator', 'planner', 'backend-dev', 'qa-tester', 'code-reviewer'];
@@ -2310,6 +2454,73 @@
                 'qa-tester': ['qa-tester: npm test…', 'qa-tester: fixing flake…', 'qa-tester: coverage ok…'],
                 'code-reviewer': ['Reviewer: diff main…task', 'Reviewer: security scan…', 'Reviewer: approve MR…']
             };
+
+            /** Mini lines above nodes on the Workflow Studio SVG (#workflow-studio) */
+            var HIW_GRAPH_ORDER = ['task', 'orchestrator', 'planner', 'frontend-dev', 'backend-dev', 'qa-tester', 'code-reviewer', 'reporter'];
+            var WF_HUD_MINI = {
+                task: [
+                    { s: 'Task queued from Telegram', c: '/task add: “auth middleware”' },
+                    { s: 'Task: repo bound', c: 'plan.project → acme/web-app' }
+                ],
+                orchestrator: [
+                    { s: 'Orchestrator: routing…', c: 'bind plan.branch → task branch' },
+                    { s: 'Orchestrator: delegating…', c: 'next: planner + parallel FE' }
+                ],
+                planner: [
+                    { s: 'Planner: drafting steps…', c: 'steps.json: BE + FE tasks' },
+                    { s: 'Planner: MCP tree scan', c: 'read: package.json, src/**' }
+                ],
+                'frontend-dev': [
+                    { s: 'frontend-dev: UI push…', c: 'git push origin nigents/task-…', shell: true },
+                    { s: 'frontend-dev: components', c: 'export function Login() { … }' }
+                ],
+                'backend-dev': [
+                    { s: 'backend-dev: writing API…', c: 'export async function list() { … }' },
+                    { s: 'backend-dev: pushing…', c: 'commit: feat(api): users list' }
+                ],
+                'qa-tester': [
+                    { s: 'qa-tester: tests…', c: '$ npm test -- --runInBand', shell: true },
+                    { s: 'qa-tester: coverage', c: 'PASS src/auth.spec.ts' }
+                ],
+                'code-reviewer': [
+                    { s: 'Reviewer: diff main…task', c: 'comment: add pagination' },
+                    { s: 'Reviewer: security', c: 'no secrets in diff ✓' }
+                ],
+                reporter: [
+                    { s: 'Reporter: MR link…', c: 'MR !142 → Telegram', shell: true },
+                    { s: 'Reporter: notify user', c: '✅ Ready for review' }
+                ]
+            };
+            var hiwGraphTick = 3;
+
+            function hiwSyncGraphHuds(agentKey) {
+                document.querySelectorAll('.wf-hud').forEach(function (h) {
+                    var on = h.getAttribute('data-wf-map') === agentKey;
+                    h.classList.toggle('wf-hud--selected', on);
+                    h.setAttribute('aria-pressed', on ? 'true' : 'false');
+                });
+            }
+
+            function hiwGraphHudRotate() {
+                hiwGraphTick++;
+                var hotIdx = hiwGraphTick % HIW_GRAPH_ORDER.length;
+                var hotKey = HIW_GRAPH_ORDER[hotIdx];
+                HIW_GRAPH_ORDER.forEach(function (key) {
+                    var hud = document.querySelector('.wf-hud[data-wf-map="' + key + '"]');
+                    if (!hud) return;
+                    var lines = WF_HUD_MINI[key];
+                    if (!lines || !lines.length) return;
+                    var hot = key === hotKey;
+                    hud.classList.toggle('wf-hud--hot', hot);
+                    var st = hud.querySelector('[data-wf-hud-status]');
+                    var ce = hud.querySelector('[data-wf-hud-code]');
+                    if (!st || !ce) return;
+                    var li = hot ? lines[hiwGraphTick % lines.length] : lines[0];
+                    st.textContent = li.s;
+                    ce.textContent = li.c;
+                    ce.classList.toggle('wf-hud-code--shell', !!li.shell);
+                });
+            }
 
             function hiwSetDetail(agentKey) {
                 var d = HIW_AGENTS[agentKey];
@@ -2328,6 +2539,7 @@
                     var on = b.getAttribute('data-hiw-select') === agentKey;
                     b.setAttribute('aria-pressed', on ? 'true' : 'false');
                 });
+                hiwSyncGraphHuds(agentKey);
             }
 
             document.querySelectorAll('[data-hiw-select]').forEach(function (btn) {
@@ -2336,7 +2548,17 @@
                 });
             });
 
+            document.querySelectorAll('.wf-hud[data-wf-map]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var k = btn.getAttribute('data-wf-map');
+                    hiwSetDetail(k);
+                    var wrap = document.getElementById('hiw-live-detail-wrap');
+                    if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                });
+            });
+
             hiwSetDetail('backend-dev');
+            setInterval(hiwGraphHudRotate, 4800);
 
             var hiwHotIdx = 2;
             var hiwChipRot = 0;
