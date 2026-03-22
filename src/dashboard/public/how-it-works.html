@@ -1378,9 +1378,141 @@
             50% { opacity: 0; }
         }
         .hiw-live-foot {
-            max-width: 820px;
+            max-width: 1100px;
             margin: 0 auto;
             font-size: 14px;
+        }
+
+        /* Interactive workflow strip: chip above each agent (#workflow-live) */
+        .hiw-live-interactive {
+            max-width: 1100px;
+            margin: 0 auto 28px;
+        }
+        .hiw-live-hint {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: 0 0 18px;
+            line-height: 1.55;
+        }
+        .hiw-live-hint kbd {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
+        }
+        .hiw-live-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 6px 4px;
+            padding: 20px 12px 24px;
+            background:
+                radial-gradient(ellipse 80% 120% at 50% 100%, rgba(255, 87, 10, 0.08), transparent 55%),
+                linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-card) 100%);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+        }
+        .hiw-live-connector {
+            width: clamp(12px, 3vw, 28px);
+            height: 3px;
+            align-self: flex-end;
+            margin-bottom: 22px;
+            background: linear-gradient(90deg, rgba(255, 87, 10, 0.35), rgba(168, 85, 247, 0.35));
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+        .hiw-live-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            flex: 0 1 auto;
+            min-width: 88px;
+            max-width: 140px;
+        }
+        .hiw-live-chip {
+            width: 100%;
+            max-width: 132px;
+            padding: 6px 8px;
+            font-family: var(--font-mono);
+            font-size: 9px;
+            font-weight: 500;
+            line-height: 1.35;
+            color: #e2e8f0;
+            text-align: center;
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+            min-height: 2.7em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .hiw-live-node--hot .hiw-live-chip {
+            border-color: rgba(255, 87, 10, 0.65);
+            box-shadow: 0 0 0 1px rgba(255, 87, 10, 0.25), 0 6px 20px rgba(255, 87, 10, 0.12);
+            animation: hiw-chip-pulse 2.2s ease-in-out infinite;
+        }
+        @keyframes hiw-chip-pulse {
+            0%, 100% { box-shadow: 0 0 0 1px rgba(255, 87, 10, 0.2), 0 4px 14px rgba(0, 0, 0, 0.35); }
+            50% { box-shadow: 0 0 0 2px rgba(255, 87, 10, 0.45), 0 8px 24px rgba(255, 87, 10, 0.18); }
+        }
+        .hiw-live-card {
+            width: 100%;
+            max-width: 132px;
+            padding: 10px 8px;
+            font-family: var(--font-sans);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-light);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .hiw-live-card:hover {
+            border-color: rgba(255, 87, 10, 0.5);
+            transform: translateY(-2px);
+        }
+        .hiw-live-card:focus-visible {
+            outline: 2px solid var(--accent-orange);
+            outline-offset: 2px;
+        }
+        .hiw-live-node--selected .hiw-live-card {
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 0 1px rgba(255, 87, 10, 0.35), 0 8px 28px rgba(255, 87, 10, 0.15);
+        }
+        .hiw-live-node[data-agent="orchestrator"] .hiw-live-card { border-left: 3px solid #a855f7; }
+        .hiw-live-node[data-agent="planner"] .hiw-live-card { border-left: 3px solid #6366f1; }
+        .hiw-live-node[data-agent="backend-dev"] .hiw-live-card { border-left: 3px solid #22c55e; }
+        .hiw-live-node[data-agent="qa-tester"] .hiw-live-card { border-left: 3px solid #eab308; }
+        .hiw-live-node[data-agent="code-reviewer"] .hiw-live-card { border-left: 3px solid #f97316; }
+
+        .hiw-live-detail-wrap {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        @media (max-width: 900px) {
+            .hiw-live-detail-wrap { grid-template-columns: 1fr; }
+        }
+        .hiw-live-detail-intro {
+            grid-column: 1 / -1;
+            font-size: 12px;
+            color: var(--accent-green);
+            margin: 0 0 4px;
+            font-weight: 600;
         }
     </style>
 </head>
@@ -1634,9 +1766,43 @@
                     The dashboard receives the same real-time events as the <strong>Live Monitor</strong>: <code>codeEdit</code> (optional <code>project</code> / <code>taskId</code> / <code>kind: shell</code>), <code>agentCommunication</code> (handoffs between agents), and <code>agentStatus</code> (which node is “thinking”). Wire edges on the canvas to express <strong>who passes output to whom</strong>; the orchestration layer uses that topology alongside the task plan.
                 </p>
             </div>
-            <div class="hiw-live-demo-grid">
+
+            <div class="hiw-live-interactive">
+                <p class="hiw-live-hint">
+                    <strong>Interactive demo:</strong> each card is an agent on the workflow. The <strong>small box above</strong> mirrors <kbd>agentStatus.activity</kbd> (what that node is doing right now). <strong>Click</strong> an agent to see example <strong>streamed code</strong> and <strong>streamed shell</strong> for that role — same channels as the real dashboard.
+                </p>
+                <div class="hiw-live-row" id="hiw-live-board" role="group" aria-label="Agent workflow with live status chips">
+                    <div class="hiw-live-node" data-agent="orchestrator">
+                        <div class="hiw-live-chip" data-hiw-chip>Orchestrator: splitting task…</div>
+                        <button type="button" class="hiw-live-card" data-hiw-select="orchestrator">Orchestrator</button>
+                    </div>
+                    <span class="hiw-live-connector" aria-hidden="true"></span>
+                    <div class="hiw-live-node" data-agent="planner">
+                        <div class="hiw-live-chip" data-hiw-chip>Planner: drafting steps…</div>
+                        <button type="button" class="hiw-live-card" data-hiw-select="planner">Planner</button>
+                    </div>
+                    <span class="hiw-live-connector" aria-hidden="true"></span>
+                    <div class="hiw-live-node hiw-live-node--hot" data-agent="backend-dev">
+                        <div class="hiw-live-chip" data-hiw-chip>backend-dev: write src/api/users.ts</div>
+                        <button type="button" class="hiw-live-card" data-hiw-select="backend-dev">Backend dev</button>
+                    </div>
+                    <span class="hiw-live-connector" aria-hidden="true"></span>
+                    <div class="hiw-live-node" data-agent="qa-tester">
+                        <div class="hiw-live-chip" data-hiw-chip>qa-tester: npm test…</div>
+                        <button type="button" class="hiw-live-card" data-hiw-select="qa-tester">QA tester</button>
+                    </div>
+                    <span class="hiw-live-connector" aria-hidden="true"></span>
+                    <div class="hiw-live-node" data-agent="code-reviewer">
+                        <div class="hiw-live-chip" data-hiw-chip>Reviewer: diff main…task</div>
+                        <button type="button" class="hiw-live-card" data-hiw-select="code-reviewer">Code reviewer</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hiw-live-detail-wrap" id="hiw-live-detail-wrap" aria-live="polite">
+                <p class="hiw-live-detail-intro" id="hiw-live-detail-intro">Selected: <strong id="hiw-detail-name">backend-dev</strong> — streams below mirror Socket.IO events for that agent.</p>
                 <div class="hiw-live-window">
-                    <div class="hiw-live-label">Streamed code <span class="hiw-tag">Socket.IO</span></div>
+                    <div class="hiw-live-label">Streamed code <span class="hiw-tag">codeEdit</span></div>
                     <pre class="hiw-live-pre hiw-live-pre-code" id="hiw-demo-code"><span class="hiw-cursor-line">[backend-dev] write src/api/users.ts</span>
 <span class="hiw-stream-line">  export async function list() { ... }</span>
 <span class="hiw-stream-line hiw-dim">— chunk mirrored to dashboard as agents type</span></pre>
@@ -1648,6 +1814,7 @@
 <span class="hiw-stream-line hiw-dim">Tests: 4 passed</span></pre>
                 </div>
             </div>
+
             <p class="section-desc hiw-live-foot">
                 Link the workflow to <strong>group/repo</strong> and enable <strong>Focus linked repo</strong> to filter noise. Agents can include <code>project</code> on API posts so streams line up with the GitLab project you care about — the same task you started from Telegram or the task queue.
             </p>
@@ -2106,6 +2273,91 @@
                     if (e.key === 'Escape') setNavOpen(false);
                 });
             }
+
+            /* Live & data plane — agent chips + click → stream detail */
+            var HIW_AGENTS = {
+                orchestrator: {
+                    chip: 'Orchestrator: splitting task…',
+                    code: '[orchestrator] status: routing implementation\n  taskId: task-202503171430\n  next: planner → backend\n— same payload as agentStatus + task binding',
+                    shell: '[orchestrator] $ curl -s $DASHBOARD/api/tasks/task-202503171430 | jq .status\n"running"'
+                },
+                planner: {
+                    chip: 'Planner: drafting steps…',
+                    code: '[planner] write plan/steps.json\n  { "branch": "nigents/task-…", "steps": [ … ] }\n— streamed as codeEdit chunks',
+                    shell: '[planner] $ ls -la plan/\nsteps.json  schema.md'
+                },
+                'backend-dev': {
+                    chip: 'backend-dev: write src/api/users.ts',
+                    code: '[backend-dev] write src/api/users.ts\n  export async function list() { ... }\n  export async function get(id: string) { ... }\n— chunk mirrored to dashboard as agents type',
+                    shell: '[backend-dev] $ npm run build 2>&1 | tail -n 5\n✓ compiled successfully'
+                },
+                'qa-tester': {
+                    chip: 'qa-tester: npm test…',
+                    code: '[qa-tester] read tests/auth.spec.ts\n  expect(user).toBeDefined();\n— file context in codeEdit',
+                    shell: '[qa-tester] $ npm test -- --runInBand\n PASS  src/auth.spec.ts\nTests: 4 passed'
+                },
+                'code-reviewer': {
+                    chip: 'Reviewer: diff main…task',
+                    code: '[code-reviewer] comment on src/api/users.ts\n  - consider pagination on list()\n— review notes as streamed text',
+                    shell: '[code-reviewer] $ git diff main...task --stat\n src/api/users.ts | 14 +++++----\n 1 file changed'
+                }
+            };
+            var HIW_ORDER = ['orchestrator', 'planner', 'backend-dev', 'qa-tester', 'code-reviewer'];
+            var HIW_CHIP_TICK = {
+                orchestrator: ['Orchestrator: splitting task…', 'Orchestrator: delegating to planner…', 'Orchestrator: watching branch…'],
+                planner: ['Planner: drafting steps…', 'Planner: resolving deps…', 'Planner: handoff → backend…'],
+                'backend-dev': ['backend-dev: write src/api/users.ts', 'backend-dev: pushing commits…', 'backend-dev: openapi sync…'],
+                'qa-tester': ['qa-tester: npm test…', 'qa-tester: fixing flake…', 'qa-tester: coverage ok…'],
+                'code-reviewer': ['Reviewer: diff main…task', 'Reviewer: security scan…', 'Reviewer: approve MR…']
+            };
+
+            function hiwSetDetail(agentKey) {
+                var d = HIW_AGENTS[agentKey];
+                if (!d) return;
+                var codeEl = document.getElementById('hiw-demo-code');
+                var shellEl = document.getElementById('hiw-demo-shell');
+                var nameEl = document.getElementById('hiw-detail-name');
+                if (nameEl) nameEl.textContent = agentKey;
+                if (codeEl) codeEl.textContent = d.code;
+                if (shellEl) shellEl.textContent = d.shell;
+                document.querySelectorAll('.hiw-live-node').forEach(function (n) {
+                    var on = n.getAttribute('data-agent') === agentKey;
+                    n.classList.toggle('hiw-live-node--selected', on);
+                });
+                document.querySelectorAll('[data-hiw-select]').forEach(function (b) {
+                    var on = b.getAttribute('data-hiw-select') === agentKey;
+                    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+                });
+            }
+
+            document.querySelectorAll('[data-hiw-select]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    hiwSetDetail(btn.getAttribute('data-hiw-select'));
+                });
+            });
+
+            hiwSetDetail('backend-dev');
+
+            var hiwHotIdx = 2;
+            var hiwChipRot = 0;
+            setInterval(function () {
+                hiwHotIdx = (hiwHotIdx + 1) % HIW_ORDER.length;
+                hiwChipRot++;
+                HIW_ORDER.forEach(function (aid) {
+                    var node = document.querySelector('.hiw-live-node[data-agent="' + aid + '"]');
+                    if (!node) return;
+                    var hot = aid === HIW_ORDER[hiwHotIdx];
+                    node.classList.toggle('hiw-live-node--hot', hot);
+                    var chip = node.querySelector('[data-hiw-chip]');
+                    if (!chip) return;
+                    var lines = HIW_CHIP_TICK[aid];
+                    if (hot && lines && lines.length) {
+                        chip.textContent = lines[hiwChipRot % lines.length];
+                    } else {
+                        chip.textContent = HIW_AGENTS[aid].chip;
+                    }
+                });
+            }, 4800);
         })();
     </script>
 </body>
