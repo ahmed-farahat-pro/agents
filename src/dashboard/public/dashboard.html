@@ -2622,7 +2622,7 @@
                         <div class="wf-live-head">
                             <div>
                                 <h4 class="wf-live-title">Live run</h4>
-                                <p class="wf-live-desc">When a task is running on the linked repo (from Telegram or this dashboard), code edits, shell lines, agent-to-agent messages, and status stream here. The active agent card glows on the canvas.</p>
+                                <p class="wf-live-desc">While a task runs, the <strong>active agent</strong> shows a <strong>pulsing LED</strong> on its card — click that card to read the live code/shell stream for that role. The combined log below is optional (collapsed by default).</p>
                             </div>
                             <div class="wf-live-actions">
                                 <label class="wf-live-check"><input type="checkbox" id="wf-live-filter" checked> Focus linked repo</label>
@@ -2630,7 +2630,10 @@
                             </div>
                         </div>
                         <div class="wf-live-meta" id="wf-live-meta">Connect to the dashboard — waiting for socket…</div>
-                        <pre class="wf-live-stream" id="wf-live-stream" aria-live="polite"></pre>
+                        <details class="wf-live-stream-details" id="wf-live-stream-details">
+                            <summary class="wf-live-stream-summary">Combined stream <span class="wf-live-stream-summary-hint">(all agents — expand)</span></summary>
+                            <pre class="wf-live-stream" id="wf-live-stream" aria-live="polite"></pre>
+                        </details>
                     </div>
                     <div class="wf-wrap">
                         <div class="wf-palette">
@@ -2647,7 +2650,7 @@
                                     <span id="wf-agent-popover-title" class="wf-agent-popover-title">Agent</span>
                                     <button type="button" class="wf-agent-popover-close" id="wf-agent-popover-close" aria-label="Fermer">×</button>
                                 </div>
-                                <p class="wf-agent-popover-hint" id="wf-agent-popover-hint">Carte pulsante uniquement : flux temps réel (code / shell / statut), pas une démo figée.</p>
+                                <p class="wf-agent-popover-hint" id="wf-agent-popover-hint">Le voyant sur la carte indique l’agent actif ; ce panneau affiche le flux détaillé (code / shell / statut) au clic.</p>
                                 <div id="wf-agent-popover-body" class="wf-agent-popover-body"></div>
                             </div>
                         </div>

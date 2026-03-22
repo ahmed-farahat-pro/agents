@@ -363,6 +363,44 @@
 }
 .wf-node .wf-remove:hover { color: var(--error); }
 
+/* Activity LED — visible only when this agent is live (socket) */
+.wf-node-led {
+  display: none;
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  z-index: 4;
+  pointer-events: none;
+  background: radial-gradient(circle at 30% 30%, #fff 0%, #ff9142 35%, #ff570a 100%);
+  box-shadow:
+    0 0 0 2px rgba(0, 0, 0, 0.45),
+    0 0 12px rgba(255, 87, 10, 0.85);
+  animation: wf-node-led-ping 1.1s ease-in-out infinite;
+}
+.wf-node.wf-node-live .wf-node-led {
+  display: block;
+}
+@keyframes wf-node-led-ping {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow:
+      0 0 0 2px rgba(0, 0, 0, 0.45),
+      0 0 10px rgba(255, 87, 10, 0.7);
+  }
+  50% {
+    opacity: 0.92;
+    transform: scale(1.12);
+    box-shadow:
+      0 0 0 2px rgba(0, 0, 0, 0.35),
+      0 0 22px rgba(255, 140, 60, 0.95);
+  }
+}
+
 .wf-panel {
   background: linear-gradient(180deg, var(--bg-card) 0%, rgba(20, 17, 22, 0.98) 100%);
   border: 1px solid var(--border);
@@ -664,6 +702,42 @@
   margin-bottom: 10px;
   line-height: 1.45;
 }
+.wf-live-stream-details {
+  margin-top: 4px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.wf-live-stream-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  user-select: none;
+}
+.wf-live-stream-summary::-webkit-details-marker {
+  display: none;
+}
+.wf-live-stream-summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 8px;
+  color: var(--accent);
+  transition: transform 0.15s ease;
+}
+.wf-live-stream-details[open] .wf-live-stream-summary::before {
+  transform: rotate(90deg);
+}
+.wf-live-stream-summary-hint {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.wf-live-stream-details .wf-live-stream {
+  margin: 0 8px 10px;
+}
 .wf-live-stream {
   margin: 0;
   min-height: 120px;
@@ -693,13 +767,22 @@
 
 .wf-node.wf-node-live {
   box-shadow:
-    0 0 0 2px rgba(255, 87, 10, 0.85),
-    0 0 28px rgba(255, 87, 10, 0.35);
-  animation: wf-node-pulse 1.6s ease-in-out infinite;
+    0 0 0 1px rgba(255, 87, 10, 0.55),
+    0 8px 24px rgba(0, 0, 0, 0.4);
+  animation: wf-node-pulse-soft 2.4s ease-in-out infinite;
 }
-@keyframes wf-node-pulse {
-  0%, 100% { box-shadow: 0 0 0 2px rgba(255, 87, 10, 0.85), 0 0 22px rgba(255, 87, 10, 0.3); }
-  50% { box-shadow: 0 0 0 2px rgba(255, 140, 60, 0.95), 0 0 36px rgba(255, 87, 10, 0.5); }
+@keyframes wf-node-pulse-soft {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(255, 87, 10, 0.45),
+      0 8px 22px rgba(0, 0, 0, 0.38);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(255, 87, 10, 0.75),
+      0 10px 28px rgba(255, 87, 10, 0.12);
+  }
 }
 
 /* Live agent popover (click pulsating card — real-time stream) */

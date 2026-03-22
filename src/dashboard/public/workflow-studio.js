@@ -583,6 +583,7 @@
         '<button type="button" class="wf-port wf-port-in" aria-label="Input — drop connection here" title="Input"></button>' +
         '<button type="button" class="wf-port wf-port-out" aria-label="Output — drag to connect" title="Drag to another node"></button>' +
         '<button type="button" class="wf-remove" title="Remove">&times;</button>' +
+        '<span class="wf-node-led" aria-hidden="true" title="Agent active"></span>' +
         '<div class="wf-node-body">' +
         '<div class="wf-node-type">' +
         agent.label +
