@@ -2638,9 +2638,17 @@
                             <div id="wf-palette-items"></div>
                             <p class="wf-palette-hint">Outputs → inputs: drag a wire between the side dots.</p>
                         </div>
-                        <div class="wf-canvas-wrap">
+                        <div class="wf-canvas-wrap" id="wf-canvas-wrap">
                             <div class="wf-canvas" id="wf-canvas">
                                 <svg class="wf-svg" id="wf-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+                            </div>
+                            <div id="wf-agent-popover" class="wf-agent-popover" hidden role="dialog" aria-modal="true" aria-labelledby="wf-agent-popover-title">
+                                <div class="wf-agent-popover-head">
+                                    <span id="wf-agent-popover-title" class="wf-agent-popover-title">Agent</span>
+                                    <button type="button" class="wf-agent-popover-close" id="wf-agent-popover-close" aria-label="Fermer">×</button>
+                                </div>
+                                <p class="wf-agent-popover-hint" id="wf-agent-popover-hint">Carte pulsante uniquement : flux temps réel (code / shell / statut), pas une démo figée.</p>
+                                <div id="wf-agent-popover-body" class="wf-agent-popover-body"></div>
                             </div>
                         </div>
                         <div class="wf-panel wf-panel-meeting">

@@ -32,6 +32,14 @@
   /** @type {string|null} */
   let liveAgentFromSocket = null;
   const WF_STREAM_MAX = 120;
+  /** Per-agent entries for the click popover (full streamed payloads, not the truncated global line). */
+  const wfStreamsByAgent = {};
+  const WF_AGENT_STREAM_MAX = 100;
+  let livePopoverOpen = false;
+  /** @type {string|null} */
+  let livePopoverAgent = null;
+  /** @type {HTMLElement|null} */
+  let livePopoverNodeEl = null;
 
   function normalizeRepoPath(p) {
     if (p == null) return '';
@@ -97,6 +105,106 @@
     pre.scrollTop = pre.scrollHeight;
   }
 
+  function feedAgentStream(agentKey, payload) {
+    if (!agentKey || agentKey === '?') return;
+    if (!wfStreamsByAgent[agentKey]) wfStreamsByAgent[agentKey] = [];
+    wfStreamsByAgent[agentKey].push({ ...payload, t: Date.now() });
+    while (wfStreamsByAgent[agentKey].length > WF_AGENT_STREAM_MAX) wfStreamsByAgent[agentKey].shift();
+    if (livePopoverOpen && livePopoverAgent === agentKey) {
+      renderAgentPopoverBody();
+    }
+  }
+
+  function closeAgentPopover() {
+    livePopoverOpen = false;
+    livePopoverAgent = null;
+    livePopoverNodeEl = null;
+    const pop = el('wf-agent-popover');
+    if (pop) pop.hidden = true;
+  }
+
+  function renderAgentPopoverBody() {
+    const body = el('wf-agent-popover-body');
+    if (!body || !livePopoverAgent) return;
+    const rows = wfStreamsByAgent[livePopoverAgent] || [];
+    body.textContent = '';
+    rows.forEach(r => {
+      const wrap = document.createElement('div');
+      wrap.className = 'wf-pop-entry wf-pop-' + (r.kind || 'line');
+      if (r.kind === 'code') {
+        const meta = document.createElement('div');
+        meta.className = 'wf-pop-meta';
+        meta.textContent = (r.action ? r.action + ' ' : '') + (r.file || '');
+        const code = document.createElement('pre');
+        code.className = 'wf-pop-code';
+        code.textContent = r.code != null ? String(r.code) : '';
+        wrap.appendChild(meta);
+        wrap.appendChild(code);
+      } else if (r.kind === 'shell') {
+        const pre = document.createElement('pre');
+        pre.className = 'wf-pop-shell';
+        pre.textContent = r.streamLine != null ? String(r.streamLine) : String(r.text || '');
+        wrap.appendChild(pre);
+      } else {
+        wrap.textContent = String(r.text || '');
+      }
+      body.appendChild(wrap);
+    });
+    body.scrollTop = body.scrollHeight;
+  }
+
+  function positionAgentPopover(nodeDiv) {
+    const pop = el('wf-agent-popover');
+    const wrap = el('wf-canvas-wrap') || el('wf-canvas');
+    if (!pop || !nodeDiv || !wrap) return;
+    const wr = wrap.getBoundingClientRect();
+    const nr = nodeDiv.getBoundingClientRect();
+    const pw = Math.min(420, Math.max(280, wr.width * 0.42));
+    pop.style.width = pw + 'px';
+    let left = nr.left - wr.left + nr.width + 12;
+    if (left + pw > wr.width - 8) left = Math.max(8, nr.left - wr.left - pw - 12);
+    let top = nr.top - wr.top;
+    pop.style.left = left + 'px';
+    pop.style.top = top + 'px';
+  }
+
+  function repositionPopoverIfOpen() {
+    if (!livePopoverOpen || !livePopoverAgent) return;
+    const canvas = el('wf-canvas');
+    const node =
+      canvas && canvas.querySelector('.wf-node[data-agent="' + livePopoverAgent + '"]');
+    if (node && node.classList.contains('wf-node-live')) {
+      livePopoverNodeEl = node;
+      positionAgentPopover(node);
+    } else {
+      closeAgentPopover();
+    }
+  }
+
+  function maybeOpenWorkflowAgentPanel(nodeDiv) {
+    if (!nodeDiv || !nodeDiv.classList.contains('wf-node-live')) {
+      closeAgentPopover();
+      return;
+    }
+    const ag = nodeDiv.dataset.agent;
+    if (!ag || ag !== liveAgentFromSocket) {
+      closeAgentPopover();
+      return;
+    }
+    livePopoverAgent = ag;
+    livePopoverOpen = true;
+    livePopoverNodeEl = nodeDiv;
+    const pop = el('wf-agent-popover');
+    const title = el('wf-agent-popover-title');
+    if (title) {
+      const label = AGENTS.find(a => a.type === ag)?.label || ag;
+      title.textContent = label + ' — flux temps réel';
+    }
+    if (pop) pop.hidden = false;
+    renderAgentPopoverBody();
+    positionAgentPopover(nodeDiv);
+  }
+
   function applyLiveHighlight() {
     const canvas = el('wf-canvas');
     if (!canvas) return;
@@ -104,6 +212,7 @@
       const ag = node.dataset.agent;
       node.classList.toggle('wf-node-live', Boolean(liveAgentFromSocket && ag === liveAgentFromSocket));
     });
+    repositionPopoverIfOpen();
   }
 
   function workflowAttachSocket(socket) {
@@ -124,11 +233,18 @@
     });
 
     socket.on('agentStatus', data => {
-      liveAgentFromSocket = (data && data.name) || null;
+      const next = (data && data.name) || null;
+      if (livePopoverOpen && livePopoverAgent && next !== livePopoverAgent) {
+        closeAgentPopover();
+      }
+      liveAgentFromSocket = next;
       applyLiveHighlight();
       const path = currentWorkflowRepoPath();
       if (data && data.activity && eventMatchesLinkedRepo({ agent: data.name, project: null }, path)) {
         appendLiveLine('status', '[' + (data.name || 'agent') + '] ' + data.activity);
+        if (data.name) {
+          feedAgentStream(data.name, { kind: 'status', text: String(data.activity) });
+        }
       }
       updateLiveMeta();
     });
@@ -144,9 +260,20 @@
       if (k === 'shell' || k === 'terminal') {
         const chunk = (edit && (edit.stream || edit.code)) || '';
         appendLiveLine('shell', '[' + agent + '] $ ' + chunk + proj);
+        if (agent && agent !== '?') {
+          feedAgentStream(agent, { kind: 'shell', streamLine: String(chunk) + proj });
+        }
       } else {
         const snippet = (edit && edit.code) ? String(edit.code).replace(/\s+/g, ' ').trim().slice(0, 220) : '';
         appendLiveLine('code', '[' + agent + '] ' + action + ' ' + file + proj + (snippet ? ' — ' + snippet : ''));
+        if (agent && agent !== '?') {
+          feedAgentStream(agent, {
+            kind: 'code',
+            file,
+            action,
+            code: edit.code != null ? String(edit.code) : '',
+          });
+        }
       }
     });
 
@@ -573,6 +700,7 @@
     if (!node) return;
     const canvas = el('wf-canvas');
     const rect = canvas.getBoundingClientRect();
+    let moved = false;
     dragState = {
       id,
       startX: e.clientX,
@@ -582,6 +710,9 @@
     };
     function move(ev) {
       if (!dragState) return;
+      if (Math.abs(ev.clientX - dragState.startX) > 6 || Math.abs(ev.clientY - dragState.startY) > 6) {
+        moved = true;
+      }
       const n = nodes.find(x => x.id === dragState.id);
       if (!n) return;
       n.x = Math.max(0, dragState.origX + (ev.clientX - dragState.startX));
@@ -593,13 +724,22 @@
       }
       syncCanvasExtent();
       drawEdges();
+      repositionPopoverIfOpen();
     }
     function up() {
+      const sid = dragState && dragState.id;
       dragState = null;
       document.removeEventListener('mousemove', move);
       document.removeEventListener('mouseup', up);
       syncCanvasExtent();
       scheduleRedrawEdges();
+      repositionPopoverIfOpen();
+      if (!moved && sid && canvas) {
+        const nodeDiv = canvas.querySelector('.wf-node[data-id="' + sid + '"]');
+        if (nodeDiv) {
+          maybeOpenWorkflowAgentPanel(nodeDiv);
+        }
+      }
     }
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', up);
@@ -968,13 +1108,34 @@
       });
     }
 
-    window.addEventListener('resize', () => scheduleRedrawEdges());
+    function onWorkflowLayoutChange() {
+      scheduleRedrawEdges();
+      repositionPopoverIfOpen();
+    }
+    window.addEventListener('resize', onWorkflowLayoutChange);
 
     const canvasEl = el('wf-canvas');
     if (canvasEl && typeof ResizeObserver !== 'undefined') {
-      wfCanvasResizeObserver = new ResizeObserver(() => scheduleRedrawEdges());
+      wfCanvasResizeObserver = new ResizeObserver(onWorkflowLayoutChange);
       wfCanvasResizeObserver.observe(canvasEl);
     }
+
+    const wfPopoverClose = el('wf-agent-popover-close');
+    if (wfPopoverClose) wfPopoverClose.addEventListener('click', () => closeAgentPopover());
+    const wfCanvasWrap = el('wf-canvas-wrap');
+    if (wfCanvasWrap) {
+      wfCanvasWrap.addEventListener('click', e => {
+        if (e.target.closest('.wf-node')) return;
+        if (e.target.closest('#wf-agent-popover')) return;
+        closeAgentPopover();
+      });
+    }
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && livePopoverOpen) {
+        e.preventDefault();
+        closeAgentPopover();
+      }
+    });
 
     renderChatLog();
 
