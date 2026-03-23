@@ -270,6 +270,7 @@
 .wf-node {
   position: absolute;
   z-index: 2;
+  overflow: visible;
   width: 168px;
   padding: 0;
   background: linear-gradient(165deg, var(--bg-card) 0%, var(--bg-elevated) 100%);
@@ -811,50 +812,88 @@
   }
 }
 
-/* Live agent popover (click pulsating card — real-time stream) */
-.wf-agent-popover {
-  position: absolute;
-  z-index: 8;
-  max-width: min(420px, 92vw);
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding: 0;
-  margin: 0;
-  background: linear-gradient(165deg, rgba(12, 10, 16, 0.98) 0%, rgba(22, 18, 28, 0.97) 100%);
-  border: 1px solid rgba(255, 87, 10, 0.35);
-  border-radius: 12px;
-  box-shadow:
-    0 24px 48px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
-    0 0 40px rgba(255, 87, 10, 0.12);
-  pointer-events: auto;
-  overflow: hidden;
+/* Live stream rectangle above the agent card (socket stream) */
+.wf-node--stream-open {
+  z-index: 28;
 }
-.wf-agent-popover[hidden] {
+.wf-node-stream-hud {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+  width: max(100%, min(320px, 96vw));
+  max-width: 380px;
+  z-index: 30;
+  pointer-events: none;
+}
+.wf-node-stream-hud:not([hidden]) {
+  pointer-events: auto;
+}
+.wf-node-stream-hud[hidden] {
   display: none !important;
 }
-.wf-agent-popover-head {
+.wf-node-stream-hud-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-height: min(280px, 38vh);
+  background: linear-gradient(165deg, rgba(10, 8, 14, 0.98) 0%, rgba(18, 14, 24, 0.98) 100%);
+  border: 1px solid rgba(255, 87, 10, 0.45);
+  border-radius: 12px;
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+    0 0 36px rgba(255, 87, 10, 0.18);
+  opacity: 0;
+  transform: translateY(12px) scale(0.94);
+  filter: blur(2px);
+  transition:
+    opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.35s ease;
+}
+.wf-node-stream-hud--open .wf-node-stream-hud-inner {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: none;
+  animation: wf-stream-hud-glow 2.8s ease-in-out infinite;
+}
+@keyframes wf-stream-hud-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 20px 50px rgba(0, 0, 0, 0.55),
+      0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+      0 0 28px rgba(255, 87, 10, 0.12);
+  }
+  50% {
+    box-shadow:
+      0 22px 52px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(255, 140, 60, 0.15) inset,
+      0 0 44px rgba(255, 87, 10, 0.22);
+  }
+}
+.wf-node-stream-hud-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(0, 0, 0, 0.25);
+  gap: 8px;
+  padding: 8px 10px 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
 }
-.wf-agent-popover-title {
+.wf-node-stream-hud-title {
   font-family: 'Syne', 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--text-primary);
-  margin: 0;
 }
-.wf-agent-popover-close {
+.wf-node-stream-hud-close {
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -862,25 +901,18 @@
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-muted);
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
-.wf-agent-popover-close:hover {
-  background: rgba(255, 87, 10, 0.2);
+.wf-node-stream-hud-close:hover {
+  background: rgba(255, 87, 10, 0.25);
   color: var(--text-primary);
 }
-.wf-agent-popover-hint {
-  margin: 0;
-  padding: 8px 14px 10px;
-  font-size: 11px;
-  line-height: 1.45;
-  color: var(--text-muted);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-}
-.wf-agent-popover-body {
-  max-height: min(320px, 42vh);
+.wf-node-stream-hud-body {
+  flex: 1;
+  min-height: 0;
   overflow: auto;
   padding: 10px 12px 12px;
   font-size: 11px;

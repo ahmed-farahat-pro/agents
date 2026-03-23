@@ -35,11 +35,11 @@
   /** Per-agent entries for the click popover (full streamed payloads, not the truncated global line). */
   const wfStreamsByAgent = {};
   const WF_AGENT_STREAM_MAX = 100;
-  let livePopoverOpen = false;
+  /** Live stream HUD above the active agent node (socket stream, not mock). */
   /** @type {string|null} */
-  let livePopoverAgent = null;
+  let liveStreamHudAgent = null;
   /** @type {HTMLElement|null} */
-  let livePopoverNodeEl = null;
+  let liveStreamHudNodeEl = null;
 
   function normalizeRepoPath(p) {
     if (p == null) return '';
@@ -110,7 +110,7 @@
     if (!wfStreamsByAgent[agentKey]) wfStreamsByAgent[agentKey] = [];
     const rows = wfStreamsByAgent[agentKey];
     const kind = payload && payload.kind;
-    /* Merge consecutive shell/terminal chunks so the popover shows one growing stream (live PTY style). */
+    /* Merge consecutive shell/terminal chunks so the HUD shows one growing stream (live PTY style). */
     if (
       kind === 'shell' &&
       rows.length > 0 &&
@@ -121,37 +121,24 @@
         String(last.streamLine || '') + String((payload && payload.streamLine) || (payload && payload.text) || '');
       last.t = Date.now();
       while (rows.length > WF_AGENT_STREAM_MAX) rows.shift();
-      if (livePopoverOpen && livePopoverAgent === agentKey) {
-        renderAgentPopoverBody();
-      }
+      refreshStreamHudIfOpen(agentKey);
       return;
     }
     rows.push({ ...payload, t: Date.now() });
     while (rows.length > WF_AGENT_STREAM_MAX) rows.shift();
-    if (livePopoverOpen && livePopoverAgent === agentKey) {
-      renderAgentPopoverBody();
-    }
+    refreshStreamHudIfOpen(agentKey);
   }
 
-  function closeAgentPopover() {
-    livePopoverOpen = false;
-    livePopoverAgent = null;
-    livePopoverNodeEl = null;
-    const pop = el('wf-agent-popover');
-    if (pop) pop.hidden = true;
-  }
-
-  function renderAgentPopoverBody() {
-    const body = el('wf-agent-popover-body');
-    if (!body || !livePopoverAgent) return;
-    const rows = wfStreamsByAgent[livePopoverAgent] || [];
-    body.textContent = '';
+  function renderStreamRows(bodyEl, agentKey) {
+    if (!bodyEl || !agentKey) return;
+    const rows = wfStreamsByAgent[agentKey] || [];
+    bodyEl.textContent = '';
     if (!rows.length) {
       const empty = document.createElement('p');
       empty.className = 'wf-pop-empty';
       empty.textContent =
         'Waiting for live events… Lines appear here as codeEdit / shell / agentStatus arrive over the socket.';
-      body.appendChild(empty);
+      bodyEl.appendChild(empty);
       return;
     }
     rows.forEach(r => {
@@ -174,61 +161,73 @@
       } else {
         wrap.textContent = String(r.text || '');
       }
-      body.appendChild(wrap);
+      bodyEl.appendChild(wrap);
     });
-    body.scrollTop = body.scrollHeight;
+    bodyEl.scrollTop = bodyEl.scrollHeight;
   }
 
-  function positionAgentPopover(nodeDiv) {
-    const pop = el('wf-agent-popover');
-    const wrap = el('wf-canvas-wrap') || el('wf-canvas');
-    if (!pop || !nodeDiv || !wrap) return;
-    const wr = wrap.getBoundingClientRect();
-    const nr = nodeDiv.getBoundingClientRect();
-    const pw = Math.min(420, Math.max(280, wr.width * 0.42));
-    pop.style.width = pw + 'px';
-    let left = nr.left - wr.left + nr.width + 12;
-    if (left + pw > wr.width - 8) left = Math.max(8, nr.left - wr.left - pw - 12);
-    let top = nr.top - wr.top;
-    pop.style.left = left + 'px';
-    pop.style.top = top + 'px';
+  function refreshStreamHudIfOpen(agentKey) {
+    if (liveStreamHudAgent !== agentKey || !liveStreamHudNodeEl) return;
+    const body = liveStreamHudNodeEl.querySelector('.wf-node-stream-hud-body');
+    if (body) renderStreamRows(body, agentKey);
   }
 
-  function repositionPopoverIfOpen() {
-    if (!livePopoverOpen || !livePopoverAgent) return;
+  function closeAgentStreamHud() {
+    liveStreamHudAgent = null;
+    liveStreamHudNodeEl = null;
     const canvas = el('wf-canvas');
-    const node =
-      canvas && canvas.querySelector('.wf-node[data-agent="' + livePopoverAgent + '"]');
-    if (node && node.classList.contains('wf-node-live')) {
-      livePopoverNodeEl = node;
-      positionAgentPopover(node);
-    } else {
-      closeAgentPopover();
+    if (canvas) {
+      canvas.querySelectorAll('.wf-node-stream-hud').forEach(hud => {
+        hud.hidden = true;
+        hud.setAttribute('aria-hidden', 'true');
+        hud.classList.remove('wf-node-stream-hud--open');
+      });
+      canvas.querySelectorAll('.wf-node--stream-open').forEach(n => n.classList.remove('wf-node--stream-open'));
     }
   }
 
-  function maybeOpenWorkflowAgentPanel(nodeDiv) {
+  /** @param {HTMLElement} nodeDiv */
+  function openAgentStreamHud(nodeDiv) {
     if (!nodeDiv || !nodeDiv.classList.contains('wf-node-live')) {
-      closeAgentPopover();
+      closeAgentStreamHud();
       return;
     }
     const ag = nodeDiv.dataset.agent;
     if (!ag || ag !== liveAgentFromSocket) {
-      closeAgentPopover();
+      closeAgentStreamHud();
       return;
     }
-    livePopoverAgent = ag;
-    livePopoverOpen = true;
-    livePopoverNodeEl = nodeDiv;
-    const pop = el('wf-agent-popover');
-    const title = el('wf-agent-popover-title');
-    if (title) {
+    closeAgentStreamHud();
+    liveStreamHudAgent = ag;
+    liveStreamHudNodeEl = nodeDiv;
+    const hud = nodeDiv.querySelector('.wf-node-stream-hud');
+    const titleEl = nodeDiv.querySelector('.wf-node-stream-hud-title');
+    if (titleEl) {
       const label = AGENTS.find(a => a.type === ag)?.label || ag;
-      title.textContent = label + ' — live stream';
+      titleEl.textContent = label + ' — live';
     }
-    if (pop) pop.hidden = false;
-    renderAgentPopoverBody();
-    positionAgentPopover(nodeDiv);
+    if (hud) {
+      hud.hidden = false;
+      hud.setAttribute('aria-hidden', 'false');
+      hud.classList.remove('wf-node-stream-hud--open');
+      void hud.offsetWidth;
+      hud.classList.add('wf-node-stream-hud--open');
+    }
+    nodeDiv.classList.add('wf-node--stream-open');
+    const body = nodeDiv.querySelector('.wf-node-stream-hud-body');
+    renderStreamRows(body, ag);
+  }
+
+  function syncStreamHudWithLiveState() {
+    if (!liveStreamHudAgent || !liveStreamHudNodeEl) return;
+    const ag = liveStreamHudNodeEl.dataset && liveStreamHudNodeEl.dataset.agent;
+    if (
+      !liveStreamHudNodeEl.classList.contains('wf-node-live') ||
+      ag !== liveAgentFromSocket ||
+      ag !== liveStreamHudAgent
+    ) {
+      closeAgentStreamHud();
+    }
   }
 
   function applyLiveHighlight() {
@@ -238,7 +237,7 @@
       const ag = node.dataset.agent;
       node.classList.toggle('wf-node-live', Boolean(liveAgentFromSocket && ag === liveAgentFromSocket));
     });
-    repositionPopoverIfOpen();
+    syncStreamHudWithLiveState();
   }
 
   function workflowAttachSocket(socket) {
@@ -260,8 +259,8 @@
 
     socket.on('agentStatus', data => {
       const next = (data && data.name) || null;
-      if (livePopoverOpen && livePopoverAgent && next !== livePopoverAgent) {
-        closeAgentPopover();
+      if (liveStreamHudAgent && next !== liveStreamHudAgent) {
+        closeAgentStreamHud();
       }
       liveAgentFromSocket = next;
       applyLiveHighlight();
@@ -606,6 +605,15 @@
       div.style.top = n.y + 'px';
       const agent = AGENTS.find(a => a.type === n.agentType) || { label: n.agentType };
       div.innerHTML =
+        '<aside class="wf-node-stream-hud" hidden aria-hidden="true">' +
+        '<div class="wf-node-stream-hud-inner">' +
+        '<div class="wf-node-stream-hud-head">' +
+        '<span class="wf-node-stream-hud-title">Live</span>' +
+        '<button type="button" class="wf-node-stream-hud-close" aria-label="Close stream panel">&times;</button>' +
+        '</div>' +
+        '<div class="wf-node-stream-hud-body"></div>' +
+        '</div>' +
+        '</aside>' +
         '<button type="button" class="wf-port wf-port-in" aria-label="Input — drop connection here" title="Input"></button>' +
         '<button type="button" class="wf-port wf-port-out" aria-label="Output — drag to connect" title="Drag to another node"></button>' +
         '<button type="button" class="wf-remove" title="Remove">&times;</button>' +
@@ -632,8 +640,17 @@
         ledBtn.addEventListener('click', ev => {
           ev.stopPropagation();
           ev.preventDefault();
-          maybeOpenWorkflowAgentPanel(div);
+          openAgentStreamHud(div);
         });
+      }
+      const hudClose = div.querySelector('.wf-node-stream-hud-close');
+      if (hudClose) {
+        hudClose.addEventListener('click', ev => {
+          ev.stopPropagation();
+          ev.preventDefault();
+          closeAgentStreamHud();
+        });
+        hudClose.addEventListener('mousedown', ev => ev.stopPropagation());
       }
       const portOut = div.querySelector('.wf-port-out');
       if (portOut) {
@@ -731,7 +748,14 @@
   }
 
   function startDrag(e) {
-    if (e.target.closest('.wf-remove') || e.target.closest('.wf-port') || e.target.closest('.wf-node-led')) return;
+    if (
+      e.target.closest('.wf-remove') ||
+      e.target.closest('.wf-port') ||
+      e.target.closest('.wf-node-led') ||
+      e.target.closest('.wf-node-stream-hud')
+    ) {
+      return;
+    }
     const id = e.currentTarget.dataset.id;
     const node = nodes.find(n => n.id === id);
     if (!node) return;
@@ -761,16 +785,28 @@
       }
       syncCanvasExtent();
       drawEdges();
-      repositionPopoverIfOpen();
     }
-    function up() {
+    function up(ev) {
       const sid = dragState && dragState.id;
       dragState = null;
       document.removeEventListener('mousemove', move);
       document.removeEventListener('mouseup', up);
       syncCanvasExtent();
       scheduleRedrawEdges();
-      repositionPopoverIfOpen();
+      if (!moved && sid && canvas) {
+        const nodeDiv = canvas.querySelector('.wf-node[data-id="' + sid + '"]');
+        const tgt = ev && ev.target;
+        if (
+          nodeDiv &&
+          tgt &&
+          !tgt.closest('.wf-node-led') &&
+          !tgt.closest('.wf-port') &&
+          !tgt.closest('.wf-remove') &&
+          !tgt.closest('.wf-node-stream-hud')
+        ) {
+          openAgentStreamHud(nodeDiv);
+        }
+      }
     }
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', up);
@@ -1141,7 +1177,6 @@
 
     function onWorkflowLayoutChange() {
       scheduleRedrawEdges();
-      repositionPopoverIfOpen();
     }
     window.addEventListener('resize', onWorkflowLayoutChange);
 
@@ -1151,20 +1186,17 @@
       wfCanvasResizeObserver.observe(canvasEl);
     }
 
-    const wfPopoverClose = el('wf-agent-popover-close');
-    if (wfPopoverClose) wfPopoverClose.addEventListener('click', () => closeAgentPopover());
     const wfCanvasWrap = el('wf-canvas-wrap');
     if (wfCanvasWrap) {
       wfCanvasWrap.addEventListener('click', e => {
         if (e.target.closest('.wf-node')) return;
-        if (e.target.closest('#wf-agent-popover')) return;
-        closeAgentPopover();
+        closeAgentStreamHud();
       });
     }
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && livePopoverOpen) {
+      if (e.key === 'Escape' && liveStreamHudAgent) {
         e.preventDefault();
-        closeAgentPopover();
+        closeAgentStreamHud();
       }
     });
 
