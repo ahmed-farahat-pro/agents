@@ -1,6 +1,10 @@
 /* Workflow Studio — n8n-inspired flow builder */
 .wf-page {
   padding-bottom: 40px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .wf-hero {
@@ -164,13 +168,27 @@
 
 .wf-wrap {
   display: grid;
-  grid-template-columns: 210px 1fr minmax(300px, 420px);
+  grid-template-columns: 210px minmax(0, 1fr) minmax(280px, 420px);
   gap: 18px;
   min-height: calc(100vh - 380px);
   align-items: stretch;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.wf-wrap > * {
+  min-width: 0;
 }
 @media (max-width: 1200px) {
-  .wf-wrap { grid-template-columns: 1fr; }
+  .wf-wrap {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+}
+@media (max-width: 900px) {
+  .wf-wrap {
+    gap: 14px;
+  }
 }
 
 .wf-palette {
@@ -229,11 +247,20 @@
   background-position: 0 0, 12px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  min-height: 560px;
+  min-height: clamp(360px, 52dvh, 560px);
+  /* Room for stream HUD above nodes + horizontal scroll for wide graphs */
+  padding: clamp(56px, 10dvh, 120px) 8px 12px;
   overflow: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   box-shadow:
     inset 0 0 60px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+/* Extra headroom while live stream panel is open (avoids top clip) */
+.wf-canvas-wrap.wf-canvas-wrap--hud-open {
+  padding-top: clamp(100px, min(28dvh, 220px), 240px);
+  scroll-padding-top: 80px;
 }
 .wf-canvas-wrap::before {
   content: '';
@@ -247,7 +274,7 @@
 .wf-canvas {
   position: relative;
   min-width: 100%;
-  min-height: 560px;
+  min-height: clamp(320px, 48dvh, 560px);
   touch-action: none;
   z-index: 1;
 }
@@ -817,14 +844,17 @@
   z-index: 28;
 }
 .wf-node-stream-hud {
+  --wf-hud-nudge: 0px;
   position: absolute;
   left: 50%;
   bottom: calc(100% + 10px);
-  transform: translateX(-50%);
-  width: max(100%, min(320px, 96vw));
-  max-width: 380px;
+  /* Wider than the card: centered on node, nudged into viewport via JS */
+  transform: translateX(calc(-50% + var(--wf-hud-nudge)));
+  width: min(calc(100vw - 20px), 440px);
+  max-width: none;
   z-index: 30;
   pointer-events: none;
+  box-sizing: border-box;
 }
 .wf-node-stream-hud:not([hidden]) {
   pointer-events: auto;
@@ -914,11 +944,14 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 10px 12px 12px;
-  font-size: 11px;
+  font-size: clamp(10px, 2.4vw, 11px);
   line-height: 1.45;
   color: var(--text-secondary);
   scrollbar-width: thin;
+  max-height: min(480px, 50dvh);
 }
 
 /* Live stream entries: brief “just arrived” glow (socket-style) */
@@ -967,13 +1000,24 @@
   border: 1px solid rgba(255, 87, 10, 0.2);
   border-radius: 8px;
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: clamp(9px, 2.2vw, 10px);
   line-height: 1.45;
   color: #f1f5f9;
   white-space: pre-wrap;
   word-break: break-word;
+  overflow-wrap: anywhere;
   max-height: 200px;
   overflow: auto;
+}
+/* Stream HUD: more vertical space so code isn’t crushed on small screens */
+.wf-node-stream-hud .wf-pop-code {
+  max-height: min(42dvh, 380px);
+  overflow-x: auto;
+}
+.wf-node-stream-hud .wf-pop-shell {
+  max-height: min(28dvh, 260px);
+  overflow: auto;
+  overflow-x: auto;
 }
 .wf-pop-shell {
   margin: 0;
@@ -982,11 +1026,12 @@
   border-left: 3px solid rgba(25, 213, 158, 0.65);
   border-radius: 0 8px 8px 0;
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: clamp(9px, 2.2vw, 10px);
   line-height: 1.5;
   color: #a7f3d0;
   white-space: pre-wrap;
   word-break: break-word;
+  overflow-wrap: anywhere;
 }
 .wf-pop-status {
   padding-left: 8px;
@@ -996,4 +1041,31 @@
 .wf-pop-line {
   padding-left: 8px;
   border-left: 3px solid rgba(148, 163, 184, 0.5);
+}
+
+@media (max-width: 640px) {
+  .wf-node-stream-hud {
+    width: calc(100vw - 16px);
+    left: 50%;
+  }
+  .wf-node-stream-hud-inner {
+    max-height: min(65dvh, 560px);
+  }
+  .wf-node-stream-hud-body {
+    max-height: min(52dvh, 480px);
+  }
+  .wf-toolbar-main {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .wf-select,
+  .wf-select-lg,
+  .wf-input-path {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .wf-gitlab-draft {
+    min-width: 0;
+  }
 }

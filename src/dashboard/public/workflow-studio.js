@@ -170,17 +170,49 @@
     if (liveStreamHudAgent !== agentKey || !liveStreamHudNodeEl) return;
     const body = liveStreamHudNodeEl.querySelector('.wf-node-stream-hud-body');
     if (body) renderStreamRows(body, agentKey);
+    repositionStreamHudInViewport();
+  }
+
+  function setCanvasHudOpenClass(on) {
+    const wrap = el('wf-canvas-wrap');
+    if (wrap) wrap.classList.toggle('wf-canvas-wrap--hud-open', Boolean(on));
+  }
+
+  /** Keep wide stream HUD inside the viewport (narrow columns / edge nodes). */
+  function repositionStreamHudInViewport() {
+    const node = liveStreamHudNodeEl;
+    if (!node || !liveStreamHudAgent) return;
+    const hud = node.querySelector('.wf-node-stream-hud');
+    if (!hud || hud.hidden) return;
+    hud.style.removeProperty('--wf-hud-nudge');
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!hud || hud.hidden) return;
+        const pad = 10;
+        const r = hud.getBoundingClientRect();
+        let nudge = 0;
+        if (r.right > window.innerWidth - pad) {
+          nudge += Math.round(window.innerWidth - pad - r.right);
+        }
+        if (r.left + nudge < pad) {
+          nudge += Math.round(pad - (r.left + nudge));
+        }
+        hud.style.setProperty('--wf-hud-nudge', nudge + 'px');
+      });
+    });
   }
 
   function closeAgentStreamHud() {
     liveStreamHudAgent = null;
     liveStreamHudNodeEl = null;
+    setCanvasHudOpenClass(false);
     const canvas = el('wf-canvas');
     if (canvas) {
       canvas.querySelectorAll('.wf-node-stream-hud').forEach(hud => {
         hud.hidden = true;
         hud.setAttribute('aria-hidden', 'true');
         hud.classList.remove('wf-node-stream-hud--open');
+        hud.style.removeProperty('--wf-hud-nudge');
       });
       canvas.querySelectorAll('.wf-node--stream-open').forEach(n => n.classList.remove('wf-node--stream-open'));
     }
@@ -214,8 +246,10 @@
       hud.classList.add('wf-node-stream-hud--open');
     }
     nodeDiv.classList.add('wf-node--stream-open');
+    setCanvasHudOpenClass(true);
     const body = nodeDiv.querySelector('.wf-node-stream-hud-body');
     renderStreamRows(body, ag);
+    repositionStreamHudInViewport();
   }
 
   function syncStreamHudWithLiveState() {
@@ -785,6 +819,7 @@
       }
       syncCanvasExtent();
       drawEdges();
+      if (liveStreamHudAgent) repositionStreamHudInViewport();
     }
     function up(ev) {
       const sid = dragState && dragState.id;
@@ -793,6 +828,7 @@
       document.removeEventListener('mouseup', up);
       syncCanvasExtent();
       scheduleRedrawEdges();
+      if (liveStreamHudAgent) repositionStreamHudInViewport();
       if (!moved && sid && canvas) {
         const nodeDiv = canvas.querySelector('.wf-node[data-id="' + sid + '"]');
         const tgt = ev && ev.target;
@@ -1177,6 +1213,7 @@
 
     function onWorkflowLayoutChange() {
       scheduleRedrawEdges();
+      if (liveStreamHudAgent) repositionStreamHudInViewport();
     }
     window.addEventListener('resize', onWorkflowLayoutChange);
 
