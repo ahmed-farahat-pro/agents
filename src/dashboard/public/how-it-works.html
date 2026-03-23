@@ -1026,6 +1026,11 @@
             box-shadow: var(--shadow);
             position: relative;
         }
+        /* Let the stream panel extend below the graph card (avoids clipping the pop) */
+        #workflow-studio.wf-studio-graph-stream-open .wf-canvas {
+            overflow-y: visible;
+            overflow-x: auto;
+        }
 
         .wf-studio .wf-canvas::before {
             content: '';
@@ -1061,6 +1066,7 @@
             aspect-ratio: 900 / 248;
             max-height: min(420px, 62vh);
             margin: 0 auto;
+            overflow: visible;
         }
         .wf-graph-wrap .wf-graph-svg {
             position: absolute;
@@ -1153,14 +1159,19 @@
             color: #6ee7b7;
         }
 
-        /* In-place stream panel on the graph (no scroll jump) */
+        /* In-place stream panel — default BELOW anchor (avoids top clip); --above flips */
         .wf-graph-inplace-stream {
+            --wf-inplace-x: 0px;
             position: absolute;
             z-index: 12;
-            width: min(340px, 88vw);
-            max-height: min(240px, 42vh);
-            transform: translate(-50%, calc(-100% - 14px));
+            width: min(360px, calc(100vw - 40px));
+            max-height: min(320px, 52vh);
+            transform: translate(calc(-50% + var(--wf-inplace-x)), 10px);
             pointer-events: none;
+            box-sizing: border-box;
+        }
+        .wf-graph-inplace-stream.wf-graph-inplace-stream--above {
+            transform: translate(calc(-50% + var(--wf-inplace-x)), calc(-100% - 12px));
         }
         .wf-graph-inplace-stream:not([hidden]) {
             pointer-events: auto;
@@ -1171,7 +1182,8 @@
         .wf-graph-inplace-stream-inner {
             display: flex;
             flex-direction: column;
-            max-height: min(240px, 42vh);
+            max-height: min(300px, 50vh);
+            width: 100%;
             background: linear-gradient(165deg, rgba(8, 6, 14, 0.98) 0%, rgba(16, 12, 22, 0.98) 100%);
             border: 1px solid rgba(255, 87, 10, 0.5);
             border-radius: 12px;
@@ -1236,7 +1248,9 @@
         .wf-graph-inplace-body {
             padding: 8px 10px 10px;
             overflow: auto;
-            max-height: 180px;
+            overflow-x: auto;
+            max-height: min(220px, 38vh);
+            -webkit-overflow-scrolling: touch;
             scrollbar-width: thin;
         }
         .wf-graph-inplace-row {
@@ -1259,11 +1273,14 @@
             padding: 8px 10px;
             border-radius: 8px;
             font-family: var(--font-mono);
-            font-size: 9px;
+            font-size: clamp(8px, 1.9vw, 10px);
             line-height: 1.45;
             white-space: pre-wrap;
             word-break: break-word;
+            overflow-wrap: anywhere;
             min-height: 2.2em;
+            max-height: min(120px, 22vh);
+            overflow: auto;
         }
         .wf-graph-inplace-code {
             background: rgba(0, 0, 0, 0.45);
@@ -2777,15 +2794,16 @@
 
             /* In-place graph stream (no scroll jump; typewriter = “socket” feel) */
             var hiwInplaceTypeTimer = null;
+            /* l = node center X%; t = bottom edge Y% of node (panel opens below this point) */
             var WF_INPLACE_POS = {
-                task: { l: 6.89, t: 40 },
-                orchestrator: { l: 20.78, t: 40 },
-                planner: { l: 38.67, t: 24 },
-                'frontend-dev': { l: 38.67, t: 66 },
-                'backend-dev': { l: 56.56, t: 44 },
-                'qa-tester': { l: 56, t: 74 },
-                'code-reviewer': { l: 72.67, t: 44 },
-                reporter: { l: 88.89, t: 44 }
+                task: { l: 6.89, t: 50 },
+                orchestrator: { l: 20.78, t: 50 },
+                planner: { l: 38.67, t: 29.8 },
+                'frontend-dev': { l: 38.67, t: 74.2 },
+                'backend-dev': { l: 56.56, t: 54.8 },
+                'qa-tester': { l: 56, t: 85.5 },
+                'code-reviewer': { l: 72.67, t: 54.8 },
+                reporter: { l: 88.89, t: 54.8 }
             };
 
             function hiwClearInplaceType() {
@@ -2795,10 +2813,52 @@
                 }
             }
 
+            function hiwSetGraphStreamWrapOpen(on) {
+                var sec = document.getElementById('workflow-studio');
+                if (sec) sec.classList.toggle('wf-studio-graph-stream-open', Boolean(on));
+            }
+
+            function hiwRepositionGraphInplace() {
+                var pop = document.getElementById('wf-graph-inplace-stream');
+                var wrap = document.querySelector('.wf-graph-wrap');
+                if (!pop || !wrap || pop.hidden) return;
+                pop.style.setProperty('--wf-inplace-x', '0px');
+                pop.classList.remove('wf-graph-inplace-stream--above');
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(function () {
+                        if (!pop || pop.hidden) return;
+                        var pad = 10;
+                        var pr = pop.getBoundingClientRect();
+                        var wr = wrap.getBoundingClientRect();
+                        if (pr.bottom > wr.bottom - pad) {
+                            pop.classList.add('wf-graph-inplace-stream--above');
+                        }
+                        pr = pop.getBoundingClientRect();
+                        if (pop.classList.contains('wf-graph-inplace-stream--above') && pr.top < wr.top + pad) {
+                            pop.classList.remove('wf-graph-inplace-stream--above');
+                        }
+                        pr = pop.getBoundingClientRect();
+                        var nx = 0;
+                        if (pr.right > window.innerWidth - pad) {
+                            nx += Math.round(window.innerWidth - pad - pr.right);
+                        }
+                        if (pr.left + nx < pad) {
+                            nx += Math.round(pad - (pr.left + nx));
+                        }
+                        pop.style.setProperty('--wf-inplace-x', nx + 'px');
+                    });
+                });
+            }
+
             function hiwCloseGraphInplace() {
                 hiwClearInplaceType();
+                hiwSetGraphStreamWrapOpen(false);
                 var pop = document.getElementById('wf-graph-inplace-stream');
-                if (pop) pop.hidden = true;
+                if (pop) {
+                    pop.hidden = true;
+                    pop.classList.remove('wf-graph-inplace-stream--above');
+                    pop.style.setProperty('--wf-inplace-x', '0px');
+                }
                 var ce = document.getElementById('wf-graph-inplace-code');
                 var se = document.getElementById('wf-graph-inplace-shell');
                 var caret = document.getElementById('wf-graph-inplace-caret');
@@ -2850,15 +2910,18 @@
                 if (caret) caret.classList.remove('wf-inplace-done');
                 codeEl.textContent = '';
                 shellEl.textContent = '';
+                hiwSetGraphStreamWrapOpen(true);
                 pop.hidden = false;
                 if (inner) {
                     inner.style.animation = 'none';
                     void inner.offsetWidth;
                     inner.style.animation = '';
                 }
+                hiwRepositionGraphInplace();
                 hiwTypeInto(codeEl, d.code, 5, function () {
                     hiwTypeInto(shellEl, d.shell, 4, function () {
                         if (caret) caret.classList.add('wf-inplace-done');
+                        hiwRepositionGraphInplace();
                     });
                 });
             }
@@ -2905,6 +2968,15 @@
                     e.preventDefault();
                     hiwCloseGraphInplace();
                 }
+            });
+
+            var hiwInplaceResizeTimer;
+            window.addEventListener('resize', function () {
+                clearTimeout(hiwInplaceResizeTimer);
+                hiwInplaceResizeTimer = setTimeout(function () {
+                    var pop = document.getElementById('wf-graph-inplace-stream');
+                    if (pop && !pop.hidden) hiwRepositionGraphInplace();
+                }, 100);
             });
 
             hiwSetDetail('backend-dev');
