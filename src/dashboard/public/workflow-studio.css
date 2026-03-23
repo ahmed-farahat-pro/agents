@@ -920,6 +920,29 @@
   color: var(--text-secondary);
   scrollbar-width: thin;
 }
+
+/* Live stream entries: brief “just arrived” glow (socket-style) */
+.wf-node-stream-hud--open .wf-pop-code,
+.wf-node-stream-hud--open .wf-pop-shell {
+  animation: wf-stream-arrive 0.9s ease-out;
+}
+@keyframes wf-stream-arrive {
+  0% {
+    opacity: 0.35;
+    filter: brightness(0.85);
+    box-shadow: 0 0 0 rgba(255, 87, 10, 0);
+  }
+  45% {
+    opacity: 1;
+    filter: brightness(1.12);
+    box-shadow: 0 0 20px rgba(255, 87, 10, 0.12);
+  }
+  100% {
+    opacity: 1;
+    filter: brightness(1);
+    box-shadow: none;
+  }
+}
 .wf-pop-entry {
   margin-bottom: 10px;
   padding-bottom: 10px;

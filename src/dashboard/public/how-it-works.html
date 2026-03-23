@@ -1053,7 +1053,7 @@
             border: 0;
         }
 
-        /* Graph + activity LEDs (detail on click → stream panel below) */
+        /* Graph + activity LEDs + in-place stream panel on click */
         .wf-graph-wrap {
             position: relative;
             width: 100%;
@@ -1151,6 +1151,150 @@
         }
         .wf-hud-code.wf-hud-code--shell {
             color: #6ee7b7;
+        }
+
+        /* In-place stream panel on the graph (no scroll jump) */
+        .wf-graph-inplace-stream {
+            position: absolute;
+            z-index: 12;
+            width: min(340px, 88vw);
+            max-height: min(240px, 42vh);
+            transform: translate(-50%, calc(-100% - 14px));
+            pointer-events: none;
+        }
+        .wf-graph-inplace-stream:not([hidden]) {
+            pointer-events: auto;
+        }
+        .wf-graph-inplace-stream[hidden] {
+            display: none !important;
+        }
+        .wf-graph-inplace-stream-inner {
+            display: flex;
+            flex-direction: column;
+            max-height: min(240px, 42vh);
+            background: linear-gradient(165deg, rgba(8, 6, 14, 0.98) 0%, rgba(16, 12, 22, 0.98) 100%);
+            border: 1px solid rgba(255, 87, 10, 0.5);
+            border-radius: 12px;
+            box-shadow:
+                0 16px 40px rgba(0, 0, 0, 0.55),
+                0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+                0 0 28px rgba(255, 87, 10, 0.15);
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(10px) scale(0.96);
+            animation: wf-inplace-pop 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        @keyframes wf-inplace-pop {
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .wf-graph-inplace-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.4);
+        }
+        .wf-graph-inplace-title {
+            font-family: var(--font-sans);
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--text-primary);
+            flex: 1;
+            min-width: 0;
+        }
+        .wf-graph-inplace-badge {
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .wf-graph-inplace-close {
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-muted);
+            font-size: 18px;
+            line-height: 1;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .wf-graph-inplace-close:hover {
+            background: rgba(255, 87, 10, 0.25);
+            color: var(--text-primary);
+        }
+        .wf-graph-inplace-body {
+            padding: 8px 10px 10px;
+            overflow: auto;
+            max-height: 180px;
+            scrollbar-width: thin;
+        }
+        .wf-graph-inplace-row {
+            margin-bottom: 10px;
+        }
+        .wf-graph-inplace-row:last-child {
+            margin-bottom: 0;
+        }
+        .wf-graph-inplace-label {
+            display: block;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: rgba(255, 87, 10, 0.85);
+            margin-bottom: 4px;
+        }
+        .wf-graph-inplace-pre {
+            margin: 0;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-family: var(--font-mono);
+            font-size: 9px;
+            line-height: 1.45;
+            white-space: pre-wrap;
+            word-break: break-word;
+            min-height: 2.2em;
+        }
+        .wf-graph-inplace-code {
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(255, 87, 10, 0.2);
+            color: #e2e8f0;
+        }
+        .wf-graph-inplace-shell {
+            background: rgba(25, 213, 158, 0.08);
+            border-left: 3px solid rgba(25, 213, 158, 0.55);
+            color: #a7f3d0;
+        }
+        .wf-graph-inplace-caret {
+            display: inline-block;
+            width: 7px;
+            height: 1.1em;
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            background: rgba(255, 87, 10, 0.9);
+            animation: wf-inplace-blink 0.85s step-end infinite;
+        }
+        .wf-graph-inplace-caret.wf-inplace-done {
+            animation: none;
+            opacity: 0;
+            width: 0;
+        }
+        @keyframes wf-inplace-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        .wf-graph-hit:hover {
+            fill: rgba(255, 87, 10, 0.12);
         }
 
         .wf-node-box {
@@ -1790,10 +1934,11 @@
                 <p class="section-desc">
                     Design a <strong>graph</strong>, not a single line: branch Planner and Frontend in parallel, merge into Backend, add QA and Reviewer, then ship to GitLab. Drag nodes, draw edges between ports, save per project.
                     <strong>AI draft</strong> can propose a layout from your repo tree; the same roles power <strong>meetings</strong> and production runs.
+                    <strong>Click an agent</strong> on the diagram (or its LED) to see a mock <strong>streamed</strong> code/shell panel <strong>on the graph</strong> — no jump down the page.
                 </p>
             </div>
             <div class="wf-canvas" role="presentation">
-                <p class="wf-graph-a11y visually-hidden">Workflow graph: Task to Orchestrator, split to Planner and Frontend, merge to Backend, QA, Reviewer, GitLab merge request. Pulsing LEDs above nodes indicate activity; click a LED for streamed code and shell in the section below.</p>
+                <p class="wf-graph-a11y visually-hidden">Workflow graph: Task to Orchestrator, split to Planner and Frontend, merge to Backend, QA, Reviewer, GitLab merge request. Click an agent rectangle or LED for an in-place streamed code and shell panel on the graph.</p>
                 <div class="wf-graph-wrap">
                 <svg class="wf-graph-svg" viewBox="0 0 900 248" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true">
                     <defs>
@@ -1871,6 +2016,17 @@
                             <mpath xlink:href="#wf-drag-branch"/>
                         </animateMotion>
                     </circle>
+                    <!-- Click targets: same agents as edges / LEDs (in-place stream, no page scroll) -->
+                    <g class="wf-graph-hits" fill="rgba(255,87,10,0.04)" stroke="none" pointer-events="all">
+                        <rect class="wf-graph-hit" data-wf-map="task" x="18" y="74" width="88" height="52" rx="10" style="cursor:pointer"/>
+                        <rect class="wf-graph-hit" data-wf-map="orchestrator" x="122" y="74" width="130" height="52" rx="10" style="cursor:pointer"/>
+                        <rect class="wf-graph-hit" data-wf-map="planner" x="298" y="26" width="100" height="50" rx="10" style="cursor:pointer"/>
+                        <rect class="wf-graph-hit" data-wf-map="frontend-dev" x="298" y="136" width="100" height="50" rx="10" style="cursor:pointer"/>
+                        <rect class="wf-graph-hit" data-wf-map="backend-dev" x="446" y="82" width="126" height="56" rx="10" style="cursor:pointer"/>
+                        <rect class="wf-graph-hit" data-wf-map="qa-tester" x="456" y="166" width="96" height="48" rx="10" style="cursor:pointer"/>
+                        <rect class="wf-graph-hit" data-wf-map="code-reviewer" x="598" y="82" width="112" height="56" rx="10" style="cursor:pointer"/>
+                        <rect class="wf-graph-hit" data-wf-map="reporter" x="742" y="82" width="116" height="56" rx="10" style="cursor:pointer"/>
+                    </g>
                 </svg>
                 <div class="wf-graph-huds" id="wf-graph-huds" role="group" aria-label="Activity LED per node — click for stream detail">
                     <button type="button" class="wf-hud" data-wf-map="task" data-wf-idx="0" style="left: 6.89%; top: 30.65%;" title="Task — click for stream">
@@ -1930,10 +2086,30 @@
                         </span>
                     </button>
                 </div>
+                <div id="wf-graph-inplace-stream" class="wf-graph-inplace-stream" hidden role="dialog" aria-modal="true" aria-labelledby="wf-graph-inplace-title">
+                    <div class="wf-graph-inplace-stream-inner">
+                        <div class="wf-graph-inplace-head">
+                            <span id="wf-graph-inplace-title" class="wf-graph-inplace-title">Agent</span>
+                            <span class="wf-graph-inplace-badge">Illustrative stream</span>
+                            <button type="button" class="wf-graph-inplace-close" aria-label="Close panel">&times;</button>
+                        </div>
+                        <div class="wf-graph-inplace-body">
+                            <div class="wf-graph-inplace-row">
+                                <span class="wf-graph-inplace-label">codeEdit</span>
+                                <pre id="wf-graph-inplace-code" class="wf-graph-inplace-pre wf-graph-inplace-code"></pre>
+                            </div>
+                            <div class="wf-graph-inplace-row">
+                                <span class="wf-graph-inplace-label">shell</span>
+                                <pre id="wf-graph-inplace-shell" class="wf-graph-inplace-pre wf-graph-inplace-shell"></pre>
+                            </div>
+                            <span class="wf-graph-inplace-caret" id="wf-graph-inplace-caret" aria-hidden="true"></span>
+                        </div>
+                    </div>
+                </div>
                 </div>
             </div>
             <p class="wf-caption">
-                The <strong>LEDs above each node</strong> mirror the dashboard: they show <strong>who is active</strong> without cluttering the canvas with code. <strong>Click</strong> a LED (or an agent card in the row below) to open the <strong>full code and shell streams</strong>. In <strong>Workflow Studio</strong>, one node can feed <strong>many</strong> others: fork after Orchestrator, join at Backend, add QA and Reviewer on their own edges. Link a <strong>GitLab project</strong> so each graph stays with the repo. Optional: <strong>AI draft</strong>, <strong>team meeting</strong>, <strong>voice room</strong>.
+                <strong>Click any agent box</strong> on the graph (or its LED) to open a <strong>live-style stream panel in place</strong> — code and shell lines type in like a socket feed; the page does not jump. The <strong>LEDs</strong> show who is active; the <strong>row below</strong> mirrors the same mock data. In <strong>Workflow Studio</strong>, one node can feed <strong>many</strong> others: fork after Orchestrator, join at Backend, add QA and Reviewer on their own edges. Link a <strong>GitLab project</strong> so each graph stays with the repo. Optional: <strong>AI draft</strong>, <strong>team meeting</strong>, <strong>voice room</strong>.
             </p>
             <ul class="wf-bullets">
                 <li><strong>Branches &amp; merges</strong> — Parallel paths (e.g. Planner vs Frontend) reconnect where you draw the edge; data follows those edges at runtime.</li>
@@ -2599,19 +2775,136 @@
                 hiwSyncGraphHuds(agentKey);
             }
 
+            /* In-place graph stream (no scroll jump; typewriter = “socket” feel) */
+            var hiwInplaceTypeTimer = null;
+            var WF_INPLACE_POS = {
+                task: { l: 6.89, t: 40 },
+                orchestrator: { l: 20.78, t: 40 },
+                planner: { l: 38.67, t: 24 },
+                'frontend-dev': { l: 38.67, t: 66 },
+                'backend-dev': { l: 56.56, t: 44 },
+                'qa-tester': { l: 56, t: 74 },
+                'code-reviewer': { l: 72.67, t: 44 },
+                reporter: { l: 88.89, t: 44 }
+            };
+
+            function hiwClearInplaceType() {
+                if (hiwInplaceTypeTimer) {
+                    clearInterval(hiwInplaceTypeTimer);
+                    hiwInplaceTypeTimer = null;
+                }
+            }
+
+            function hiwCloseGraphInplace() {
+                hiwClearInplaceType();
+                var pop = document.getElementById('wf-graph-inplace-stream');
+                if (pop) pop.hidden = true;
+                var ce = document.getElementById('wf-graph-inplace-code');
+                var se = document.getElementById('wf-graph-inplace-shell');
+                var caret = document.getElementById('wf-graph-inplace-caret');
+                if (ce) ce.textContent = '';
+                if (se) se.textContent = '';
+                if (caret) caret.classList.add('wf-inplace-done');
+            }
+
+            function hiwTypeInto(el, text, stepMs, done) {
+                if (!el) {
+                    if (done) done();
+                    return;
+                }
+                el.textContent = '';
+                var i = 0;
+                var t = String(text || '');
+                if (!t.length) {
+                    if (done) done();
+                    return;
+                }
+                hiwInplaceTypeTimer = setInterval(function () {
+                    if (i >= t.length) {
+                        hiwClearInplaceType();
+                        if (done) done();
+                        return;
+                    }
+                    el.textContent += t.charAt(i);
+                    i++;
+                }, stepMs || 5);
+            }
+
+            function hiwOpenGraphInplace(agentKey) {
+                var d = HIW_AGENTS[agentKey];
+                if (!d) return;
+                hiwClearInplaceType();
+                var pop = document.getElementById('wf-graph-inplace-stream');
+                var pos = WF_INPLACE_POS[agentKey];
+                var title = document.getElementById('wf-graph-inplace-title');
+                var codeEl = document.getElementById('wf-graph-inplace-code');
+                var shellEl = document.getElementById('wf-graph-inplace-shell');
+                var caret = document.getElementById('wf-graph-inplace-caret');
+                var inner = pop && pop.querySelector('.wf-graph-inplace-stream-inner');
+                if (!pop || !codeEl || !shellEl) return;
+                if (pos) {
+                    pop.style.left = pos.l + '%';
+                    pop.style.top = pos.t + '%';
+                }
+                if (title) title.textContent = agentKey + ' — streaming';
+                if (caret) caret.classList.remove('wf-inplace-done');
+                codeEl.textContent = '';
+                shellEl.textContent = '';
+                pop.hidden = false;
+                if (inner) {
+                    inner.style.animation = 'none';
+                    void inner.offsetWidth;
+                    inner.style.animation = '';
+                }
+                hiwTypeInto(codeEl, d.code, 5, function () {
+                    hiwTypeInto(shellEl, d.shell, 4, function () {
+                        if (caret) caret.classList.add('wf-inplace-done');
+                    });
+                });
+            }
+
+            function hiwPickAgentOnGraph(agentKey) {
+                hiwSetDetail(agentKey);
+                hiwOpenGraphInplace(agentKey);
+            }
+
             document.querySelectorAll('[data-hiw-select]').forEach(function (btn) {
                 btn.addEventListener('click', function () {
                     hiwSetDetail(btn.getAttribute('data-hiw-select'));
                 });
             });
 
-            document.querySelectorAll('.wf-hud[data-wf-map]').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    var k = btn.getAttribute('data-wf-map');
-                    hiwSetDetail(k);
-                    var wrap = document.getElementById('hiw-live-detail-wrap');
-                    if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            document.querySelectorAll('.wf-graph-hit').forEach(function (hit) {
+                hit.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var k = hit.getAttribute('data-wf-map');
+                    if (k) hiwPickAgentOnGraph(k);
                 });
+            });
+
+            document.querySelectorAll('.wf-hud[data-wf-map]').forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var k = btn.getAttribute('data-wf-map');
+                    if (k) hiwPickAgentOnGraph(k);
+                });
+            });
+
+            var wfInplaceClose = document.querySelector('.wf-graph-inplace-close');
+            if (wfInplaceClose) {
+                wfInplaceClose.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    hiwCloseGraphInplace();
+                });
+            }
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key !== 'Escape') return;
+                var pop = document.getElementById('wf-graph-inplace-stream');
+                if (pop && !pop.hidden) {
+                    e.preventDefault();
+                    hiwCloseGraphInplace();
+                }
             });
 
             hiwSetDetail('backend-dev');
