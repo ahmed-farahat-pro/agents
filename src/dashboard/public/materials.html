@@ -250,12 +250,139 @@
             margin: 0 auto;
         }
 
+        /* Free materials + Crazy apps side-by-side */
+        .resources-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px 40px;
+            align-items: start;
+            margin-bottom: 60px;
+        }
+
+        .resource-column h2 {
+            font-family: var(--font-sans);
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--accent-orange);
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .resource-column.crazy h2 {
+            color: var(--accent-green);
+            border-bottom-color: rgba(25, 213, 158, 0.25);
+        }
+
+        .crazy-apps-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .crazy-app-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.25s ease, border-color 0.25s;
+        }
+
+        .crazy-app-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-orange), var(--accent-green));
+        }
+
+        .crazy-app-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(25, 213, 158, 0.45);
+        }
+
+        .crazy-app-card .app-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            background: rgba(255, 87, 10, 0.12);
+            border: 1px solid rgba(255, 87, 10, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--accent-orange);
+            margin-bottom: 16px;
+        }
+
+        .crazy-app-card h3 {
+            font-family: var(--font-sans);
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .crazy-app-card p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.55;
+            margin-bottom: 18px;
+        }
+
+        .crazy-app-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .crazy-app-actions a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 18px;
+            font-family: var(--font-sans);
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: opacity 0.2s, transform 0.15s;
+        }
+
+        .crazy-app-actions a:active { transform: scale(0.98); }
+
+        .crazy-app-actions .btn-dl {
+            background: var(--accent-orange);
+            color: var(--bg-primary);
+            border: 1px solid var(--accent-orange);
+        }
+
+        .crazy-app-actions .btn-dl:hover {
+            opacity: 0.92;
+        }
+
+        .crazy-app-actions .btn-info {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .crazy-app-actions .btn-info:hover {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
         /* Materials Grid */
         .materials-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 24px;
-            margin-bottom: 60px;
         }
 
         .material-card {
@@ -713,6 +840,10 @@
             .materials-grid {
                 grid-template-columns: 1fr;
             }
+
+            .resources-layout {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -731,6 +862,7 @@
             <a href="/" class="nav-link">Home</a>
             <a href="/how-it-works.html" class="nav-link">How it works</a>
             <a href="/materials.html" class="nav-link active">Free Materials</a>
+            <a href="/airsound.html" class="nav-link">Crazy apps</a>
             <a href="/login.html" class="nav-cta">Login →</a>
         </div>
     </nav>
@@ -740,10 +872,13 @@
     <main class="main">
         <div class="header">
             <div class="header-badge">Free Download</div>
-            <h1>Developer <span>Roadmaps</span></h1>
-            <p>Get our comprehensive 30-day learning roadmaps. Enter your email and we'll send you the download link instantly.</p>
+            <h1>Developer <span>Roadmaps</span> &amp; <span style="color:var(--accent-green)">Crazy apps</span></h1>
+            <p>Grab PDF roadmaps by email — and try our experimental macOS utilities from the Crazy apps shelf.</p>
         </div>
 
+        <div class="resources-layout">
+        <div class="resource-column" id="free-materials">
+        <h2>Free materials</h2>
         <div class="materials-grid">
             <!-- Full Stack -->
             <div class="material-card fullstack">
@@ -796,6 +931,23 @@
                 </div>
                 <button class="download-btn" onclick="openModal('qa', 'QA')">Get Download Link</button>
             </div>
+        </div>
+        </div>
+
+        <div class="resource-column crazy" id="crazy-apps">
+        <h2>Crazy apps</h2>
+        <div class="crazy-apps-stack">
+            <article class="crazy-app-card">
+                <div class="app-icon">AS</div>
+                <h3>AirSound</h3>
+                <p>Tilt your MacBook — stereo pans with the motion sensor. Menu bar app with a tight bounce loop and a silent center “dead zone.”</p>
+                <div class="crazy-app-actions">
+                    <a class="btn-dl" href="/downloads/AirSound-1.0.0.dmg" download>Download DMG</a>
+                    <a class="btn-info" href="/airsound.html">Landing &amp; story</a>
+                </div>
+            </article>
+        </div>
+        </div>
         </div>
     </main>
 
