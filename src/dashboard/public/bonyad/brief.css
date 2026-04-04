@@ -1524,6 +1524,64 @@ footer {
   font-size: 13px;
 }
 
+/* AI import “thinking” loader (hub) */
+.bonyad-ai-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 26000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(5, 4, 8, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.bonyad-ai-loading-card {
+  text-align: center;
+  max-width: 360px;
+  padding: 32px 28px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: linear-gradient(175deg, var(--bg-elevated), var(--bg-card));
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 87, 10, 0.12);
+  animation: bonyadAiDialogIn 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.bonyad-ai-loading-spinner {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 87, 10, 0.18);
+  border-top-color: var(--accent-orange);
+  animation: bonyadAiSpin 0.8s linear infinite;
+}
+@keyframes bonyadAiSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.bonyad-ai-loading-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 10px;
+  letter-spacing: -0.02em;
+}
+.bonyad-ai-loading-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.55;
+}
+
+.bonyad-ai-excel-import .add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .bonyad-ai-summary-overlay {
   position: fixed;
   inset: 0;

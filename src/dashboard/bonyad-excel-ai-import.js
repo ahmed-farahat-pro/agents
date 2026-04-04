@@ -32,7 +32,14 @@ const upload = multer({
   limits: { fileSize: MAX_FILE_BYTES, files: 1 },
   fileFilter: (req, file, cb) => {
     const n = (file.originalname || '').toLowerCase();
-    if (n.endsWith('.xlsx') || n.endsWith('.xls')) {
+    const okName = n.endsWith('.xlsx') || n.endsWith('.xls');
+    const mt = String(file.mimetype || '').toLowerCase();
+    const okMime =
+      mt.includes('spreadsheet') ||
+      mt.includes('excel') ||
+      mt === 'application/vnd.ms-excel' ||
+      mt === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    if (okName || okMime) {
       cb(null, true);
     } else {
       cb(new Error('Only .xls or .xlsx files are allowed'));
@@ -144,18 +151,19 @@ Rules:
   return { assignments: allAssignments, newSheets: [...newSheetsMap.values()] };
 }
 
+function parseMultipartThenRequireEdit(req, res, next) {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ success: false, error: err.message || 'Upload failed' });
+    }
+    requireBonyadEdit(req, res, next);
+  });
+}
+
 function registerBonyadExcelAiRoutes(app) {
   app.post(
     '/api/bonyad/issues/import-excel-ai',
-    requireBonyadEdit,
-    (req, res, next) => {
-      upload.single('file')(req, res, (err) => {
-        if (err) {
-          return res.status(400).json({ success: false, error: err.message || 'Upload failed' });
-        }
-        next();
-      });
-    },
+    parseMultipartThenRequireEdit,
     async (req, res) => {
       try {
         if (!req.file || !req.file.buffer) {

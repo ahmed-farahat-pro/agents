@@ -130,6 +130,13 @@
     <div class="footer-txt">Bonyad · Nigents · Problem-X · Consult Code Achieve</div>
   </footer>
   <div class="toast" id="toast"></div>
+  <div id="ai-imp-loading" class="bonyad-ai-loading-overlay" aria-hidden="true" style="display:none;">
+    <div class="bonyad-ai-loading-card">
+      <div class="bonyad-ai-loading-spinner" aria-hidden="true"></div>
+      <p class="bonyad-ai-loading-title">AI is working on your file…</p>
+      <p class="bonyad-ai-loading-sub">Reading the sheet and routing each bug to the right platform brief. Large files can take a minute.</p>
+    </div>
+  </div>
   <div id="ai-imp-modal" class="bonyad-ai-summary-overlay" aria-hidden="true" style="display:none;">
     <div class="bonyad-ai-summary-dialog" role="dialog" aria-modal="true" aria-labelledby="ai-imp-modal-title">
       <div class="bonyad-ai-summary-accent" aria-hidden="true"></div>
@@ -275,6 +282,49 @@
         overlay.style.display = 'none';
         overlay.setAttribute('aria-hidden', 'true');
       }
+      function showAiLoading() {
+        var el = document.getElementById('ai-imp-loading');
+        var btn = document.getElementById('ai-imp-submit');
+        if (el) {
+          el.style.display = 'flex';
+          el.setAttribute('aria-hidden', 'false');
+        }
+        if (btn) {
+          btn.disabled = true;
+          btn.setAttribute('aria-busy', 'true');
+        }
+      }
+      function hideAiLoading() {
+        var el = document.getElementById('ai-imp-loading');
+        var btn = document.getElementById('ai-imp-submit');
+        if (el) {
+          el.style.display = 'none';
+          el.setAttribute('aria-hidden', 'true');
+        }
+        if (btn) {
+          btn.disabled = false;
+          btn.removeAttribute('aria-busy');
+        }
+      }
+      function fetchJsonAiImport(url, opts) {
+        return fetch(url, opts).then(function (r) {
+          return r.text().then(function (text) {
+            var j = {};
+            try {
+              j = text ? JSON.parse(text) : {};
+            } catch (e) {
+              throw new Error(
+                (text && text.length < 280 ? text : 'Server returned non-JSON (HTTP ' + r.status + ').') ||
+                  'Invalid response'
+              );
+            }
+            if (!r.ok) {
+              throw new Error(j.error || 'Request failed (HTTP ' + r.status + ')');
+            }
+            return j;
+          });
+        });
+      }
       (function setupExcelFileUi() {
         var input = document.getElementById('imp-file');
         var zone = document.getElementById('excel-file-zone');
@@ -402,13 +452,12 @@
         var fd = new FormData();
         fd.append('file', f);
         fd.append('editKey', k);
-        toast('Routing with AI…');
-        fetch('/api/bonyad/issues/import-excel-ai?editKey=' + encodeURIComponent(k), {
+        showAiLoading();
+        fetchJsonAiImport('/api/bonyad/issues/import-excel-ai?editKey=' + encodeURIComponent(k), {
           method: 'POST',
           headers: { 'x-bonyad-edit-key': k },
           body: fd,
         })
-          .then(function (r) { return r.json(); })
           .then(function (j) {
             if (!j.success) throw new Error(j.error || 'Import failed');
             if (j.revert_batch_id) {
@@ -419,7 +468,12 @@
             showAiSummaryModal(j);
             toast('Imported ' + j.imported);
           })
-          .catch(function (e) { toast(e.message); });
+          .catch(function (e) {
+            toast(e.message || 'Import failed');
+          })
+          .finally(function () {
+            hideAiLoading();
+          });
       };
       document.getElementById('ai-imp-revert-btn').onclick = function () {
         var last = readSmartImport();
