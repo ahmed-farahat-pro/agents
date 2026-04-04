@@ -50,12 +50,45 @@
     return 'Medium Priority';
   }
 
+  function linkifyPlainUrls(text) {
+    if (text == null || String(text).trim() === '') return '';
+    const str = String(text);
+    const re = /https?:\/\/[^\s<>"',;]+/gi;
+    let out = '';
+    let last = 0;
+    let m;
+    while ((m = re.exec(str)) !== null) {
+      out += esc(str.slice(last, m.index));
+      let url = m[0];
+      const trail = url.match(/[.,;]+$/);
+      if (trail) {
+        url = url.slice(0, -trail[0].length);
+      }
+      const short = url.length > 52 ? url.slice(0, 50) + '…' : url;
+      out +=
+        '<a href="' +
+        esc(url) +
+        '" target="_blank" rel="noopener noreferrer" class="issue-attachment-link">' +
+        esc(short) +
+        '</a>';
+      last = m.index + m[0].length;
+    }
+    out += esc(str.slice(last));
+    return out;
+  }
+
   function issueExcelMetaHtml(iss) {
     const bits = [];
     if (iss.module) bits.push('<span class="tag t-gray">Module: ' + esc(iss.module) + '</span>');
     if (iss.issue_type) bits.push('<span class="tag t-gray">Type: ' + esc(iss.issue_type) + '</span>');
     if (iss.sheet_status) bits.push('<span class="tag t-gray">Sheet status: ' + esc(iss.sheet_status) + '</span>');
-    if (iss.attachments) bits.push('<span class="tag t-gray">Attachments: ' + esc(iss.attachments) + '</span>');
+    if (iss.attachments) {
+      bits.push(
+        '<span class="tag t-gray issue-attach-tag">Attachments: <span class="issue-attach-links">' +
+          linkifyPlainUrls(iss.attachments) +
+          '</span></span>'
+      );
+    }
     if (!bits.length) return '';
     return '<div class="issue-excel-meta">' + bits.join('') + '</div>';
   }
@@ -73,7 +106,14 @@
       h += '<div class="issue-media-grid">';
       items.forEach(function (m) {
         const src = m.kind === 'url' ? m.url : m.path;
-        const cap = m.kind === 'url' ? 'Image link' : esc(m.name || 'Uploaded');
+        const cap =
+          m.kind === 'url'
+            ? '<a href="' +
+              esc(src) +
+              '" target="_blank" rel="noopener noreferrer" class="issue-media-url-cap">' +
+              esc(src.length > 44 ? src.slice(0, 42) + '…' : src) +
+              '</a>'
+            : esc(m.name || 'Uploaded');
         h +=
           '<figure class="issue-media-item">' +
           (k
@@ -194,6 +234,14 @@
         '<div class="issue-header" data-act="toggle" data-id="' +
         iss.id +
         '">' +
+        (getEditKey()
+          ? '<div class="issue-select-wrap" title="Select for bulk delete">' +
+            '<input type="checkbox" class="issue-select-cb" data-issue-id="' +
+            iss.id +
+            '" aria-label="Select issue #' +
+            n +
+            '" /></div>'
+          : '') +
         '<div class="issue-number">#' +
         n +
         '</div>' +
@@ -329,6 +377,13 @@
       '<div class="summary-card done"><div class="num" id="sumDone">' +
       done +
       '</div><div class="lbl">Completed</div></div></div>' +
+      (getEditKey()
+        ? '<div class="bonyad-bulk-bar" id="bonyadBulkBar">' +
+          '<label class="bulk-select-all-lbl"><input type="checkbox" id="bulk-select-all" /> Select all</label>' +
+          '<button type="button" class="btn-danger-outline" id="bulk-delete-selected" disabled>Delete selected</button>' +
+          '<span class="bulk-selected-count" id="bulk-selected-count"></span>' +
+          '</div>'
+        : '') +
       '<div class="section-label">Issues &amp; Developer Prompts</div>' +
       cardsHtml +
       ADD_SECTION_HTML +
@@ -343,11 +398,56 @@
     root.querySelectorAll('.issue-header[data-act="toggle"]').forEach(function (el) {
       el.addEventListener('click', function (e) {
         if (e.target.closest('[data-act="done"]')) return;
+        if (e.target.closest('.issue-select-wrap') || e.target.closest('.issue-select-cb')) return;
         const id = el.getAttribute('data-id');
         const card = document.getElementById('card-' + id);
         if (card) card.classList.toggle('open');
       });
     });
+
+    function updateBulkBar() {
+      const checked = root.querySelectorAll('.issue-select-cb:checked');
+      const n = checked.length;
+      const btn = root.querySelector('#bulk-delete-selected');
+      const cnt = root.querySelector('#bulk-selected-count');
+      if (btn) btn.disabled = n === 0;
+      if (cnt) cnt.textContent = n ? n + ' selected' : '';
+    }
+    function syncBulkSelectAll() {
+      const all = root.querySelectorAll('.issue-select-cb');
+      const on = root.querySelectorAll('.issue-select-cb:checked');
+      const master = root.querySelector('#bulk-select-all');
+      if (!master || !all.length) return;
+      master.checked = on.length === all.length;
+      master.indeterminate = on.length > 0 && on.length < all.length;
+    }
+    const bulkMaster = root.querySelector('#bulk-select-all');
+    if (bulkMaster) {
+      bulkMaster.addEventListener('change', function () {
+        root.querySelectorAll('.issue-select-cb').forEach(function (cb) {
+          cb.checked = bulkMaster.checked;
+        });
+        updateBulkBar();
+        syncBulkSelectAll();
+      });
+    }
+    root.querySelectorAll('.issue-select-cb').forEach(function (cb) {
+      cb.addEventListener('change', function () {
+        updateBulkBar();
+        syncBulkSelectAll();
+      });
+    });
+    const bulkDelBtn = root.querySelector('#bulk-delete-selected');
+    if (bulkDelBtn) {
+      bulkDelBtn.addEventListener('click', function () {
+        const ids = Array.prototype.map.call(root.querySelectorAll('.issue-select-cb:checked'), function (c) {
+          return Number(c.getAttribute('data-issue-id'));
+        });
+        if (!ids.length) return;
+        if (!confirm('Delete ' + ids.length + ' selected issue(s)? This cannot be undone.')) return;
+        batchDeleteIssues(ids);
+      });
+    }
     root.querySelectorAll('[data-act="done"]').forEach(function (el) {
       el.addEventListener('click', function (e) {
         e.stopPropagation();
@@ -550,6 +650,26 @@
       })
       .catch(function (e) {
         showToast(e.message || 'Delete all failed');
+      });
+  }
+
+  function batchDeleteIssues(ids) {
+    const k = getEditKey();
+    fetch(API + '/api/bonyad/sheets/' + encodeURIComponent(slug) + '/issues/batch-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-bonyad-edit-key': k },
+      body: JSON.stringify({ ids: ids, editKey: k }),
+    })
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (j) {
+        if (!j.success) throw new Error(j.error || 'Failed');
+        showToast('Deleted ' + (j.deleted != null ? j.deleted : ids.length) + ' issue(s)');
+        return load();
+      })
+      .catch(function (e) {
+        showToast(e.message || 'Bulk delete failed');
       });
   }
 

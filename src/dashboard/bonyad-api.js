@@ -419,6 +419,43 @@ function registerBonyadRoutes(app) {
     }
   });
 
+  app.post('/api/bonyad/sheets/:slug/issues/batch-delete', requireBonyadEdit, async (req, res) => {
+    try {
+      const slug = String(req.params.slug || '').toLowerCase();
+      const rawIds = (req.body && req.body.ids) || [];
+      if (!Array.isArray(rawIds) || rawIds.length === 0) {
+        return res.status(400).json({ success: false, error: 'body.ids must be a non-empty array of issue ids' });
+      }
+      const ids = [...new Set(rawIds.map((x) => Number(x)).filter((n) => n > 0))];
+      if (!ids.length) {
+        return res.status(400).json({ success: false, error: 'No valid numeric ids' });
+      }
+      const sh = await db.query('SELECT slug FROM bonyad_sheets WHERE slug=?', [slug]);
+      if (!sh.length) {
+        return res.status(404).json({ success: false, error: 'Sheet not found' });
+      }
+      const ph = ids.map(() => '?').join(',');
+      const found = await db.query(
+        `SELECT * FROM bonyad_issues WHERE sheet_slug=? AND id IN (${ph})`,
+        [slug, ...ids]
+      );
+      if (!found.length) {
+        return res.json({ success: true, deleted: 0, ids: [] });
+      }
+      for (const row of found) {
+        deleteUploadedFilesForIssueRow(row);
+      }
+      const delIds = found.map((r) => r.id);
+      const ph2 = delIds.map(() => '?').join(',');
+      await db.query(`DELETE FROM bonyad_issues WHERE sheet_slug=? AND id IN (${ph2})`, [slug, ...delIds]);
+      logger.info('[Bonyad] batch-delete slug=%s count=%d', slug, delIds.length);
+      res.json({ success: true, deleted: delIds.length, ids: delIds });
+    } catch (e) {
+      logger.error('[Bonyad] batch-delete:', e.message);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
   app.patch('/api/bonyad/issues/:id', requireBonyadEdit, async (req, res) => {
     try {
       const id = Number(req.params.id);

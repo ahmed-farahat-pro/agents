@@ -169,14 +169,16 @@ function pickWorkbookSheet(wb) {
     const sheet = wb.Sheets[name];
     if (sheetHasTitleColumn(sheet)) {
       const rows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
-      return { sheetName: name, rows };
+      return { sheetName: name, rows, sheet };
     }
   }
   const name = wb.SheetNames[0];
-  if (!name) return { sheetName: null, rows: [] };
+  if (!name) return { sheetName: null, rows: [], sheet: null };
+  const sheet = wb.Sheets[name];
   return {
     sheetName: name,
-    rows: XLSX.utils.sheet_to_json(wb.Sheets[name], { defval: '', raw: false }),
+    rows: XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false }),
+    sheet,
   };
 }
 
@@ -185,22 +187,89 @@ function parseWorkbook(buffer) {
   return pickWorkbookSheet(wb);
 }
 
-/** Turn attachment cell text + filenames into issue_media URL entries (http/https only). */
-function issueMediaFromAttachments(attachmentsText) {
-  if (!attachmentsText || !String(attachmentsText).trim()) {
-    return JSON.stringify([]);
+/** Excel cell hyperlink target (screenshot cells often link to URL while showing a filename). */
+function hyperlinkFromCell(cell) {
+  if (!cell) return null;
+  if (cell.l) {
+    const l = cell.l;
+    if (typeof l === 'string') return l.trim();
+    if (l.Target) return String(l.Target).trim();
+    if (l.target) return String(l.target).trim();
   }
-  const parts = String(attachmentsText)
+  if (cell.f && /HYPERLINK/i.test(cell.f)) {
+    const m = cell.f.match(/HYPERLINK\s*\(\s*"([^"]+)"/i);
+    if (m) return m[1].trim();
+    const m2 = cell.f.match(/HYPERLINK\s*\(\s*'([^']+)'/i);
+    if (m2) return m2[1].trim();
+    const m3 = cell.f.match(/HYPERLINK\s*\(\s*([^,);]+)/i);
+    if (m3) {
+      const raw = String(m3[1]).replace(/^["']|["']$/g, '').trim();
+      if (/^https?:\/\//i.test(raw)) return raw;
+    }
+  }
+  return null;
+}
+
+/** All http(s) hyperlink targets on one sheet row (0-based row index). */
+function extractHyperlinkUrlsForRow(sheet, row0) {
+  const urls = [];
+  if (!sheet || sheet['!ref'] == null) return urls;
+  const range = XLSX.utils.decode_range(sheet['!ref']);
+  if (row0 < range.s.r || row0 > range.e.r) return urls;
+  const seen = new Set();
+  for (let c = range.s.c; c <= range.e.c; c += 1) {
+    const addr = XLSX.utils.encode_cell({ r: row0, c });
+    const cell = sheet[addr];
+    const t = hyperlinkFromCell(cell);
+    if (t && /^https?:\/\//i.test(t)) {
+      const u = t.slice(0, 2048);
+      const k = u.toLowerCase();
+      if (!seen.has(k)) {
+        seen.add(k);
+        urls.push(u);
+      }
+    }
+  }
+  return urls;
+}
+
+function extractUrlsFromFreeText(text) {
+  if (text == null || text === '') return [];
+  const re = /https?:\/\/[^\s<>"',;|]+/gi;
+  const m = String(text).match(re);
+  return m || [];
+}
+
+/**
+ * Build issue_media JSON: Excel hyperlinks (real screenshot URLs) + URLs in attachment cell text.
+ */
+function issueMediaFromExcelRow(attachmentsText, rowHyperlinkUrls) {
+  const raw = [];
+  const seen = new Set();
+  function addUrl(u) {
+    const t = String(u).trim().slice(0, 2048);
+    if (!/^https?:\/\//i.test(t)) return;
+    const k = t.toLowerCase();
+    if (seen.has(k)) return;
+    seen.add(k);
+    raw.push({ id: crypto.randomUUID(), kind: 'url', url: t });
+  }
+  for (const h of rowHyperlinkUrls || []) addUrl(h);
+  const parts = String(attachmentsText || '')
     .split(/[,;|\n]\s*/)
     .map((x) => x.trim())
     .filter(Boolean);
-  const raw = [];
-  for (const p of parts) {
-    if (/^https?:\/\//i.test(p)) {
-      raw.push({ id: crypto.randomUUID(), kind: 'url', url: p.slice(0, 2048) });
-    }
-  }
+  for (const p of parts) addUrl(p);
+  for (const u of extractUrlsFromFreeText(attachmentsText)) addUrl(u);
   return JSON.stringify(normalizeMediaArray(raw));
+}
+
+/** Prefer storing real URLs in attachments field when hyperlinks exist (clickable in UI). */
+function attachmentsDisplayText(attachmentsText, rowHyperlinkUrls) {
+  if (rowHyperlinkUrls && rowHyperlinkUrls.length) {
+    return rowHyperlinkUrls.join('; ');
+  }
+  return attachmentsText || null;
 }
 
 function registerBonyadExcelRoutes(app) {
@@ -225,7 +294,7 @@ function registerBonyadExcelRoutes(app) {
         if (!sh.length) {
           return res.status(404).json({ success: false, error: 'Sheet not found' });
         }
-        const { rows, sheetName } = parseWorkbook(req.file.buffer);
+        const { rows, sheetName, sheet } = parseWorkbook(req.file.buffer);
         if (!rows.length) {
           return res.status(400).json({
             success: false,
@@ -233,6 +302,7 @@ function registerBonyadExcelRoutes(app) {
           });
         }
         const slice = rows.slice(0, MAX_ROWS);
+        const headerOffset = 1;
         const maxOrd = await db.query(
           'SELECT COALESCE(MAX(sort_order),0) AS n FROM bonyad_issues WHERE sheet_slug=?',
           [slug]
@@ -254,7 +324,10 @@ function registerBonyadExcelRoutes(app) {
           const module = pick(m, MODULE_KEYS) || null;
           const issueType = pick(m, TYPE_KEYS) || null;
           const sheetStatus = pick(m, STATUS_KEYS) || null;
-          const attachments = pickAttachments(m);
+          const attachmentsRaw = pickAttachments(m);
+          const excelRow0 = headerOffset + i;
+          const rowHyperUrls = sheet ? extractHyperlinkUrlsForRow(sheet, excelRow0) : [];
+          const attachments = attachmentsDisplayText(attachmentsRaw, rowHyperUrls);
           const tagsFromCol = parseTags(pick(m, TAGS_KEYS));
           const tags =
             tagsFromCol.length > 0
@@ -262,7 +335,7 @@ function registerBonyadExcelRoutes(app) {
               : [module, issueType].filter((x) => x && String(x).trim());
 
           const isDone = statusToDone(sheetStatus) ? 1 : 0;
-          const issueMediaJson = issueMediaFromAttachments(attachments);
+          const issueMediaJson = issueMediaFromExcelRow(attachmentsRaw, rowHyperUrls);
 
           await db.query(
             `INSERT INTO bonyad_issues (sheet_slug, sort_order, module, issue_type, sheet_status, attachments, title, priority, tags, prompt_text, criteria, issue_media, is_done)

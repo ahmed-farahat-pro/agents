@@ -31,7 +31,7 @@
     <p class="hint">
       Upload <strong>.xls</strong> or <strong>.xlsx</strong>. The importer picks the first worksheet whose header row includes
       <strong>Title</strong> (matches exports like <em>Bonyad_BUGS.xlsx</em>: Module, Type, Priority, Title, Description,
-      Steps to Reproduce, Expected / Actual Behavior, Notes, Attachments, Status). Status values such as <strong>solved</strong> mark the issue done in Bonyad.
+      Steps to Reproduce, Expected / Actual Behavior, Notes, Attachments, Status). <strong>Hyperlinks</strong> on a row (e.g. screenshot cell linking to a URL) are read as the real <strong>https</strong> target for clickable bugs, not only the visible filename. Plain <strong>http(s)</strong> text in cells is detected too. Status <strong>solved</strong> marks the issue done.
       No edit key required — up to <strong>2000</strong> rows, <strong>6&nbsp;MB</strong> max.
     </p>
     <div class="bonyad-excel-import-inner">

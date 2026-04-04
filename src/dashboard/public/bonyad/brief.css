@@ -370,6 +370,66 @@ body.bonyad-theme > * {
   user-select: none;
 }
 
+.issue-select-wrap {
+  flex-shrink: 0;
+  margin-top: 5px;
+  cursor: default;
+  user-select: auto;
+}
+
+.issue-select-wrap input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--accent-orange);
+}
+
+.bonyad-bulk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0 18px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.bulk-select-all-lbl {
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bulk-selected-count {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.issue-attach-tag .issue-attach-links {
+  white-space: normal;
+  word-break: break-all;
+  font-weight: 500;
+}
+
+.issue-attachment-link {
+  color: var(--accent-orange);
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.issue-attachment-link:hover {
+  color: #ff8f4a;
+}
+
+.issue-media-url-cap {
+  color: var(--accent-orange);
+  text-decoration: underline;
+  word-break: break-all;
+}
+
 .issue-number {
   min-width: 32px;
   height: 32px;
