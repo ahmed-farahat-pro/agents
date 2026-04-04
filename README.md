@@ -2995,5 +2995,6 @@ Built with ❤️ for developers who sleep while their code ships.
 
 For daily operations, EC2 updates, and troubleshooting, see **[OPERATIONS.md](OPERATIONS.md)**.
 
-The **Bonyad Home Services** iOS app (`bonyad-cr-2`) architecture, backlog, and AI task prompts are summarized in **[docs/BONYAD_HOME_SERVICES_IOS.md](docs/BONYAD_HOME_SERVICES_IOS.md)**.
+The **Bonyad Home Services** iOS app (`bonyad-cr-2`) architecture, backlog, and AI task prompts are summarized in **[docs/BONYAD_HOME_SERVICES_IOS.md](docs/BONYAD_HOME_SERVICES_IOS.md)**.  
+**5/4 change requests** (P1–P8 + roadmap A–Q with platform tags): **[docs/BONYAD_5_4_REQUEST_UPDATES.md](docs/BONYAD_5_4_REQUEST_UPDATES.md)**.
 

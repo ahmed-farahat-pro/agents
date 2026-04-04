@@ -908,3 +908,5 @@ Private — Bonyad Hub © 2025. All rights reserved.
 ---
 
 *This document describes the **bonyad-cr-2** iOS codebase. It lives in the Nigents monorepo under `docs/` for cross-team reference alongside the Bonyad web briefs (`/bonyad`).*
+
+**Consolidated ownership (iOS · Frontend · AI Chatbot · Backend · DB):** see [`BONYAD_5_4_REQUEST_UPDATES.md`](./BONYAD_5_4_REQUEST_UPDATES.md) for the **5/4** change-request batch (tasks P1–P8 + A–Q).
