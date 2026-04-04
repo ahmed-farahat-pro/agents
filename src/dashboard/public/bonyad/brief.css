@@ -1494,6 +1494,158 @@ footer {
   font-weight: 600;
 }
 
+/* AI-routed Excel import + summary modal (Bonyad hub) */
+.bonyad-ai-excel-import {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 28px 36px 40px;
+  border-top: 1px solid var(--border);
+}
+.bonyad-ai-excel-import h3 {
+  font-size: 15px;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+}
+.bonyad-ai-excel-import .hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+.bonyad-ai-excel-inner {
+  border: 1px solid rgba(66, 165, 245, 0.28);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  background: linear-gradient(165deg, rgba(66, 165, 245, 0.06), var(--bg-card));
+}
+.ai-imp-file-input {
+  width: 100%;
+  max-width: 420px;
+  font-size: 13px;
+}
+
+.bonyad-ai-summary-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 25000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(5, 4, 8, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.bonyad-ai-summary-dialog {
+  width: min(100%, 460px);
+  max-height: min(88vh, 640px);
+  overflow: auto;
+  padding: 26px 24px 22px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: linear-gradient(175deg, var(--bg-elevated), var(--bg-card));
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(66, 165, 245, 0.12);
+  animation: bonyadAiDialogIn 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes bonyadAiDialogIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.bonyad-ai-summary-accent {
+  width: 56px;
+  height: 3px;
+  border-radius: 0 0 8px 8px;
+  margin: -10px auto 14px;
+  background: linear-gradient(90deg, transparent, var(--blue-accent), var(--accent-orange), transparent);
+}
+.bonyad-ai-summary-total {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+.bonyad-ai-summary-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bonyad-ai-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+}
+.bonyad-ai-summary-count {
+  font-size: 22px;
+  font-weight: 800;
+  font-family: var(--mono);
+  color: var(--accent-orange);
+  min-width: 36px;
+}
+.bonyad-ai-summary-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.bonyad-ai-summary-slug {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text-muted);
+}
+.bonyad-ai-summary-news {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border);
+}
+.bonyad-ai-summary-newlist {
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.bonyad-ai-summary-newlist a {
+  color: var(--accent-orange);
+  font-weight: 600;
+}
+
+.migrate-issue-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.migrate-issue-row .migrate-sheet-select {
+  flex: 1;
+  min-width: 180px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.migrate-issue-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 8px 0 0;
+  line-height: 1.45;
+}
+.migrate-issue-hint a {
+  color: var(--accent-orange);
+}
+
 @media (max-width: 640px) {
   .excel-file-body {
     flex-direction: column;

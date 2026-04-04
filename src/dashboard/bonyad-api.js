@@ -129,6 +129,17 @@ async function ensureBonyadExcelImportBatchesTable() {
   `);
 }
 
+async function ensureBonyadSmartImportBatchesTable() {
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS bonyad_smart_import_batches (
+      id CHAR(36) NOT NULL PRIMARY KEY,
+      issue_ids JSON NOT NULL,
+      breakdown JSON NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+}
+
 const DEFAULT_SHEETS = [
   {
     slug: 'android',
@@ -245,6 +256,7 @@ async function initBonyadData() {
     await ensureBonyadTables();
     await ensureBonyadIssueExtraColumns();
     await ensureBonyadExcelImportBatchesTable();
+    await ensureBonyadSmartImportBatchesTable();
     await seedSheetsIfEmpty();
     await migrateLegacySheetLabels();
     await seedAndroidIssuesIfEmpty();
@@ -467,6 +479,39 @@ function registerBonyadRoutes(app) {
       res.json({ success: true, deleted: delIds.length, ids: delIds });
     } catch (e) {
       logger.error('[Bonyad] batch-delete:', e.message);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  app.patch('/api/bonyad/issues/:id/migrate', requireBonyadEdit, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const target = String((req.body && req.body.sheet_slug) || '').toLowerCase().trim();
+      if (!target) {
+        return res.status(400).json({ success: false, error: 'sheet_slug is required' });
+      }
+      const cur = await db.query('SELECT id, sheet_slug FROM bonyad_issues WHERE id=?', [id]);
+      if (!cur.length) {
+        return res.status(404).json({ success: false, error: 'Issue not found' });
+      }
+      const fromSlug = cur[0].sheet_slug;
+      if (fromSlug === target) {
+        return res.status(400).json({ success: false, error: 'Issue is already on that sheet' });
+      }
+      const sh = await db.query('SELECT slug FROM bonyad_sheets WHERE slug=?', [target]);
+      if (!sh.length) {
+        return res.status(404).json({ success: false, error: 'Target sheet not found' });
+      }
+      const maxRows = await db.query(
+        'SELECT COALESCE(MAX(sort_order),0)+1 AS n FROM bonyad_issues WHERE sheet_slug=?',
+        [target]
+      );
+      const ord = Number(maxRows[0].n) || 1;
+      await db.query('UPDATE bonyad_issues SET sheet_slug=?, sort_order=? WHERE id=?', [target, ord, id]);
+      logger.info('[Bonyad] migrated issue %s to sheet %s', id, target);
+      res.json({ success: true, id, sheet_slug: target, previous_sheet_slug: fromSlug });
+    } catch (e) {
+      logger.error('[Bonyad] migrate issue:', e.message);
       res.status(500).json({ success: false, error: e.message });
     }
   });

@@ -389,6 +389,13 @@ CREATE TABLE IF NOT EXISTS bonyad_excel_import_batches (
   INDEX idx_bonyad_excel_batch_sheet (sheet_slug)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS bonyad_smart_import_batches (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  issue_ids JSON NOT NULL,
+  breakdown JSON NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS bonyad_ai_roadmap (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   sort_order INT NOT NULL DEFAULT 0,

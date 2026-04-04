@@ -272,6 +272,95 @@ function attachmentsDisplayText(attachmentsText, rowHyperlinkUrls) {
   return attachmentsText || null;
 }
 
+/**
+ * Parse workbook into rows ready for INSERT (shared by single-sheet import + AI-routed import).
+ * @returns {{ sheetName: string|null, sheet: object|null, prepared: Array, capped: boolean, parseError: string|null }}
+ */
+function extractPreparedIssuesFromBuffer(buffer) {
+  let parsed;
+  try {
+    parsed = parseWorkbook(buffer);
+  } catch (e) {
+    return {
+      parseError: e.message || 'Invalid spreadsheet',
+      sheetName: null,
+      sheet: null,
+      prepared: [],
+      capped: false,
+    };
+  }
+  const { rows, sheetName, sheet } = parsed;
+  if (!rows.length) {
+    return {
+      parseError:
+        'No data rows found. Use a worksheet whose first row includes a Title (or Issue) column.',
+      sheetName,
+      sheet: null,
+      prepared: [],
+      capped: false,
+    };
+  }
+  const slice = rows.slice(0, MAX_ROWS);
+  const headerOffset = 1;
+  const prepared = [];
+  for (let i = 0; i < slice.length; i += 1) {
+    const m = rowMap(slice[i]);
+    let title = pick(m, TITLE_KEYS);
+    const { promptText, criteria } = buildPromptAndCriteria(m);
+    if (!title && !promptText) {
+      prepared.push({
+        i,
+        excelRow: i + headerOffset + 1,
+        skipReason: 'No title or description',
+        data: null,
+      });
+      continue;
+    }
+    if (!title) title = String(promptText).slice(0, 512);
+    if (title.length > 512) title = title.slice(0, 512);
+    const priority = normPriority(pick(m, PRIORITY_KEYS));
+    const module = pick(m, MODULE_KEYS) || null;
+    const issueType = pick(m, TYPE_KEYS) || null;
+    const sheetStatus = pick(m, STATUS_KEYS) || null;
+    const attachmentsRaw = pickAttachments(m);
+    const excelRow0 = headerOffset + i;
+    const rowHyperUrls = sheet ? extractHyperlinkUrlsForRow(sheet, excelRow0) : [];
+    const attachments = attachmentsDisplayText(attachmentsRaw, rowHyperUrls);
+    const tagsFromCol = parseTags(pick(m, TAGS_KEYS));
+    const tags =
+      tagsFromCol.length > 0
+        ? tagsFromCol
+        : [module, issueType].filter((x) => x && String(x).trim());
+    const isDone = statusToDone(sheetStatus) ? 1 : 0;
+    const issueMediaJson = issueMediaFromExcelRow(attachmentsRaw, rowHyperUrls);
+    prepared.push({
+      i,
+      excelRow: i + headerOffset + 1,
+      skipReason: null,
+      data: {
+        title,
+        priority,
+        module,
+        issue_type: issueType,
+        sheet_status: sheetStatus,
+        attachments,
+        tags,
+        promptText,
+        criteria,
+        issueMediaJson,
+        isDone,
+      },
+    });
+  }
+  return {
+    sheetName,
+    sheet,
+    prepared,
+    capped: rows.length > MAX_ROWS,
+    parseError: null,
+  };
+}
+
 function registerBonyadExcelRoutes(app) {
   app.post(
     '/api/bonyad/sheets/:slug/issues/import-excel',
@@ -294,15 +383,11 @@ function registerBonyadExcelRoutes(app) {
         if (!sh.length) {
           return res.status(404).json({ success: false, error: 'Sheet not found' });
         }
-        const { rows, sheetName, sheet } = parseWorkbook(req.file.buffer);
-        if (!rows.length) {
-          return res.status(400).json({
-            success: false,
-            error: 'No data rows found. Use a worksheet whose first row includes a Title (or Issue) column.',
-          });
+        const parsed = extractPreparedIssuesFromBuffer(req.file.buffer);
+        if (parsed.parseError) {
+          return res.status(400).json({ success: false, error: parsed.parseError });
         }
-        const slice = rows.slice(0, MAX_ROWS);
-        const headerOffset = 1;
+        const { sheetName, prepared, capped } = parsed;
         const maxOrd = await db.query(
           'SELECT COALESCE(MAX(sort_order),0) AS n FROM bonyad_issues WHERE sheet_slug=?',
           [slug]
@@ -311,50 +396,29 @@ function registerBonyadExcelRoutes(app) {
         let imported = 0;
         const skipped = [];
         const createdIssueIds = [];
-        for (let i = 0; i < slice.length; i += 1) {
-          const m = rowMap(slice[i]);
-          let title = pick(m, TITLE_KEYS);
-          const { promptText, criteria } = buildPromptAndCriteria(m);
-          if (!title && !promptText) {
-            skipped.push({ row: i + 2, reason: 'No title or description' });
+        for (const p of prepared) {
+          if (p.skipReason) {
+            skipped.push({ row: p.excelRow, reason: p.skipReason });
             continue;
           }
-          if (!title) title = String(promptText).slice(0, 512);
-          if (title.length > 512) title = title.slice(0, 512);
-          const priority = normPriority(pick(m, PRIORITY_KEYS));
-          const module = pick(m, MODULE_KEYS) || null;
-          const issueType = pick(m, TYPE_KEYS) || null;
-          const sheetStatus = pick(m, STATUS_KEYS) || null;
-          const attachmentsRaw = pickAttachments(m);
-          const excelRow0 = headerOffset + i;
-          const rowHyperUrls = sheet ? extractHyperlinkUrlsForRow(sheet, excelRow0) : [];
-          const attachments = attachmentsDisplayText(attachmentsRaw, rowHyperUrls);
-          const tagsFromCol = parseTags(pick(m, TAGS_KEYS));
-          const tags =
-            tagsFromCol.length > 0
-              ? tagsFromCol
-              : [module, issueType].filter((x) => x && String(x).trim());
-
-          const isDone = statusToDone(sheetStatus) ? 1 : 0;
-          const issueMediaJson = issueMediaFromExcelRow(attachmentsRaw, rowHyperUrls);
-
+          const d = p.data;
           const ins = await db.query(
             `INSERT INTO bonyad_issues (sheet_slug, sort_order, module, issue_type, sheet_status, attachments, title, priority, tags, prompt_text, criteria, issue_media, is_done)
              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
             [
               slug,
               nextOrder,
-              module ? module.slice(0, 255) : null,
-              issueType ? issueType.slice(0, 128) : null,
-              sheetStatus ? sheetStatus.slice(0, 128) : null,
-              attachments,
-              title,
-              priority,
-              JSON.stringify(tags.filter(Boolean)),
-              promptText,
-              JSON.stringify(criteria),
-              issueMediaJson,
-              isDone,
+              d.module ? d.module.slice(0, 255) : null,
+              d.issue_type ? d.issue_type.slice(0, 128) : null,
+              d.sheet_status ? d.sheet_status.slice(0, 128) : null,
+              d.attachments,
+              d.title,
+              d.priority,
+              JSON.stringify(d.tags.filter(Boolean)),
+              d.promptText,
+              JSON.stringify(d.criteria),
+              d.issueMediaJson,
+              d.isDone,
             ]
           );
           const newId = ins && ins.insertId != null ? Number(ins.insertId) : null;
@@ -376,7 +440,7 @@ function registerBonyadExcelRoutes(app) {
           imported,
           skipped: skipped.length ? skipped : undefined,
           worksheet: sheetName,
-          capped: rows.length > MAX_ROWS,
+          capped,
           revert_batch_id: revertBatchId,
         });
       } catch (e) {
@@ -443,4 +507,9 @@ function registerBonyadExcelRoutes(app) {
   });
 }
 
-module.exports = { registerBonyadExcelRoutes, MAX_FILE_BYTES, MAX_ROWS };
+module.exports = {
+  registerBonyadExcelRoutes,
+  MAX_FILE_BYTES,
+  MAX_ROWS,
+  extractPreparedIssuesFromBuffer,
+};

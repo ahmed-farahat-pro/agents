@@ -387,7 +387,25 @@
     return h;
   }
 
-  let state = { sheet: null, issues: [] };
+  let state = { sheet: null, issues: [], sheetsList: [] };
+
+  function migrateSheetOptionsHtml(currentSlug) {
+    const list = state.sheetsList || [];
+    return list
+      .filter(function (s) {
+        return s.slug !== currentSlug;
+      })
+      .map(function (s) {
+        return (
+          '<option value="' +
+          esc(s.slug) +
+          '">' +
+          esc(s.platform_line || s.label || s.slug) +
+          '</option>'
+        );
+      })
+      .join('');
+  }
 
   var ADD_SECTION_HTML =
     '<div class="add-section" id="addSection">' +
@@ -575,6 +593,20 @@
             '" rows="4">' +
             esc((iss.criteria || []).join('\n')) +
             '</textarea></div>' +
+            '<div class="form-group migrate-issue-group" style="margin-bottom:10px;"><label>Move to another brief</label>' +
+            '<div class="migrate-issue-row">' +
+            '<select class="migrate-sheet-select" data-issue-id="' +
+            iss.id +
+            '"><option value="">Choose sheet…</option>' +
+            migrateSheetOptionsHtml(sh.slug) +
+            '</select>' +
+            '<button type="button" class="btn-submit migrate-issue-btn" data-id="' +
+            iss.id +
+            '">Move issue</button></div>' +
+            (migrateSheetOptionsHtml(sh.slug) === ''
+              ? '<p class="migrate-issue-hint">No other sheets yet — add one from the <a href="./">Bonyad hub</a>.</p>'
+              : '') +
+            '</div>' +
             '<button type="button" class="btn-submit" data-act="save-edit" data-id="' +
             iss.id +
             '">Save changes</button> ' +
@@ -737,6 +769,24 @@
         });
       });
     });
+    root.querySelectorAll('.migrate-issue-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const id = Number(btn.getAttribute('data-id'));
+        const sel = root.querySelector('.migrate-sheet-select[data-issue-id="' + id + '"]');
+        const to = sel && sel.value.trim();
+        if (!to) {
+          showBonyadFlash('Choose a destination sheet', 'warn');
+          return;
+        }
+        showBonyadConfirm('Move this issue to "' + to + '"? You will open that brief next.', {
+          title: 'Move issue',
+          confirmText: 'Move',
+        }).then(function (ok) {
+          if (ok) migrateIssue(id, to);
+        });
+      });
+    });
+
     root.querySelectorAll('[data-act="save-edit"]').forEach(function (el) {
       el.addEventListener('click', function () {
         const id = Number(el.getAttribute('data-id'));
@@ -919,6 +969,25 @@
       });
   }
 
+  function migrateIssue(issueId, targetSlug) {
+    const k = getEditKey();
+    fetchJson(API + '/api/bonyad/issues/' + issueId + '/migrate', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'x-bonyad-edit-key': k },
+      body: JSON.stringify({ sheet_slug: targetSlug, editKey: k }),
+    })
+      .then(function () {
+        showBonyadFlash('Issue moved to ' + targetSlug, 'success');
+        if (targetSlug === slug) {
+          return load();
+        }
+        window.location.href = 'sheet.html?slug=' + encodeURIComponent(targetSlug);
+      })
+      .catch(function (e) {
+        showBonyadAlert(e.message || 'Move failed', { title: 'Could not move issue', variant: 'error' });
+      });
+  }
+
   function batchDeleteIssues(ids) {
     const k = getEditKey();
     fetchJson(API + '/api/bonyad/sheets/' + encodeURIComponent(slug) + '/issues/batch-delete', {
@@ -1053,9 +1122,15 @@
         '<p class="load-err">Missing sheet slug. Open from <a href="./">Bonyad hub</a>.</p>';
       return;
     }
-    fetchJson(API + '/api/bonyad/sheets/' + encodeURIComponent(slug))
-      .then(function (j) {
+    Promise.all([
+      fetchJson(API + '/api/bonyad/sheets/' + encodeURIComponent(slug)),
+      fetchJson(API + '/api/bonyad/sheets'),
+    ])
+      .then(function (results) {
+        const j = results[0];
+        const sj = results[1];
         if (!j.success) throw new Error(j.error || 'Load failed');
+        if (sj.success) state.sheetsList = sj.sheets || [];
         state.sheet = j.sheet;
         state.issues = j.issues || [];
         document.getElementById('brief-title').textContent = j.sheet.brief_title || '';
