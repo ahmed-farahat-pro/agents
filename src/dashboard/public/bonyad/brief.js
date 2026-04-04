@@ -22,14 +22,146 @@
     else localStorage.removeItem('bonyad_edit_key');
   }
 
-  function showToast(msg) {
-    const t = document.getElementById('toast');
-    if (!t) return;
-    t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(function () {
-      t.classList.remove('show');
-    }, 2200);
+  function fetchJson(url, init) {
+    return fetch(url, init || {}).then(function (r) {
+      return r.text().then(function (text) {
+        let j = {};
+        try {
+          j = text ? JSON.parse(text) : {};
+        } catch (e) {
+          j = {};
+        }
+        if (!r.ok) {
+          const err =
+            (j && j.error) ||
+            (text && text.length < 500 ? text : '') ||
+            'Request failed (HTTP ' + r.status + ')';
+          throw new Error(typeof err === 'string' ? err : 'Request failed');
+        }
+        return j;
+      });
+    });
+  }
+
+  let bonyadFlashTimer = null;
+  function showBonyadFlash(message, kind) {
+    kind = kind || 'info';
+    const el = document.getElementById('bonyad-flash');
+    if (!el) return;
+    const t = el.querySelector('.bonyad-flash-text');
+    if (t) t.textContent = message;
+    el.setAttribute('data-kind', kind);
+    el.classList.add('is-visible');
+    if (bonyadFlashTimer) clearTimeout(bonyadFlashTimer);
+    bonyadFlashTimer = setTimeout(function () {
+      el.classList.remove('is-visible');
+    }, 3000);
+  }
+
+  function closeBonyadModal() {
+    const root = document.getElementById('bonyad-modal');
+    if (!root) return;
+    root.classList.remove('is-open');
+    root.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  function showBonyadAlert(message, opts) {
+    opts = opts || {};
+    return new Promise(function (resolve) {
+      const root = document.getElementById('bonyad-modal');
+      if (!root) {
+        window.alert(message);
+        resolve();
+        return;
+      }
+      const titleEl = document.getElementById('bonyad-modal-title');
+      const bodyEl = document.getElementById('bonyad-modal-body');
+      const cancelBtn = document.getElementById('bonyad-modal-btn-cancel');
+      const primaryBtn = document.getElementById('bonyad-modal-btn-primary');
+      const backdrop = root.querySelector('.bonyad-modal-backdrop');
+      if (titleEl) titleEl.textContent = opts.title || 'Bonyad';
+      if (bodyEl) bodyEl.textContent = message;
+      root.setAttribute('data-variant', opts.variant || 'info');
+      cancelBtn.style.display = 'none';
+      primaryBtn.textContent = opts.okText || 'OK';
+      function cleanup() {
+        document.removeEventListener('keydown', onKey);
+        if (backdrop) backdrop.removeEventListener('click', onBackdrop);
+        primaryBtn.removeEventListener('click', onPrimary);
+        closeBonyadModal();
+        resolve();
+      }
+      function onKey(e) {
+        if (e.key === 'Escape') cleanup();
+      }
+      function onBackdrop(e) {
+        if (e.target === backdrop) cleanup();
+      }
+      function onPrimary() {
+        cleanup();
+      }
+      root.classList.add('is-open');
+      root.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      document.addEventListener('keydown', onKey);
+      if (backdrop) backdrop.addEventListener('click', onBackdrop);
+      primaryBtn.addEventListener('click', onPrimary);
+      primaryBtn.focus();
+    });
+  }
+
+  function showBonyadConfirm(message, opts) {
+    opts = opts || {};
+    return new Promise(function (resolve) {
+      const root = document.getElementById('bonyad-modal');
+      if (!root) {
+        resolve(window.confirm(message));
+        return;
+      }
+      const titleEl = document.getElementById('bonyad-modal-title');
+      const bodyEl = document.getElementById('bonyad-modal-body');
+      const cancelBtn = document.getElementById('bonyad-modal-btn-cancel');
+      const primaryBtn = document.getElementById('bonyad-modal-btn-primary');
+      const backdrop = root.querySelector('.bonyad-modal-backdrop');
+      if (titleEl) titleEl.textContent = opts.title || 'Confirm';
+      if (bodyEl) bodyEl.textContent = message;
+      root.setAttribute('data-variant', opts.danger ? 'danger' : 'neutral');
+      cancelBtn.style.display = '';
+      cancelBtn.textContent = opts.cancelText || 'Cancel';
+      primaryBtn.textContent = opts.confirmText || 'Confirm';
+      let settled = false;
+      function finish(val) {
+        if (settled) return;
+        settled = true;
+        document.removeEventListener('keydown', onKey);
+        if (backdrop) backdrop.removeEventListener('click', onBackdrop);
+        cancelBtn.removeEventListener('click', onCancel);
+        primaryBtn.removeEventListener('click', onConfirm);
+        closeBonyadModal();
+        resolve(val);
+      }
+      function onKey(e) {
+        if (e.key === 'Escape') finish(false);
+      }
+      function onBackdrop(e) {
+        if (e.target === backdrop) finish(false);
+      }
+      function onCancel() {
+        finish(false);
+      }
+      function onConfirm() {
+        finish(true);
+      }
+      root.classList.add('is-open');
+      root.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      document.addEventListener('keydown', onKey);
+      if (backdrop) backdrop.addEventListener('click', onBackdrop);
+      cancelBtn.addEventListener('click', onCancel);
+      primaryBtn.addEventListener('click', onConfirm);
+      primaryBtn.focus();
+    });
   }
 
   function priorityClass(p) {
@@ -444,8 +576,13 @@
           return Number(c.getAttribute('data-issue-id'));
         });
         if (!ids.length) return;
-        if (!confirm('Delete ' + ids.length + ' selected issue(s)? This cannot be undone.')) return;
-        batchDeleteIssues(ids);
+        showBonyadConfirm('Delete ' + ids.length + ' selected issue(s)? This cannot be undone.', {
+          title: 'Delete selected',
+          danger: true,
+          confirmText: 'Delete',
+        }).then(function (ok) {
+          if (ok) batchDeleteIssues(ids);
+        });
       });
     }
     root.querySelectorAll('[data-act="done"]').forEach(function (el) {
@@ -466,10 +603,10 @@
         const text = box ? box.textContent : '';
         navigator.clipboard.writeText(text).then(
           function () {
-            showToast('Prompt copied');
+            showBonyadFlash('Prompt copied', 'success');
           },
           function () {
-            showToast('Copy failed');
+            showBonyadFlash('Copy failed', 'error');
           }
         );
       });
@@ -477,8 +614,13 @@
     root.querySelectorAll('[data-act="del"]').forEach(function (el) {
       el.addEventListener('click', function () {
         const id = Number(el.getAttribute('data-id'));
-        if (!confirm('Delete this issue?')) return;
-        deleteIssue(id);
+        showBonyadConfirm('Delete this issue? This cannot be undone.', {
+          title: 'Delete issue',
+          danger: true,
+          confirmText: 'Delete',
+        }).then(function (ok) {
+          if (ok) deleteIssue(id);
+        });
       });
     });
     root.querySelectorAll('[data-act="save-edit"]').forEach(function (el) {
@@ -494,7 +636,7 @@
         const sheetStatusVal = root.querySelector('.edit-sheet-status[data-id="' + id + '"]').value.trim();
         const attachmentsVal = root.querySelector('.edit-attachments[data-id="' + id + '"]').value.trim();
         if (!title || !prompt) {
-          showToast('Title and prompt required');
+          showBonyadFlash('Title and prompt required', 'warn');
           return;
         }
         const tags = tagsRaw
@@ -525,12 +667,26 @@
     if (delAll) {
       delAll.addEventListener('click', function () {
         if (!getEditKey()) {
-          showToast('Save an edit key first');
+          showBonyadAlert('Save your edit key above before deleting issues.', {
+            title: 'Edit key required',
+            variant: 'error',
+          });
           return;
         }
-        if (!confirm('Delete ALL issues on this sheet? This cannot be undone.')) return;
-        if (!confirm('Confirm again: remove every issue from this brief?')) return;
-        deleteAllIssuesOnSheet();
+        showBonyadConfirm('Delete ALL issues on this sheet? This cannot be undone.', {
+          title: 'Delete all issues',
+          danger: true,
+          confirmText: 'Continue',
+        }).then(function (ok1) {
+          if (!ok1) return;
+          showBonyadConfirm('Remove every issue from this brief? This is your last confirmation.', {
+            title: 'Final confirmation',
+            danger: true,
+            confirmText: 'Delete all',
+          }).then(function (ok2) {
+            if (ok2) deleteAllIssuesOnSheet();
+          });
+        });
       });
     }
 
@@ -540,8 +696,13 @@
         e.stopPropagation();
         const issueId = Number(el.getAttribute('data-issue'));
         const mid = el.getAttribute('data-media');
-        if (!confirm('Remove this image from the issue?')) return;
-        removeIssueMedia(issueId, mid);
+        showBonyadConfirm('Remove this image from the issue?', {
+          title: 'Remove image',
+          danger: true,
+          confirmText: 'Remove',
+        }).then(function (ok) {
+          if (ok) removeIssueMedia(issueId, mid);
+        });
       });
     });
     root.querySelectorAll('[data-act="add-media-url"]').forEach(function (el) {
@@ -551,7 +712,7 @@
         const inp = root.querySelector('.media-url-in[data-issue="' + issueId + '"]');
         const u = inp && inp.value.trim();
         if (!u) {
-          showToast('Enter a URL');
+          showBonyadFlash('Enter a URL', 'warn');
           return;
         }
         addIssueMediaUrl(issueId, u);
@@ -563,7 +724,7 @@
         const issueId = Number(el.getAttribute('data-issue'));
         const inp = root.querySelector('.media-files[data-issue="' + issueId + '"]');
         if (!inp || !inp.files || !inp.files.length) {
-          showToast('Choose one or more images');
+          showBonyadFlash('Choose one or more images', 'warn');
           return;
         }
         uploadIssueMedia(issueId, inp.files);
@@ -575,7 +736,10 @@
     if (addBtn && addForm) {
       addBtn.addEventListener('click', function () {
         if (!getEditKey()) {
-          showToast('Save an edit key first');
+          showBonyadAlert('Save your edit key above before adding issues.', {
+            title: 'Edit key required',
+            variant: 'error',
+          });
           return;
         }
         addForm.classList.add('visible');
@@ -597,85 +761,69 @@
 
   function patchIssue(id, body) {
     const k = getEditKey();
-    fetch(API + '/api/bonyad/issues/' + id, {
+    fetchJson(API + '/api/bonyad/issues/' + id, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'x-bonyad-edit-key': k },
       body: JSON.stringify(Object.assign({ editKey: k }, body)),
     })
-      .then(function (r) {
-        return r.json();
-      })
-      .then(function (j) {
-        if (!j.success) throw new Error(j.error || 'Failed');
-        showToast('Saved');
+      .then(function () {
+        showBonyadFlash('Saved', 'success');
         return load();
       })
       .catch(function (e) {
-        showToast(e.message || 'Update failed');
+        showBonyadAlert(e.message || 'Update failed', { title: 'Could not save', variant: 'error' });
       });
   }
 
   function deleteIssue(id) {
     const k = getEditKey();
-    fetch(API + '/api/bonyad/issues/' + id + '?editKey=' + encodeURIComponent(k), {
+    fetchJson(API + '/api/bonyad/issues/' + id + '?editKey=' + encodeURIComponent(k), {
       method: 'DELETE',
       headers: { 'x-bonyad-edit-key': k },
     })
-      .then(function (r) {
-        return r.json();
-      })
-      .then(function (j) {
-        if (!j.success) throw new Error(j.error || 'Failed');
-        showToast('Issue deleted');
+      .then(function () {
+        showBonyadFlash('Issue deleted', 'success');
         return load();
       })
       .catch(function (e) {
-        showToast(e.message || 'Delete failed');
+        showBonyadAlert(e.message || 'Delete failed', { title: 'Delete failed', variant: 'error' });
       });
   }
 
   function deleteAllIssuesOnSheet() {
     const k = getEditKey();
-    fetch(API + '/api/bonyad/sheets/' + encodeURIComponent(slug) + '/issues?editKey=' + encodeURIComponent(k), {
+    fetchJson(API + '/api/bonyad/sheets/' + encodeURIComponent(slug) + '/issues?editKey=' + encodeURIComponent(k), {
       method: 'DELETE',
       headers: { 'x-bonyad-edit-key': k },
     })
-      .then(function (r) {
-        return r.json();
-      })
       .then(function (j) {
-        if (!j.success) throw new Error(j.error || 'Failed');
-        showToast('Deleted ' + (j.deleted != null ? j.deleted : '') + ' issue(s)');
+        showBonyadFlash('Deleted ' + (j.deleted != null ? j.deleted : '') + ' issue(s)', 'success');
         return load();
       })
       .catch(function (e) {
-        showToast(e.message || 'Delete all failed');
+        showBonyadAlert(e.message || 'Delete all failed', { title: 'Delete all failed', variant: 'error' });
       });
   }
 
   function batchDeleteIssues(ids) {
     const k = getEditKey();
-    fetch(API + '/api/bonyad/sheets/' + encodeURIComponent(slug) + '/issues/batch-delete', {
+    fetchJson(API + '/api/bonyad/sheets/' + encodeURIComponent(slug) + '/issues/batch-delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-bonyad-edit-key': k },
       body: JSON.stringify({ ids: ids, editKey: k }),
     })
-      .then(function (r) {
-        return r.json();
-      })
       .then(function (j) {
-        if (!j.success) throw new Error(j.error || 'Failed');
-        showToast('Deleted ' + (j.deleted != null ? j.deleted : ids.length) + ' issue(s)');
+        showBonyadFlash('Deleted ' + (j.deleted != null ? j.deleted : ids.length) + ' issue(s)', 'success');
         return load();
       })
       .catch(function (e) {
-        showToast(e.message || 'Bulk delete failed');
+        showBonyadAlert(e.message || 'Bulk delete failed', { title: 'Bulk delete failed', variant: 'error' });
       });
   }
 
   function removeIssueMedia(issueId, mediaId) {
     const k = getEditKey();
-    fetch(
+    fetchJson(
       API +
         '/api/bonyad/issues/' +
         issueId +
@@ -685,38 +833,30 @@
         encodeURIComponent(k),
       { method: 'DELETE', headers: { 'x-bonyad-edit-key': k } }
     )
-      .then(function (r) {
-        return r.json();
-      })
-      .then(function (j) {
-        if (!j.success) throw new Error(j.error || 'Failed');
-        showToast('Image removed');
+      .then(function () {
+        showBonyadFlash('Image removed', 'success');
         return load();
       })
       .catch(function (e) {
-        showToast(e.message || 'Remove failed');
+        showBonyadAlert(e.message || 'Remove failed', { title: 'Remove failed', variant: 'error' });
       });
   }
 
   function addIssueMediaUrl(issueId, url) {
     const k = getEditKey();
-    fetch(API + '/api/bonyad/issues/' + issueId + '/media/url', {
+    fetchJson(API + '/api/bonyad/issues/' + issueId + '/media/url', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-bonyad-edit-key': k },
       body: JSON.stringify({ url: url, editKey: k }),
     })
-      .then(function (r) {
-        return r.json();
-      })
-      .then(function (j) {
-        if (!j.success) throw new Error(j.error || 'Failed');
-        showToast('URL added');
+      .then(function () {
+        showBonyadFlash('URL added', 'success');
         const inp = document.querySelector('.media-url-in[data-issue="' + issueId + '"]');
         if (inp) inp.value = '';
         return load();
       })
       .catch(function (e) {
-        showToast(e.message || 'Add URL failed');
+        showBonyadAlert(e.message || 'Add URL failed', { title: 'Add URL failed', variant: 'error' });
       });
   }
 
@@ -726,23 +866,19 @@
     for (let i = 0; i < fileList.length; i += 1) {
       fd.append('files', fileList[i]);
     }
-    fetch(API + '/api/bonyad/issues/' + issueId + '/media/upload?editKey=' + encodeURIComponent(k), {
+    fetchJson(API + '/api/bonyad/issues/' + issueId + '/media/upload?editKey=' + encodeURIComponent(k), {
       method: 'POST',
       headers: { 'x-bonyad-edit-key': k },
       body: fd,
     })
-      .then(function (r) {
-        return r.json();
-      })
-      .then(function (j) {
-        if (!j.success) throw new Error(j.error || 'Failed');
-        showToast('Uploaded');
+      .then(function () {
+        showBonyadFlash('Uploaded', 'success');
         const inp = document.querySelector('.media-files[data-issue="' + issueId + '"]');
         if (inp) inp.value = '';
         return load();
       })
       .catch(function (e) {
-        showToast(e.message || 'Upload failed');
+        showBonyadAlert(e.message || 'Upload failed', { title: 'Upload failed', variant: 'error' });
       });
   }
 
@@ -752,7 +888,7 @@
     const tagsRaw = document.getElementById('newTags').value.trim();
     const prompt = document.getElementById('newPrompt').value.trim();
     if (!title || !prompt) {
-      showToast('Title and prompt required');
+      showBonyadFlash('Title and prompt required', 'warn');
       return;
     }
     const tags = tagsRaw
@@ -761,17 +897,20 @@
         }).filter(Boolean)
       : [];
     const k = getEditKey();
-    fetch(API + '/api/bonyad/sheets/' + encodeURIComponent(slug) + '/issues', {
+    if (!k) {
+      showBonyadAlert('Save your edit key above before adding an issue.', {
+        title: 'Edit key required',
+        variant: 'error',
+      });
+      return;
+    }
+    fetchJson(API + '/api/bonyad/sheets/' + encodeURIComponent(slug) + '/issues', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-bonyad-edit-key': k },
       body: JSON.stringify({ title, priority, tags, prompt_text: prompt, criteria: [], editKey: k }),
     })
-      .then(function (r) {
-        return r.json();
-      })
-      .then(function (j) {
-        if (!j.success) throw new Error(j.error || 'Failed');
-        showToast('Issue added');
+      .then(function () {
+        showBonyadFlash('Issue added', 'success');
         document.getElementById('newTitle').value = '';
         document.getElementById('newTags').value = '';
         document.getElementById('newPrompt').value = '';
@@ -782,7 +921,7 @@
         return load();
       })
       .catch(function (e) {
-        showToast(e.message || 'Add failed');
+        showBonyadAlert(e.message || 'Add failed', { title: 'Could not add issue', variant: 'error' });
       });
   }
 
@@ -792,10 +931,7 @@
         '<p class="load-err">Missing sheet slug. Open from <a href="./">Bonyad hub</a>.</p>';
       return;
     }
-    fetch(API + '/api/bonyad/sheets/' + encodeURIComponent(slug))
-      .then(function (r) {
-        return r.json();
-      })
+    fetchJson(API + '/api/bonyad/sheets/' + encodeURIComponent(slug))
       .then(function (j) {
         if (!j.success) throw new Error(j.error || 'Load failed');
         state.sheet = j.sheet;
@@ -853,7 +989,7 @@
     document.getElementById('save-edit-key').addEventListener('click', function () {
       const v = document.getElementById('edit-key-input').value.trim();
       setEditKey(v);
-      showToast(v ? 'Edit key saved in this browser' : 'Edit key cleared');
+      showBonyadFlash(v ? 'Edit key saved in this browser' : 'Edit key cleared', v ? 'success' : 'info');
       load();
     });
   document.getElementById('edit-key-input') &&

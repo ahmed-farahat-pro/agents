@@ -396,7 +396,7 @@ function registerBonyadRoutes(app) {
       const mediaJson = JSON.stringify(normalizeMediaArray(Array.isArray(issue_media) ? issue_media : []));
       const r = await db.query(
         `INSERT INTO bonyad_issues (sheet_slug, sort_order, module, issue_type, sheet_status, attachments, title, priority, tags, prompt_text, criteria, issue_media, is_done)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,0)`,
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0)`,
         [
           slug,
           ord,
