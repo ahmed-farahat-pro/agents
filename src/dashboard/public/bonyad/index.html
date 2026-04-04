@@ -35,15 +35,36 @@
       No edit key required — up to <strong>2000</strong> rows, <strong>6&nbsp;MB</strong> max.
     </p>
     <div class="bonyad-excel-import-inner">
-      <div class="form-row">
-        <div class="form-group">
-          <label for="imp-slug">Target sheet</label>
-          <select id="imp-slug"></select>
-        </div>
-        <div class="form-group">
-          <label for="imp-file">Excel file</label>
-          <input type="file" id="imp-file" accept=".xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
-        </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label for="imp-slug">Target sheet</label>
+        <select id="imp-slug"></select>
+      </div>
+      <div class="form-group excel-file-form-group">
+          <span class="excel-field-label">Spreadsheet file</span>
+          <label class="excel-file-zone" id="excel-file-zone">
+            <input
+              type="file"
+              id="imp-file"
+              class="excel-file-input"
+              accept=".xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            />
+            <span class="excel-file-glow" aria-hidden="true"></span>
+            <span class="excel-file-body">
+              <span class="excel-file-icon" aria-hidden="true">
+                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="8" y="6" width="32" height="36" rx="3" stroke="currentColor" stroke-width="2" opacity="0.35"/>
+                  <path d="M14 16h20M14 22h14M14 28h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+                  <path d="M26 34l4 4 8-10" stroke="var(--accent-orange)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span class="excel-file-copy">
+                <span class="excel-file-title">Choose spreadsheet</span>
+                <span class="excel-file-sub">Drop a file here or click to browse — <strong>.xlsx</strong> or <strong>.xls</strong></span>
+              </span>
+              <span class="excel-file-browse">Browse</span>
+            </span>
+          </label>
+        <p class="excel-file-chosen" id="imp-file-chosen" aria-live="polite">No file selected yet</p>
       </div>
       <button type="button" class="add-btn" id="imp-submit" style="margin-top:12px;">Analyze &amp; import into Bonyad</button>
       <pre id="imp-result" style="display:none;margin-top:14px;font-size:12px;white-space:pre-wrap;word-break:break-word;background:rgba(0,0,0,0.25);padding:12px;border-radius:8px;color:var(--text-secondary);"></pre>
@@ -130,6 +151,52 @@
       function escapeHtml(x) {
         return String(x || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
       }
+      (function setupExcelFileUi() {
+        var input = document.getElementById('imp-file');
+        var zone = document.getElementById('excel-file-zone');
+        var chosen = document.getElementById('imp-file-chosen');
+        if (!input || !zone || !chosen) return;
+        function setChosen(name) {
+          if (name) {
+            zone.classList.add('has-file');
+            chosen.innerHTML = 'Selected: <strong>' + escapeHtml(name) + '</strong>';
+          } else {
+            zone.classList.remove('has-file');
+            chosen.textContent = 'No file selected yet';
+          }
+        }
+        input.addEventListener('change', function () {
+          var f = input.files && input.files[0];
+          setChosen(f ? f.name : '');
+        });
+        zone.addEventListener('dragover', function (e) {
+          e.preventDefault();
+          zone.classList.add('is-dragover');
+        });
+        zone.addEventListener('dragleave', function () {
+          zone.classList.remove('is-dragover');
+        });
+        zone.addEventListener('drop', function (e) {
+          e.preventDefault();
+          zone.classList.remove('is-dragover');
+          var dt = e.dataTransfer;
+          if (!dt || !dt.files || !dt.files.length) return;
+          var f = dt.files[0];
+          var n = (f.name || '').toLowerCase();
+          if (!n.endsWith('.xlsx') && !n.endsWith('.xls')) {
+            toast('Please drop an .xls or .xlsx file');
+            return;
+          }
+          try {
+            input.files = dt.files;
+          } catch (err) {
+            /* Safari may not allow assignment; fall back to user picking via click */
+            toast('Use Browse to select this file in your browser');
+            return;
+          }
+          setChosen(f.name);
+        });
+      })();
       document.getElementById('imp-submit').onclick = function () {
         var slug = document.getElementById('imp-slug').value;
         var f = document.getElementById('imp-file').files[0];
@@ -148,7 +215,7 @@
             if (!j.success) throw new Error(j.error || 'Import failed');
             var lines = ['Imported ' + j.imported + ' issue(s).'];
             if (j.worksheet) lines.push('Worksheet: ' + j.worksheet);
-            if (j.capped) lines.push('Note: spreadsheet had more than 200 rows; only the first 200 were processed.');
+            if (j.capped) lines.push('Note: spreadsheet had more than 2000 rows; only the first 2000 were processed.');
             if (j.skipped && j.skipped.length) {
               lines.push('Skipped rows:');
               j.skipped.forEach(function (s) { lines.push('  Row ' + s.row + ': ' + s.reason); });

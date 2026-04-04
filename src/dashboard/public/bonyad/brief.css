@@ -861,6 +861,201 @@ footer {
   background: var(--bg-card);
 }
 
+/* Custom Excel file picker (replaces default “Choose file” look) */
+.excel-file-form-group {
+  margin-bottom: 4px;
+}
+
+.excel-field-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.excel-file-zone {
+  position: relative;
+  display: block;
+  cursor: pointer;
+  border-radius: var(--radius);
+  overflow: hidden;
+  min-height: 112px;
+  border: 1px solid rgba(255, 87, 10, 0.12);
+  transition: border-color 0.2s, box-shadow 0.25s, transform 0.15s;
+}
+
+.excel-file-zone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 87, 10, 0.55),
+    rgba(255, 87, 10, 0.12) 40%,
+    rgba(66, 165, 245, 0.2) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.85;
+}
+
+.excel-file-glow {
+  position: absolute;
+  inset: -40%;
+  background: radial-gradient(ellipse at 30% 20%, rgba(255, 87, 10, 0.18), transparent 55%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.excel-file-zone:hover::before,
+.excel-file-zone.is-dragover::before {
+  opacity: 1;
+}
+
+.excel-file-zone:hover .excel-file-browse,
+.excel-file-zone.is-dragover .excel-file-browse {
+  background: var(--accent-orange);
+  color: var(--bg-primary);
+  box-shadow: 0 4px 20px rgba(255, 87, 10, 0.4);
+}
+
+.excel-file-zone.is-dragover {
+  transform: scale(1.01);
+  box-shadow: 0 0 0 3px rgba(255, 87, 10, 0.25), var(--shadow-sm);
+}
+
+.excel-file-zone:focus-within {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 87, 10, 0.35);
+}
+
+.excel-file-zone.has-file::before {
+  background: linear-gradient(
+    135deg,
+    rgba(25, 213, 158, 0.45),
+    rgba(255, 87, 10, 0.15) 50%,
+    rgba(66, 165, 245, 0.15) 100%
+  );
+}
+
+.excel-file-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 3;
+  font-size: 0;
+}
+
+.excel-file-body {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 20px 22px;
+  min-height: 112px;
+  background: linear-gradient(165deg, var(--bg-elevated) 0%, var(--bg-card) 100%);
+}
+
+.excel-file-icon {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-orange);
+  background: var(--accent-orange-dim);
+  border-radius: var(--radius-sm);
+}
+
+.excel-file-icon svg {
+  width: 36px;
+  height: 36px;
+}
+
+.excel-file-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.excel-file-title {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+}
+
+.excel-file-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.excel-file-sub strong {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.excel-file-browse {
+  flex-shrink: 0;
+  padding: 12px 22px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent-orange);
+  background: rgba(255, 87, 10, 0.12);
+  border: 1px solid rgba(255, 87, 10, 0.35);
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.excel-file-chosen {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--mono);
+}
+
+.excel-file-chosen strong {
+  color: var(--accent-green);
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .excel-file-body {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+    padding: 18px 16px;
+  }
+
+  .excel-file-icon {
+    margin: 0 auto;
+  }
+
+  .excel-file-browse {
+    text-align: center;
+  }
+}
+
 .issue-excel-meta {
   margin-top: 8px;
   display: flex;
@@ -903,6 +1098,10 @@ footer {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+
+  .excel-file-zone.is-dragover {
+    transform: none;
   }
 }
 
