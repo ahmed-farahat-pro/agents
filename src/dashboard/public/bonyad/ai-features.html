@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bonyad — AI features roadmap | Nigents</title>
+  <link rel="stylesheet" href="brief.css" />
+</head>
+<body class="bonyad-theme">
+  <div class="top-banner"></div>
+  <div class="hub-nav header-inner" style="padding-top:16px;padding-bottom:0;">
+    <a href="./">← Bonyad hub</a>
+    &nbsp;·&nbsp;
+    <a href="/">Nigents home</a>
+  </div>
+  <main class="ai-features-page">
+    <h1><span class="accent">AI features</span> — roadmap &amp; collaboration</h1>
+    <p class="ai-features-intro">
+      Planned and in-flight capabilities that use automation and AI around Bonyad fix briefs, Nigents agents, and delivery.
+      Each item lists priority, what it is, how we intend to use it, dependencies, and who we should work with.
+    </p>
+
+    <article class="ai-feature-card">
+      <div class="ai-priority-row">
+        <span class="ai-priority-badge ai-priority-p0">Priority — P0</span>
+      </div>
+      <h2>Excel → Bonyad bulk import</h2>
+      <p class="ai-section-body" style="margin-bottom:12px;">
+        Upload <code>.xls</code> / <code>.xlsx</code> on the Bonyad hub; the first worksheet is parsed and rows become issues on the chosen sheet (title, description, optional priority, tags, acceptance criteria).
+      </p>
+      <div class="ai-section-label">How to</div>
+      <p class="ai-section-body">Open <a href="./#import-excel">Bonyad hub → Import bugs from Excel</a>, pick the target platform sheet, choose a file, and submit. No server edit key is required; limits apply (row count and file size).</p>
+      <div class="ai-section-label">What we need</div>
+      <p class="ai-section-body">MySQL-enabled Nigents dashboard; <code>xlsx</code> + <code>multer</code> on the server; agreed column naming for PMs (documented on the hub).</p>
+      <div class="ai-section-label">Collaborate with</div>
+      <p class="ai-section-body">Project managers and QA (spreadsheet owners); devops for deploy and env checks.</p>
+    </article>
+
+    <article class="ai-feature-card">
+      <div class="ai-priority-row">
+        <span class="ai-priority-badge ai-priority-p1">Priority — P1</span>
+      </div>
+      <h2>Natural-language issue drafting</h2>
+      <p class="ai-section-body" style="margin-bottom:12px;">
+        Paste meeting notes or a paragraph; an LLM proposes titled issues with prompts and acceptance criteria in Bonyad shape for human review before save.
+      </p>
+      <div class="ai-section-label">How to</div>
+      <p class="ai-section-body">Future UI: “Draft from text” on the sheet page → model output as a preview list → user edits → bulk create with existing edit key.</p>
+      <div class="ai-section-label">What we need</div>
+      <p class="ai-section-body">API keys / gateway policy; prompt templates and guardrails; rate limits; audit logging of generated content.</p>
+      <div class="ai-section-label">Collaborate with</div>
+      <p class="ai-section-body">Product for UX copy and review flow; security / legal for data handling; model provider or internal LLM team.</p>
+    </article>
+
+    <article class="ai-feature-card">
+      <div class="ai-priority-row">
+        <span class="ai-priority-badge ai-priority-p1">Priority — P1</span>
+      </div>
+      <h2>GitLab-aware issue linking</h2>
+      <p class="ai-section-body" style="margin-bottom:12px;">
+        Connect issues to GitLab issues, MRs, or branches so status and links stay visible on the fix brief.
+      </p>
+      <div class="ai-section-label">How to</div>
+      <p class="ai-section-body">Store GitLab URLs or IDs on issues; optional webhook or poll to reflect MR merge state; surface links on <code>sheet.html</code>.</p>
+      <div class="ai-section-label">What we need</div>
+      <p class="ai-section-body">GitLab token scopes; schema fields on <code>bonyad_issues</code>; UI for paste/validate URL.</p>
+      <div class="ai-section-label">Collaborate with</div>
+      <p class="ai-section-body">Engineering leads (workflow); GitLab admins (tokens, hooks).</p>
+    </article>
+
+    <article class="ai-feature-card">
+      <div class="ai-priority-row">
+        <span class="ai-priority-badge ai-priority-p2">Priority — P2</span>
+      </div>
+      <h2>Transcript → structured bugs</h2>
+      <p class="ai-section-body" style="margin-bottom:12px;">
+        Ingest standup or client call transcripts; segment into candidate bugs with owners and priorities suggested by the model.
+      </p>
+      <div class="ai-section-label">How to</div>
+      <p class="ai-section-body">Upload or paste transcript; async job returns proposed rows; user maps to sheet and edits.</p>
+      <div class="ai-section-label">What we need</div>
+      <p class="ai-section-body">ASR integration if starting from audio; chunking + citation to transcript lines; privacy classification (PII redaction).</p>
+      <div class="ai-section-label">Collaborate with</div>
+      <p class="ai-section-body">PMO and client-facing teams; compliance if recordings are stored.</p>
+    </article>
+
+    <article class="ai-feature-card">
+      <div class="ai-priority-row">
+        <span class="ai-priority-badge ai-priority-p2">Priority — P2</span>
+      </div>
+      <h2>Regression hints from code change</h2>
+      <p class="ai-section-body" style="margin-bottom:12px;">
+        Given a diff or MR summary, suggest related Bonyad issues to re-test or new criteria to add — advisory only.
+      </p>
+      <div class="ai-section-label">How to</div>
+      <p class="ai-section-body">Nigents or dashboard calls search + LLM over issue titles/prompts; output checklist for QA.</p>
+      <div class="ai-section-label">What we need</div>
+      <p class="ai-section-body">Indexed issue text; MR/diff access; clear “suggestions not approvals” UX.</p>
+      <div class="ai-section-label">Collaborate with</div>
+      <p class="ai-section-body">QA leads; backend team for GitLab integration depth.</p>
+    </article>
+  </main>
+  <footer>
+    <div class="footer-logos">
+      <div class="footer-n" aria-hidden="true">B</div>
+      <div class="footer-n" aria-hidden="true">N</div>
+      <img src="assets/problem-x-logo.png" alt="Problem-X" />
+    </div>
+    <div class="footer-txt">Bonyad · Nigents · Problem-X · Consult Code Achieve</div>
+  </footer>
+</body>
+</html>

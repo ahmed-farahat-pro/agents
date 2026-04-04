@@ -11,7 +11,11 @@
   <div class="bonyad-hub-hero">
     <h1><span class="accent">Bonyad</span> — platform fix briefs</h1>
     <p>Open a sheet for Android, iOS, Web, or Backend. Issues live in the Nigents database. Use the same <strong style="color:var(--accent-orange);">BONYAD_EDIT_SECRET</strong> from your server <code style="font-size:13px;">.env</code> as the edit key below (then Save).</p>
-    <p class="hub-nav" style="margin-top:14px;"><a href="/">← Nigents home</a></p>
+    <p class="hub-nav" style="margin-top:14px;">
+      <a href="/">← Nigents home</a>
+      &nbsp;·&nbsp;
+      <a href="ai-features.html">AI features roadmap</a>
+    </p>
   </div>
   <div id="hub-err" class="bonyad-err-box" style="display:none;"></div>
   <div class="hub-key-row">
@@ -22,6 +26,29 @@
     </div>
   </div>
   <div class="bonyad-sheet-grid" id="sheet-grid"></div>
+  <div class="bonyad-excel-import" id="import-excel">
+    <h3>Import bugs from Excel</h3>
+    <p class="hint">
+      Upload <strong>.xls</strong> or <strong>.xlsx</strong> (first worksheet). Header row should include columns such as
+      <strong>Title</strong> (or Issue, Bug, Summary) and <strong>Description</strong> (or Prompt, Details, Notes).
+      Optional: <strong>Priority</strong> (high / medium / low), <strong>Tags</strong> (comma-separated), <strong>Criteria</strong> (one per line or separated by |).
+      No edit key required — up to 200 rows, 3&nbsp;MB max.
+    </p>
+    <div class="bonyad-excel-import-inner">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="imp-slug">Target sheet</label>
+          <select id="imp-slug"></select>
+        </div>
+        <div class="form-group">
+          <label for="imp-file">Excel file</label>
+          <input type="file" id="imp-file" accept=".xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+        </div>
+      </div>
+      <button type="button" class="add-btn" id="imp-submit" style="margin-top:12px;">Analyze &amp; import into Bonyad</button>
+      <pre id="imp-result" style="display:none;margin-top:14px;font-size:12px;white-space:pre-wrap;word-break:break-word;background:rgba(0,0,0,0.25);padding:12px;border-radius:8px;color:var(--text-secondary);"></pre>
+    </div>
+  </div>
   <div class="bonyad-new-sheet">
     <h3>Add another platform / sheet</h3>
     <div class="bonyad-new-sheet-inner">
@@ -90,6 +117,10 @@
                 '</article>'
               );
             }).join('');
+            var sel = document.getElementById('imp-slug');
+            sel.innerHTML = j.sheets.map(function (s) {
+              return '<option value="' + escapeHtml(s.slug) + '">' + escapeHtml(s.platform_line || s.label || s.slug) + '</option>';
+            }).join('');
           })
           .catch(function (e) {
             document.getElementById('hub-err').style.display = 'block';
@@ -99,6 +130,35 @@
       function escapeHtml(x) {
         return String(x || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
       }
+      document.getElementById('imp-submit').onclick = function () {
+        var slug = document.getElementById('imp-slug').value;
+        var f = document.getElementById('imp-file').files[0];
+        var out = document.getElementById('imp-result');
+        if (!slug) { toast('Pick a sheet'); return; }
+        if (!f) { toast('Choose an Excel file'); return; }
+        var fd = new FormData();
+        fd.append('file', f);
+        out.style.display = 'none';
+        fetch('/api/bonyad/sheets/' + encodeURIComponent(slug) + '/issues/import-excel', {
+          method: 'POST',
+          body: fd,
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (!j.success) throw new Error(j.error || 'Import failed');
+            var lines = ['Imported ' + j.imported + ' issue(s).'];
+            if (j.worksheet) lines.push('Worksheet: ' + j.worksheet);
+            if (j.capped) lines.push('Note: spreadsheet had more than 200 rows; only the first 200 were processed.');
+            if (j.skipped && j.skipped.length) {
+              lines.push('Skipped rows:');
+              j.skipped.forEach(function (s) { lines.push('  Row ' + s.row + ': ' + s.reason); });
+            }
+            out.textContent = lines.join('\n');
+            out.style.display = 'block';
+            toast('Imported ' + j.imported);
+          })
+          .catch(function (e) { toast(e.message); });
+      };
       document.getElementById('ns-submit').onclick = function () {
         var k = key();
         if (!k) { toast('Save edit key first'); return; }
