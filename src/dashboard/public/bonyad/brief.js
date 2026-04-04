@@ -13,6 +13,82 @@
       .replace(/"/g, '&quot;');
   }
 
+  var BONYAD_IMG_SEQ = 0;
+  window._bonyadImgStore = window._bonyadImgStore || {};
+  window._bonyadImgFail = function (sid, img) {
+    var store = window._bonyadImgStore;
+    if (!store || !store[sid]) return;
+    var arr = store[sid];
+    var i = parseInt(img.getAttribute('data-cand-idx') || '0', 10) + 1;
+    img.setAttribute('data-cand-idx', String(i));
+    if (i < arr.length) {
+      img.src = arr[i];
+    } else {
+      var w = img.closest('.issue-media-img-wrap');
+      if (w) w.classList.add('issue-media-broken');
+      img.removeAttribute('src');
+      img.alt = '';
+    }
+  };
+
+  function extractGoogleDriveFileId(u) {
+    try {
+      var s = String(u);
+      var m1 = /\/file\/d\/([a-zA-Z0-9_-]+)/.exec(s);
+      if (m1) return m1[1];
+      var m2 = /\/open\?[^#]*\bid=([a-zA-Z0-9_-]+)/.exec(s);
+      if (m2 && /google\.com/i.test(s)) return m2[1];
+      var m3 = /[?&]id=([a-zA-Z0-9_-]+)/.exec(s);
+      if (m3 && /google\.com/i.test(s)) return m3[1];
+    } catch (e) {}
+    return null;
+  }
+
+  function imageDisplayCandidates(originalUrl) {
+    var u = String(originalUrl || '').trim();
+    if (!u) return [];
+    var list = [];
+    var gid = extractGoogleDriveFileId(u);
+    if (gid) {
+      list.push('https://drive.google.com/thumbnail?id=' + gid + '&sz=w1200');
+      list.push('https://drive.google.com/uc?export=view&id=' + gid);
+      list.push(u);
+    } else if (/dropbox\.com/i.test(u) && /[?&]dl=0(?:&|$)/.test(u)) {
+      list.push(u.replace(/dl=0/, 'raw=1'));
+      list.push(u);
+    } else {
+      list.push(u);
+    }
+    var seen = {};
+    return list.filter(function (x) {
+      if (seen[x]) return false;
+      seen[x] = true;
+      return true;
+    });
+  }
+
+  function registerImageCandidates(cands) {
+    var sid = 'm' + ++BONYAD_IMG_SEQ;
+    window._bonyadImgStore[sid] = cands;
+    return sid;
+  }
+
+  function buildIssueMediaImgTag(hrefOriginal) {
+    var cands = imageDisplayCandidates(hrefOriginal);
+    if (!cands.length) return '';
+    var sid = registerImageCandidates(cands);
+    return (
+      '<img src="' +
+      esc(cands[0]) +
+      '" alt="" loading="lazy" referrerpolicy="no-referrer" data-cand-idx="0" onerror="window._bonyadImgFail(\'' +
+      sid +
+      "',this)\" />"
+    );
+  }
+
+  var SELECT_PILL_CHECK =
+    '<span class="issue-select-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="issue-select-check-path" d="M5.5 12.5l4 4 9-10"/></svg></span>';
+
   function getEditKey() {
     return localStorage.getItem('bonyad_edit_key') || '';
   }
@@ -79,7 +155,7 @@
       const bodyEl = document.getElementById('bonyad-modal-body');
       const cancelBtn = document.getElementById('bonyad-modal-btn-cancel');
       const primaryBtn = document.getElementById('bonyad-modal-btn-primary');
-      const backdrop = root.querySelector('.bonyad-modal-backdrop');
+      const scrim = root.querySelector('.bonyad-modal-scrim');
       if (titleEl) titleEl.textContent = opts.title || 'Bonyad';
       if (bodyEl) bodyEl.textContent = message;
       root.setAttribute('data-variant', opts.variant || 'info');
@@ -87,7 +163,7 @@
       primaryBtn.textContent = opts.okText || 'OK';
       function cleanup() {
         document.removeEventListener('keydown', onKey);
-        if (backdrop) backdrop.removeEventListener('click', onBackdrop);
+        if (scrim) scrim.removeEventListener('click', onBackdrop);
         primaryBtn.removeEventListener('click', onPrimary);
         closeBonyadModal();
         resolve();
@@ -96,7 +172,7 @@
         if (e.key === 'Escape') cleanup();
       }
       function onBackdrop(e) {
-        if (e.target === backdrop) cleanup();
+        if (e.target === scrim) cleanup();
       }
       function onPrimary() {
         cleanup();
@@ -105,7 +181,7 @@
       root.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
       document.addEventListener('keydown', onKey);
-      if (backdrop) backdrop.addEventListener('click', onBackdrop);
+      if (scrim) scrim.addEventListener('click', onBackdrop);
       primaryBtn.addEventListener('click', onPrimary);
       primaryBtn.focus();
     });
@@ -123,7 +199,7 @@
       const bodyEl = document.getElementById('bonyad-modal-body');
       const cancelBtn = document.getElementById('bonyad-modal-btn-cancel');
       const primaryBtn = document.getElementById('bonyad-modal-btn-primary');
-      const backdrop = root.querySelector('.bonyad-modal-backdrop');
+      const scrim = root.querySelector('.bonyad-modal-scrim');
       if (titleEl) titleEl.textContent = opts.title || 'Confirm';
       if (bodyEl) bodyEl.textContent = message;
       root.setAttribute('data-variant', opts.danger ? 'danger' : 'neutral');
@@ -135,7 +211,7 @@
         if (settled) return;
         settled = true;
         document.removeEventListener('keydown', onKey);
-        if (backdrop) backdrop.removeEventListener('click', onBackdrop);
+        if (scrim) scrim.removeEventListener('click', onBackdrop);
         cancelBtn.removeEventListener('click', onCancel);
         primaryBtn.removeEventListener('click', onConfirm);
         closeBonyadModal();
@@ -145,7 +221,7 @@
         if (e.key === 'Escape') finish(false);
       }
       function onBackdrop(e) {
-        if (e.target === backdrop) finish(false);
+        if (e.target === scrim) finish(false);
       }
       function onCancel() {
         finish(false);
@@ -157,7 +233,7 @@
       root.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
       document.addEventListener('keydown', onKey);
-      if (backdrop) backdrop.addEventListener('click', onBackdrop);
+      if (scrim) scrim.addEventListener('click', onBackdrop);
       cancelBtn.addEventListener('click', onCancel);
       primaryBtn.addEventListener('click', onConfirm);
       primaryBtn.focus();
@@ -258,9 +334,8 @@
           '<a href="' +
           esc(src) +
           '" target="_blank" rel="noopener noreferrer" class="issue-media-img-wrap">' +
-          '<img src="' +
-          esc(src) +
-          '" alt="" loading="lazy" referrerpolicy="no-referrer" /></a>' +
+          buildIssueMediaImgTag(src) +
+          '</a>' +
           '<figcaption>' +
           cap +
           '</figcaption></figure>';
@@ -270,21 +345,23 @@
     if (k) {
       h += '<div class="issue-media-add">';
       h +=
-        '<div class="form-group"><label>Add image URL</label><div class="media-inline">' +
+        '<p class="issue-media-add-hint">Add more screenshots anytime — paste a link (Google Drive sharing links work; preview may fall back to “open link”) or upload additional files.</p>';
+      h +=
+        '<div class="form-group"><label>Image URL</label><div class="media-inline">' +
         '<input type="url" class="media-url-in" data-issue="' +
         iss.id +
-        '" placeholder="https://…" />' +
+        '" placeholder="https://drive.google.com/… or direct image URL" />' +
         '<button type="button" class="btn-submit" data-act="add-media-url" data-issue="' +
         iss.id +
         '">Add URL</button></div></div>';
       h +=
-        '<div class="form-group"><label>Upload images</label><div class="media-inline">' +
+        '<div class="form-group"><label>Upload more images</label><div class="media-inline">' +
         '<input type="file" class="media-files" data-issue="' +
         iss.id +
         '" accept="image/jpeg,image/png,image/gif,image/webp" multiple />' +
         '<button type="button" class="btn-submit" data-act="upload-media" data-issue="' +
         iss.id +
-        '">Upload files</button></div></div>';
+        '">Choose files</button></div></div>';
       h += '</div>';
     }
     h += '</div>';
@@ -368,11 +445,15 @@
         '">' +
         (getEditKey()
           ? '<div class="issue-select-wrap" title="Select for bulk delete">' +
-            '<input type="checkbox" class="issue-select-cb" data-issue-id="' +
+            '<label class="issue-select-pill">' +
+            '<input type="checkbox" class="issue-select-cb bonyad-sr-only" data-issue-id="' +
             iss.id +
             '" aria-label="Select issue #' +
             n +
-            '" /></div>'
+            ' for bulk delete" />' +
+            '<span class="issue-select-ring" aria-hidden="true"></span>' +
+            SELECT_PILL_CHECK +
+            '</label></div>'
           : '') +
         '<div class="issue-number">#' +
         n +
@@ -511,7 +592,15 @@
       '</div><div class="lbl">Completed</div></div></div>' +
       (getEditKey()
         ? '<div class="bonyad-bulk-bar" id="bonyadBulkBar">' +
-          '<label class="bulk-select-all-lbl"><input type="checkbox" id="bulk-select-all" /> Select all</label>' +
+          '<label class="bulk-select-all-lbl">' +
+          '<span class="issue-select-pill" aria-hidden="true">' +
+          '<input type="checkbox" id="bulk-select-all" class="bonyad-sr-only" aria-label="Select all issues" />' +
+          '<span class="issue-select-ring"></span>' +
+          '<span class="issue-select-dash" aria-hidden="true"></span>' +
+          SELECT_PILL_CHECK +
+          '</span>' +
+          '<span class="bulk-select-text">Select all</span>' +
+          '</label>' +
           '<button type="button" class="btn-danger-outline" id="bulk-delete-selected" disabled>Delete selected</button>' +
           '<span class="bulk-selected-count" id="bulk-selected-count"></span>' +
           '</div>'
@@ -530,7 +619,7 @@
     root.querySelectorAll('.issue-header[data-act="toggle"]').forEach(function (el) {
       el.addEventListener('click', function (e) {
         if (e.target.closest('[data-act="done"]')) return;
-        if (e.target.closest('.issue-select-wrap') || e.target.closest('.issue-select-cb')) return;
+        if (e.target.closest('.issue-select-wrap') || e.target.closest('.issue-select-pill')) return;
         const id = el.getAttribute('data-id');
         const card = document.getElementById('card-' + id);
         if (card) card.classList.toggle('open');
@@ -538,7 +627,7 @@
     });
 
     function updateBulkBar() {
-      const checked = root.querySelectorAll('.issue-select-cb:checked');
+      const checked = root.querySelectorAll('.issue-select-cb[data-issue-id]:checked');
       const n = checked.length;
       const btn = root.querySelector('#bulk-delete-selected');
       const cnt = root.querySelector('#bulk-selected-count');
@@ -546,24 +635,26 @@
       if (cnt) cnt.textContent = n ? n + ' selected' : '';
     }
     function syncBulkSelectAll() {
-      const all = root.querySelectorAll('.issue-select-cb');
-      const on = root.querySelectorAll('.issue-select-cb:checked');
+      const all = root.querySelectorAll('.issue-select-cb[data-issue-id]');
+      const on = root.querySelectorAll('.issue-select-cb[data-issue-id]:checked');
       const master = root.querySelector('#bulk-select-all');
+      const lbl = root.querySelector('.bulk-select-all-lbl');
       if (!master || !all.length) return;
-      master.checked = on.length === all.length;
+      master.checked = on.length === all.length && all.length > 0;
       master.indeterminate = on.length > 0 && on.length < all.length;
+      if (lbl) lbl.classList.toggle('bulk-partial', !!master.indeterminate);
     }
     const bulkMaster = root.querySelector('#bulk-select-all');
     if (bulkMaster) {
       bulkMaster.addEventListener('change', function () {
-        root.querySelectorAll('.issue-select-cb').forEach(function (cb) {
+        root.querySelectorAll('.issue-select-cb[data-issue-id]').forEach(function (cb) {
           cb.checked = bulkMaster.checked;
         });
         updateBulkBar();
         syncBulkSelectAll();
       });
     }
-    root.querySelectorAll('.issue-select-cb').forEach(function (cb) {
+    root.querySelectorAll('.issue-select-cb[data-issue-id]').forEach(function (cb) {
       cb.addEventListener('change', function () {
         updateBulkBar();
         syncBulkSelectAll();
@@ -572,9 +663,13 @@
     const bulkDelBtn = root.querySelector('#bulk-delete-selected');
     if (bulkDelBtn) {
       bulkDelBtn.addEventListener('click', function () {
-        const ids = Array.prototype.map.call(root.querySelectorAll('.issue-select-cb:checked'), function (c) {
-          return Number(c.getAttribute('data-issue-id'));
-        });
+        const ids = Array.prototype.map
+          .call(root.querySelectorAll('.issue-select-cb[data-issue-id]:checked'), function (c) {
+            return Number(c.getAttribute('data-issue-id'));
+          })
+          .filter(function (id) {
+            return !Number.isNaN(id);
+          });
         if (!ids.length) return;
         showBonyadConfirm('Delete ' + ids.length + ' selected issue(s)? This cannot be undone.', {
           title: 'Delete selected',

@@ -7,6 +7,23 @@
   <link rel="stylesheet" href="brief.css" />
 </head>
 <body class="bonyad-theme">
+  <!-- Modal + flash first so viewport-fixed layering stays correct -->
+  <div id="bonyad-modal" class="bonyad-modal" aria-hidden="true">
+    <div class="bonyad-modal-scrim"></div>
+    <div class="bonyad-modal-panel" role="dialog" aria-modal="true" aria-labelledby="bonyad-modal-title">
+      <div class="bonyad-modal-accent" aria-hidden="true"></div>
+      <h3 id="bonyad-modal-title" class="bonyad-modal-title"></h3>
+      <p id="bonyad-modal-body" class="bonyad-modal-body"></p>
+      <div class="bonyad-modal-actions">
+        <button type="button" id="bonyad-modal-btn-cancel" class="bonyad-modal-btn secondary" style="display: none">Cancel</button>
+        <button type="button" id="bonyad-modal-btn-primary" class="bonyad-modal-btn primary">OK</button>
+      </div>
+    </div>
+  </div>
+  <div id="bonyad-flash" class="bonyad-flash" aria-live="polite" role="status">
+    <span class="bonyad-flash-icon" aria-hidden="true"></span>
+    <span class="bonyad-flash-text"></span>
+  </div>
   <div class="top-banner"></div>
   <div class="hub-nav header-inner" style="padding-top:16px;padding-bottom:0;">
     <a href="./">← Bonyad hub</a>
@@ -54,22 +71,6 @@
     </div>
     <div class="footer-txt">Bonyad — Developer fix briefs · Nigents · Problem-X · Consult Code Achieve</div>
   </footer>
-  <div id="bonyad-flash" class="bonyad-flash" aria-live="polite" role="status">
-    <span class="bonyad-flash-icon" aria-hidden="true"></span>
-    <span class="bonyad-flash-text"></span>
-  </div>
-  <div id="bonyad-modal" class="bonyad-modal" aria-hidden="true">
-    <div class="bonyad-modal-backdrop"></div>
-    <div class="bonyad-modal-panel" role="dialog" aria-modal="true" aria-labelledby="bonyad-modal-title">
-      <div class="bonyad-modal-accent" aria-hidden="true"></div>
-      <h3 id="bonyad-modal-title" class="bonyad-modal-title"></h3>
-      <p id="bonyad-modal-body" class="bonyad-modal-body"></p>
-      <div class="bonyad-modal-actions">
-        <button type="button" id="bonyad-modal-btn-cancel" class="bonyad-modal-btn secondary" style="display: none">Cancel</button>
-        <button type="button" id="bonyad-modal-btn-primary" class="bonyad-modal-btn primary">OK</button>
-      </div>
-    </div>
-  </div>
   <script>
     (function () {
       var q = new URLSearchParams(location.search).get('slug');
