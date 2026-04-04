@@ -3061,7 +3061,7 @@ io.on('connection', async (socket) => {
 });
 
 // ============================================================================
-// Bonyad / Vbonayd fix briefs (MySQL-backed, public API)
+// Bonyad fix briefs (MySQL-backed, public API; Nigents-themed UI)
 // ============================================================================
 if (useDatabase) {
   try {

@@ -55,7 +55,7 @@
   var ADD_SECTION_HTML =
     '<div class="add-section" id="addSection">' +
     '<h3>Add a New Issue</h3>' +
-    '<p>Requires edit key (set above). Data is stored in the Nigents database.</p>' +
+    '<p>Requires edit key (set above). Stored in the Nigents MySQL database.</p>' +
     '<button type="button" class="add-btn" data-act="show-form">' +
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg> Add Issue</button>' +
     '<div class="add-form" id="addForm">' +
@@ -408,9 +408,9 @@
         state.issues = j.issues || [];
         document.getElementById('brief-title').textContent = j.sheet.brief_title || '';
         document.getElementById('brief-subtitle').textContent = j.sheet.brief_subtitle || '';
-        const vb = document.querySelector('.logo-block.vbonayd .vb-name');
-        const vbSub = document.querySelector('.logo-block.vbonayd .vb-sub');
-        if (vb) vb.textContent = j.sheet.label || 'Vbonayd';
+        const vb = document.querySelector('.logo-block.bonyad-mark .vb-name');
+        const vbSub = document.querySelector('.logo-block.bonyad-mark .vb-sub');
+        if (vb) vb.textContent = j.sheet.label || 'Bonyad';
         if (vbSub) vbSub.textContent = j.sheet.platform_line || '';
         const meta = document.getElementById('header-meta');
         if (meta) {

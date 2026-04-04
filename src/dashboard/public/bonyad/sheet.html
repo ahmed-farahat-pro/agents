@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vbonayd — Fix Brief | Problem-X</title>
+  <title>Bonyad — Fix Brief | Nigents</title>
   <link rel="stylesheet" href="brief.css" />
 </head>
-<body>
+<body class="bonyad-theme">
   <div class="top-banner"></div>
   <div class="hub-nav header-inner" style="padding-top:16px;padding-bottom:0;">
     <a href="./">← Bonyad hub</a>
@@ -16,24 +16,29 @@
   <header class="header">
     <div class="header-inner">
       <div class="logos-row">
-        <div class="logo-block vbonayd">
-          <img src="assets/vbonayd-logo.png" alt="Vbonayd" />
+        <div class="logo-block bonyad-mark">
+          <div class="bonyad-orb" aria-hidden="true">B</div>
           <div>
-            <div class="vb-name" style="font-size:16px;font-weight:700;color:var(--black);line-height:1.1;">Vbonayd</div>
-            <div class="vb-sub" style="font-size:11px;color:var(--gray);font-weight:500;">…</div>
+            <div class="vb-name bonyad-name-line">Bonyad</div>
+            <div class="vb-sub bonyad-sub-line">…</div>
           </div>
         </div>
-        <div class="logo-divider">Developed by</div>
+        <div class="logo-divider">×</div>
+        <a href="/" class="logo-block" style="text-decoration:none;color:inherit;align-items:center;gap:10px;">
+          <div class="bonyad-orb" style="width:44px;height:44px;font-size:18px;animation:none;">N</div>
+          <span style="font-weight:800;font-size:18px;letter-spacing:-0.04em;">Nigents</span>
+        </a>
+        <div class="logo-divider">Partner</div>
         <div class="logo-block problemx">
           <img src="assets/problem-x-logo.png" alt="Problem-X" />
         </div>
       </div>
-      <div class="brief-title" id="brief-title">Loading…</div>
+      <div class="brief-title shimmer-title" id="brief-title">Loading…</div>
       <div class="brief-subtitle" id="brief-subtitle"></div>
       <div class="header-meta-row" id="header-meta"></div>
       <div class="edit-key-bar">
-        <span><strong>Edit key</strong> (matches server <code>BONYAD_EDIT_SECRET</code>; stored in browser only):</span>
-        <input type="password" id="edit-key-input" placeholder="Paste key to add/delete/mark done" autocomplete="off" />
+        <span><strong>Edit key</strong> — must match server <code>BONYAD_EDIT_SECRET</code> (see <code>.env</code> on the host):</span>
+        <input type="password" id="edit-key-input" placeholder="Paste secret, then Save" autocomplete="off" />
         <button type="button" id="save-edit-key">Save</button>
       </div>
     </div>
@@ -41,10 +46,11 @@
   <main class="main" id="brief-root"></main>
   <footer>
     <div class="footer-logos">
-      <img src="assets/vbonayd-logo.png" alt="Vbonayd" class="vb" />
+      <div class="footer-n" aria-hidden="true">B</div>
+      <div class="footer-n" style="background:var(--accent-orange);" aria-hidden="true">N</div>
       <img src="assets/problem-x-logo.png" alt="Problem-X" />
     </div>
-    <div class="footer-txt">Vbonayd — Developer Fix Brief · Problem-X · Consult Code Achieve</div>
+    <div class="footer-txt">Bonyad — Developer fix briefs · Nigents · Problem-X · Consult Code Achieve</div>
   </footer>
   <div class="toast" id="toast">Copied</div>
   <script>

@@ -3,42 +3,28 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bonyad — Vbonayd fix briefs</title>
+  <title>Bonyad — Platform fix briefs | Nigents</title>
   <link rel="stylesheet" href="brief.css" />
-  <style>
-    .hub-hero { max-width: 960px; margin: 0 auto; padding: 48px 36px 24px; }
-    .hub-hero h1 { font-size: clamp(1.6rem, 4vw, 2.1rem); color: var(--black); margin-bottom: 10px; }
-    .hub-hero p { color: var(--gray); font-size: 15px; max-width: 56ch; line-height: 1.6; }
-    .sheet-grid { max-width: 960px; margin: 0 auto; padding: 0 36px 48px; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
-    .sheet-card { border: 1px solid var(--gray-light); border-radius: var(--radius); padding: 22px; background: var(--white); box-shadow: var(--shadow-sm); transition: border-color 0.2s; }
-    .sheet-card:hover { border-color: var(--blue-border); }
-    .sheet-card h2 { font-size: 17px; margin-bottom: 6px; color: var(--black); }
-    .sheet-card .sub { font-size: 12px; color: var(--gray); margin-bottom: 14px; }
-    .sheet-card a { display: inline-block; background: var(--blue); color: #fff; text-decoration: none; padding: 8px 16px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; }
-    .sheet-card a:hover { background: #0D47A1; }
-    .new-sheet { max-width: 960px; margin: 0 auto; padding: 0 36px 60px; }
-    .new-sheet h3 { font-size: 15px; margin-bottom: 12px; color: var(--gray-dark); }
-    .new-sheet-inner { border: 2px dashed var(--gray-light); border-radius: var(--radius); padding: 24px; }
-    .err-box { background: var(--danger-pale); color: var(--danger); padding: 14px 18px; border-radius: var(--radius-sm); margin: 0 36px 20px; max-width: 960px; margin-left: auto; margin-right: auto; }
-  </style>
 </head>
-<body>
+<body class="bonyad-theme">
   <div class="top-banner"></div>
-  <div class="hub-hero">
-    <h1>Bonyad — platform fix briefs</h1>
-    <p>Open a sheet for iOS, Android, Web, or Backend. Issues and prompts are stored in the Nigents database. Set an edit key (same as server <code>BONYAD_EDIT_SECRET</code>) to add or change items.</p>
-    <p class="hub-nav" style="margin-top:14px;"><a href="/" style="color:var(--blue);font-weight:600;">← Nigents home</a></p>
+  <div class="bonyad-hub-hero">
+    <h1><span class="accent">Bonyad</span> — platform fix briefs</h1>
+    <p>Open a sheet for Android, iOS, Web, or Backend. Issues live in the Nigents database. Use the same <strong style="color:var(--accent-orange);">BONYAD_EDIT_SECRET</strong> from your server <code style="font-size:13px;">.env</code> as the edit key below (then Save).</p>
+    <p class="hub-nav" style="margin-top:14px;"><a href="/">← Nigents home</a></p>
   </div>
-  <div id="hub-err" class="err-box" style="display:none;"></div>
-  <div class="edit-key-bar" style="max-width:960px;margin:0 auto 24px;padding-left:36px;padding-right:36px;">
-    <span><strong>Edit key</strong> (for adding sheets/issues):</span>
-    <input type="password" id="hub-edit-key" placeholder="BONYAD_EDIT_SECRET" style="flex:1;min-width:180px;padding:8px 10px;border:1px solid var(--gray-light);border-radius:6px;" />
-    <button type="button" id="hub-save-key" class="add-btn" style="padding:8px 16px;">Save in browser</button>
+  <div id="hub-err" class="bonyad-err-box" style="display:none;"></div>
+  <div class="hub-key-row">
+    <div class="edit-key-bar">
+      <span><strong>Edit key</strong> (server <code>BONYAD_EDIT_SECRET</code>):</span>
+      <input type="password" id="hub-edit-key" placeholder="Paste secret" autocomplete="off" />
+      <button type="button" id="hub-save-key" class="add-btn" style="padding:8px 16px;">Save in browser</button>
+    </div>
   </div>
-  <div class="sheet-grid" id="sheet-grid"></div>
-  <div class="new-sheet">
+  <div class="bonyad-sheet-grid" id="sheet-grid"></div>
+  <div class="bonyad-new-sheet">
     <h3>Add another platform / sheet</h3>
-    <div class="new-sheet-inner">
+    <div class="bonyad-new-sheet-inner">
       <div class="form-row">
         <div class="form-group">
           <label>URL slug</label>
@@ -46,7 +32,7 @@
         </div>
         <div class="form-group">
           <label>Label</label>
-          <input type="text" id="ns-label" placeholder="Vbonayd" />
+          <input type="text" id="ns-label" placeholder="Bonyad" />
         </div>
       </div>
       <div class="form-group" style="margin-bottom:12px;">
@@ -66,10 +52,11 @@
   </div>
   <footer>
     <div class="footer-logos">
-      <img src="assets/vbonayd-logo.png" alt="" class="vb" />
-      <img src="assets/problem-x-logo.png" alt="" />
+      <div class="footer-n" aria-hidden="true">B</div>
+      <div class="footer-n" aria-hidden="true">N</div>
+      <img src="assets/problem-x-logo.png" alt="Problem-X" />
     </div>
-    <div class="footer-txt">Bonyad · Problem-X · Consult Code Achieve</div>
+    <div class="footer-txt">Bonyad · Nigents · Problem-X · Consult Code Achieve</div>
   </footer>
   <div class="toast" id="toast"></div>
   <script>
@@ -96,7 +83,7 @@
             var g = document.getElementById('sheet-grid');
             g.innerHTML = j.sheets.map(function (s) {
               return (
-                '<article class="sheet-card">' +
+                '<article class="bonyad-sheet-card">' +
                 '<h2>' + escapeHtml(s.label) + '</h2>' +
                 '<div class="sub">' + escapeHtml(s.platform_line || s.slug) + '</div>' +
                 '<a href="sheet.html?slug=' + encodeURIComponent(s.slug) + '">Open brief</a>' +

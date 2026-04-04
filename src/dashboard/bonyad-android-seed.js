@@ -1,5 +1,5 @@
 /**
- * Seed issues for Vbonayd Android fix brief (11 items).
+ * Seed issues for Bonyad Android fix brief (11 items).
  * Prompts are structured dev briefs (plain text); expand via Bonyad UI if needed.
  */
 module.exports = [

@@ -342,7 +342,7 @@ INSERT INTO system_config (config_key, config_value) VALUES
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value);
 
 -- =====================================================
--- Bonyad / Vbonayd fix briefs (public /bonyad pages; also auto-created on dashboard boot)
+-- Bonyad fix briefs (public /bonyad pages; also auto-created on dashboard boot)
 -- =====================================================
 CREATE TABLE IF NOT EXISTS bonyad_sheets (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

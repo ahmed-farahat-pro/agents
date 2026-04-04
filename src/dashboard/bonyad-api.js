@@ -1,5 +1,5 @@
 /**
- * Bonyad / Vbonayd fix-brief API — sheets + issues in MySQL.
+ * Bonyad fix-brief API — sheets + issues in MySQL (Nigents).
  * GET is public. Mutations require BONYAD_EDIT_SECRET when set (header x-bonyad-edit-key, query editKey, or body.editKey).
  */
 
@@ -74,7 +74,7 @@ async function ensureBonyadTables() {
 const DEFAULT_SHEETS = [
   {
     slug: 'android',
-    label: 'Vbonayd',
+    label: 'Bonyad',
     platform_line: 'Android Application',
     brief_title: 'Android App — Developer Fix Brief',
     brief_subtitle:
@@ -87,7 +87,7 @@ const DEFAULT_SHEETS = [
   },
   {
     slug: 'ios',
-    label: 'Vbonayd',
+    label: 'Bonyad',
     platform_line: 'iOS Application',
     brief_title: 'iOS App — Developer Fix Brief',
     brief_subtitle: 'Add iOS issues below. Use the same prompt + criteria pattern as Android.',
@@ -99,7 +99,7 @@ const DEFAULT_SHEETS = [
   },
   {
     slug: 'web',
-    label: 'Vbonayd',
+    label: 'Bonyad',
     platform_line: 'Web Application',
     brief_title: 'Web App — Developer Fix Brief',
     brief_subtitle: 'Track web front-end and client issues here.',
@@ -111,7 +111,7 @@ const DEFAULT_SHEETS = [
   },
   {
     slug: 'backend',
-    label: 'Vbonayd',
+    label: 'Bonyad',
     platform_line: 'Backend / API',
     brief_title: 'Backend — Developer Fix Brief',
     brief_subtitle: 'API, services, and server-side fixes.',
@@ -172,10 +172,21 @@ async function seedAndroidIssuesIfEmpty() {
   logger.info('[Bonyad] Seeded Android issues (%d)', androidSeed.length);
 }
 
+async function migrateLegacySheetLabels() {
+  try {
+    await db.query(
+      `UPDATE bonyad_sheets SET label = 'Bonyad' WHERE label IN ('Vbonayd', 'vbonayd')`
+    );
+  } catch (e) {
+    logger.warn('[Bonyad] Label migration skipped:', e.message);
+  }
+}
+
 async function initBonyadData() {
   try {
     await ensureBonyadTables();
     await seedSheetsIfEmpty();
+    await migrateLegacySheetLabels();
     await seedAndroidIssuesIfEmpty();
   } catch (e) {
     logger.error('[Bonyad] Init failed:', e.message);
