@@ -158,9 +158,38 @@
         '</div>' +
         (crit ? '<ul class="criteria-list">' + crit + '</ul>' : '') +
         (getEditKey()
-          ? '<p style="margin-top:14px;"><button type="button" class="btn-cancel" data-act="del" data-id="' +
+          ? '<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-light);">' +
+            '<p style="font-size:11px;font-weight:700;color:var(--gray-mid);margin-bottom:8px;">EDIT ISSUE</p>' +
+            '<div class="form-group" style="margin-bottom:10px;"><label>Title</label>' +
+            '<input type="text" class="edit-title" data-id="' +
             iss.id +
-            '">Delete issue</button></p>'
+            '" value="' +
+            esc(iss.title).replace(/"/g, '&quot;') +
+            '" /></div>' +
+            '<div class="form-group" style="margin-bottom:10px;"><label>Tags (comma-separated)</label>' +
+            '<input type="text" class="edit-tags" data-id="' +
+            iss.id +
+            '" value="' +
+            esc((iss.tags || []).join(', ')).replace(/"/g, '&quot;') +
+            '" /></div>' +
+            '<div class="form-group" style="margin-bottom:10px;"><label>Developer prompt</label>' +
+            '<textarea class="edit-prompt" data-id="' +
+            iss.id +
+            '" rows="8">' +
+            esc(iss.prompt_text) +
+            '</textarea></div>' +
+            '<div class="form-group" style="margin-bottom:10px;"><label>Criteria (one per line)</label>' +
+            '<textarea class="edit-criteria" data-id="' +
+            iss.id +
+            '" rows="4">' +
+            esc((iss.criteria || []).join('\n')) +
+            '</textarea></div>' +
+            '<button type="button" class="btn-submit" data-act="save-edit" data-id="' +
+            iss.id +
+            '">Save changes</button> ' +
+            '<button type="button" class="btn-cancel" data-act="del" data-id="' +
+            iss.id +
+            '">Delete issue</button></div>'
           : '') +
         '</div></div></div>';
     });
@@ -234,6 +263,30 @@
         deleteIssue(id);
       });
     });
+    root.querySelectorAll('[data-act="save-edit"]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        const id = Number(el.getAttribute('data-id'));
+        const title = root.querySelector('.edit-title[data-id="' + id + '"]').value.trim();
+        const prompt = root.querySelector('.edit-prompt[data-id="' + id + '"]').value.trim();
+        const tagsRaw = root.querySelector('.edit-tags[data-id="' + id + '"]').value.trim();
+        const critRaw = root.querySelector('.edit-criteria[data-id="' + id + '"]').value;
+        if (!title || !prompt) {
+          showToast('Title and prompt required');
+          return;
+        }
+        const tags = tagsRaw
+          ? tagsRaw.split(',').map(function (t) {
+              return t.trim();
+            }).filter(Boolean)
+          : [];
+        const criteria = critRaw
+          ? critRaw.split('\n').map(function (l) {
+              return l.trim();
+            }).filter(Boolean)
+          : [];
+        patchIssue(id, { title: title, prompt_text: prompt, tags: tags, criteria: criteria });
+      });
+    });
 
     const addBtn = root.querySelector('[data-act="show-form"]');
     const addForm = root.querySelector('#addForm');
@@ -272,6 +325,7 @@
       })
       .then(function (j) {
         if (!j.success) throw new Error(j.error || 'Failed');
+        showToast('Saved');
         return load();
       })
       .catch(function (e) {
