@@ -258,6 +258,42 @@
     return 'Medium Priority';
   }
 
+  /** @returns {'open'|'in_progress'|'done'} */
+  function issueWorkflowState(iss) {
+    if (iss.is_done) return 'done';
+    const st = String(iss.sheet_status || '').toLowerCase();
+    if (st === 'in_progress') return 'in_progress';
+    return 'open';
+  }
+
+  function issueWorkflowButtons(iss) {
+    const id = iss.id;
+    const wf = issueWorkflowState(iss);
+    function btn(state, label) {
+      const active = wf === state ? ' is-active' : '';
+      return (
+        '<button type="button" class="wf-btn' +
+        active +
+        '" data-act="wf" data-wf="' +
+        state +
+        '" data-id="' +
+        id +
+        '" title="Set status: ' +
+        esc(label) +
+        '">' +
+        esc(label) +
+        '</button>'
+      );
+    }
+    return (
+      '<div class="issue-workflow" role="group" aria-label="Issue status">' +
+      btn('open', 'Open') +
+      btn('in_progress', 'In progress') +
+      btn('done', 'Done') +
+      '</div>'
+    );
+  }
+
   function linkifyPlainUrls(text) {
     if (text == null || String(text).trim() === '') return '';
     const str = String(text);
@@ -436,6 +472,9 @@
     const done = issues.filter(function (i) {
       return i.is_done;
     }).length;
+    const inProg = issues.filter(function (i) {
+      return !i.is_done && issueWorkflowState(i) === 'in_progress';
+    }).length;
     const pct = total === 0 ? 0 : Math.round((done / total) * 100);
     const high = issues.filter(function (i) {
       return i.priority === 'high';
@@ -448,10 +487,9 @@
     issues.forEach(function (iss, idx) {
       const n = idx + 1;
       const pri = iss.priority || 'medium';
-      const openClass = iss.is_done ? '' : '';
+      const wf = issueWorkflowState(iss);
       const doneClass = iss.is_done ? ' done-card' : '';
-      const toggleClass = iss.is_done ? 'is-done' : 'not-done';
-      const toggleLabel = iss.is_done ? 'Done' : 'Mark Done';
+      const progClass = wf === 'in_progress' ? ' wf-in-progress' : '';
       const tags =
         '<span class="tag ' +
         tagClass(pri) +
@@ -472,6 +510,7 @@
         '<div class="issue-card ' +
         priorityClass(pri) +
         doneClass +
+        progClass +
         '" id="card-' +
         iss.id +
         '" data-id="' +
@@ -505,14 +544,7 @@
         issueExcelMetaHtml(iss) +
         '</div>' +
         '<div class="issue-header-right">' +
-        '<div class="status-toggle ' +
-        toggleClass +
-        '" data-act="done" data-id="' +
-        iss.id +
-        '">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg> ' +
-        esc(toggleLabel) +
-        '</div>' +
+        issueWorkflowButtons(iss) +
         '<svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>' +
         '</div></div>' +
         '<div class="issue-body"><div class="issue-body-inner">' +
@@ -638,6 +670,9 @@
       '<div class="summary-card med"><div class="num">' +
       med +
       '</div><div class="lbl">Medium Priority</div></div>' +
+      '<div class="summary-card prog"><div class="num" id="sumInProg">' +
+      inProg +
+      '</div><div class="lbl">In progress</div></div>' +
       '<div class="summary-card done"><div class="num" id="sumDone">' +
       done +
       '</div><div class="lbl">Completed</div></div></div>' +
@@ -669,7 +704,7 @@
 
     root.querySelectorAll('.issue-header[data-act="toggle"]').forEach(function (el) {
       el.addEventListener('click', function (e) {
-        if (e.target.closest('[data-act="done"]')) return;
+        if (e.target.closest('[data-act="wf"]') || e.target.closest('.issue-workflow')) return;
         if (e.target.closest('.issue-select-wrap') || e.target.closest('.issue-select-pill')) return;
         const id = el.getAttribute('data-id');
         const card = document.getElementById('card-' + id);
@@ -731,15 +766,18 @@
         });
       });
     }
-    root.querySelectorAll('[data-act="done"]').forEach(function (el) {
+    root.querySelectorAll('[data-act="wf"]').forEach(function (el) {
       el.addEventListener('click', function (e) {
         e.stopPropagation();
         const id = Number(el.getAttribute('data-id'));
-        const iss = issues.find(function (x) {
-          return x.id === id;
-        });
-        if (!iss) return;
-        patchIssue(id, { is_done: !iss.is_done });
+        const w = el.getAttribute('data-wf');
+        if (w === 'open') {
+          patchIssue(id, { is_done: false, sheet_status: null });
+        } else if (w === 'in_progress') {
+          patchIssue(id, { is_done: false, sheet_status: 'in_progress' });
+        } else if (w === 'done') {
+          patchIssue(id, { is_done: true, sheet_status: null });
+        }
       });
     });
     root.querySelectorAll('[data-act="copy"]').forEach(function (el) {

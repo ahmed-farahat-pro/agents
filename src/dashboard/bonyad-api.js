@@ -6,6 +6,7 @@
 const db = require('../database/connection');
 const logger = require('../utils/logger');
 const androidSeed = require('./bonyad-android-seed');
+const { SHEET: SHEET_45, ISSUES: ISSUES_45 } = require('./bonyad-45-batch-seed');
 const { normalizeMediaArray, deleteUploadedFilesForIssueRow } = require('./bonyad-issue-media');
 
 const BONYAD_EDIT_SECRET = (process.env.BONYAD_EDIT_SECRET || '').trim();
@@ -241,6 +242,58 @@ async function seedAndroidIssuesIfEmpty() {
   logger.info('[Bonyad] Seeded Android issues (%d)', androidSeed.length);
 }
 
+/** Sheet slug `4-5`: P1–P8 + A–Q with prompts (seed once when sheet has zero issues). */
+async function seed45BatchIfEmpty() {
+  const slug = SHEET_45.slug;
+  try {
+    const existingSheet = await db.query('SELECT slug FROM bonyad_sheets WHERE slug=?', [slug]);
+    if (!existingSheet.length) {
+      await db.query(
+        `INSERT INTO bonyad_sheets (slug, label, platform_line, brief_title, brief_subtitle, meta_date, meta_to, meta_from, status_label, sort_order)
+         VALUES (?,?,?,?,?,?,?,?,?,?)`,
+        [
+          slug,
+          SHEET_45.label,
+          SHEET_45.platform_line,
+          SHEET_45.brief_title,
+          SHEET_45.brief_subtitle,
+          SHEET_45.meta_date,
+          SHEET_45.meta_to,
+          SHEET_45.meta_from,
+          SHEET_45.status_label,
+          SHEET_45.sort_order,
+        ]
+      );
+      logger.info('[Bonyad] Created sheet %s (4/5 batch)', slug);
+    }
+    const cnt = await db.query('SELECT COUNT(*) AS c FROM bonyad_issues WHERE sheet_slug=?', [slug]);
+    if (Number(cnt[0].c) > 0) return;
+    for (const row of ISSUES_45) {
+      await db.query(
+        `INSERT INTO bonyad_issues (sheet_slug, sort_order, module, issue_type, sheet_status, attachments, title, priority, tags, prompt_text, criteria, issue_media, is_done)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0)`,
+        [
+          slug,
+          row.sort_order,
+          null,
+          null,
+          null,
+          null,
+          row.title,
+          row.priority,
+          JSON.stringify(row.tags || []),
+          row.prompt,
+          JSON.stringify(row.criteria || []),
+          JSON.stringify([]),
+        ]
+      );
+    }
+    logger.info('[Bonyad] Seeded 4/5 batch issues (%d) on sheet %s', ISSUES_45.length, slug);
+  } catch (e) {
+    logger.error('[Bonyad] seed45BatchIfEmpty failed:', e.message);
+  }
+}
+
 async function migrateLegacySheetLabels() {
   try {
     await db.query(
@@ -260,6 +313,7 @@ async function initBonyadData() {
     await seedSheetsIfEmpty();
     await migrateLegacySheetLabels();
     await seedAndroidIssuesIfEmpty();
+    await seed45BatchIfEmpty();
   } catch (e) {
     logger.error('[Bonyad] Init failed:', e.message);
   }

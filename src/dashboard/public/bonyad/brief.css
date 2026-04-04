@@ -282,7 +282,7 @@ body.bonyad-theme > *:not(.bonyad-modal):not(.bonyad-flash) {
 
 .summary-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 14px;
   margin-bottom: 32px;
 }
@@ -302,6 +302,7 @@ body.bonyad-theme > *:not(.bonyad-modal):not(.bonyad-flash) {
 .summary-card:nth-child(2) { animation-delay: 0.1s; }
 .summary-card:nth-child(3) { animation-delay: 0.15s; }
 .summary-card:nth-child(4) { animation-delay: 0.2s; }
+.summary-card:nth-child(5) { animation-delay: 0.25s; }
 
 .summary-card:hover {
   border-color: rgba(255, 87, 10, 0.35);
@@ -314,6 +315,7 @@ body.bonyad-theme > *:not(.bonyad-modal):not(.bonyad-flash) {
 .summary-card.high .num { color: var(--danger); }
 .summary-card.med .num { color: var(--warning); }
 .summary-card.done .num { color: var(--accent-green); }
+.summary-card.prog .num { color: #38bdf8; }
 
 .section-label {
   display: flex;
@@ -357,6 +359,11 @@ body.bonyad-theme > *:not(.bonyad-modal):not(.bonyad-flash) {
 }
 
 .issue-card.done-card .issue-title { text-decoration: line-through; color: var(--text-muted); }
+
+.issue-card.wf-in-progress {
+  border-color: rgba(56, 189, 248, 0.45);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.12);
+}
 
 .priority-high { border-left: 4px solid var(--danger); }
 .priority-medium { border-left: 4px solid var(--warning); }
@@ -636,7 +643,53 @@ body.bonyad-theme > *:not(.bonyad-modal):not(.bonyad-flash) {
 .tag.t-green { background: var(--success-pale); color: var(--accent-green); border: 1px solid rgba(25, 213, 158, 0.35); }
 .tag.t-gray { background: var(--bg-elevated); color: var(--text-secondary); border: 1px solid var(--border); }
 
-.issue-header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-top: 1px; }
+.issue-header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-top: 1px; flex-wrap: wrap; justify-content: flex-end; }
+
+.issue-workflow {
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  background: var(--bg-elevated);
+}
+
+.issue-workflow .wf-btn {
+  margin: 0;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font);
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.issue-workflow .wf-btn:last-child { border-right: none; }
+
+.issue-workflow .wf-btn:hover {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.issue-workflow .wf-btn.is-active {
+  background: rgba(255, 87, 10, 0.14);
+  color: var(--accent-orange);
+}
+
+.issue-workflow .wf-btn[data-wf="done"].is-active {
+  background: var(--success-pale);
+  color: var(--accent-green);
+}
+
+.issue-workflow .wf-btn[data-wf="in_progress"].is-active {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+}
 
 .status-toggle {
   display: inline-flex;
