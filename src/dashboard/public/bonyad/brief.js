@@ -60,6 +60,65 @@
     return '<div class="issue-excel-meta">' + bits.join('') + '</div>';
   }
 
+  function issueMediaHtml(iss) {
+    const items = iss.issue_media || [];
+    const k = getEditKey();
+    const has = items.length > 0;
+    if (!has && !k) {
+      return '';
+    }
+    let h = '<div class="issue-media">';
+    h += '<p class="issue-media-label">Screenshots &amp; images</p>';
+    if (has) {
+      h += '<div class="issue-media-grid">';
+      items.forEach(function (m) {
+        const src = m.kind === 'url' ? m.url : m.path;
+        const cap = m.kind === 'url' ? 'Image link' : esc(m.name || 'Uploaded');
+        h +=
+          '<figure class="issue-media-item">' +
+          (k
+            ? '<button type="button" class="issue-media-remove" data-act="rm-media" data-issue="' +
+              iss.id +
+              '" data-media="' +
+              esc(m.id) +
+              '" title="Remove">×</button>'
+            : '') +
+          '<a href="' +
+          esc(src) +
+          '" target="_blank" rel="noopener noreferrer" class="issue-media-img-wrap">' +
+          '<img src="' +
+          esc(src) +
+          '" alt="" loading="lazy" referrerpolicy="no-referrer" /></a>' +
+          '<figcaption>' +
+          cap +
+          '</figcaption></figure>';
+      });
+      h += '</div>';
+    }
+    if (k) {
+      h += '<div class="issue-media-add">';
+      h +=
+        '<div class="form-group"><label>Add image URL</label><div class="media-inline">' +
+        '<input type="url" class="media-url-in" data-issue="' +
+        iss.id +
+        '" placeholder="https://…" />' +
+        '<button type="button" class="btn-submit" data-act="add-media-url" data-issue="' +
+        iss.id +
+        '">Add URL</button></div></div>';
+      h +=
+        '<div class="form-group"><label>Upload images</label><div class="media-inline">' +
+        '<input type="file" class="media-files" data-issue="' +
+        iss.id +
+        '" accept="image/jpeg,image/png,image/gif,image/webp" multiple />' +
+        '<button type="button" class="btn-submit" data-act="upload-media" data-issue="' +
+        iss.id +
+        '">Upload files</button></div></div>';
+      h += '</div>';
+    }
+    h += '</div>';
+    return h;
+  }
+
   let state = { sheet: null, issues: [] };
 
   var ADD_SECTION_HTML =
@@ -169,6 +228,7 @@
         esc(iss.prompt_text) +
         '</div>' +
         (crit ? '<ul class="criteria-list">' + crit + '</ul>' : '') +
+        issueMediaHtml(iss) +
         (getEditKey()
           ? '<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-light);">' +
             '<p style="font-size:11px;font-weight:700;color:var(--gray-mid);margin-bottom:8px;">EDIT ISSUE</p>' +
@@ -374,6 +434,42 @@
       });
     }
 
+    root.querySelectorAll('[data-act="rm-media"]').forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const issueId = Number(el.getAttribute('data-issue'));
+        const mid = el.getAttribute('data-media');
+        if (!confirm('Remove this image from the issue?')) return;
+        removeIssueMedia(issueId, mid);
+      });
+    });
+    root.querySelectorAll('[data-act="add-media-url"]').forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        const issueId = Number(el.getAttribute('data-issue'));
+        const inp = root.querySelector('.media-url-in[data-issue="' + issueId + '"]');
+        const u = inp && inp.value.trim();
+        if (!u) {
+          showToast('Enter a URL');
+          return;
+        }
+        addIssueMediaUrl(issueId, u);
+      });
+    });
+    root.querySelectorAll('[data-act="upload-media"]').forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        const issueId = Number(el.getAttribute('data-issue'));
+        const inp = root.querySelector('.media-files[data-issue="' + issueId + '"]');
+        if (!inp || !inp.files || !inp.files.length) {
+          showToast('Choose one or more images');
+          return;
+        }
+        uploadIssueMedia(issueId, inp.files);
+      });
+    });
+
     const addBtn = root.querySelector('[data-act="show-form"]');
     const addForm = root.querySelector('#addForm');
     if (addBtn && addForm) {
@@ -454,6 +550,79 @@
       })
       .catch(function (e) {
         showToast(e.message || 'Delete all failed');
+      });
+  }
+
+  function removeIssueMedia(issueId, mediaId) {
+    const k = getEditKey();
+    fetch(
+      API +
+        '/api/bonyad/issues/' +
+        issueId +
+        '/media/' +
+        encodeURIComponent(mediaId) +
+        '?editKey=' +
+        encodeURIComponent(k),
+      { method: 'DELETE', headers: { 'x-bonyad-edit-key': k } }
+    )
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (j) {
+        if (!j.success) throw new Error(j.error || 'Failed');
+        showToast('Image removed');
+        return load();
+      })
+      .catch(function (e) {
+        showToast(e.message || 'Remove failed');
+      });
+  }
+
+  function addIssueMediaUrl(issueId, url) {
+    const k = getEditKey();
+    fetch(API + '/api/bonyad/issues/' + issueId + '/media/url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-bonyad-edit-key': k },
+      body: JSON.stringify({ url: url, editKey: k }),
+    })
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (j) {
+        if (!j.success) throw new Error(j.error || 'Failed');
+        showToast('URL added');
+        const inp = document.querySelector('.media-url-in[data-issue="' + issueId + '"]');
+        if (inp) inp.value = '';
+        return load();
+      })
+      .catch(function (e) {
+        showToast(e.message || 'Add URL failed');
+      });
+  }
+
+  function uploadIssueMedia(issueId, fileList) {
+    const k = getEditKey();
+    const fd = new FormData();
+    for (let i = 0; i < fileList.length; i += 1) {
+      fd.append('files', fileList[i]);
+    }
+    fetch(API + '/api/bonyad/issues/' + issueId + '/media/upload?editKey=' + encodeURIComponent(k), {
+      method: 'POST',
+      headers: { 'x-bonyad-edit-key': k },
+      body: fd,
+    })
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (j) {
+        if (!j.success) throw new Error(j.error || 'Failed');
+        showToast('Uploaded');
+        const inp = document.querySelector('.media-files[data-issue="' + issueId + '"]');
+        if (inp) inp.value = '';
+        return load();
+      })
+      .catch(function (e) {
+        showToast(e.message || 'Upload failed');
       });
   }
 

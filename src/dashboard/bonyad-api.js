@@ -6,6 +6,7 @@
 const db = require('../database/connection');
 const logger = require('../utils/logger');
 const androidSeed = require('./bonyad-android-seed');
+const { normalizeMediaArray, deleteUploadedFilesForIssueRow } = require('./bonyad-issue-media');
 
 const BONYAD_EDIT_SECRET = (process.env.BONYAD_EDIT_SECRET || '').trim();
 
@@ -66,6 +67,7 @@ async function ensureBonyadTables() {
       tags JSON,
       prompt_text MEDIUMTEXT NOT NULL,
       criteria JSON,
+      issue_media JSON,
       is_done TINYINT(1) NOT NULL DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -98,6 +100,7 @@ async function ensureBonyadIssueExtraColumns() {
     ['issue_type', 'VARCHAR(128) NULL'],
     ['sheet_status', 'VARCHAR(128) NULL'],
     ['attachments', 'TEXT NULL'],
+    ['issue_media', 'JSON NULL'],
   ];
   for (const [name, def] of cols) {
     const chk = await db.query(
@@ -248,6 +251,7 @@ function rowToIssue(r) {
     tags: parseJsonField(r.tags, []),
     prompt_text: r.prompt_text,
     criteria: parseJsonField(r.criteria, []),
+    issue_media: normalizeMediaArray(parseJsonField(r.issue_media, [])),
     is_done: !!r.is_done,
   };
 }
@@ -378,6 +382,7 @@ function registerBonyadRoutes(app) {
         issue_type,
         sheet_status,
         attachments,
+        issue_media,
       } = req.body || {};
       if (!title || !prompt_text) {
         return res.status(400).json({ success: false, error: 'title and prompt_text required' });
@@ -388,9 +393,10 @@ function registerBonyadRoutes(app) {
         [slug]
       );
       const ord = Number(sort_order) || maxRows[0].n;
+      const mediaJson = JSON.stringify(normalizeMediaArray(Array.isArray(issue_media) ? issue_media : []));
       const r = await db.query(
-        `INSERT INTO bonyad_issues (sheet_slug, sort_order, module, issue_type, sheet_status, attachments, title, priority, tags, prompt_text, criteria, is_done)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0)`,
+        `INSERT INTO bonyad_issues (sheet_slug, sort_order, module, issue_type, sheet_status, attachments, title, priority, tags, prompt_text, criteria, issue_media, is_done)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,0)`,
         [
           slug,
           ord,
@@ -403,6 +409,7 @@ function registerBonyadRoutes(app) {
           JSON.stringify(Array.isArray(tags) ? tags : []),
           prompt_text,
           JSON.stringify(Array.isArray(criteria) ? criteria : []),
+          mediaJson,
         ]
       );
       res.json({ success: true, id: r.insertId });
@@ -448,9 +455,19 @@ function registerBonyadRoutes(app) {
             ? String(body.attachments)
             : null
           : row.attachments;
+      let issue_media;
+      if (body.issue_media !== undefined) {
+        issue_media = JSON.stringify(normalizeMediaArray(body.issue_media));
+      } else if (row.issue_media == null) {
+        issue_media = null;
+      } else if (typeof row.issue_media === 'string') {
+        issue_media = row.issue_media;
+      } else {
+        issue_media = JSON.stringify(row.issue_media);
+      }
       await db.query(
         `UPDATE bonyad_issues SET title=?, priority=?, prompt_text=?, tags=?, criteria=?, sort_order=?, is_done=?,
-         module=?, issue_type=?, sheet_status=?, attachments=? WHERE id=?`,
+         module=?, issue_type=?, sheet_status=?, attachments=?, issue_media=? WHERE id=?`,
         [
           title,
           priority,
@@ -463,6 +480,7 @@ function registerBonyadRoutes(app) {
           issue_type,
           sheet_status,
           attachments,
+          issue_media,
           id,
         ]
       );
@@ -476,6 +494,10 @@ function registerBonyadRoutes(app) {
   app.delete('/api/bonyad/issues/:id', requireBonyadEdit, async (req, res) => {
     try {
       const id = Number(req.params.id);
+      const cur = await db.query('SELECT * FROM bonyad_issues WHERE id=?', [id]);
+      if (cur.length) {
+        deleteUploadedFilesForIssueRow(cur[0]);
+      }
       await db.query('DELETE FROM bonyad_issues WHERE id=?', [id]);
       res.json({ success: true });
     } catch (e) {
@@ -490,6 +512,10 @@ function registerBonyadRoutes(app) {
       const sh = await db.query('SELECT slug FROM bonyad_sheets WHERE slug=?', [slug]);
       if (!sh.length) {
         return res.status(404).json({ success: false, error: 'Sheet not found' });
+      }
+      const toClear = await db.query('SELECT * FROM bonyad_issues WHERE sheet_slug=?', [slug]);
+      for (const row of toClear) {
+        deleteUploadedFilesForIssueRow(row);
       }
       const result = await db.query('DELETE FROM bonyad_issues WHERE sheet_slug=?', [slug]);
       const deleted = result.affectedRows != null ? result.affectedRows : 0;
@@ -592,6 +618,10 @@ function registerBonyadRoutes(app) {
   app.delete('/api/bonyad/sheets/:slug', requireBonyadEdit, async (req, res) => {
     try {
       const slug = String(req.params.slug || '').toLowerCase();
+      const sheetIssues = await db.query('SELECT * FROM bonyad_issues WHERE sheet_slug=?', [slug]);
+      for (const row of sheetIssues) {
+        deleteUploadedFilesForIssueRow(row);
+      }
       await db.query('DELETE FROM bonyad_issues WHERE sheet_slug=?', [slug]);
       await db.query('DELETE FROM bonyad_sheets WHERE slug=?', [slug]);
       res.json({ success: true });

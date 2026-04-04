@@ -5,10 +5,12 @@
  * No edit key required; capped file size and row count.
  */
 
+const crypto = require('crypto');
 const multer = require('multer');
 const XLSX = require('xlsx');
 const db = require('../database/connection');
 const logger = require('../utils/logger');
+const { normalizeMediaArray } = require('./bonyad-issue-media');
 
 const MAX_FILE_BYTES = 6 * 1024 * 1024;
 const MAX_ROWS = 2000;
@@ -183,6 +185,24 @@ function parseWorkbook(buffer) {
   return pickWorkbookSheet(wb);
 }
 
+/** Turn attachment cell text + filenames into issue_media URL entries (http/https only). */
+function issueMediaFromAttachments(attachmentsText) {
+  if (!attachmentsText || !String(attachmentsText).trim()) {
+    return JSON.stringify([]);
+  }
+  const parts = String(attachmentsText)
+    .split(/[,;|\n]\s*/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+  const raw = [];
+  for (const p of parts) {
+    if (/^https?:\/\//i.test(p)) {
+      raw.push({ id: crypto.randomUUID(), kind: 'url', url: p.slice(0, 2048) });
+    }
+  }
+  return JSON.stringify(normalizeMediaArray(raw));
+}
+
 function registerBonyadExcelRoutes(app) {
   app.post(
     '/api/bonyad/sheets/:slug/issues/import-excel',
@@ -242,10 +262,11 @@ function registerBonyadExcelRoutes(app) {
               : [module, issueType].filter((x) => x && String(x).trim());
 
           const isDone = statusToDone(sheetStatus) ? 1 : 0;
+          const issueMediaJson = issueMediaFromAttachments(attachments);
 
           await db.query(
-            `INSERT INTO bonyad_issues (sheet_slug, sort_order, module, issue_type, sheet_status, attachments, title, priority, tags, prompt_text, criteria, is_done)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+            `INSERT INTO bonyad_issues (sheet_slug, sort_order, module, issue_type, sheet_status, attachments, title, priority, tags, prompt_text, criteria, issue_media, is_done)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
             [
               slug,
               nextOrder,
@@ -258,6 +279,7 @@ function registerBonyadExcelRoutes(app) {
               JSON.stringify(tags.filter(Boolean)),
               promptText,
               JSON.stringify(criteria),
+              issueMediaJson,
               isDone,
             ]
           );

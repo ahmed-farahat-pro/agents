@@ -3069,7 +3069,9 @@ if (useDatabase) {
     bonyadApi.registerBonyadRoutes(app);
     const bonyadExcel = require('./bonyad-excel-import');
     bonyadExcel.registerBonyadExcelRoutes(app);
-    logger.info('[Bonyad] API routes registered (including Excel import)');
+    const bonyadIssueMedia = require('./bonyad-issue-media');
+    bonyadIssueMedia.registerBonyadIssueMediaRoutes(app);
+    logger.info('[Bonyad] API routes registered (Excel import + issue media)');
   } catch (e) {
     logger.error('[Bonyad] Register routes failed:', e.message);
   }
