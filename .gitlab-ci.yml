@@ -205,9 +205,10 @@ deploy-to-ec2:
     - scp -o StrictHostKeyChecking=no deploy.sh "${SSH_USER}@${EC2_HOST}:/tmp/deploy.sh"
     - ssh -o StrictHostKeyChecking=no "${SSH_USER}@${EC2_HOST}" "chmod +x /tmp/deploy.sh && /tmp/deploy.sh"
     - ssh -o StrictHostKeyChecking=no "${SSH_USER}@${EC2_HOST}" "rm /tmp/deploy.sh"
-    - echo "=== Upload public downloads (e.g. AirSound DMG) ==="
+    - echo "=== Upload public downloads (macOS DMGs) ==="
     - ssh -o StrictHostKeyChecking=no "${SSH_USER}@${EC2_HOST}" "mkdir -p ${DEPLOY_DIR}/src/dashboard/public/downloads"
     - scp -o StrictHostKeyChecking=no src/dashboard/public/downloads/AirSound-1.0.0.dmg "${SSH_USER}@${EC2_HOST}:${DEPLOY_DIR}/src/dashboard/public/downloads/"
+    - scp -o StrictHostKeyChecking=no src/dashboard/public/downloads/AppJealousy-1.0.0.dmg "${SSH_USER}@${EC2_HOST}:${DEPLOY_DIR}/src/dashboard/public/downloads/"
     - echo "=== Deployment successful! ==="
 
   rules:
