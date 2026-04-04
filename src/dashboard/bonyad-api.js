@@ -57,6 +57,10 @@ async function ensureBonyadTables() {
       id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       sheet_slug VARCHAR(64) NOT NULL,
       sort_order INT NOT NULL DEFAULT 0,
+      module VARCHAR(255) NULL,
+      issue_type VARCHAR(128) NULL,
+      sheet_status VARCHAR(128) NULL,
+      attachments TEXT NULL,
       title VARCHAR(512) NOT NULL,
       priority ENUM('high','medium','low') NOT NULL DEFAULT 'medium',
       tags JSON,
@@ -68,7 +72,44 @@ async function ensureBonyadTables() {
       INDEX idx_bonyad_sheet_sort (sheet_slug, sort_order)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS bonyad_ai_roadmap (
+      id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      sort_order INT NOT NULL DEFAULT 0,
+      priority VARCHAR(32) NOT NULL DEFAULT 'P2',
+      title VARCHAR(512) NOT NULL,
+      description MEDIUMTEXT,
+      how_to MEDIUMTEXT,
+      what_we_need MEDIUMTEXT,
+      collaborate MEDIUMTEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_ai_roadmap_sort (sort_order)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
   logger.info('[Bonyad] Tables ensured');
+}
+
+/** Add Excel / bug-tracker columns on existing deployments (CREATE IF NOT EXISTS skips new columns). */
+async function ensureBonyadIssueExtraColumns() {
+  const table = 'bonyad_issues';
+  const cols = [
+    ['module', 'VARCHAR(255) NULL'],
+    ['issue_type', 'VARCHAR(128) NULL'],
+    ['sheet_status', 'VARCHAR(128) NULL'],
+    ['attachments', 'TEXT NULL'],
+  ];
+  for (const [name, def] of cols) {
+    const chk = await db.query(
+      `SELECT COUNT(*) AS c FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+      [table, name]
+    );
+    if (Number(chk[0].c) === 0) {
+      await db.query(`ALTER TABLE bonyad_issues ADD COLUMN ${name} ${def}`);
+      logger.info('[Bonyad] Added column bonyad_issues.%s', name);
+    }
+  }
 }
 
 const DEFAULT_SHEETS = [
@@ -185,6 +226,7 @@ async function migrateLegacySheetLabels() {
 async function initBonyadData() {
   try {
     await ensureBonyadTables();
+    await ensureBonyadIssueExtraColumns();
     await seedSheetsIfEmpty();
     await migrateLegacySheetLabels();
     await seedAndroidIssuesIfEmpty();
@@ -197,12 +239,29 @@ function rowToIssue(r) {
   return {
     id: r.id,
     sort_order: r.sort_order,
+    module: r.module != null ? r.module : null,
+    issue_type: r.issue_type != null ? r.issue_type : null,
+    sheet_status: r.sheet_status != null ? r.sheet_status : null,
+    attachments: r.attachments != null ? r.attachments : null,
     title: r.title,
     priority: r.priority,
     tags: parseJsonField(r.tags, []),
     prompt_text: r.prompt_text,
     criteria: parseJsonField(r.criteria, []),
     is_done: !!r.is_done,
+  };
+}
+
+function rowToRoadmap(r) {
+  return {
+    id: r.id,
+    sort_order: r.sort_order,
+    priority: r.priority,
+    title: r.title,
+    description: r.description || '',
+    how_to: r.how_to || '',
+    what_we_need: r.what_we_need || '',
+    collaborate: r.collaborate || '',
   };
 }
 
@@ -308,7 +367,18 @@ function registerBonyadRoutes(app) {
       if (!sh.length) {
         return res.status(404).json({ success: false, error: 'Sheet not found' });
       }
-      const { title, priority, tags, prompt_text, criteria, sort_order } = req.body || {};
+      const {
+        title,
+        priority,
+        tags,
+        prompt_text,
+        criteria,
+        sort_order,
+        module,
+        issue_type,
+        sheet_status,
+        attachments,
+      } = req.body || {};
       if (!title || !prompt_text) {
         return res.status(400).json({ success: false, error: 'title and prompt_text required' });
       }
@@ -319,11 +389,15 @@ function registerBonyadRoutes(app) {
       );
       const ord = Number(sort_order) || maxRows[0].n;
       const r = await db.query(
-        `INSERT INTO bonyad_issues (sheet_slug, sort_order, title, priority, tags, prompt_text, criteria, is_done)
-         VALUES (?,?,?,?,?,?,?,0)`,
+        `INSERT INTO bonyad_issues (sheet_slug, sort_order, module, issue_type, sheet_status, attachments, title, priority, tags, prompt_text, criteria, is_done)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0)`,
         [
           slug,
           ord,
+          module != null ? String(module).slice(0, 255) : null,
+          issue_type != null ? String(issue_type).slice(0, 128) : null,
+          sheet_status != null ? String(sheet_status).slice(0, 128) : null,
+          attachments != null ? String(attachments) : null,
           title,
           pri,
           JSON.stringify(Array.isArray(tags) ? tags : []),
@@ -354,9 +428,43 @@ function registerBonyadRoutes(app) {
       const criteria = body.criteria != null ? JSON.stringify(body.criteria) : row.criteria;
       const sort_order = body.sort_order != null ? Number(body.sort_order) : row.sort_order;
       const is_done = body.is_done != null ? (body.is_done ? 1 : 0) : row.is_done;
+      const module =
+        body.module !== undefined ? (body.module ? String(body.module).slice(0, 255) : null) : row.module;
+      const issue_type =
+        body.issue_type !== undefined
+          ? body.issue_type
+            ? String(body.issue_type).slice(0, 128)
+            : null
+          : row.issue_type;
+      const sheet_status =
+        body.sheet_status !== undefined
+          ? body.sheet_status
+            ? String(body.sheet_status).slice(0, 128)
+            : null
+          : row.sheet_status;
+      const attachments =
+        body.attachments !== undefined
+          ? body.attachments
+            ? String(body.attachments)
+            : null
+          : row.attachments;
       await db.query(
-        `UPDATE bonyad_issues SET title=?, priority=?, prompt_text=?, tags=?, criteria=?, sort_order=?, is_done=? WHERE id=?`,
-        [title, priority, prompt_text, tags, criteria, sort_order, is_done, id]
+        `UPDATE bonyad_issues SET title=?, priority=?, prompt_text=?, tags=?, criteria=?, sort_order=?, is_done=?,
+         module=?, issue_type=?, sheet_status=?, attachments=? WHERE id=?`,
+        [
+          title,
+          priority,
+          prompt_text,
+          tags,
+          criteria,
+          sort_order,
+          is_done,
+          module,
+          issue_type,
+          sheet_status,
+          attachments,
+          id,
+        ]
       );
       res.json({ success: true });
     } catch (e) {
@@ -372,6 +480,111 @@ function registerBonyadRoutes(app) {
       res.json({ success: true });
     } catch (e) {
       logger.error('[Bonyad] delete issue:', e.message);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  app.delete('/api/bonyad/sheets/:slug/issues', requireBonyadEdit, async (req, res) => {
+    try {
+      const slug = String(req.params.slug || '').toLowerCase();
+      const sh = await db.query('SELECT slug FROM bonyad_sheets WHERE slug=?', [slug]);
+      if (!sh.length) {
+        return res.status(404).json({ success: false, error: 'Sheet not found' });
+      }
+      const result = await db.query('DELETE FROM bonyad_issues WHERE sheet_slug=?', [slug]);
+      const deleted = result.affectedRows != null ? result.affectedRows : 0;
+      res.json({ success: true, deleted });
+    } catch (e) {
+      logger.error('[Bonyad] delete all issues:', e.message);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  app.get('/api/bonyad/ai-roadmap', async (req, res) => {
+    try {
+      const rows = await db.query(
+        'SELECT * FROM bonyad_ai_roadmap ORDER BY sort_order ASC, id ASC'
+      );
+      res.json({ success: true, items: rows.map(rowToRoadmap) });
+    } catch (e) {
+      logger.error('[Bonyad] ai-roadmap list:', e.message);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  app.post('/api/bonyad/ai-roadmap', requireBonyadEdit, async (req, res) => {
+    try {
+      const { title, priority, description, how_to, what_we_need, collaborate, sort_order } = req.body || {};
+      if (!title || !String(title).trim()) {
+        return res.status(400).json({ success: false, error: 'title required' });
+      }
+      const pri = String(priority || 'P2').slice(0, 32);
+      const maxRows = await db.query('SELECT COALESCE(MAX(sort_order),0)+1 AS n FROM bonyad_ai_roadmap');
+      const ord = Number(sort_order) || maxRows[0].n;
+      const r = await db.query(
+        `INSERT INTO bonyad_ai_roadmap (sort_order, priority, title, description, how_to, what_we_need, collaborate)
+         VALUES (?,?,?,?,?,?,?)`,
+        [
+          ord,
+          pri,
+          String(title).slice(0, 512),
+          description != null ? String(description) : null,
+          how_to != null ? String(how_to) : null,
+          what_we_need != null ? String(what_we_need) : null,
+          collaborate != null ? String(collaborate) : null,
+        ]
+      );
+      res.json({ success: true, id: r.insertId });
+    } catch (e) {
+      logger.error('[Bonyad] ai-roadmap create:', e.message);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  app.patch('/api/bonyad/ai-roadmap/:id', requireBonyadEdit, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const body = req.body || {};
+      const cur = await db.query('SELECT * FROM bonyad_ai_roadmap WHERE id=?', [id]);
+      if (!cur.length) {
+        return res.status(404).json({ success: false, error: 'Item not found' });
+      }
+      const row = cur[0];
+      const title = body.title != null ? String(body.title).slice(0, 512) : row.title;
+      const priority = body.priority != null ? String(body.priority).slice(0, 32) : row.priority;
+      const description = body.description !== undefined ? body.description : row.description;
+      const how_to = body.how_to !== undefined ? body.how_to : row.how_to;
+      const what_we_need = body.what_we_need !== undefined ? body.what_we_need : row.what_we_need;
+      const collaborate = body.collaborate !== undefined ? body.collaborate : row.collaborate;
+      const sort_order = body.sort_order != null ? Number(body.sort_order) : row.sort_order;
+      await db.query(
+        `UPDATE bonyad_ai_roadmap SET title=?, priority=?, description=?, how_to=?, what_we_need=?, collaborate=?, sort_order=? WHERE id=?`,
+        [title, priority, description, how_to, what_we_need, collaborate, sort_order, id]
+      );
+      res.json({ success: true });
+    } catch (e) {
+      logger.error('[Bonyad] ai-roadmap patch:', e.message);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  app.delete('/api/bonyad/ai-roadmap/:id', requireBonyadEdit, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      await db.query('DELETE FROM bonyad_ai_roadmap WHERE id=?', [id]);
+      res.json({ success: true });
+    } catch (e) {
+      logger.error('[Bonyad] ai-roadmap delete:', e.message);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  app.delete('/api/bonyad/ai-roadmap', requireBonyadEdit, async (req, res) => {
+    try {
+      await db.query('DELETE FROM bonyad_ai_roadmap');
+      res.json({ success: true });
+    } catch (e) {
+      logger.error('[Bonyad] ai-roadmap clear:', e.message);
       res.status(500).json({ success: false, error: e.message });
     }
   });

@@ -364,6 +364,10 @@ CREATE TABLE IF NOT EXISTS bonyad_issues (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   sheet_slug VARCHAR(64) NOT NULL,
   sort_order INT NOT NULL DEFAULT 0,
+  module VARCHAR(255) NULL,
+  issue_type VARCHAR(128) NULL,
+  sheet_status VARCHAR(128) NULL,
+  attachments TEXT NULL,
   title VARCHAR(512) NOT NULL,
   priority ENUM('high','medium','low') NOT NULL DEFAULT 'medium',
   tags JSON,
@@ -373,6 +377,20 @@ CREATE TABLE IF NOT EXISTS bonyad_issues (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_bonyad_sheet_sort (sheet_slug, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bonyad_ai_roadmap (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  sort_order INT NOT NULL DEFAULT 0,
+  priority VARCHAR(32) NOT NULL DEFAULT 'P2',
+  title VARCHAR(512) NOT NULL,
+  description MEDIUMTEXT,
+  how_to MEDIUMTEXT,
+  what_we_need MEDIUMTEXT,
+  collaborate MEDIUMTEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_ai_roadmap_sort (sort_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================

@@ -50,6 +50,16 @@
     return 'Medium Priority';
   }
 
+  function issueExcelMetaHtml(iss) {
+    const bits = [];
+    if (iss.module) bits.push('<span class="tag t-gray">Module: ' + esc(iss.module) + '</span>');
+    if (iss.issue_type) bits.push('<span class="tag t-gray">Type: ' + esc(iss.issue_type) + '</span>');
+    if (iss.sheet_status) bits.push('<span class="tag t-gray">Sheet status: ' + esc(iss.sheet_status) + '</span>');
+    if (iss.attachments) bits.push('<span class="tag t-gray">Attachments: ' + esc(iss.attachments) + '</span>');
+    if (!bits.length) return '';
+    return '<div class="issue-excel-meta">' + bits.join('') + '</div>';
+  }
+
   let state = { sheet: null, issues: [] };
 
   var ADD_SECTION_HTML =
@@ -134,7 +144,9 @@
         '</div>' +
         '<div class="issue-tags">' +
         tags +
-        '</div></div>' +
+        '</div>' +
+        issueExcelMetaHtml(iss) +
+        '</div>' +
         '<div class="issue-header-right">' +
         '<div class="status-toggle ' +
         toggleClass +
@@ -160,11 +172,50 @@
         (getEditKey()
           ? '<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-light);">' +
             '<p style="font-size:11px;font-weight:700;color:var(--gray-mid);margin-bottom:8px;">EDIT ISSUE</p>' +
+            '<div class="form-row">' +
             '<div class="form-group" style="margin-bottom:10px;"><label>Title</label>' +
             '<input type="text" class="edit-title" data-id="' +
             iss.id +
             '" value="' +
             esc(iss.title).replace(/"/g, '&quot;') +
+            '" /></div>' +
+            '<div class="form-group" style="margin-bottom:10px;"><label>Priority</label>' +
+            '<select class="edit-priority" data-id="' +
+            iss.id +
+            '">' +
+            '<option value="high"' +
+            (iss.priority === 'high' ? ' selected' : '') +
+            '>High</option>' +
+            '<option value="medium"' +
+            (iss.priority === 'medium' ? ' selected' : '') +
+            '>Medium</option>' +
+            '<option value="low"' +
+            (iss.priority === 'low' ? ' selected' : '') +
+            '>Low</option></select></div></div>' +
+            '<div class="form-group" style="margin-bottom:10px;"><label>Module</label>' +
+            '<input type="text" class="edit-module" data-id="' +
+            iss.id +
+            '" value="' +
+            esc(iss.module || '').replace(/"/g, '&quot;') +
+            '" placeholder="e.g. Technician Onboarding" /></div>' +
+            '<div class="form-row">' +
+            '<div class="form-group" style="margin-bottom:10px;"><label>Type</label>' +
+            '<input type="text" class="edit-issue-type" data-id="' +
+            iss.id +
+            '" value="' +
+            esc(iss.issue_type || '').replace(/"/g, '&quot;') +
+            '" placeholder="Bug, Validation…" /></div>' +
+            '<div class="form-group" style="margin-bottom:10px;"><label>Sheet status</label>' +
+            '<input type="text" class="edit-sheet-status" data-id="' +
+            iss.id +
+            '" value="' +
+            esc(iss.sheet_status || '').replace(/"/g, '&quot;') +
+            '" placeholder="open, solved…" /></div></div>' +
+            '<div class="form-group" style="margin-bottom:10px;"><label>Attachments (text)</label>' +
+            '<input type="text" class="edit-attachments" data-id="' +
+            iss.id +
+            '" value="' +
+            esc(iss.attachments || '').replace(/"/g, '&quot;') +
             '" /></div>' +
             '<div class="form-group" style="margin-bottom:10px;"><label>Tags (comma-separated)</label>' +
             '<input type="text" class="edit-tags" data-id="' +
@@ -220,7 +271,14 @@
       '</div><div class="lbl">Completed</div></div></div>' +
       '<div class="section-label">Issues &amp; Developer Prompts</div>' +
       cardsHtml +
-      ADD_SECTION_HTML;
+      ADD_SECTION_HTML +
+      (getEditKey()
+        ? '<div class="bonyad-sheet-danger">' +
+          '<div class="section-label" style="margin-top:8px;">Danger zone</div>' +
+          '<p class="danger-hint">Remove every issue on this brief. The sheet itself stays; this cannot be undone.</p>' +
+          '<button type="button" class="btn-danger-outline" data-act="delete-all-issues">Delete all issues on this sheet</button>' +
+          '</div>'
+        : '');
 
     root.querySelectorAll('.issue-header[data-act="toggle"]').forEach(function (el) {
       el.addEventListener('click', function (e) {
@@ -267,9 +325,14 @@
       el.addEventListener('click', function () {
         const id = Number(el.getAttribute('data-id'));
         const title = root.querySelector('.edit-title[data-id="' + id + '"]').value.trim();
+        const priority = root.querySelector('.edit-priority[data-id="' + id + '"]').value;
         const prompt = root.querySelector('.edit-prompt[data-id="' + id + '"]').value.trim();
         const tagsRaw = root.querySelector('.edit-tags[data-id="' + id + '"]').value.trim();
         const critRaw = root.querySelector('.edit-criteria[data-id="' + id + '"]').value;
+        const moduleVal = root.querySelector('.edit-module[data-id="' + id + '"]').value.trim();
+        const issueTypeVal = root.querySelector('.edit-issue-type[data-id="' + id + '"]').value.trim();
+        const sheetStatusVal = root.querySelector('.edit-sheet-status[data-id="' + id + '"]').value.trim();
+        const attachmentsVal = root.querySelector('.edit-attachments[data-id="' + id + '"]').value.trim();
         if (!title || !prompt) {
           showToast('Title and prompt required');
           return;
@@ -284,9 +347,32 @@
               return l.trim();
             }).filter(Boolean)
           : [];
-        patchIssue(id, { title: title, prompt_text: prompt, tags: tags, criteria: criteria });
+        patchIssue(id, {
+          title: title,
+          priority: priority,
+          prompt_text: prompt,
+          tags: tags,
+          criteria: criteria,
+          module: moduleVal || null,
+          issue_type: issueTypeVal || null,
+          sheet_status: sheetStatusVal || null,
+          attachments: attachmentsVal || null,
+        });
       });
     });
+
+    const delAll = root.querySelector('[data-act="delete-all-issues"]');
+    if (delAll) {
+      delAll.addEventListener('click', function () {
+        if (!getEditKey()) {
+          showToast('Save an edit key first');
+          return;
+        }
+        if (!confirm('Delete ALL issues on this sheet? This cannot be undone.')) return;
+        if (!confirm('Confirm again: remove every issue from this brief?')) return;
+        deleteAllIssuesOnSheet();
+      });
+    }
 
     const addBtn = root.querySelector('[data-act="show-form"]');
     const addForm = root.querySelector('#addForm');
@@ -349,6 +435,25 @@
       })
       .catch(function (e) {
         showToast(e.message || 'Delete failed');
+      });
+  }
+
+  function deleteAllIssuesOnSheet() {
+    const k = getEditKey();
+    fetch(API + '/api/bonyad/sheets/' + encodeURIComponent(slug) + '/issues?editKey=' + encodeURIComponent(k), {
+      method: 'DELETE',
+      headers: { 'x-bonyad-edit-key': k },
+    })
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (j) {
+        if (!j.success) throw new Error(j.error || 'Failed');
+        showToast('Deleted ' + (j.deleted != null ? j.deleted : '') + ' issue(s)');
+        return load();
+      })
+      .catch(function (e) {
+        showToast(e.message || 'Delete all failed');
       });
   }
 

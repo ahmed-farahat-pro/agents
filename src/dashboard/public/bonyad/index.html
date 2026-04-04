@@ -29,10 +29,10 @@
   <div class="bonyad-excel-import" id="import-excel">
     <h3>Import bugs from Excel</h3>
     <p class="hint">
-      Upload <strong>.xls</strong> or <strong>.xlsx</strong> (first worksheet). Header row should include columns such as
-      <strong>Title</strong> (or Issue, Bug, Summary) and <strong>Description</strong> (or Prompt, Details, Notes).
-      Optional: <strong>Priority</strong> (high / medium / low), <strong>Tags</strong> (comma-separated), <strong>Criteria</strong> (one per line or separated by |).
-      No edit key required — up to 200 rows, 3&nbsp;MB max.
+      Upload <strong>.xls</strong> or <strong>.xlsx</strong>. The importer picks the first worksheet whose header row includes
+      <strong>Title</strong> (matches exports like <em>Bonyad_BUGS.xlsx</em>: Module, Type, Priority, Title, Description,
+      Steps to Reproduce, Expected / Actual Behavior, Notes, Attachments, Status). Status values such as <strong>solved</strong> mark the issue done in Bonyad.
+      No edit key required — up to <strong>2000</strong> rows, <strong>6&nbsp;MB</strong> max.
     </p>
     <div class="bonyad-excel-import-inner">
       <div class="form-row">
