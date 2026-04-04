@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bonyad — Vbonayd fix briefs</title>
+  <link rel="stylesheet" href="brief.css" />
+  <style>
+    .hub-hero { max-width: 960px; margin: 0 auto; padding: 48px 36px 24px; }
+    .hub-hero h1 { font-size: clamp(1.6rem, 4vw, 2.1rem); color: var(--black); margin-bottom: 10px; }
+    .hub-hero p { color: var(--gray); font-size: 15px; max-width: 56ch; line-height: 1.6; }
+    .sheet-grid { max-width: 960px; margin: 0 auto; padding: 0 36px 48px; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+    .sheet-card { border: 1px solid var(--gray-light); border-radius: var(--radius); padding: 22px; background: var(--white); box-shadow: var(--shadow-sm); transition: border-color 0.2s; }
+    .sheet-card:hover { border-color: var(--blue-border); }
+    .sheet-card h2 { font-size: 17px; margin-bottom: 6px; color: var(--black); }
+    .sheet-card .sub { font-size: 12px; color: var(--gray); margin-bottom: 14px; }
+    .sheet-card a { display: inline-block; background: var(--blue); color: #fff; text-decoration: none; padding: 8px 16px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; }
+    .sheet-card a:hover { background: #0D47A1; }
+    .new-sheet { max-width: 960px; margin: 0 auto; padding: 0 36px 60px; }
+    .new-sheet h3 { font-size: 15px; margin-bottom: 12px; color: var(--gray-dark); }
+    .new-sheet-inner { border: 2px dashed var(--gray-light); border-radius: var(--radius); padding: 24px; }
+    .err-box { background: var(--danger-pale); color: var(--danger); padding: 14px 18px; border-radius: var(--radius-sm); margin: 0 36px 20px; max-width: 960px; margin-left: auto; margin-right: auto; }
+  </style>
+</head>
+<body>
+  <div class="top-banner"></div>
+  <div class="hub-hero">
+    <h1>Bonyad — platform fix briefs</h1>
+    <p>Open a sheet for iOS, Android, Web, or Backend. Issues and prompts are stored in the Nigents database. Set an edit key (same as server <code>BONYAD_EDIT_SECRET</code>) to add or change items.</p>
+    <p class="hub-nav" style="margin-top:14px;"><a href="/" style="color:var(--blue);font-weight:600;">← Nigents home</a></p>
+  </div>
+  <div id="hub-err" class="err-box" style="display:none;"></div>
+  <div class="edit-key-bar" style="max-width:960px;margin:0 auto 24px;padding-left:36px;padding-right:36px;">
+    <span><strong>Edit key</strong> (for adding sheets/issues):</span>
+    <input type="password" id="hub-edit-key" placeholder="BONYAD_EDIT_SECRET" style="flex:1;min-width:180px;padding:8px 10px;border:1px solid var(--gray-light);border-radius:6px;" />
+    <button type="button" id="hub-save-key" class="add-btn" style="padding:8px 16px;">Save in browser</button>
+  </div>
+  <div class="sheet-grid" id="sheet-grid"></div>
+  <div class="new-sheet">
+    <h3>Add another platform / sheet</h3>
+    <div class="new-sheet-inner">
+      <div class="form-row">
+        <div class="form-group">
+          <label>URL slug</label>
+          <input type="text" id="ns-slug" placeholder="watchos" />
+        </div>
+        <div class="form-group">
+          <label>Label</label>
+          <input type="text" id="ns-label" placeholder="Vbonayd" />
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Platform line</label>
+        <input type="text" id="ns-platform" placeholder="watchOS Application" />
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Brief title</label>
+        <input type="text" id="ns-title" placeholder="watchOS — Developer Fix Brief" />
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Subtitle</label>
+        <input type="text" id="ns-sub" placeholder="Short description" />
+      </div>
+      <button type="button" class="add-btn" id="ns-submit">Create sheet</button>
+    </div>
+  </div>
+  <footer>
+    <div class="footer-logos">
+      <img src="assets/vbonayd-logo.png" alt="" class="vb" />
+      <img src="assets/problem-x-logo.png" alt="" />
+    </div>
+    <div class="footer-txt">Bonyad · Problem-X · Consult Code Achieve</div>
+  </footer>
+  <div class="toast" id="toast"></div>
+  <script>
+    (function () {
+      function toast(msg) {
+        var t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(function () { t.classList.remove('show'); }, 2200);
+      }
+      function key() { return localStorage.getItem('bonyad_edit_key') || ''; }
+      document.getElementById('hub-edit-key').value = key();
+      document.getElementById('hub-save-key').onclick = function () {
+        var v = document.getElementById('hub-edit-key').value.trim();
+        if (v) localStorage.setItem('bonyad_edit_key', v);
+        else localStorage.removeItem('bonyad_edit_key');
+        toast(v ? 'Saved' : 'Cleared');
+      };
+      function loadSheets() {
+        fetch('/api/bonyad/sheets')
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (!j.success) throw new Error(j.error || 'Failed');
+            var g = document.getElementById('sheet-grid');
+            g.innerHTML = j.sheets.map(function (s) {
+              return (
+                '<article class="sheet-card">' +
+                '<h2>' + escapeHtml(s.label) + '</h2>' +
+                '<div class="sub">' + escapeHtml(s.platform_line || s.slug) + '</div>' +
+                '<a href="sheet.html?slug=' + encodeURIComponent(s.slug) + '">Open brief</a>' +
+                '</article>'
+              );
+            }).join('');
+          })
+          .catch(function (e) {
+            document.getElementById('hub-err').style.display = 'block';
+            document.getElementById('hub-err').textContent = 'Could not load sheets (is MySQL enabled?). ' + e.message;
+          });
+      }
+      function escapeHtml(x) {
+        return String(x || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+      document.getElementById('ns-submit').onclick = function () {
+        var k = key();
+        if (!k) { toast('Save edit key first'); return; }
+        var slug = document.getElementById('ns-slug').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+        var body = {
+          slug: slug,
+          label: document.getElementById('ns-label').value.trim() || slug,
+          platform_line: document.getElementById('ns-platform').value.trim() || null,
+          brief_title: document.getElementById('ns-title').value.trim() || 'Fix brief',
+          brief_subtitle: document.getElementById('ns-sub').value.trim() || null,
+          editKey: k,
+        };
+        if (!slug) { toast('Slug required'); return; }
+        fetch('/api/bonyad/sheets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-bonyad-edit-key': k },
+          body: JSON.stringify(body),
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (!j.success) throw new Error(j.error || 'Failed');
+            toast('Sheet created');
+            ['ns-slug','ns-label','ns-platform','ns-title','ns-sub'].forEach(function (id) { document.getElementById(id).value = ''; });
+            loadSheets();
+          })
+          .catch(function (e) { toast(e.message); });
+      };
+      loadSheets();
+    })();
+  </script>
+</body>
+</html>

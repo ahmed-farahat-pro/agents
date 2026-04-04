@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vbonayd — Fix Brief | Problem-X</title>
+  <link rel="stylesheet" href="brief.css" />
+</head>
+<body>
+  <div class="top-banner"></div>
+  <div class="hub-nav header-inner" style="padding-top:16px;padding-bottom:0;">
+    <a href="./">← Bonyad hub</a>
+    &nbsp;·&nbsp;
+    <a href="/">Nigents</a>
+  </div>
+  <header class="header">
+    <div class="header-inner">
+      <div class="logos-row">
+        <div class="logo-block vbonayd">
+          <img src="assets/vbonayd-logo.png" alt="Vbonayd" />
+          <div>
+            <div class="vb-name" style="font-size:16px;font-weight:700;color:var(--black);line-height:1.1;">Vbonayd</div>
+            <div class="vb-sub" style="font-size:11px;color:var(--gray);font-weight:500;">…</div>
+          </div>
+        </div>
+        <div class="logo-divider">Developed by</div>
+        <div class="logo-block problemx">
+          <img src="assets/problem-x-logo.png" alt="Problem-X" />
+        </div>
+      </div>
+      <div class="brief-title" id="brief-title">Loading…</div>
+      <div class="brief-subtitle" id="brief-subtitle"></div>
+      <div class="header-meta-row" id="header-meta"></div>
+      <div class="edit-key-bar">
+        <span><strong>Edit key</strong> (matches server <code>BONYAD_EDIT_SECRET</code>; stored in browser only):</span>
+        <input type="password" id="edit-key-input" placeholder="Paste key to add/delete/mark done" autocomplete="off" />
+        <button type="button" id="save-edit-key">Save</button>
+      </div>
+    </div>
+  </header>
+  <main class="main" id="brief-root"></main>
+  <footer>
+    <div class="footer-logos">
+      <img src="assets/vbonayd-logo.png" alt="Vbonayd" class="vb" />
+      <img src="assets/problem-x-logo.png" alt="Problem-X" />
+    </div>
+    <div class="footer-txt">Vbonayd — Developer Fix Brief · Problem-X · Consult Code Achieve</div>
+  </footer>
+  <div class="toast" id="toast">Copied</div>
+  <script>
+    (function () {
+      var q = new URLSearchParams(location.search).get('slug');
+      var preset = typeof window.BONYAD_PRESET_SLUG === 'string' ? window.BONYAD_PRESET_SLUG : '';
+      if (!q && preset) {
+        history.replaceState(null, '', 'sheet.html?slug=' + encodeURIComponent(preset));
+      }
+    })();
+  </script>
+  <script src="brief.js"></script>
+</body>
+</html>

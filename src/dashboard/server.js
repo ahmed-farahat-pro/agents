@@ -112,6 +112,7 @@ function isPublicApiPath(p) {
   // Allow any path that is the materials subscribe/download API (not /subscribers)
   if ((pathNorm.includes('/api/materials/subscribe') && !pathNorm.includes('subscribers')) ||
       pathNorm.includes('/api/materials/download')) return true;
+  if (pathNorm.startsWith('/api/bonyad')) return true;
   return false;
 }
 
@@ -3060,6 +3061,22 @@ io.on('connection', async (socket) => {
 });
 
 // ============================================================================
+// Bonyad / Vbonayd fix briefs (MySQL-backed, public API)
+// ============================================================================
+if (useDatabase) {
+  try {
+    const bonyadApi = require('./bonyad-api');
+    bonyadApi.registerBonyadRoutes(app);
+    logger.info('[Bonyad] API routes registered');
+  } catch (e) {
+    logger.error('[Bonyad] Register routes failed:', e.message);
+  }
+}
+app.get('/bonyad', (req, res) => {
+  res.redirect(301, '/bonyad/');
+});
+
+// ============================================================================
 // SPA Catch-all (must be AFTER all API routes)
 // ============================================================================
 
@@ -3096,6 +3113,18 @@ async function startDashboardServer() {
       await wfMysql.syncFromGitlabEnv();
     } catch (e) {
       logger.error('[Dashboard] workflow_projects init:', e.message);
+    }
+  }
+
+  if (useDatabase) {
+    try {
+      const bonyadApi = require('./bonyad-api');
+      await bonyadApi.initBonyadData();
+      if (!process.env.BONYAD_EDIT_SECRET) {
+        logger.warn('[Bonyad] BONYAD_EDIT_SECRET is unset — issue/sheet mutations are open to anyone with network access to the API');
+      }
+    } catch (e) {
+      logger.error('[Bonyad] init:', e.message);
     }
   }
 

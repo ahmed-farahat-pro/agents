@@ -342,6 +342,40 @@ INSERT INTO system_config (config_key, config_value) VALUES
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value);
 
 -- =====================================================
+-- Bonyad / Vbonayd fix briefs (public /bonyad pages; also auto-created on dashboard boot)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS bonyad_sheets (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  slug VARCHAR(64) NOT NULL UNIQUE,
+  label VARCHAR(255) NOT NULL,
+  platform_line VARCHAR(255) NULL,
+  brief_title VARCHAR(500) NOT NULL,
+  brief_subtitle TEXT,
+  meta_date VARCHAR(128) NULL,
+  meta_to VARCHAR(255) NULL,
+  meta_from VARCHAR(255) NULL,
+  status_label VARCHAR(128) NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bonyad_issues (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  sheet_slug VARCHAR(64) NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  title VARCHAR(512) NOT NULL,
+  priority ENUM('high','medium','low') NOT NULL DEFAULT 'medium',
+  tags JSON,
+  prompt_text MEDIUMTEXT NOT NULL,
+  criteria JSON,
+  is_done TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_bonyad_sheet_sort (sheet_slug, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================
 -- Dashboard web logins (optional; also auto-created on dashboard boot)
 -- =====================================================
 -- See src/database/migrations/003_dashboard_accounts.sql
