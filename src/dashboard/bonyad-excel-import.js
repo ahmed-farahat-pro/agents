@@ -10,7 +10,7 @@ const multer = require('multer');
 const XLSX = require('xlsx');
 const db = require('../database/connection');
 const logger = require('../utils/logger');
-const { normalizeMediaArray } = require('./bonyad-issue-media');
+const { normalizeMediaArray, deleteUploadedFilesForIssueRow } = require('./bonyad-issue-media');
 
 const MAX_FILE_BYTES = 6 * 1024 * 1024;
 const MAX_ROWS = 2000;
@@ -310,6 +310,7 @@ function registerBonyadExcelRoutes(app) {
         let nextOrder = Number(maxOrd[0].n) + 1;
         let imported = 0;
         const skipped = [];
+        const createdIssueIds = [];
         for (let i = 0; i < slice.length; i += 1) {
           const m = rowMap(slice[i]);
           let title = pick(m, TITLE_KEYS);
@@ -337,7 +338,7 @@ function registerBonyadExcelRoutes(app) {
           const isDone = statusToDone(sheetStatus) ? 1 : 0;
           const issueMediaJson = issueMediaFromExcelRow(attachmentsRaw, rowHyperUrls);
 
-          await db.query(
+          const ins = await db.query(
             `INSERT INTO bonyad_issues (sheet_slug, sort_order, module, issue_type, sheet_status, attachments, title, priority, tags, prompt_text, criteria, issue_media, is_done)
              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
             [
@@ -356,8 +357,18 @@ function registerBonyadExcelRoutes(app) {
               isDone,
             ]
           );
+          const newId = ins && ins.insertId != null ? Number(ins.insertId) : null;
+          if (newId) createdIssueIds.push(newId);
           nextOrder += 1;
           imported += 1;
+        }
+        let revertBatchId = null;
+        if (createdIssueIds.length) {
+          revertBatchId = crypto.randomUUID();
+          await db.query(
+            `INSERT INTO bonyad_excel_import_batches (id, sheet_slug, issue_ids, issue_count) VALUES (?,?,?,?)`,
+            [revertBatchId, slug, JSON.stringify(createdIssueIds), createdIssueIds.length]
+          );
         }
         logger.info('[Bonyad] Excel import slug=%s sheet=%s imported=%d', slug, sheetName, imported);
         res.json({
@@ -366,6 +377,7 @@ function registerBonyadExcelRoutes(app) {
           skipped: skipped.length ? skipped : undefined,
           worksheet: sheetName,
           capped: rows.length > MAX_ROWS,
+          revert_batch_id: revertBatchId,
         });
       } catch (e) {
         logger.error('[Bonyad] Excel import:', e.message);
@@ -373,6 +385,62 @@ function registerBonyadExcelRoutes(app) {
       }
     }
   );
+
+  app.post('/api/bonyad/sheets/:slug/issues/revert-excel-import', async (req, res) => {
+    try {
+      const slug = String(req.params.slug || '').toLowerCase();
+      const batchId = String((req.body && req.body.batch_id) || (req.body && req.body.batchId) || '').trim();
+      if (!batchId || batchId.length > 40) {
+        return res.status(400).json({ success: false, error: 'body.batch_id required (from last import response)' });
+      }
+      const sh = await db.query('SELECT slug FROM bonyad_sheets WHERE slug=?', [slug]);
+      if (!sh.length) {
+        return res.status(404).json({ success: false, error: 'Sheet not found' });
+      }
+      const batchRows = await db.query(
+        'SELECT issue_ids FROM bonyad_excel_import_batches WHERE id=? AND sheet_slug=?',
+        [batchId, slug]
+      );
+      if (!batchRows.length) {
+        return res.status(404).json({
+          success: false,
+          error: 'Import batch not found or already reverted (wrong sheet or old session).',
+        });
+      }
+      let rawIds = batchRows[0].issue_ids;
+      if (typeof rawIds === 'string') {
+        try {
+          rawIds = JSON.parse(rawIds);
+        } catch {
+          rawIds = [];
+        }
+      }
+      if (!Array.isArray(rawIds) || !rawIds.length) {
+        await db.query('DELETE FROM bonyad_excel_import_batches WHERE id=?', [batchId]);
+        return res.json({ success: true, deleted: 0 });
+      }
+      const ids = [...new Set(rawIds.map((x) => Number(x)).filter((n) => n > 0))];
+      if (!ids.length) {
+        await db.query('DELETE FROM bonyad_excel_import_batches WHERE id=?', [batchId]);
+        return res.json({ success: true, deleted: 0 });
+      }
+      const ph = ids.map(() => '?').join(',');
+      const found = await db.query(
+        `SELECT * FROM bonyad_issues WHERE sheet_slug=? AND id IN (${ph})`,
+        [slug, ...ids]
+      );
+      for (const row of found) {
+        deleteUploadedFilesForIssueRow(row);
+      }
+      await db.query(`DELETE FROM bonyad_issues WHERE sheet_slug=? AND id IN (${ph})`, [slug, ...ids]);
+      await db.query('DELETE FROM bonyad_excel_import_batches WHERE id=?', [batchId]);
+      logger.info('[Bonyad] Excel import reverted slug=%s batch=%s deleted=%d', slug, batchId, found.length);
+      res.json({ success: true, deleted: found.length });
+    } catch (e) {
+      logger.error('[Bonyad] revert Excel import:', e.message);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
 }
 
 module.exports = { registerBonyadExcelRoutes, MAX_FILE_BYTES, MAX_ROWS };

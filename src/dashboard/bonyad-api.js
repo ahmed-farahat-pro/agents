@@ -115,6 +115,20 @@ async function ensureBonyadIssueExtraColumns() {
   }
 }
 
+/** Tracks Excel import runs so a mistaken target sheet can be reverted in one step. */
+async function ensureBonyadExcelImportBatchesTable() {
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS bonyad_excel_import_batches (
+      id CHAR(36) NOT NULL PRIMARY KEY,
+      sheet_slug VARCHAR(64) NOT NULL,
+      issue_ids JSON NOT NULL,
+      issue_count INT UNSIGNED NOT NULL DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_bonyad_excel_batch_sheet (sheet_slug)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+}
+
 const DEFAULT_SHEETS = [
   {
     slug: 'android',
@@ -230,6 +244,7 @@ async function initBonyadData() {
   try {
     await ensureBonyadTables();
     await ensureBonyadIssueExtraColumns();
+    await ensureBonyadExcelImportBatchesTable();
     await seedSheetsIfEmpty();
     await migrateLegacySheetLabels();
     await seedAndroidIssuesIfEmpty();

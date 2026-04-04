@@ -33,6 +33,7 @@
       <strong>Title</strong> (matches exports like <em>Bonyad_BUGS.xlsx</em>: Module, Type, Priority, Title, Description,
       Steps to Reproduce, Expected / Actual Behavior, Notes, Attachments, Status). <strong>Hyperlinks</strong> on a row (e.g. screenshot cell linking to a URL) are read as the real <strong>https</strong> target for clickable bugs, not only the visible filename. Plain <strong>http(s)</strong> text in cells is detected too. Status <strong>solved</strong> marks the issue done.
       No edit key required — up to <strong>2000</strong> rows, <strong>6&nbsp;MB</strong> max.
+      If you import into the <strong>wrong sheet</strong>, use <strong>Undo last import</strong> (same browser tab) to delete only the rows that import just added.
     </p>
     <div class="bonyad-excel-import-inner">
       <div class="form-group" style="margin-bottom:16px;">
@@ -68,6 +69,10 @@
       </div>
       <button type="button" class="add-btn" id="imp-submit" style="margin-top:12px;">Analyze &amp; import into Bonyad</button>
       <pre id="imp-result" style="display:none;margin-top:14px;font-size:12px;white-space:pre-wrap;word-break:break-word;background:rgba(0,0,0,0.25);padding:12px;border-radius:8px;color:var(--text-secondary);"></pre>
+      <div id="imp-revert-wrap" style="display:none;margin-top:14px;padding:14px 16px;border-radius:10px;border:1px solid var(--border);background:rgba(248,113,113,0.07);">
+        <p class="hint" style="margin-bottom:10px;">Undo the last Excel import into <strong id="imp-revert-slug"></strong> (<span id="imp-revert-count">0</span> issue(s)). This removes only those imported rows, not older issues.</p>
+        <button type="button" class="btn-danger-outline" id="imp-revert-btn">Undo last import</button>
+      </div>
     </div>
   </div>
   <div class="bonyad-new-sheet">
@@ -142,6 +147,9 @@
             sel.innerHTML = j.sheets.map(function (s) {
               return '<option value="' + escapeHtml(s.slug) + '">' + escapeHtml(s.platform_line || s.label || s.slug) + '</option>';
             }).join('');
+            sel.removeEventListener('change', updateRevertUi);
+            sel.addEventListener('change', updateRevertUi);
+            updateRevertUi();
           })
           .catch(function (e) {
             document.getElementById('hub-err').style.display = 'block';
@@ -150,6 +158,31 @@
       }
       function escapeHtml(x) {
         return String(x || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+      var LAST_IMPORT_KEY = 'bonyad_last_excel_import';
+      function readLastImport() {
+        try {
+          var s = sessionStorage.getItem(LAST_IMPORT_KEY);
+          return s ? JSON.parse(s) : null;
+        } catch (e) { return null; }
+      }
+      function writeLastImport(obj) {
+        if (obj) sessionStorage.setItem(LAST_IMPORT_KEY, JSON.stringify(obj));
+        else sessionStorage.removeItem(LAST_IMPORT_KEY);
+      }
+      function updateRevertUi() {
+        var sel = document.getElementById('imp-slug');
+        var wrap = document.getElementById('imp-revert-wrap');
+        if (!sel || !wrap) return;
+        var slug = sel.value;
+        var last = readLastImport();
+        if (last && last.batch_id && last.slug === slug) {
+          wrap.style.display = 'block';
+          document.getElementById('imp-revert-slug').textContent = last.slug;
+          document.getElementById('imp-revert-count').textContent = String(last.imported != null ? last.imported : '?');
+        } else {
+          wrap.style.display = 'none';
+        }
       }
       (function setupExcelFileUi() {
         var input = document.getElementById('imp-file');
@@ -220,9 +253,46 @@
               lines.push('Skipped rows:');
               j.skipped.forEach(function (s) { lines.push('  Row ' + s.row + ': ' + s.reason); });
             }
+            if (j.revert_batch_id) {
+              lines.push('');
+              lines.push('You can undo this import from this page (Undo last import) while this tab is open.');
+            }
             out.textContent = lines.join('\n');
             out.style.display = 'block';
+            if (j.revert_batch_id) {
+              writeLastImport({
+                slug: slug,
+                batch_id: j.revert_batch_id,
+                imported: j.imported,
+                worksheet: j.worksheet || null
+              });
+            }
+            updateRevertUi();
             toast('Imported ' + j.imported);
+          })
+          .catch(function (e) { toast(e.message); });
+      };
+      document.getElementById('imp-revert-btn').onclick = function () {
+        var last = readLastImport();
+        var slug = document.getElementById('imp-slug').value;
+        if (!last || !last.batch_id || last.slug !== slug) {
+          toast('No reversible import for this sheet');
+          updateRevertUi();
+          return;
+        }
+        var n = last.imported != null ? last.imported : 'these';
+        if (!confirm('Delete ' + n + ' issue(s) from the last Excel import into "' + slug + '"? This cannot be undone.')) return;
+        fetch('/api/bonyad/sheets/' + encodeURIComponent(slug) + '/issues/revert-excel-import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ batch_id: last.batch_id })
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (!j.success) throw new Error(j.error || 'Revert failed');
+            writeLastImport(null);
+            updateRevertUi();
+            toast('Removed ' + j.deleted + ' issue(s)');
           })
           .catch(function (e) { toast(e.message); });
       };

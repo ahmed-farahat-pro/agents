@@ -30,6 +30,26 @@ const MAX_MEDIA_PER_ISSUE = 24;
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
 const MAX_URL_LEN = 2048;
 
+function publicBaseUrl(req) {
+  if (!req || typeof req.get !== 'function') return '';
+  const xf = String(req.headers['x-forwarded-proto'] || '')
+    .split(',')[0]
+    .trim();
+  const proto = xf || req.protocol || 'http';
+  const host = req.get('host');
+  if (!host) return '';
+  return `${proto}://${host}`;
+}
+
+function mergeAttachmentsField(existing, urlToAdd) {
+  const u = String(urlToAdd || '').trim().slice(0, MAX_URL_LEN);
+  if (!u) return existing != null ? String(existing) : null;
+  const e = existing != null ? String(existing).trim() : '';
+  if (!e) return u;
+  if (e.includes(u)) return e;
+  return `${e}; ${u}`;
+}
+
 function ensureUploadDir() {
   try {
     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -145,7 +165,7 @@ function registerBonyadIssueMediaRoutes(app) {
     async (req, res) => {
       try {
         const id = Number(req.params.id);
-        const rows = await db.query('SELECT id, issue_media FROM bonyad_issues WHERE id=?', [id]);
+        const rows = await db.query('SELECT id, issue_media, attachments FROM bonyad_issues WHERE id=?', [id]);
         if (!rows.length) {
           for (const f of req.files || []) {
             try {
@@ -157,6 +177,8 @@ function registerBonyadIssueMediaRoutes(app) {
           return res.status(404).json({ success: false, error: 'Issue not found' });
         }
         let media = normalizeMediaArray(parseJsonField(rows[0].issue_media, []));
+        let attachments = rows[0].attachments != null ? String(rows[0].attachments) : null;
+        const base = publicBaseUrl(req);
         const files = req.files || [];
         if (!files.length) {
           return res.status(400).json({ success: false, error: 'No files (use multipart field name "files")' });
@@ -177,9 +199,16 @@ function registerBonyadIssueMediaRoutes(app) {
             path: webPath,
             name: f.originalname || path.basename(f.path),
           });
+          if (base) {
+            attachments = mergeAttachmentsField(attachments, `${base}${webPath}`);
+          }
         }
-        await db.query('UPDATE bonyad_issues SET issue_media=? WHERE id=?', [JSON.stringify(media), id]);
-        res.json({ success: true, issue_media: media });
+        await db.query('UPDATE bonyad_issues SET issue_media=?, attachments=? WHERE id=?', [
+          JSON.stringify(media),
+          attachments,
+          id,
+        ]);
+        res.json({ success: true, issue_media: media, attachments });
       } catch (e) {
         logger.error('[Bonyad media] upload:', e.message);
         res.status(500).json({ success: false, error: e.message });
@@ -195,7 +224,7 @@ function registerBonyadIssueMediaRoutes(app) {
       if (!url || !/^https?:\/\//i.test(url)) {
         return res.status(400).json({ success: false, error: 'Valid http(s) URL required' });
       }
-      const rows = await db.query('SELECT id, issue_media FROM bonyad_issues WHERE id=?', [id]);
+      const rows = await db.query('SELECT id, issue_media, attachments FROM bonyad_issues WHERE id=?', [id]);
       if (!rows.length) {
         return res.status(404).json({ success: false, error: 'Issue not found' });
       }
@@ -204,8 +233,13 @@ function registerBonyadIssueMediaRoutes(app) {
         return res.status(400).json({ success: false, error: `Maximum ${MAX_MEDIA_PER_ISSUE} media items per issue` });
       }
       media.push({ id: randomId(), kind: 'url', url });
-      await db.query('UPDATE bonyad_issues SET issue_media=? WHERE id=?', [JSON.stringify(media), id]);
-      res.json({ success: true, issue_media: media });
+      const attachments = mergeAttachmentsField(rows[0].attachments, url);
+      await db.query('UPDATE bonyad_issues SET issue_media=?, attachments=? WHERE id=?', [
+        JSON.stringify(media),
+        attachments,
+        id,
+      ]);
+      res.json({ success: true, issue_media: media, attachments });
     } catch (e) {
       logger.error('[Bonyad media] url:', e.message);
       res.status(500).json({ success: false, error: e.message });

@@ -285,6 +285,15 @@
     return out;
   }
 
+  function mediaAbsoluteUrl(href) {
+    var s = String(href || '').trim();
+    if (/^https?:\/\//i.test(s)) return s;
+    if (typeof window === 'undefined' || !window.location) return s;
+    if (s.startsWith('//')) return window.location.protocol + s;
+    if (s.startsWith('/')) return window.location.origin + s;
+    return s;
+  }
+
   function issueExcelMetaHtml(iss) {
     const bits = [];
     if (iss.module) bits.push('<span class="tag t-gray">Module: ' + esc(iss.module) + '</span>');
@@ -314,6 +323,7 @@
       h += '<div class="issue-media-grid">';
       items.forEach(function (m) {
         const src = m.kind === 'url' ? m.url : m.path;
+        const hrefOpen = mediaAbsoluteUrl(src);
         const cap =
           m.kind === 'url'
             ? '<a href="' +
@@ -321,7 +331,16 @@
               '" target="_blank" rel="noopener noreferrer" class="issue-media-url-cap">' +
               esc(src.length > 44 ? src.slice(0, 42) + '…' : src) +
               '</a>'
-            : esc(m.name || 'Uploaded');
+            : '<a href="' +
+              esc(hrefOpen) +
+              '" target="_blank" rel="noopener noreferrer" class="issue-media-url-cap">' +
+              esc(hrefOpen.length > 52 ? hrefOpen.slice(0, 50) + '…' : hrefOpen) +
+              '</a>' +
+              (m.name
+                ? ' <span class="issue-media-upload-name" style="color:var(--text-muted);font-size:12px;">(' +
+                  esc(m.name) +
+                  ')</span>'
+                : '');
         h +=
           '<figure class="issue-media-item">' +
           (k
@@ -332,7 +351,7 @@
               '" title="Remove">×</button>'
             : '') +
           '<a href="' +
-          esc(src) +
+          esc(hrefOpen) +
           '" target="_blank" rel="noopener noreferrer" class="issue-media-img-wrap">' +
           buildIssueMediaImgTag(src) +
           '</a>' +
@@ -945,7 +964,7 @@
       body: JSON.stringify({ url: url, editKey: k }),
     })
       .then(function () {
-        showBonyadFlash('URL added', 'success');
+        showBonyadFlash('Link added: ' + url, 'success');
         const inp = document.querySelector('.media-url-in[data-issue="' + issueId + '"]');
         if (inp) inp.value = '';
         return load();
@@ -966,8 +985,16 @@
       headers: { 'x-bonyad-edit-key': k },
       body: fd,
     })
-      .then(function () {
-        showBonyadFlash('Uploaded', 'success');
+      .then(function (j) {
+        let msg = 'Uploaded';
+        const media = j && j.issue_media;
+        if (Array.isArray(media) && media.length) {
+          const last = media[media.length - 1];
+          if (last && last.kind === 'upload' && last.path) {
+            msg = 'Uploaded: ' + mediaAbsoluteUrl(last.path);
+          }
+        }
+        showBonyadFlash(msg, 'success');
         const inp = document.querySelector('.media-files[data-issue="' + issueId + '"]');
         if (inp) inp.value = '';
         return load();
