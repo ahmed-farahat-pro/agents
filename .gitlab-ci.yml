@@ -11,6 +11,8 @@ variables:
   DEPLOY_DIR: /home/ubuntu/nigents
   GIT_DEPTH: 10
   GIT_STRATEGY: clone
+  # Bonyad /bonyad — written to server .env on deploy. Override in GitLab → Settings → CI/CD → Variables (masked) if you rotate.
+  BONYAD_EDIT_SECRET: "8acbd7c36757c14f5e5275421393faef3ad5156812363f17"
   # MySQL Configuration for CI tests
   DB_HOST: mysql
   DB_PORT: 3306
@@ -209,6 +211,10 @@ deploy-to-ec2:
     - ssh -o StrictHostKeyChecking=no "${SSH_USER}@${EC2_HOST}" "mkdir -p ${DEPLOY_DIR}/src/dashboard/public/downloads"
     - scp -o StrictHostKeyChecking=no src/dashboard/public/downloads/AirSound-1.0.0.dmg "${SSH_USER}@${EC2_HOST}:${DEPLOY_DIR}/src/dashboard/public/downloads/"
     - scp -o StrictHostKeyChecking=no src/dashboard/public/downloads/AppJealousy-1.0.0.dmg "${SSH_USER}@${EC2_HOST}:${DEPLOY_DIR}/src/dashboard/public/downloads/"
+    - echo "=== Sync BONYAD_EDIT_SECRET to server .env ==="
+    - |
+      ssh -o StrictHostKeyChecking=no "${SSH_USER}@${EC2_HOST}" \
+        "cd ${DEPLOY_DIR} && touch .env && sed -i '/^BONYAD_EDIT_SECRET=/d' .env && echo \"BONYAD_EDIT_SECRET=${BONYAD_EDIT_SECRET}\" >> .env && chmod 600 .env 2>/dev/null || true && pm2 restart nigents-dashboard --update-env"
     - echo "=== Deployment successful! ==="
 
   rules:
