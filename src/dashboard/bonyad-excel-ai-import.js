@@ -84,6 +84,84 @@ function cleanSlug(s) {
     .slice(0, 64);
 }
 
+/**
+ * Excel "Module" is usually a product area (Technician Onboarding, Projects), NOT iOS/Android/Web.
+ * Infer platform sheet from Type + title + description so rows are not all dumped into backend.
+ * Override default client with BONYAD_IMPORT_DEFAULT_CLIENT_SLUG (default ios).
+ */
+function inferSheetSlugFromRow(row, allowedSlugs) {
+  const set = new Set(allowedSlugs.map((s) => cleanSlug(s)).filter(Boolean));
+  const title = String(row.title || '');
+  const mod = String(row.module || '');
+  const typ = String(row.issue_type || '');
+  const snip = String(row.promptSnippet || '');
+  const blob = `${title} ${mod} ${typ} ${snip}`.toLowerCase();
+  const typL = typ.toLowerCase();
+
+  const defClient = cleanSlug(process.env.BONYAD_IMPORT_DEFAULT_CLIENT_SLUG || 'ios') || 'ios';
+
+  if (set.has('backend')) {
+    if (/\bbackend\s*error\b/i.test(typL)) return 'backend';
+    if (/\b(api|backend|server)\s*error\b/i.test(typL)) return 'backend';
+    if (/\b(from backend|backend side|server-side|server side|only backend)\b/i.test(blob)) return 'backend';
+    if (/\b(rest api|graphql|microservice|database migration|endpoint returns|502|500 error)\b/i.test(blob)) {
+      if (!/\b(swift|swiftui|android|kotlin|webview|browser)\b/i.test(blob)) return 'backend';
+    }
+  }
+
+  if (/\b(swift|swiftui|uikit|xcode|iphone|ipad|\bios\b|testflight|cocoapods)\b/i.test(blob) && set.has('ios')) {
+    return 'ios';
+  }
+  if (/\b(android|kotlin|jetpack|play store|gradle|material you)\b/i.test(blob) && set.has('android')) {
+    return 'android';
+  }
+  if (/\b(\bweb\b|website|browser|react\.?js|vue\.?js|angular|webpack|sass|responsive layout)\b/i.test(blob) && set.has('web')) {
+    return 'web';
+  }
+
+  const backendOnlyPhrase =
+    /\b(api\b|sql query|stored proc|lambda|ec2|kubernetes|nginx config)\b/i.test(blob) &&
+    !/\b(screen|navigation|form|button|modal|view controller|fragment|activity)\b/i.test(blob);
+  if (backendOnlyPhrase && set.has('backend')) return 'backend';
+
+  // Spreadsheet "Type" column: explicit UI/UX work goes to default client sheet (Module is not a platform).
+  if (
+    /\b(ui\/ux|uiux|user experience|user expierence|user interface)\b/i.test(typL) &&
+    set.has(defClient) &&
+    !/\b(api returns|endpoint|database|sql|server returns|graphql|microservice)\b/i.test(blob)
+  ) {
+    return defClient;
+  }
+
+  // Generic bugs that usually describe API/sync/admin/data issues (not labeled "Backend Error" in Type).
+  if (set.has('backend')) {
+    if (
+      /\b(sync failure|request sync|admin request|manage regions)\b/i.test(blob) ||
+      /\bduplicate\b.*\b(creation|request|appointment)\b/i.test(blob) ||
+      /\b(appointment request).*\b(duplicate|twice|double)\b/i.test(blob)
+    ) {
+      return 'backend';
+    }
+  }
+
+  const uxClient =
+    /\b(screen|navigation|form|button|modal|onboarding|profile|portfolio|upload|preview|picker|scroll|validation|misleading error|user experience|user expierence|phase|images|thumbnail|date picker|tab bar|gesture)\b/i.test(
+      blob
+    );
+  const clientStackMention = /\b(swift|android|kotlin|web|ios|html|react)\b/i.test(blob);
+  if (uxClient && !clientStackMention && set.has(defClient)) {
+    return defClient;
+  }
+
+  // In-app workflow / subscription flows (no stack keywords in export).
+  if (set.has(defClient)) {
+    if (/\b(blocked edit|after rejection)\b/i.test(blob)) return defClient;
+    if (/\bresubscribe\b/i.test(blob)) return defClient;
+  }
+
+  return null;
+}
+
 async function routeRowsWithOpenAI(rowsForAi, existingSheets) {
   const key = resolveOpenAiApiKey();
   if (!key) {
@@ -103,13 +181,44 @@ async function routeRowsWithOpenAI(rowsForAi, existingSheets) {
     }))
   );
 
-  const system = `You route bug tracker rows to the correct Bonyad "sheet" (platform brief).
+  const allowedSlugs = existingSheets.map((s) => cleanSlug(s.slug)).filter(Boolean);
+  const preAssigned = new Map();
+  for (let i = 0; i < rowsForAi.length; i += 1) {
+    const inferred = inferSheetSlugFromRow(rowsForAi[i], allowedSlugs);
+    if (inferred) {
+      const sl = cleanSlug(inferred);
+      if (allowedSlugs.includes(sl)) preAssigned.set(i, sl);
+    }
+  }
+
+  const needAiIndices = [];
+  for (let i = 0; i < rowsForAi.length; i += 1) {
+    if (!preAssigned.has(i)) needAiIndices.push(i);
+  }
+
+  logger.info(
+    '[Bonyad AI import] Routing: %d pre-classified (rules), %d sent to OpenAI',
+    preAssigned.size,
+    needAiIndices.length
+  );
+
+  const system = `You route bug tracker rows to the correct Bonyad "sheet" (platform / layer brief).
 Return ONLY valid JSON (no markdown fences).
 
-Existing sheets — prefer these when they fit:
+Existing sheets (use slug exactly as shown — match platform_line to the bug):
 ${sheetJson}
 
-User messages contain bugs with fields prepIndex (0-based, global), title, module, issue_type, snippet.
+CRITICAL: The Excel field "module" is usually a PRODUCT FEATURE AREA (e.g. "Technician Onboarding", "Projects", "Payments"), NOT the tech platform. Do NOT send everything to "backend" just because the module sounds generic.
+
+Assign to:
+- **backend** — only when the bug is clearly server/API/database/infrastructure with no primary mobile or web UI work.
+- **ios** — Swift, SwiftUI, UIKit, iPhone/iPad app UX, TestFlight, native iOS flows (even if module says "Projects").
+- **android** — Kotlin, Android UI, Play Store, Jetpack.
+- **web** — browser, React/Vue/Angular, website, web dashboard.
+
+If the bug describes screens, forms, navigation, validation, onboarding UI, portfolios, uploads, and does NOT say backend/API-only, prefer **ios** or **android** or **web** over backend. Spread work across client sheets when text hints at different stacks.
+
+User payload fields: prepIndex (global row index), title, module, issue_type, snippet.
 
 Your JSON shape:
 {
@@ -118,35 +227,41 @@ Your JSON shape:
 }
 
 Rules:
-- In each response, include every prepIndex from that message exactly once in assignments.
-- sheet_slug must use only a-z, 0-9, hyphens.
-- If no existing sheet fits, add to new_sheets and use that slug in assignments.
-- Prefer slugs like android, ios, web, backend when semantics match.`;
+- Include every prepIndex from the user message exactly once in assignments.
+- sheet_slug: a-z, 0-9, hyphens only; must match an existing slug unless you add new_sheets first.
+- Do not assign more than half of the batch to backend unless descriptions are genuinely server-only.`;
 
   const batchSize = 40;
   const allAssignments = [];
+  for (const [prep, slug] of preAssigned) {
+    allAssignments.push({ prepIndex: prep, sheet_slug: slug });
+  }
   const newSheetsMap = new Map();
 
-  for (let start = 0; start < rowsForAi.length; start += batchSize) {
-    const chunk = rowsForAi.slice(start, start + batchSize);
-    const offset = start;
-    const userPayload = chunk.map((r, j) => ({
-      prepIndex: offset + j,
-      title: r.title,
-      module: r.module || '',
-      issue_type: r.issue_type || '',
-      snippet: (r.promptSnippet || '').slice(0, 450),
-    }));
+  const SNIP_LEN = 950;
+
+  for (let b = 0; b < needAiIndices.length; b += batchSize) {
+    const idxChunk = needAiIndices.slice(b, b + batchSize);
+    const userPayload = idxChunk.map((prepIndex) => {
+      const r = rowsForAi[prepIndex];
+      return {
+        prepIndex,
+        title: r.title,
+        module: r.module || '',
+        issue_type: r.issue_type || '',
+        snippet: (r.promptSnippet || '').slice(0, SNIP_LEN),
+      };
+    });
 
     const completion = await client.chat.completions.create({
       model,
-      temperature: 0.15,
+      temperature: 0.2,
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: system },
         {
           role: 'user',
-          content: `Classify these ${chunk.length} bugs. Each prepIndex below must appear exactly once in assignments:\n${JSON.stringify(userPayload)}`,
+          content: `Classify these ${userPayload.length} bugs. Each prepIndex below must appear exactly once in assignments:\n${JSON.stringify(userPayload)}`,
         },
       ],
     });
