@@ -530,7 +530,7 @@
                     <li>Notifications work best with the signed <strong>.app</strong>; grant permission when prompted for reminders.</li>
                     <li>If Gatekeeper blocks the download: <strong>System Settings → Privacy &amp; Security</strong> → Open anyway.</li>
                     <li>If needed: <span class="mono">xattr -cr ~/Downloads/BreathBar-1.0.0.dmg</span> then open again.</li>
-                    <li>Rebuild with MacAppsBundle: <span class="mono">./Scripts/build.sh BreathBar 1.0.0</span></li>
+                    <li>Rebuild: from MacAppsBundle run <span class="mono">./Scripts/build.sh BreathBar 1.0.0 --unsigned</span> (local test) or omit <span class="mono">--unsigned</span> for Developer ID sign. Outputs <span class="mono">build/BreathBar.app</span> and <span class="mono">build/BreathBar-1.0.0.dmg</span>. Icons: <span class="mono">Assets/icons/BreathBar.icns</span> (or generated via <span class="mono">Scripts/generate-icons.swift</span>).</li>
                 </ul>
                 <div class="cta-row" style="margin-top:20px;margin-bottom:0">
                     <a class="btn btn-primary" href="/downloads/BreathBar-1.0.0.dmg" download>Download BreathBar-1.0.0.dmg</a>
