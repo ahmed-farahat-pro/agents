@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Nigents Crazy apps — experimental macOS menu bar utilities. AirSound and AppJealousy." />
+    <meta name="description" content="Nigents Crazy apps — experimental macOS menu bar utilities. AirSound, AppJealousy, and Battery DNA." />
     <title>Crazy apps — Nigents</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,6 +19,7 @@
             --accent-orange: #ff570a;
             --accent-green: #19d59e;
             --accent-heat: #ff3d5c;
+            --accent-volt: #2dd4bf;
             --font-mono: 'IBM Plex Mono', monospace;
             --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
@@ -265,6 +266,10 @@
             background: linear-gradient(90deg, var(--accent-orange), var(--accent-heat));
         }
 
+        .app-pick.bd::before {
+            background: linear-gradient(90deg, var(--accent-volt), var(--accent-green));
+        }
+
         .app-pick .icon {
             width: 56px;
             height: 56px;
@@ -289,6 +294,12 @@
             color: var(--accent-heat);
             background: rgba(255, 61, 92, 0.1);
             border-color: rgba(255, 61, 92, 0.35);
+        }
+
+        .app-pick.bd .icon {
+            color: var(--accent-volt);
+            background: rgba(45, 212, 191, 0.1);
+            border-color: rgba(45, 212, 191, 0.4);
         }
 
         .app-pick h2 {
@@ -383,7 +394,7 @@
     <main>
         <p class="hub-badge">macOS · Menu bar experiments</p>
         <h1><span class="shimmer">Crazy apps</span></h1>
-        <p class="lead">Pick a utility below — each has its own landing page, story, and signed disk image. Experimental toys, not production infrastructure.</p>
+        <p class="lead">Pick a utility below — each has its own landing page, story, and disk image. Experimental toys, not production infrastructure.</p>
 
         <div class="app-grid">
             <article class="app-pick as">
@@ -402,6 +413,15 @@
                 <div class="app-actions">
                     <a class="btn-landing" href="/appjealousy.html">Open landing</a>
                     <a class="btn-dl" href="/downloads/AppJealousy-1.0.0.dmg" download>Download DMG</a>
+                </div>
+            </article>
+            <article class="app-pick bd">
+                <div class="icon">BD</div>
+                <h2>Battery DNA</h2>
+                <p>Menu bar battery clarity — charge state, cycles, and health context without diving into System Settings.</p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/batterydna.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/BatteryDNA-1.0.0.dmg" download>Download DMG</a>
                 </div>
             </article>
         </div>
