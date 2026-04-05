@@ -77,6 +77,25 @@ function requireDashboardAdmin(req, res, next) {
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
+
+// DMG downloads: correct MIME so proxies/browsers don't treat disk images as HTML/text (avoids "corrupted" opens).
+const DOWNLOADS_STATIC_DIR = path.join(__dirname, 'public', 'downloads');
+app.get('/downloads/:file', (req, res, next) => {
+  const raw = String(req.params.file || '');
+  if (!/\.dmg$/i.test(raw)) return next();
+  const base = path.basename(raw);
+  if (!base || base !== raw || base.includes('..')) return next();
+  const full = path.join(DOWNLOADS_STATIC_DIR, base);
+  if (!full.startsWith(DOWNLOADS_STATIC_DIR)) return next();
+  fs.stat(full, (err, st) => {
+    if (err || !st.isFile()) return next();
+    res.setHeader('Content-Type', 'application/x-apple-diskimage');
+    res.setHeader('Content-Disposition', `attachment; filename="${base}"`);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.sendFile(full);
+  });
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // CORS: allow any origin for public materials API (subscribe / download) – no auth required
