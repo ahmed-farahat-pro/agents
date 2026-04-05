@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="BreathBar — Guided breathing in the macOS menu bar. Box, 4-7-8, streaks, focus overlay. From Nigents Crazy apps." />
+    <title>BreathBar — Crazy apps · Nigents</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #09080c;
+            --bg-secondary: #141116;
+            --border: #2a2a35;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            --accent-orange: #ff570a;
+            --accent-green: #19d59e;
+            --accent-breath: #67e8f9;
+            --font-mono: 'IBM Plex Mono', monospace;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255, 87, 10, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 87, 10, 0.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, var(--bg-primary) 0%, transparent 100%);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .nav-logo {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-orange);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 20px;
+            color: var(--bg-primary);
+        }
+
+        .nav-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover { color: var(--text-primary); }
+
+        .soon-pill {
+            display: inline-block;
+            margin-left: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--bg-primary);
+            background: var(--accent-orange);
+            padding: 3px 9px;
+            border-radius: 999px;
+            vertical-align: middle;
+        }
+
+        .nav-cta {
+            padding: 10px 20px;
+            border: 1px solid var(--accent-orange);
+            color: var(--accent-orange);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .nav-cta:hover {
+            background: var(--accent-orange);
+            color: var(--bg-primary);
+        }
+
+        .nav-toggle {
+            display: none;
+            width: 44px;
+            height: 44px;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .nav-toggle-icon-close { display: none; font-size: 28px; }
+        body.nav-open .nav-toggle-icon-open { display: none; }
+        body.nav-open .nav-toggle-icon-close { display: block; }
+        .nav-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 998;
+        }
+        body.nav-open .nav-backdrop { display: block; }
+        body.nav-open { overflow: hidden; }
+
+        @media (max-width: 900px) {
+            .nav-toggle { display: flex; }
+            .nav-links {
+                display: none;
+                position: fixed;
+                top: 72px;
+                left: 16px;
+                right: 16px;
+                flex-direction: column;
+                align-items: stretch;
+                background: var(--bg-secondary);
+                border: 1px solid var(--border);
+                padding: 12px;
+                z-index: 999;
+            }
+            body.nav-open .nav-links { display: flex; }
+        }
+
+        main {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 120px 32px 80px;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--accent-breath);
+            border: 1px solid rgba(103, 232, 249, 0.4);
+            padding: 8px 14px;
+            margin-bottom: 20px;
+            animation: badgePulse 3.5s ease-in-out infinite;
+        }
+
+        @keyframes badgePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(103, 232, 249, 0.22); }
+            50% { box-shadow: 0 0 24px 2px rgba(103, 232, 249, 0.12); }
+        }
+
+        .hero-title {
+            font-size: clamp(2.2rem, 5vw, 3.4rem);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1.08;
+            margin-bottom: 16px;
+        }
+
+        .hero-title .shimmer {
+            background: linear-gradient(
+                90deg,
+                var(--text-primary) 0%,
+                var(--text-primary) 36%,
+                var(--accent-breath) 50%,
+                var(--text-primary) 64%,
+                var(--text-primary) 100%
+            );
+            background-size: 200% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: textShimmer 4.2s linear infinite;
+        }
+
+        @keyframes textShimmer {
+            0% { background-position: 100% 50%; }
+            100% { background-position: -100% 50%; }
+        }
+
+        .hero-title em {
+            font-style: normal;
+            color: var(--accent-breath);
+        }
+
+        .hero-lead {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 54ch;
+            margin-bottom: 28px;
+            animation: fadeUp 0.8s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .cta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 48px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 0;
+            transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+        }
+
+        .btn:active { transform: scale(0.98); }
+
+        .btn-primary {
+            background: var(--accent-orange);
+            color: var(--bg-primary);
+            border: 1px solid var(--accent-orange);
+            box-shadow: 0 8px 32px rgba(255, 87, 10, 0.28);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 12px 40px rgba(255, 87, 10, 0.38);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--accent-breath);
+            color: var(--accent-breath);
+        }
+
+        .stage {
+            margin: 32px 0 56px;
+            padding: 52px 24px 44px;
+            background: linear-gradient(165deg, rgba(20, 17, 22, 0.95) 0%, rgba(9, 8, 12, 0.98) 100%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .breathe-stage {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .breathe-rings {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .breathe-ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid rgba(103, 232, 249, 0.35);
+        }
+
+        .breathe-ring.r1 {
+            width: 100%;
+            height: 100%;
+            animation: breathe 5.5s ease-in-out infinite;
+        }
+
+        .breathe-ring.r2 {
+            width: 72%;
+            height: 72%;
+            border-color: rgba(255, 87, 10, 0.25);
+            animation: breathe 5.5s ease-in-out infinite 0.4s reverse;
+        }
+
+        .breathe-core {
+            width: 36%;
+            height: 36%;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.25), rgba(103, 232, 249, 0.35));
+            box-shadow: 0 0 28px rgba(103, 232, 249, 0.25);
+            animation: breathe 5.5s ease-in-out infinite 0.2s;
+        }
+
+        @keyframes breathe {
+            0%, 100% { transform: scale(0.94); opacity: 0.88; }
+            50% { transform: scale(1.06); opacity: 1; }
+        }
+
+        .phase-label {
+            margin-top: 20px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .section {
+            margin-bottom: 56px;
+        }
+
+        .section h2 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .section p.lead {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            max-width: 65ch;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 22px;
+            transition: border-color 0.2s;
+        }
+
+        .card:hover {
+            border-color: rgba(103, 232, 249, 0.4);
+        }
+
+        .card h3 {
+            font-size: 15px;
+            margin-bottom: 8px;
+        }
+
+        .card p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.55;
+        }
+
+        .download-panel {
+            background: rgba(103, 232, 249, 0.06);
+            border: 1px solid rgba(103, 232, 249, 0.32);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .download-panel ul {
+            margin: 12px 0 0 1.2rem;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .mono {
+            font-family: var(--font-mono);
+            font-size: 0.9em;
+            color: var(--accent-green);
+        }
+
+        footer {
+            border-top: 1px solid var(--border);
+            padding-top: 24px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        footer a {
+            color: var(--accent-orange);
+            text-decoration: none;
+        }
+
+        @media (max-width: 640px) {
+            .nav { padding: 16px 20px; }
+            main { padding: 100px 20px 72px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .hero-title .shimmer { animation: none; color: var(--text-primary); -webkit-text-fill-color: var(--text-primary); }
+            .hero-badge { animation: none; }
+            .breathe-ring, .breathe-core { animation: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <a href="/" class="nav-brand">
+            <div class="nav-logo">N</div>
+            <span class="nav-title">Nigents</span>
+        </a>
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+            <span class="nav-toggle-icon-open" aria-hidden="true">☰</span>
+            <span class="nav-toggle-icon-close" aria-hidden="true">×</span>
+        </button>
+        <div class="nav-links" id="nav-links" role="navigation" aria-label="Main">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/how-it-works.html" class="nav-link">How it works</a>
+            <a href="/materials.html" class="nav-link">Free Materials</a>
+            <a href="/crazy-apps.html" class="nav-link">Crazy apps</a>
+            <a href="/opencode-kits.html" class="nav-link">OpenCode kits <span class="soon-pill">Soon</span></a>
+            <a href="/login.html" class="nav-cta">Login →</a>
+        </div>
+    </nav>
+    <div class="nav-backdrop" id="nav-backdrop" aria-hidden="true" hidden></div>
+
+    <main>
+        <header>
+            <p class="hero-badge">macOS · Menu bar</p>
+            <h1 class="hero-title"><span class="shimmer">BreathBar</span> — breathe from the <em>menu bar</em></h1>
+            <p class="hero-lead">
+                Guided breathing patterns, session rings, streaks, and optional break reminders — without leaving your workflow.
+                Part of our <strong style="color:var(--accent-breath)">Crazy apps</strong> line: small utilities with a clear job.
+            </p>
+            <div class="cta-row">
+                <a class="btn btn-primary" href="/downloads/BreathBar-1.0.0.dmg" download>Download DMG</a>
+                <a class="btn btn-ghost" href="/crazy-apps.html">All crazy apps</a>
+                <a class="btn btn-ghost" href="/materials.html#crazy-apps">Free materials</a>
+                <a class="btn btn-ghost" href="#how">What you get</a>
+            </div>
+        </header>
+
+        <div class="stage" aria-hidden="true">
+            <div class="breathe-stage">
+                <div class="breathe-rings">
+                    <div class="breathe-ring r1"></div>
+                    <div class="breathe-ring r2"></div>
+                    <div class="breathe-core"></div>
+                </div>
+                <p class="phase-label">Inhale · hold · exhale · menu bar lungs icon</p>
+            </div>
+        </div>
+
+        <section class="section" id="how">
+            <h2>What you get</h2>
+            <p class="lead">
+                Pick a pattern (Box 4-4-4-4, 4-7-8 relax, Coherent 5-5, Calm 3-3-6, or custom), run a timed session with a progress ring, and track streaks and daily minutes — all from the tray.
+            </p>
+            <div class="grid-3">
+                <div class="card">
+                    <h3>Patterns &amp; sessions</h3>
+                    <p>Segmented presets plus Settings for custom timing. Sessions from 1 to 10 minutes with phase progress and seconds left in the menu bar title while you run.</p>
+                </div>
+                <div class="card">
+                    <h3>Focus overlay</h3>
+                    <p>Optional fullscreen dim with large cues when you want fewer distractions. Press Esc to dismiss.</p>
+                </div>
+                <div class="card">
+                    <h3>Stats &amp; reminders</h3>
+                    <p>Streak for consecutive days with a completed session, sessions and minutes today, optional soft sounds on phase change, and repeating break reminders (off by default).</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="download">
+            <h2>Install</h2>
+            <div class="download-panel">
+                <p class="lead" style="margin-bottom:0">Open the disk image, drag <span class="mono">BreathBar.app</span> into Applications, then eject the volume.</p>
+                <ul>
+                    <li>Notifications work best with the signed <strong>.app</strong>; grant permission when prompted for reminders.</li>
+                    <li>If Gatekeeper blocks the download: <strong>System Settings → Privacy &amp; Security</strong> → Open anyway.</li>
+                    <li>If needed: <span class="mono">xattr -cr ~/Downloads/BreathBar-1.0.0.dmg</span> then open again.</li>
+                    <li>Rebuild with MacAppsBundle: <span class="mono">./Scripts/build.sh BreathBar 1.0.0</span></li>
+                </ul>
+                <div class="cta-row" style="margin-top:20px;margin-bottom:0">
+                    <a class="btn btn-primary" href="/downloads/BreathBar-1.0.0.dmg" download>Download BreathBar-1.0.0.dmg</a>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p><strong>BreathBar</strong> · <a href="/crazy-apps.html">Crazy apps</a> · <a href="/materials.html">Free materials</a> · <a href="/">Nigents</a></p>
+        </footer>
+    </main>
+
+    <script>
+        (function () {
+            var toggle = document.getElementById('nav-toggle');
+            var backdrop = document.getElementById('nav-backdrop');
+            if (!toggle) return;
+            function setOpen(open) {
+                document.body.classList.toggle('nav-open', open);
+                toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                if (backdrop) backdrop.hidden = !open;
+            }
+            toggle.addEventListener('click', function () {
+                setOpen(!document.body.classList.contains('nav-open'));
+            });
+            if (backdrop) backdrop.addEventListener('click', function () { setOpen(false); });
+            document.getElementById('nav-links').querySelectorAll('a').forEach(function (link) {
+                link.addEventListener('click', function () { setOpen(false); });
+            });
+        })();
+    </script>
+</body>
+</html>

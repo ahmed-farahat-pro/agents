@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Nigents Crazy apps — experimental macOS menu bar utilities. AirSound, AppJealousy, and Battery DNA." />
+    <meta name="description" content="Nigents Crazy apps — experimental macOS menu bar utilities. AirSound, AppJealousy, Battery DNA, and BreathBar." />
     <title>Crazy apps — Nigents</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,6 +20,7 @@
             --accent-green: #19d59e;
             --accent-heat: #ff3d5c;
             --accent-volt: #2dd4bf;
+            --accent-breath: #67e8f9;
             --font-mono: 'IBM Plex Mono', monospace;
             --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
@@ -316,6 +317,16 @@
             border-color: rgba(45, 212, 191, 0.4);
         }
 
+        .app-pick.bb::before {
+            background: linear-gradient(90deg, var(--accent-orange), var(--accent-breath));
+        }
+
+        .app-pick.bb .icon {
+            color: var(--accent-breath);
+            background: rgba(103, 232, 249, 0.1);
+            border-color: rgba(103, 232, 249, 0.4);
+        }
+
         .app-pick h2 {
             font-size: 1.35rem;
             font-weight: 700;
@@ -437,6 +448,15 @@
                 <div class="app-actions">
                     <a class="btn-landing" href="/batterydna.html">Open landing</a>
                     <a class="btn-dl" href="/downloads/BatteryDNA-1.0.0.dmg" download>Download DMG</a>
+                </div>
+            </article>
+            <article class="app-pick bb">
+                <div class="icon">BB</div>
+                <h2>BreathBar</h2>
+                <p>Guided breathing in the menu bar — box, 4-7-8, session rings, streaks, optional focus overlay and break reminders.</p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/breathbar.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/BreathBar-1.0.0.dmg" download>Download DMG</a>
                 </div>
             </article>
         </div>
