@@ -13,6 +13,33 @@ const { extractPreparedIssuesFromBuffer, MAX_FILE_BYTES } = require('./bonyad-ex
 
 const BONYAD_EDIT_SECRET = (process.env.BONYAD_EDIT_SECRET || '').trim();
 
+/**
+ * OpenAI key for smart import: env first, then Nigents shared-config.json (dashboard API keys).
+ * Reloads from disk so keys saved in the UI work without restarting (next request picks them up).
+ */
+function resolveOpenAiApiKey() {
+  const env =
+    (process.env.OPENAI_API_KEY || process.env.BONYAD_OPENAI_API_KEY || '').trim();
+  if (env) return env;
+  try {
+    const sharedConfig = require('../utils/shared-config');
+    const fromFile = (sharedConfig.getApiKeys().OPENAI_API_KEY || '').trim();
+    if (fromFile) return fromFile;
+  } catch (e) {
+    logger.warn('[Bonyad AI import] Could not read shared-config for OpenAI key:', e.message);
+  }
+  return '';
+}
+
+/** Normalize model output when it wraps JSON in markdown fences (rare with json_object mode). */
+function parseOpenAiJsonContent(raw) {
+  let s = String(raw || '').trim();
+  if (s.startsWith('```')) {
+    s = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+  }
+  return JSON.parse(s);
+}
+
 function requireBonyadEdit(req, res, next) {
   if (!BONYAD_EDIT_SECRET) {
     return next();
@@ -58,9 +85,12 @@ function cleanSlug(s) {
 }
 
 async function routeRowsWithOpenAI(rowsForAi, existingSheets) {
-  const key = (process.env.OPENAI_API_KEY || '').trim();
+  const key = resolveOpenAiApiKey();
   if (!key) {
-    throw new Error('OPENAI_API_KEY is not set on the server');
+    throw new Error(
+      'OpenAI API key is not configured. Set OPENAI_API_KEY (or BONYAD_OPENAI_API_KEY) in the server environment, ' +
+        'or add the OpenAI key in the Nigents dashboard under API keys (saved to shared-config). Restart the process if you only use environment variables.'
+    );
   }
   const model = (process.env.BONYAD_IMPORT_AI_MODEL || 'gpt-4o-mini').trim();
   const client = new OpenAI({ apiKey: key });
@@ -124,9 +154,10 @@ Rules:
     const raw = completion.choices[0]?.message?.content || '{}';
     let parsed;
     try {
-      parsed = JSON.parse(raw);
-    } catch {
-      throw new Error('AI returned invalid JSON');
+      parsed = parseOpenAiJsonContent(raw);
+    } catch (parseErr) {
+      logger.error('[Bonyad AI import] JSON parse failed:', parseErr.message, raw.slice(0, 200));
+      throw new Error('AI returned invalid JSON. Try again or switch BONYAD_IMPORT_AI_MODEL to gpt-4o-mini.');
     }
     const assigns = Array.isArray(parsed.assignments) ? parsed.assignments : [];
     const news = Array.isArray(parsed.new_sheets) ? parsed.new_sheets : [];
@@ -161,6 +192,12 @@ function parseMultipartThenRequireEdit(req, res, next) {
 }
 
 function registerBonyadExcelAiRoutes(app) {
+  const model = (process.env.BONYAD_IMPORT_AI_MODEL || 'gpt-4o-mini').trim();
+  logger.info(
+    '[Bonyad AI import] Smart import ready (model=%s). OpenAI key: env, BONYAD_OPENAI_API_KEY, or dashboard → shared-config (resolved per request).',
+    model
+  );
+
   app.post(
     '/api/bonyad/issues/import-excel-ai',
     parseMultipartThenRequireEdit,
@@ -207,8 +244,13 @@ function registerBonyadExcelAiRoutes(app) {
         try {
           ai = await routeRowsWithOpenAI(rowsForAi, existingSheets);
         } catch (e) {
-          logger.error('[Bonyad AI import] OpenAI:', e.message);
-          return res.status(502).json({ success: false, error: e.message || 'AI routing failed' });
+          const msg = e.message || String(e);
+          logger.error('[Bonyad AI import] OpenAI:', msg);
+          const status =
+            /not configured|OPENAI_API_KEY|API key/i.test(msg) || msg.includes('401')
+              ? 503
+              : 502;
+          return res.status(status).json({ success: false, error: msg || 'AI routing failed' });
         }
 
         const existingSlugs = new Set(existingSheets.map((s) => s.slug));

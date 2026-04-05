@@ -211,10 +211,25 @@ deploy-to-ec2:
     - ssh -o StrictHostKeyChecking=no "${SSH_USER}@${EC2_HOST}" "mkdir -p ${DEPLOY_DIR}/src/dashboard/public/downloads"
     - scp -o StrictHostKeyChecking=no src/dashboard/public/downloads/AirSound-1.0.0.dmg "${SSH_USER}@${EC2_HOST}:${DEPLOY_DIR}/src/dashboard/public/downloads/"
     - scp -o StrictHostKeyChecking=no src/dashboard/public/downloads/AppJealousy-1.0.0.dmg "${SSH_USER}@${EC2_HOST}:${DEPLOY_DIR}/src/dashboard/public/downloads/"
-    - echo "=== Sync BONYAD_EDIT_SECRET to server .env ==="
+    # Sync Bonyad + optional OpenAI keys into server .env (see GitLab CI/CD Variables below).
+    - echo "=== Sync secrets to server .env + restart dashboard ==="
     - |
+      ENV_SYNC="cd ${DEPLOY_DIR} && touch .env"
+      ENV_SYNC="${ENV_SYNC} && sed -i '/^BONYAD_EDIT_SECRET=/d' .env && echo \"BONYAD_EDIT_SECRET=${BONYAD_EDIT_SECRET}\" >> .env"
+      if [ -n "${OPENAI_API_KEY:-}" ]; then
+        ENV_SYNC="${ENV_SYNC} && sed -i '/^OPENAI_API_KEY=/d' .env && echo \"OPENAI_API_KEY=${OPENAI_API_KEY}\" >> .env"
+        echo "OPENAI_API_KEY will be written to server .env (Bonyad smart import + voice)."
+      else
+        echo "OPENAI_API_KEY not set in CI — skip; use server .env or Nigents dashboard API keys."
+      fi
+      if [ -n "${BONYAD_IMPORT_AI_MODEL:-}" ]; then
+        ENV_SYNC="${ENV_SYNC} && sed -i '/^BONYAD_IMPORT_AI_MODEL=/d' .env && echo \"BONYAD_IMPORT_AI_MODEL=${BONYAD_IMPORT_AI_MODEL}\" >> .env"
+      fi
+      if [ -n "${BONYAD_OPENAI_API_KEY:-}" ]; then
+        ENV_SYNC="${ENV_SYNC} && sed -i '/^BONYAD_OPENAI_API_KEY=/d' .env && echo \"BONYAD_OPENAI_API_KEY=${BONYAD_OPENAI_API_KEY}\" >> .env"
+      fi
       ssh -o StrictHostKeyChecking=no "${SSH_USER}@${EC2_HOST}" \
-        "cd ${DEPLOY_DIR} && touch .env && sed -i '/^BONYAD_EDIT_SECRET=/d' .env && echo \"BONYAD_EDIT_SECRET=${BONYAD_EDIT_SECRET}\" >> .env && chmod 600 .env 2>/dev/null || true && pm2 restart nigents-dashboard --update-env"
+        "${ENV_SYNC} && chmod 600 .env 2>/dev/null || true && pm2 restart nigents-dashboard --update-env"
     - echo "=== Deployment successful! ==="
 
   rules:
