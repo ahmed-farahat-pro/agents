@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nigents - User Survey</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .survey-form {
+            padding: 40px;
+        }
+
+        .form-section {
+            margin-bottom: 35px;
+        }
+
+        .form-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-group label .required {
+            color: #e74c3c;
+            margin-left: 4px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .radio-group,
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .radio-option,
+        .checkbox-option {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .radio-option input,
+        .checkbox-option input {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .rating-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .rating-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .rating-option input {
+            display: none;
+        }
+
+        .rating-option .rating-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #667eea;
+            transition: all 0.3s;
+        }
+
+        .rating-option input:checked + .rating-circle {
+            background: #667eea;
+            color: white;
+        }
+
+        .rating-option:hover .rating-circle {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .rating-label {
+            margin-top: 5px;
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .success-message {
+            display: none;
+            text-align: center;
+            padding: 60px 40px;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: #27ae60;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .success-icon svg {
+            width: 40px;
+            height: 40px;
+            fill: white;
+        }
+
+        .error-message {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c00;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            margin-top: 20px;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: white;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .survey-form {
+                padding: 20px;
+            }
+
+            .rating-group {
+                justify-content: center;
+            }
+        }
+
+        /* RTL Support for Arabic */
+        [dir="rtl"] .radio-option input,
+        [dir="rtl"] .checkbox-option input {
+            margin-right: 0;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Nigents Survey</h1>
+            <p>Help us improve your experience</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <form class="survey-form" id="surveyForm">
+            <!-- Section 1: Personal Information -->
+            <div class="form-section">
+                <h3>📋 Personal Information</h3>
+                
+                <div class="form-group">
+                    <label for="name">Full Name<span class="required">*</span></label>
+                    <input type="text" id="name" name="name" required placeholder="Enter your full name">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address<span class="required">*</span></label>
+                    <input type="email" id="email" name="email" required placeholder="Enter your email">
+                </div>
+
+                <div class="form-group">
+                    <label for="role">What is your role?<span class="required">*</span></label>
+                    <select id="role" name="role" required>
+                        <option value="">Select your role</option>
+                        <option value="developer">Developer</option>
+                        <option value="designer">Designer</option>
+                        <option value="project-manager">Project Manager</option>
+                        <option value="product-owner">Product Owner</option>
+                        <option value="qa-engineer">QA Engineer</option>
+                        <option value="devops">DevOps Engineer</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Section 2: Experience with Nigents -->
+            <div class="form-section">
+                <h3>🚀 Your Experience</h3>
+
+                <div class="form-group">
+                    <label>How would you rate your overall experience with Nigents?<span class="required">*</span></label>
+                    <div class="rating-group">
+                        <label class="rating-option">
+                            <input type="radio" name="overall_rating" value="1" required>
+                            <div class="rating-circle">1</div>
+                            <span class="rating-label">Poor</span>
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="overall_rating" value="2">
+                            <div class="rating-circle">2</div>
+                            <span class="rating-label">Fair</span>
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="overall_rating" value="3">
+                            <div class="rating-circle">3</div>
+                            <span class="rating-label">Good</span>
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="overall_rating" value="4">
+                            <div class="rating-circle">4</div>
+                            <span class="rating-label">Very Good</span>
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="overall_rating" value="5">
+                            <div class="rating-circle">5</div>
+                            <span class="rating-label">Excellent</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Which features have you used? (Select all that apply)</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="features" value="ai-agents">
+                            AI Agents
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="features" value="code-review">
+                            Code Review
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="features" value="gitlab-integration">
+                            GitLab Integration
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="features" value="telegram-bot">
+                            Telegram Bot
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="features" value="voice-commands">
+                            Voice Commands
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="features" value="dashboard">
+                            Dashboard
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>How likely are you to recommend Nigents to others?<span class="required">*</span></label>
+                    <div class="rating-group">
+                        <label class="rating-option">
+                            <input type="radio" name="nps" value="1" required>
+                            <div class="rating-circle">1</div>
+                            <span class="rating-label">Not Likely</span>
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="nps" value="2">
+                            <div class="rating-circle">2</div>
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="nps" value="3">
+                            <div class="rating-circle">3</div>
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="nps" value="4">
+                            <div class="rating-circle">4</div>
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="nps" value="5">
+                            <div class="rating-circle">5</div>
+                            <span class="rating-label">Very Likely</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Feedback -->
+            <div class="form-section">
+                <h3>💬 Feedback</h3>
+
+                <div class="form-group">
+                    <label for="improvements">What improvements would you like to see?</label>
+                    <textarea id="improvements" name="improvements" placeholder="Share your suggestions for improvement..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="issues">Have you encountered any issues? Please describe.</label>
+                    <textarea id="issues" name="issues" placeholder="Describe any problems you've faced..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="additional_comments">Any additional comments?</label>
+                    <textarea id="additional_comments" name="additional_comments" placeholder="Anything else you'd like to share..."></textarea>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">Submit Survey</button>
+        </form>
+
+        <div class="success-message" id="successMessage">
+            <div class="success-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+            </div>
+            <h2>Thank You!</h2>
+            <p style="margin-top: 10px; color: #666;">Your feedback has been submitted successfully. We appreciate your time!</p>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Survey Form Handler
+         * Manages form validation, submission, and progress tracking
+         */
+        (function() {
+            'use strict';
+
+            const form = document.getElementById('surveyForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            const progressFill = document.getElementById('progressFill');
+
+            // Track form progress
+            function updateProgress() {
+                const formData = new FormData(form);
+                const allInputs = form.querySelectorAll('input, select, textarea');
+                const requiredInputs = form.querySelectorAll('[required]');
+                
+                let filledRequired = 0;
+                requiredInputs.forEach(input => {
+                    if (input.type === 'radio') {
+                        const name = input.name;
+                        if (form.querySelector(`input[name="${name}"]:checked`)) {
+                            filledRequired++;
+                        }
+                    } else if (input.value.trim()) {
+                        filledRequired++;
+                    }
+                });
+
+                // Count unique required fields (radio groups count as one)
+                const requiredGroups = new Set();
+                requiredInputs.forEach(input => {
+                    if (input.type === 'radio') {
+                        requiredGroups.add(input.name);
+                    } else {
+                        requiredGroups.add(input.name);
+                    }
+                });
+
+                const progress = (filledRequired / requiredGroups.size) * 100;
+                progressFill.style.width = `${Math.min(progress, 100)}%`;
+            }
+
+            // Validate email format
+            function isValidEmail(email) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return emailRegex.test(email);
+            }
+
+            // Show error message
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.classList.add('show');
+                setTimeout(() => {
+                    errorMessage.classList.remove('show');
+                }, 5000);
+            }
+
+            // Handle form submission
+            async function handleSubmit(e) {
+                e.preventDefault();
+
+                // Validate email
+                const email = document.getElementById('email').value;
+                if (!isValidEmail(email)) {
+                    showError('Please enter a valid email address.');
+                    return;
+                }
+
+                // Collect form data
+                const formData = new FormData(form);
+                const surveyData = {
+                    timestamp: new Date().toISOString(),
+                    responses: {}
+                };
+
+                // Process form entries
+                for (let [key, value] of formData.entries()) {
+                    if (surveyData.responses[key]) {
+                        // Handle multiple values (checkboxes)
+                        if (Array.isArray(surveyData.responses[key])) {
+                            surveyData.responses[key].push(value);
+                        } else {
+                            surveyData.responses[key] = [surveyData.responses[key], value];
+                        }
+                    } else {
+                        surveyData.responses[key] = value;
+                    }
+                }
+
+                // Disable submit button and show loading state
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Submitting...';
+
+                try {
+                    // Send survey data to backend
+                    const response = await fetch('/api/survey', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(surveyData)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    // Show success message
+                    form.style.display = 'none';
+                    successMessage.classList.add('show');
+
+                    // Log success
+                    console.log('Survey submitted successfully:', surveyData);
+
+                } catch (error) {
+                    console.error('Survey submission error:', error);
+                    showError('Failed to submit survey. Please try again later.');
+                    
+                    // Re-enable submit button
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Submit Survey';
+                }
+            }
+
+            // Event listeners
+            form.addEventListener('submit', handleSubmit);
+            
+            // Update progress on input changes
+            form.addEventListener('input', updateProgress);
+            form.addEventListener('change', updateProgress);
+
+            // Initial progress update
+            updateProgress();
+
+            // Log page load
+            console.log('Survey page loaded successfully');
+        })();
+    </script>
+</body>
+</html>
