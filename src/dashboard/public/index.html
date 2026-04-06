@@ -1,3 +1,4 @@
+--- src/dashboard/public/index.html ---
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -121,7 +122,7 @@
 
         .soon-pill {
             display: inline-block;
-            margin-left: 6px;
+            margin-inline-start: 6px;
             font-size: 10px;
             font-weight: 700;
             letter-spacing: 0.08em;
@@ -155,7 +156,7 @@
             height: 44px;
             align-items: center;
             justify-content: center;
-            margin-left: auto;
+            margin-inline-start: auto;
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid var(--border);
             border-radius: 10px;
@@ -374,7 +375,6 @@
         .code-dots {
             display: flex;
             gap: 8px;
-            margin-right: 16px;
         }
 
         .code-dot {
@@ -383,219 +383,43 @@
             border-radius: 50%;
         }
 
-        .code-dot.red { background: #ff5f56; }
-        .code-dot.yellow { background: #ffbd2e; }
-        .code-dot.green { background: #27c93f; }
+        .code-dot-red { background: #ff5f56; }
+        .code-dot-yellow { background: #ffbd2e; }
+        .code-dot-green { background: #27ca40; }
 
-        .code-tabs {
-            display: flex;
-            gap: 4px;
-        }
-
-        .code-tab {
-            padding: 6px 16px;
-            font-size: 12px;
-            font-family: var(--font-mono);
+        .code-filename {
+            margin-inline-start: 16px;
+            font-size: 13px;
             color: var(--text-muted);
-            background: transparent;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .code-tab.active {
-            color: var(--text-primary);
-            background: #0d0c0f;
-        }
-
-        .code-status {
-            margin-left: auto;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 11px;
-            font-family: var(--font-mono);
-            color: var(--accent-green);
-        }
-
-        .status-dot {
-            width: 6px;
-            height: 6px;
-            background: var(--accent-green);
-            border-radius: 50%;
-            animation: blink 1s ease-in-out infinite;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
         }
 
         .code-content {
-            padding: 24px;
-            font-family: var(--font-mono);
+            padding: 20px;
             font-size: 13px;
-            line-height: 1.7;
-            min-height: 160px;
-            max-height: 200px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .agent-indicator {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            padding: 12px 16px;
-            background: rgba(255, 87, 10, 0.08);
-            border: 1px solid rgba(255, 87, 10, 0.2);
-            border-radius: 8px;
-        }
-
-        .agent-avatar-small {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, var(--accent-orange) 0%, #ff8a4c 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: var(--font-mono);
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--bg-primary);
-        }
-
-        .agent-info-small {
-            flex: 1;
-        }
-
-        .agent-name-small {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .agent-action-small {
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-
-        .typing-indicator {
-            display: flex;
-            gap: 4px;
-            padding: 4px 8px;
-            background: var(--bg-card);
-            border-radius: 4px;
-        }
-
-        .typing-indicator span {
-            width: 4px;
-            height: 4px;
-            background: var(--accent-orange);
-            border-radius: 50%;
-            animation: typing 1.4s ease-in-out infinite;
-        }
-
-        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes typing {
-            0%, 60%, 100% { transform: translateY(0); }
-            30% { transform: translateY(-4px); }
-        }
-
-        .code-area {
-            color: var(--text-primary);
-            white-space: pre-wrap;
-            word-break: break-all;
+            line-height: 1.8;
+            overflow-x: auto;
         }
 
         .code-line {
             display: flex;
-            counter-increment: line;
+            gap: 20px;
         }
 
-        .line-number {
-            width: 40px;
+        .code-number {
             color: var(--text-muted);
-            text-align: right;
-            padding-right: 16px;
+            min-width: 24px;
+            text-align: end;
             user-select: none;
-            flex-shrink: 0;
         }
 
-        .line-content {
-            flex: 1;
-            color: #e2e2e2;
-        }
-
-        .cursor {
-            display: inline-block;
-            width: 8px;
-            height: 18px;
-            background: var(--accent-orange);
-            animation: cursor-blink 1s step-end infinite;
-            vertical-align: middle;
-            margin-left: 2px;
-        }
-
-        @keyframes cursor-blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
-        }
-
-        /* Syntax Highlighting */
-        .keyword { color: #ff7b72; }
-        .string { color: #a5d6ff; }
-        .function { color: #d2a8ff; }
-        .comment { color: #8b949e; font-style: italic; }
-        .number { color: #79c0ff; }
-        .operator { color: #ff7b72; }
-        .variable { color: #ffa657; }
-        .property { color: #7ee787; }
-
-        /* Stats Section */
-        .stats {
-            padding: 80px 40px;
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-            position: relative;
-            z-index: 1;
-        }
-
-        .stats-grid {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 40px;
-            text-align: center;
-        }
-
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .stat-value {
-            font-family: var(--font-sans);
-            font-size: 48px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .stat-label {
-            font-size: 14px;
+        .code-text {
             color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
         }
+
+        .code-comment { color: #6a737d; }
+        .code-keyword { color: var(--accent-orange); }
+        .code-string { color: var(--accent-green); }
+        .code-function { color: var(--accent-purple); }
 
         /* Features Section */
         .features {
@@ -604,35 +428,26 @@
             z-index: 1;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
         .section-header {
             text-align: center;
-            margin-bottom: 64px;
+            margin-bottom: 80px;
         }
 
         .section-label {
-            display: inline-block;
-            padding: 6px 12px;
-            background: rgba(255, 87, 10, 0.1);
-            border: 1px solid rgba(255, 87, 10, 0.3);
-            color: var(--accent-orange);
             font-size: 12px;
             font-weight: 600;
+            letter-spacing: 0.15em;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            color: var(--accent-orange);
             margin-bottom: 16px;
         }
 
         .section-title {
             font-family: var(--font-sans);
-            font-size: 40px;
-            font-weight: 500;
-            margin-bottom: 16px;
+            font-size: 48px;
+            font-weight: 600;
             letter-spacing: -1px;
+            margin-bottom: 16px;
         }
 
         .section-subtitle {
@@ -644,8 +459,10 @@
 
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 24px;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .feature-card {
@@ -656,7 +473,8 @@
         }
 
         .feature-card:hover {
-            border-color: rgba(255, 87, 10, 0.5);
+            border-color: var(--accent-orange);
+            transform: translateY(-4px);
         }
 
         .feature-icon {
@@ -667,11 +485,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: var(--font-mono);
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--accent-orange);
-            margin-bottom: 20px;
+            font-size: 24px;
+            margin-bottom: 24px;
         }
 
         .feature-title {
@@ -691,25 +506,23 @@
         .agents {
             padding: 120px 40px;
             background: var(--bg-secondary);
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
             position: relative;
             z-index: 1;
         }
 
         .agents-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 16px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .agent-card {
-            background: var(--bg-card);
+            background: var(--bg-primary);
             border: 1px solid var(--border);
             padding: 24px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
+            text-align: center;
             transition: all 0.3s;
         }
 
@@ -718,44 +531,29 @@
         }
 
         .agent-avatar {
-            width: 48px;
-            height: 48px;
-            background: var(--accent-orange);
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-purple));
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: var(--font-mono);
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--bg-primary);
-            flex-shrink: 0;
-        }
-
-        .agent-info {
-            flex: 1;
+            font-size: 28px;
+            margin: 0 auto 16px;
         }
 
         .agent-name {
             font-family: var(--font-sans);
             font-size: 16px;
             font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .agent-role {
-            font-size: 13px;
-            color: var(--text-secondary);
             margin-bottom: 8px;
         }
 
-        .agent-model {
-            display: inline-block;
-            padding: 4px 8px;
-            background: rgba(255, 87, 10, 0.1);
-            color: var(--accent-orange);
-            font-size: 11px;
-            font-weight: 600;
+        .agent-role {
+            font-size: 12px;
+            color: var(--text-muted);
             text-transform: uppercase;
+            letter-spacing: 0.1em;
         }
 
         /* CTA Section */
@@ -769,51 +567,27 @@
         .cta-title {
             font-family: var(--font-sans);
             font-size: 48px;
-            font-weight: 500;
-            margin-bottom: 16px;
+            font-weight: 600;
             letter-spacing: -1px;
+            margin-bottom: 24px;
         }
 
         .cta-subtitle {
-            font-size: 16px;
+            font-size: 18px;
             color: var(--text-secondary);
-            margin-bottom: 32px;
+            margin-bottom: 40px;
+            max-width: 600px;
+            margin-inline: auto;
+            margin-bottom: 40px;
         }
 
         /* Footer */
         .footer {
-            padding: 60px 40px;
+            padding: 40px;
             border-top: 1px solid var(--border);
+            text-align: center;
             position: relative;
             z-index: 1;
-        }
-
-        .footer-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 24px;
-        }
-
-        .footer-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .footer-logo {
-            width: 32px;
-            height: 32px;
-            background: var(--accent-orange);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--bg-primary);
         }
 
         .footer-text {
@@ -821,89 +595,57 @@
             color: var(--text-muted);
         }
 
-        .footer-links {
-            display: flex;
-            gap: 24px;
-        }
-
-        .footer-link {
-            font-size: 13px;
-            color: var(--text-muted);
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-
-        .footer-link:hover {
-            color: var(--accent-orange);
-        }
-
         /* Responsive */
         @media (max-width: 1024px) {
             .hero {
                 flex-direction: column;
-                gap: 40px;
-                padding-top: 100px;
-            }
-
-            .hero-content {
                 text-align: center;
-                align-items: center;
+                padding-top: 140px;
             }
 
-            .hero-visual {
-                width: 100%;
-                max-width: 600px;
-            }
-        }
-
-        @media (max-width: 900px) {
-            .nav-toggle {
-                display: flex;
+            .hero-title {
+                font-size: 48px;
             }
 
-            .nav-links {
-                display: none;
-                position: fixed;
-                left: 0;
-                right: 0;
-                top: 0;
-                margin-top: 72px;
-                padding: 12px 20px 24px;
-                padding-bottom: max(24px, env(safe-area-inset-bottom));
-                flex-direction: column;
-                align-items: stretch;
-                gap: 0;
-                background: var(--bg-primary);
-                border-bottom: 1px solid var(--border);
-                box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
-                z-index: 1001;
-                max-height: min(70vh, calc(100vh - 72px));
-                overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
+            .hero-subtitle {
+                margin-inline: auto;
             }
 
-            .nav-links .nav-link,
-            .nav-links .nav-cta {
-                padding: 14px 12px;
-                border-radius: 8px;
-                text-align: left;
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
 
-            .nav-links .nav-link:active,
-            .nav-links .nav-cta:active {
-                background: rgba(255, 255, 255, 0.06);
-            }
-
-            body.nav-open .nav-links {
-                display: flex;
+            .agents-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
 
         @media (max-width: 768px) {
             .nav {
                 padding: 16px 20px;
-                padding-left: max(16px, env(safe-area-inset-left));
-                padding-right: max(16px, env(safe-area-inset-right));
+            }
+
+            .nav-links {
+                display: none;
+                position: fixed;
+                top: 0;
+                inset-inline-start: 0;
+                right: 0;
+                bottom: 0;
+                background: var(--bg-primary);
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 32px;
+                z-index: 999;
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .nav-toggle {
+                display: flex;
             }
 
             .hero {
@@ -912,15 +654,6 @@
 
             .hero-title {
                 font-size: 36px;
-                letter-spacing: -1px;
-            }
-
-            .hero-subtitle {
-                font-size: 15px;
-            }
-
-            .code-window {
-                display: none;
             }
 
             .features,
@@ -929,452 +662,239 @@
                 padding: 80px 20px;
             }
 
-            .section-title {
-                font-size: 28px;
-            }
-
-            .features-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .stat-value {
+            .section-title,
+            .cta-title {
                 font-size: 32px;
             }
 
-            .footer-content {
-                flex-direction: column;
-                text-align: center;
+            .features-grid,
+            .agents-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer {
+                padding: 24px 20px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
     <nav class="nav">
-        <a href="/" class="nav-brand">
+        <a href="index.html" class="nav-brand">
             <div class="nav-logo">N</div>
             <span class="nav-title">Nigents</span>
         </a>
-        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
-            <span class="nav-toggle-icon-open" aria-hidden="true">☰</span>
-            <span class="nav-toggle-icon-close" aria-hidden="true">×</span>
-        </button>
-        <div class="nav-links" id="nav-links" role="navigation" aria-label="Main">
+        <div class="nav-links">
+            <a href="survey.html" class="nav-link">Survey</a>
             <a href="#features" class="nav-link">Features</a>
             <a href="#agents" class="nav-link">Agents</a>
-            <a href="/how-it-works.html" class="nav-link">How it works</a>
-            <a href="/materials.html" class="nav-link">Free Materials</a>
-            <a href="/crazy-apps.html" class="nav-link">Crazy apps</a>
-            <a href="/opencode-kits.html" class="nav-link">OpenCode kits <span class="soon-pill">Soon</span></a>
-            <a href="/bonyad/" class="nav-link">Bonyad</a>
-            <a href="/login.html" class="nav-cta">Login →</a>
+            <a href="how-it-works.html" class="nav-link">How it Works</a>
+            <a href="https://gitlab.com/nigents" class="nav-link" target="_blank">GitLab</a>
+            <a href="#get-started" class="nav-cta">Get Started</a>
         </div>
+        <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+            <span class="nav-toggle-icon-open">☰</span>
+            <span class="nav-toggle-icon-close">×</span>
+        </button>
     </nav>
-    <div class="nav-backdrop" id="nav-backdrop" aria-hidden="true" hidden></div>
+    <div class="nav-backdrop"></div>
 
-    <!-- Hero Section -->
     <section class="hero">
         <div class="hero-content">
             <div class="hero-badge">
-                <div class="hero-badge-dot"></div>
-                <span>System Online</span>
+                <span class="hero-badge-dot"></span>
+                AI-Powered Development
             </div>
-            <h1 class="hero-title">
-                Ship code overnight.<br>
-                <span>Wake up to merge requests.</span>
-            </h1>
-            <p class="hero-subtitle">
-                7 AI agents working together to plan, code, test, and review — 
-                while you sleep. Integrated with GitLab.
-            </p>
+            <h1 class="hero-title">Your AI <span>Development Team</span> for GitLab</h1>
+            <p class="hero-subtitle">Nigents deploys a team of specialized AI agents that work 24/7 on your GitLab projects. From planning to deployment, our agents handle it all.</p>
             <div class="hero-actions">
-                <a href="/login.html" class="btn btn-primary">Get Started →</a>
-                <a href="#features" class="btn btn-secondary">See How It Works</a>
+                <a href="#get-started" class="btn btn-primary">Get Started →</a>
+                <a href="how-it-works.html" class="btn btn-secondary">Learn More</a>
             </div>
             <div class="hero-meta">
-                <span>Works with</span>
                 <div class="hero-meta-icons">
-                    <span>GitLab</span>
-                    <span>•</span>
-                    <span>Telegram</span>
+                    <span class="hero-meta-icon">⚡ Instant Setup</span>
+                    <span class="hero-meta-icon">🔒 Secure</span>
+                    <span class="hero-meta-icon">🌐 Multi-Language</span>
                 </div>
             </div>
         </div>
-        
         <div class="hero-visual">
             <div class="code-window">
                 <div class="code-header">
                     <div class="code-dots">
-                        <div class="code-dot red"></div>
-                        <div class="code-dot yellow"></div>
-                        <div class="code-dot green"></div>
+                        <div class="code-dot code-dot-red"></div>
+                        <div class="code-dot code-dot-yellow"></div>
+                        <div class="code-dot code-dot-green"></div>
                     </div>
-                    <div class="code-tabs">
-                        <button class="code-tab active">AuthService.ts</button>
-                        <button class="code-tab">Login.tsx</button>
-                    </div>
-                    <div class="code-status">
-                        <span class="status-dot"></span>
-                        backend-dev writing...
-                    </div>
+                    <span class="code-filename">gitlab-issue.md</span>
                 </div>
-                
                 <div class="code-content">
-                    <div class="agent-indicator">
-                        <div class="agent-avatar-small">BE</div>
-                        <div class="agent-info-small">
-                            <div class="agent-name-small">backend-dev</div>
-                            <div class="agent-action-small">Implementing user authentication</div>
-                        </div>
-                        <div class="typing-indicator">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
+                    <div class="code-line">
+                        <span class="code-number">1</span>
+                        <span class="code-text"><span class="code-comment">// Nigents AI Agent Workflow</span></span>
                     </div>
-                    
-                    <div class="code-area" id="code-area">
-                        <div class="code-line">
-                            <span class="line-number">1</span>
-                            <span class="line-content" id="line-1"></span><span class="cursor"></span>
-                        </div>
+                    <div class="code-line">
+                        <span class="code-number">2</span>
+                        <span class="code-text"></span>
+                    </div>
+                    <div class="code-line">
+                        <span class="code-number">3</span>
+                        <span class="code-text"><span class="code-keyword">issue</span>: <span class="code-string">"Add user authentication"</span></span>
+                    </div>
+                    <div class="code-line">
+                        <span class="code-number">4</span>
+                        <span class="code-text"></span>
+                    </div>
+                    <div class="code-line">
+                        <span class="code-number">5</span>
+                        <span class="code-text"><span class="code-function">Orchestrator</span> → <span class="code-function">Planner</span></span>
+                    </div>
+                    <div class="code-line">
+                        <span class="code-number">6</span>
+                        <span class="code-text"><span class="code-function">Planner</span> → <span class="code-function">BackendDev</span></span>
+                    </div>
+                    <div class="code-line">
+                        <span class="code-number">7</span>
+                        <span class="code-text"><span class="code-function">BackendDev</span> → <span class="code-function">QATester</span></span>
+                    </div>
+                    <div class="code-line">
+                        <span class="code-number">8</span>
+                        <span class="code-text"></span>
+                    </div>
+                    <div class="code-line">
+                        <span class="code-number">9</span>
+                        <span class="code-text"><span class="code-comment">// ✅ MR created & merged</span></span>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Stats Section -->
-    <section class="stats">
-        <div class="stats-grid">
-            <div class="stat-item">
-                <div class="stat-value">7</div>
-                <div class="stat-label">AI Agents</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">24/7</div>
-                <div class="stat-label">Operation</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">4</div>
-                <div class="stat-label">AI Providers</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">38</div>
-                <div class="stat-label">MCP Tools</div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Features Section -->
     <section class="features" id="features">
-        <div class="container">
-            <div class="section-header">
-                <div class="section-label">Features</div>
-                <h2 class="section-title">Everything you need to ship faster</h2>
-                <p class="section-subtitle">A complete AI development team that works while you sleep</p>
+        <div class="section-header">
+            <p class="section-label">Features</p>
+            <h2 class="section-title">Everything You Need</h2>
+            <p class="section-subtitle">Our AI agents work together to deliver complete solutions, from initial planning to final deployment.</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3 class="feature-title">Smart Planning</h3>
+                <p class="feature-desc">Planner agent analyzes issues and creates comprehensive implementation strategies with clear milestones.</p>
             </div>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">24/7</div>
-                    <h3 class="feature-title">Always On</h3>
-                    <p class="feature-desc">Agents work overnight on feature branches. Wake up to completed merge requests ready for review.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">TG</div>
-                    <h3 class="feature-title">Telegram Control</h3>
-                    <p class="feature-desc">Send voice or text commands from anywhere. Get notified when work is done — in Arabic or English.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">MR</div>
-                    <h3 class="feature-title">GitLab Integration</h3>
-                    <p class="feature-desc">Automatic branch creation, commits, and merge requests. Works seamlessly with your existing workflow.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">AI</div>
-                    <h3 class="feature-title">Multi-Model AI</h3>
-                    <p class="feature-desc">Use a custom model (e.g. GLM) for agents; OpenAI for voice. Configurable via dashboard.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">38</div>
-                    <h3 class="feature-title">MCP Tools</h3>
-                    <p class="feature-desc">Filesystem, git, databases, search, and custom MCP tools give your agents superpowers.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">UI</div>
-                    <h3 class="feature-title">Live Dashboard</h3>
-                    <p class="feature-desc">Watch agents work in real-time. See code edits, conversations, and progress as it happens.</p>
-                </div>
+            <div class="feature-card">
+                <div class="feature-icon">💻</div>
+                <h3 class="feature-title">Full-Stack Development</h3>
+                <p class="feature-desc">Frontend and Backend agents collaborate to write clean, tested, production-ready code.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <h3 class="feature-title">Code Review</h3>
+                <p class="feature-desc">Automated code reviews ensure quality, security, and adherence to best practices.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🧪</div>
+                <h3 class="feature-title">Automated Testing</h3>
+                <p class="feature-desc">QA agents generate and run tests to catch bugs before they reach production.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🚀</div>
+                <h3 class="feature-title">GitLab Integration</h3>
+                <p class="feature-desc">Seamless integration with GitLab issues, merge requests, and CI/CD pipelines.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3 class="feature-title">Progress Tracking</h3>
+                <p class="feature-desc">Real-time visibility into agent activities with detailed status updates and reports.</p>
             </div>
         </div>
     </section>
 
-    <!-- Agents Section -->
     <section class="agents" id="agents">
-        <div class="container">
-            <div class="section-header">
-                <div class="section-label">The Team</div>
-                <h2 class="section-title">7 Specialized Agents</h2>
-                <p class="section-subtitle">Each agent has a unique role and expertise</p>
+        <div class="section-header">
+            <p class="section-label">AI Agents</p>
+            <h2 class="section-title">Meet Your Team</h2>
+            <p class="section-subtitle">Specialized AI agents working together to deliver exceptional results.</p>
+        </div>
+        <div class="agents-grid">
+            <div class="agent-card">
+                <div class="agent-avatar">🎯</div>
+                <h3 class="agent-name">Orchestrator</h3>
+                <p class="agent-role">Team Coordinator</p>
             </div>
-            <div class="agents-grid">
-                <div class="agent-card">
-                    <div class="agent-avatar">OR</div>
-                    <div class="agent-info">
-                        <div class="agent-name">Orchestrator</div>
-                        <div class="agent-role">Team Lead & Router</div>
-                        <span class="agent-model">GLM-5</span>
-                    </div>
-                </div>
-                <div class="agent-card">
-                    <div class="agent-avatar">PL</div>
-                    <div class="agent-info">
-                        <div class="agent-name">Planner</div>
-                        <div class="agent-role">Architecture & Planning</div>
-                        <span class="agent-model">GLM-5</span>
-                    </div>
-                </div>
-                <div class="agent-card">
-                    <div class="agent-avatar">BE</div>
-                    <div class="agent-info">
-                        <div class="agent-name">Backend Dev</div>
-                        <div class="agent-role">Backend Developer</div>
-                        <span class="agent-model">GLM-5</span>
-                    </div>
-                </div>
-                <div class="agent-card">
-                    <div class="agent-avatar">FE</div>
-                    <div class="agent-info">
-                        <div class="agent-name">Frontend Dev</div>
-                        <div class="agent-role">Frontend Developer</div>
-                        <span class="agent-model">GLM-4 Plus</span>
-                    </div>
-                </div>
-                <div class="agent-card">
-                    <div class="agent-avatar">QA</div>
-                    <div class="agent-info">
-                        <div class="agent-name">QA Tester</div>
-                        <div class="agent-role">Quality Assurance</div>
-                        <span class="agent-model">GLM-4</span>
-                    </div>
-                </div>
-                <div class="agent-card">
-                    <div class="agent-avatar">CR</div>
-                    <div class="agent-info">
-                        <div class="agent-name">Code Reviewer</div>
-                        <div class="agent-role">Security & Quality</div>
-                        <span class="agent-model">GLM-5</span>
-                    </div>
-                </div>
-                <div class="agent-card">
-                    <div class="agent-avatar">RP</div>
-                    <div class="agent-info">
-                        <div class="agent-name">Reporter</div>
-                        <div class="agent-role">Updates & Reports</div>
-                        <span class="agent-model">GLM-4</span>
-                    </div>
-                </div>
+            <div class="agent-card">
+                <div class="agent-avatar">📋</div>
+                <h3 class="agent-name">Planner</h3>
+                <p class="agent-role">Strategy Lead</p>
+            </div>
+            <div class="agent-card">
+                <div class="agent-avatar">🎨</div>
+                <h3 class="agent-name">Frontend Dev</h3>
+                <p class="agent-role">UI/UX Expert</p>
+            </div>
+            <div class="agent-card">
+                <div class="agent-avatar">⚙️</div>
+                <h3 class="agent-name">Backend Dev</h3>
+                <p class="agent-role">API Architect</p>
+            </div>
+            <div class="agent-card">
+                <div class="agent-avatar">🔍</div>
+                <h3 class="agent-name">Code Reviewer</h3>
+                <p class="agent-role">Quality Guardian</p>
+            </div>
+            <div class="agent-card">
+                <div class="agent-avatar">🧪</div>
+                <h3 class="agent-name">QA Tester</h3>
+                <p class="agent-role">Test Engineer</p>
+            </div>
+            <div class="agent-card">
+                <div class="agent-avatar">📝</div>
+                <h3 class="agent-name">Reporter</h3>
+                <p class="agent-role">Documentation</p>
+            </div>
+            <div class="agent-card">
+                <div class="agent-avatar">🔐</div>
+                <h3 class="agent-name">Security</h3>
+                <p class="agent-role">Security Analyst</p>
             </div>
         </div>
     </section>
 
-    <!-- CTA Section -->
-    <section class="cta">
-        <div class="container">
-            <h2 class="cta-title">Ready to ship overnight?</h2>
-            <p class="cta-subtitle">Start using Nigents today and wake up to finished features.</p>
-            <a href="/login.html" class="btn btn-primary">Get Started Now →</a>
-        </div>
+    <section class="cta" id="get-started">
+        <h2 class="cta-title">Ready to Get Started?</h2>
+        <p class="cta-subtitle">Deploy your AI development team in minutes. Connect your GitLab and let the agents handle the rest.</p>
+        <a href="https://gitlab.com/nigents" class="btn btn-primary" target="_blank">Connect GitLab →</a>
     </section>
 
-    <!-- Footer -->
     <footer class="footer">
-        <div class="footer-content">
-            <div class="footer-brand">
-                <div class="footer-logo">N</div>
-                <span class="footer-text">© 2025 Nigents. All rights reserved.</span>
-            </div>
-            <div class="footer-links">
-                <a href="https://gitlab.com/bonyad-tech/nigents" class="footer-link" target="_blank">GitLab</a>
-                <a href="/login.html" class="footer-link">Login</a>
-            </div>
-        </div>
+        <p class="footer-text">© 2024 Nigents. AI-Powered Development Team for GitLab.</p>
     </footer>
 
     <script>
-        (function () {
-            var toggle = document.getElementById('nav-toggle');
-            var backdrop = document.getElementById('nav-backdrop');
-            if (!toggle || !backdrop) return;
-            function setOpen(open) {
-                document.body.classList.toggle('nav-open', open);
-                backdrop.hidden = !open;
-                backdrop.setAttribute('aria-hidden', open ? 'false' : 'true');
-                toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-                toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
-            }
-            toggle.addEventListener('click', function () {
-                setOpen(!document.body.classList.contains('nav-open'));
-            });
-            backdrop.addEventListener('click', function () { setOpen(false); });
-            document.querySelectorAll('#nav-links a').forEach(function (a) {
-                a.addEventListener('click', function () { setOpen(false); });
-            });
-            window.addEventListener('resize', function () {
-                if (window.innerWidth > 900) setOpen(false);
-            });
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape') setOpen(false);
-            });
-        })();
-
-        // Code Streaming Animation
-        const codeSnippets = [
-            {
-                agent: 'backend-dev',
-                action: 'Implementing user authentication service',
-                file: 'AuthService.ts',
-                code: `<span class="keyword">import</span> { <span class="variable">Injectable</span>, <span class="variable">UnauthorizedException</span> } <span class="keyword">from</span> <span class="string">'@nestjs/common'</span>;
-<span class="keyword">import</span> { <span class="variable">JwtService</span> } <span class="keyword">from</span> <span class="string">'@nestjs/jwt'</span>;
-<span class="keyword">import</span> * <span class="keyword">as</span> <span class="variable">bcrypt</span> <span class="keyword">from</span> <span class="string">'bcrypt'</span>;
-
-<span class="keyword">@Injectable</span>()
-<span class="keyword">export class</span> <span class="function">AuthService</span> {
-  <span class="keyword">constructor</span>(
-    <span class="keyword">private</span> <span class="variable">jwtService</span>: <span class="variable">JwtService</span>,
-  ) {}
-
-  <span class="keyword">async</span> <span class="function">validateUser</span>(<span class="variable">email</span>: <span class="variable">string</span>, <span class="variable">pass</span>: <span class="variable">string</span>) {
-    <span class="keyword">const</span> <span class="variable">user</span> = <span class="keyword">await</span> <span class="keyword">this</span>.<span class="property">usersService</span>.<span class="function">findOne</span>(<span class="variable">email</span>);
-    <span class="keyword">if</span> (<span class="variable">user</span> && <span class="variable">user</span>.<span class="property">password</span> === <span class="variable">pass</span>) {
-      <span class="keyword">return</span> <span class="variable">user</span>;
-    }
-    <span class="keyword">return null</span>;
-  }
-}`
-            },
-            {
-                agent: 'frontend-dev',
-                action: 'Creating login form component',
-                file: 'Login.tsx',
-                code: `<span class="keyword">import</span> { <span class="variable">useState</span> } <span class="keyword">from</span> <span class="string">'react'</span>;
-<span class="keyword">import</span> { <span class="variable">useAuth</span> } <span class="keyword">from</span> <span class="string">'@/hooks/useAuth'</span>;
-
-<span class="keyword">export function</span> <span class="function">LoginForm</span>() {
-  <span class="keyword">const</span> [<span class="variable">email</span>, <span class="function">setEmail</span>] = <span class="function">useState</span>(<span class="string">''</span>);
-  <span class="keyword">const</span> [<span class="variable">password</span>, <span class="function">setPassword</span>] = <span class="function">useState</span>(<span class="string">''</span>);
-  <span class="keyword">const</span> { <span class="function">login</span> } = <span class="function">useAuth</span>();
-
-  <span class="keyword">const</span> <span class="function">handleSubmit</span> = <span class="keyword">async</span> (<span class="variable">e</span>) => {
-    <span class="variable">e</span>.<span class="function">preventDefault</span>();
-    <span class="keyword">await</span> <span class="function">login</span>(<span class="variable">email</span>, <span class="variable">password</span>);
-  };
-
-  <span class="keyword">return</span> (
-    <span class="operator">&lt;</span><span class="variable">form</span> <span class="property">onSubmit</span>={<span class="function">handleSubmit</span>}<span class="operator">&gt;</span>
-      <span class="operator">&lt;</span><span class="variable">input</span> <span class="property">type</span>=<span class="string">"email"</span> <span class="property">value</span>={<span class="variable">email</span>} /&gt;
-    <span class="operator">&lt;/</span><span class="variable">form</span><span class="operator">&gt;</span>
-  );
-}`
-            }
-        ];
+        // Mobile menu toggle
+        const navToggle = document.querySelector('.nav-toggle');
+        const navLinks = document.querySelector('.nav-links');
+        const navBackdrop = document.querySelector('.nav-backdrop');
         
-        let currentSnippetIndex = 0;
-        let currentCharIndex = 0;
-        let isPaused = false;
-        
-        const codeArea = document.getElementById('code-area');
-        const agentNameEl = document.querySelector('.agent-name-small');
-        const agentActionEl = document.querySelector('.agent-action-small');
-        const codeTabs = document.querySelectorAll('.code-tab');
-        /** Only type this many lines per cycle so the demo never scrolls off the hero */
-        const MAX_CODE_LINES = 5;
-
-        function truncateCodeToLines(codeStr, maxLines) {
-            if (!codeStr || maxLines < 1) return '';
-            const parts = codeStr.split('\n');
-            return parts.slice(0, maxLines).join('\n');
-        }
-
-        function getAgentColor(name) {
-            const colors = {
-                'backend-dev': '#ff570a',
-                'frontend-dev': '#19d59e',
-                'qa-tester': '#8b5cf6'
-            };
-            return colors[name] || '#ff570a';
+        function toggleNav() {
+            document.body.classList.toggle('nav-open');
+            navLinks.classList.toggle('active');
+            const isOpen = document.body.classList.contains('nav-open');
+            navToggle.setAttribute('aria-expanded', isOpen);
         }
         
-        function switchToNextSnippet() {
-            currentSnippetIndex = (currentSnippetIndex + 1) % codeSnippets.length;
-            currentCharIndex = 0;
-            isPaused = false;
-            
-            // Clear and start fresh immediately (no deletion lag)
-            codeArea.innerHTML = `
-                <div class="code-line">
-                    <span class="line-number">1</span>
-                    <span class="line-content" id="line-1"></span><span class="cursor"></span>
-                </div>
-            `;
-            
-            typeCode();
-        }
+        navToggle.addEventListener('click', toggleNav);
+        navBackdrop.addEventListener('click', toggleNav);
         
-        function typeCode() {
-            const snippet = codeSnippets[currentSnippetIndex];
-            const code = truncateCodeToLines(snippet.code, MAX_CODE_LINES);
-            
-            // Update agent info
-            agentNameEl.textContent = snippet.agent;
-            agentActionEl.textContent = snippet.action;
-            document.querySelector('.agent-avatar-small').style.background = 
-                `linear-gradient(135deg, ${getAgentColor(snippet.agent)} 0%, ${getAgentColor(snippet.agent)}aa 100%)`;
-            
-            // Update tabs
-            codeTabs[0].textContent = snippet.file;
-            
-            if (isPaused) {
-                setTimeout(switchToNextSnippet, 1500);
-                return;
-            }
-            
-            // Typing
-            if (currentCharIndex < code.length) {
-                const char = code[currentCharIndex];
-                
-                if (char === '\n') {
-                    const lineCount = (code.substring(0, currentCharIndex).match(/\n/g) || []).length + 2;
-                    codeArea.innerHTML += `
-                        <div class="code-line">
-                            <span class="line-number">${lineCount}</span>
-                            <span class="line-content" id="line-${lineCount}"></span><span class="cursor"></span>
-                        </div>
-                    `;
-                } else {
-                    const lines = codeArea.querySelectorAll('.line-content');
-                    const currentLine = lines[lines.length - 1];
-                    if (currentLine) {
-                        currentLine.innerHTML = code.substring(0, currentCharIndex + 1).split('\n').pop();
-                    }
-                }
-                
-                currentCharIndex++;
-                const speed = Math.random() * 15 + 3; // Faster typing
-                setTimeout(typeCode, speed);
-            } else {
-                // Finished typing, pause then switch (no deletion)
-                isPaused = true;
-                setTimeout(switchToNextSnippet, 1500);
-            }
-        }
-        
-        // Start the animation
-        setTimeout(typeCode, 500);
+        // Close menu on link click
+        navLinks.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                document.body.classList.remove('nav-open');
+                navLinks.classList.remove('active');
+                navToggle.setAttribute('aria-expanded', 'false');
+            });
+        });
     </script>
 </body>
 </html>
