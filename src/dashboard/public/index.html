@@ -741,7 +741,10 @@
             background: rgba(255, 87, 10, 0.04);
         }
         .skill-folder-icon {
-            font-size: 22px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--accent);
             width: 40px;
             height: 40px;
             display: flex;
@@ -815,12 +818,97 @@
             font-size: 12px;
             color: var(--text-secondary);
             transition: all 0.2s;
-            cursor: default;
+            cursor: pointer;
+            text-decoration: none;
         }
         .skill-chip:hover {
             border-color: var(--accent);
             color: var(--text-primary);
             background: rgba(255, 87, 10, 0.06);
+        }
+        /* Skill detail modal */
+        .skill-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(6px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .skill-modal-overlay.active {
+            display: flex;
+        }
+        .skill-modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 760px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .skill-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .skill-modal-title {
+            font-family: var(--font-sans);
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .skill-modal-category {
+            font-size: 11px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-top: 2px;
+        }
+        .skill-modal-close {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .skill-modal-close:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+        .skill-modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .skill-modal-body pre {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.7;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .skill-modal-loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-size: 14px;
         }
         @media (max-width: 1024px) {
             .skills-browser { grid-template-columns: repeat(2, 1fr); }
@@ -1551,6 +1639,22 @@
         </div>
     </footer>
 
+    <!-- Skill Detail Modal -->
+    <div class="skill-modal-overlay" id="skill-modal-overlay">
+        <div class="skill-modal">
+            <div class="skill-modal-header">
+                <div>
+                    <div class="skill-modal-title" id="skill-modal-title"></div>
+                    <div class="skill-modal-category" id="skill-modal-category"></div>
+                </div>
+                <button class="skill-modal-close" id="skill-modal-close">&times;</button>
+            </div>
+            <div class="skill-modal-body" id="skill-modal-body">
+                <div class="skill-modal-loading">Loading skill...</div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Mobile nav toggle
         const toggle = document.getElementById('nav-toggle');
@@ -1667,80 +1771,180 @@
             scrollObserver.observe(el);
         });
 
-        // Skills Browser — all 233 skills in 9 categories
+        // Skills Browser — all 233 skills in 9 categories with actual folder slugs
         var skillsData = [
-            { name: 'Engineering', icon: '&#128736;', meta: 'Architecture / DevOps / APIs', skills: [
-                'Agent Designer', 'Agent Workflow Designer', 'AgentHub', 'API Design Reviewer', 'API Test Suite Builder',
-                'AutoResearch Agent', 'BeHuman', 'Browser Automation', 'Changelog Generator', 'CI/CD Pipeline Builder',
-                'Code Tour', 'Codebase Onboarding', 'Data Quality Auditor', 'Database Designer', 'Database Schema Designer',
-                'Demo Video', 'Dependency Auditor', 'Docker Development', 'Env Secrets Manager', 'Focused Fix',
-                'Git Worktree Manager', 'Helm Chart Builder', 'Interview System Designer', 'LLM Cost Optimizer',
-                'MCP Server Builder', 'Migration Architect', 'Monorepo Navigator', 'Observability Designer',
-                'Performance Profiler', 'PR Review Expert', 'Prompt Governance', 'RAG Architect', 'Release Manager',
-                'Runbook Generator', 'Secrets Vault Manager', 'Self Eval', 'Skill Security Auditor', 'Skill Tester',
-                'Spec Driven Workflow', 'SQL Database Assistant', 'Tech Debt Tracker', 'Terraform Patterns'
+            { name: 'Engineering', tag: 'ENG', cat: 'engineering', meta: 'Architecture / DevOps / APIs', skills: [
+                { n: 'Agent Designer', s: 'agent-designer' }, { n: 'Agent Workflow Designer', s: 'agent-workflow-designer' },
+                { n: 'AgentHub', s: 'agenthub' }, { n: 'API Design Reviewer', s: 'api-design-reviewer' },
+                { n: 'API Test Suite Builder', s: 'api-test-suite-builder' }, { n: 'AutoResearch Agent', s: 'autoresearch-agent' },
+                { n: 'BeHuman', s: 'behuman' }, { n: 'Browser Automation', s: 'browser-automation' },
+                { n: 'Changelog Generator', s: 'changelog-generator' }, { n: 'CI/CD Pipeline Builder', s: 'ci-cd-pipeline-builder' },
+                { n: 'Code Tour', s: 'code-tour' }, { n: 'Codebase Onboarding', s: 'codebase-onboarding' },
+                { n: 'Data Quality Auditor', s: 'data-quality-auditor' }, { n: 'Database Designer', s: 'database-designer' },
+                { n: 'Database Schema Designer', s: 'database-schema-designer' }, { n: 'Demo Video', s: 'demo-video' },
+                { n: 'Dependency Auditor', s: 'dependency-auditor' }, { n: 'Docker Development', s: 'docker-development' },
+                { n: 'Env Secrets Manager', s: 'env-secrets-manager' }, { n: 'Focused Fix', s: 'focused-fix' },
+                { n: 'Git Worktree Manager', s: 'git-worktree-manager' }, { n: 'Helm Chart Builder', s: 'helm-chart-builder' },
+                { n: 'Interview System Designer', s: 'interview-system-designer' }, { n: 'LLM Cost Optimizer', s: 'llm-cost-optimizer' },
+                { n: 'MCP Server Builder', s: 'mcp-server-builder' }, { n: 'Migration Architect', s: 'migration-architect' },
+                { n: 'Monorepo Navigator', s: 'monorepo-navigator' }, { n: 'Observability Designer', s: 'observability-designer' },
+                { n: 'Performance Profiler', s: 'performance-profiler' }, { n: 'PR Review Expert', s: 'pr-review-expert' },
+                { n: 'Prompt Governance', s: 'prompt-governance' }, { n: 'RAG Architect', s: 'rag-architect' },
+                { n: 'Release Manager', s: 'release-manager' }, { n: 'Runbook Generator', s: 'runbook-generator' },
+                { n: 'Secrets Vault Manager', s: 'secrets-vault-manager' }, { n: 'Self Eval', s: 'self-eval' },
+                { n: 'Skill Security Auditor', s: 'skill-security-auditor' }, { n: 'Skill Tester', s: 'skill-tester' },
+                { n: 'Spec Driven Workflow', s: 'spec-driven-workflow' }, { n: 'SQL Database Assistant', s: 'sql-database-assistant' },
+                { n: 'Tech Debt Tracker', s: 'tech-debt-tracker' }, { n: 'Terraform Patterns', s: 'terraform-patterns' }
             ]},
-            { name: 'Engineering Team', icon: '&#128101;', meta: 'Security / Cloud / Infrastructure', skills: [
-                'A11y Audit', 'Adversarial Reviewer', 'AI Security', 'AWS Solution Architect', 'Azure Cloud Architect',
-                'Cloud Security', 'Code Reviewer', 'Email Template Builder', 'Epic Design', 'GCP Cloud Architect',
-                'Google Workspace CLI', 'Incident Commander', 'Incident Response', 'MS365 Tenant Manager',
-                'Playwright Pro', 'Red Team', 'Security Pen Testing', 'Self Improving Agent', 'Senior Architect',
-                'Senior Backend', 'Senior Computer Vision', 'Senior Data Engineer', 'Senior Data Scientist',
-                'Senior DevOps', 'Senior Frontend', 'Senior Fullstack', 'Senior ML Engineer', 'Senior Prompt Engineer',
-                'Senior QA', 'Senior SecOps', 'Senior Security', 'Snowflake Development', 'Stripe Integration Expert',
-                'TDD Guide', 'Tech Stack Evaluator', 'Threat Detection'
+            { name: 'Engineering Team', tag: 'TEAM', cat: 'engineering-team', meta: 'Security / Cloud / Infrastructure', skills: [
+                { n: 'A11y Audit', s: 'a11y-audit' }, { n: 'Adversarial Reviewer', s: 'adversarial-reviewer' },
+                { n: 'AI Security', s: 'ai-security' }, { n: 'AWS Solution Architect', s: 'aws-solution-architect' },
+                { n: 'Azure Cloud Architect', s: 'azure-cloud-architect' }, { n: 'Cloud Security', s: 'cloud-security' },
+                { n: 'Code Reviewer', s: 'code-reviewer' }, { n: 'Email Template Builder', s: 'email-template-builder' },
+                { n: 'Epic Design', s: 'epic-design' }, { n: 'GCP Cloud Architect', s: 'gcp-cloud-architect' },
+                { n: 'Google Workspace CLI', s: 'google-workspace-cli' }, { n: 'Incident Commander', s: 'incident-commander' },
+                { n: 'Incident Response', s: 'incident-response' }, { n: 'MS365 Tenant Manager', s: 'ms365-tenant-manager' },
+                { n: 'Playwright Pro', s: 'playwright-pro' }, { n: 'Red Team', s: 'red-team' },
+                { n: 'Security Pen Testing', s: 'security-pen-testing' }, { n: 'Self Improving Agent', s: 'self-improving-agent' },
+                { n: 'Senior Architect', s: 'senior-architect' }, { n: 'Senior Backend', s: 'senior-backend' },
+                { n: 'Senior Computer Vision', s: 'senior-computer-vision' }, { n: 'Senior Data Engineer', s: 'senior-data-engineer' },
+                { n: 'Senior Data Scientist', s: 'senior-data-scientist' }, { n: 'Senior DevOps', s: 'senior-devops' },
+                { n: 'Senior Frontend', s: 'senior-frontend' }, { n: 'Senior Fullstack', s: 'senior-fullstack' },
+                { n: 'Senior ML Engineer', s: 'senior-ml-engineer' }, { n: 'Senior Prompt Engineer', s: 'senior-prompt-engineer' },
+                { n: 'Senior QA', s: 'senior-qa' }, { n: 'Senior SecOps', s: 'senior-secops' },
+                { n: 'Senior Security', s: 'senior-security' }, { n: 'Snowflake Development', s: 'snowflake-development' },
+                { n: 'Stripe Integration Expert', s: 'stripe-integration-expert' }, { n: 'TDD Guide', s: 'tdd-guide' },
+                { n: 'Tech Stack Evaluator', s: 'tech-stack-evaluator' }, { n: 'Threat Detection', s: 'threat-detection' }
             ]},
-            { name: 'Marketing', icon: '&#128640;', meta: 'Growth / Content / Analytics', skills: [
-                'A/B Test Setup', 'Ad Creative', 'AI SEO', 'Analytics Tracking', 'App Store Optimization',
-                'Brand Guidelines', 'Campaign Analytics', 'Churn Prevention', 'Cold Email', 'Competitor Alternatives',
-                'Content Creator', 'Content Humanizer', 'Content Production', 'Content Strategy', 'Copy Editing',
-                'Copywriting', 'Email Sequence', 'Form CRO', 'Free Tool Strategy', 'Launch Strategy',
-                'Marketing Context', 'Marketing Demand Acquisition', 'Marketing Ideas', 'Marketing Ops',
-                'Marketing Psychology', 'Marketing Strategy PMM', 'Onboarding CRO', 'Page CRO', 'Paid Ads',
-                'Paywall Upgrade CRO', 'Popup CRO', 'Pricing Strategy', 'Programmatic SEO', 'Prompt Engineer Toolkit',
-                'Referral Program', 'Schema Markup', 'SEO Audit', 'Signup Flow CRO', 'Site Architecture',
-                'Social Content', 'Social Media Analyzer', 'Social Media Manager', 'Video Content Strategist',
-                'X/Twitter Growth'
+            { name: 'Marketing', tag: 'MKT', cat: 'marketing-skill', meta: 'Growth / Content / Analytics', skills: [
+                { n: 'A/B Test Setup', s: 'ab-test-setup' }, { n: 'Ad Creative', s: 'ad-creative' },
+                { n: 'AI SEO', s: 'ai-seo' }, { n: 'Analytics Tracking', s: 'analytics-tracking' },
+                { n: 'App Store Optimization', s: 'app-store-optimization' }, { n: 'Brand Guidelines', s: 'brand-guidelines' },
+                { n: 'Campaign Analytics', s: 'campaign-analytics' }, { n: 'Churn Prevention', s: 'churn-prevention' },
+                { n: 'Cold Email', s: 'cold-email' }, { n: 'Competitor Alternatives', s: 'competitor-alternatives' },
+                { n: 'Content Creator', s: 'content-creator' }, { n: 'Content Humanizer', s: 'content-humanizer' },
+                { n: 'Content Production', s: 'content-production' }, { n: 'Content Strategy', s: 'content-strategy' },
+                { n: 'Copy Editing', s: 'copy-editing' }, { n: 'Copywriting', s: 'copywriting' },
+                { n: 'Email Sequence', s: 'email-sequence' }, { n: 'Form CRO', s: 'form-cro' },
+                { n: 'Free Tool Strategy', s: 'free-tool-strategy' }, { n: 'Launch Strategy', s: 'launch-strategy' },
+                { n: 'Marketing Context', s: 'marketing-context' }, { n: 'Marketing Demand Acquisition', s: 'marketing-demand-acquisition' },
+                { n: 'Marketing Ideas', s: 'marketing-ideas' }, { n: 'Marketing Ops', s: 'marketing-ops' },
+                { n: 'Marketing Psychology', s: 'marketing-psychology' }, { n: 'Marketing Strategy PMM', s: 'marketing-strategy-pmm' },
+                { n: 'Onboarding CRO', s: 'onboarding-cro' }, { n: 'Page CRO', s: 'page-cro' },
+                { n: 'Paid Ads', s: 'paid-ads' }, { n: 'Paywall Upgrade CRO', s: 'paywall-upgrade-cro' },
+                { n: 'Popup CRO', s: 'popup-cro' }, { n: 'Pricing Strategy', s: 'pricing-strategy' },
+                { n: 'Programmatic SEO', s: 'programmatic-seo' }, { n: 'Prompt Engineer Toolkit', s: 'prompt-engineer-toolkit' },
+                { n: 'Referral Program', s: 'referral-program' }, { n: 'Schema Markup', s: 'schema-markup' },
+                { n: 'SEO Audit', s: 'seo-audit' }, { n: 'Signup Flow CRO', s: 'signup-flow-cro' },
+                { n: 'Site Architecture', s: 'site-architecture' }, { n: 'Social Content', s: 'social-content' },
+                { n: 'Social Media Analyzer', s: 'social-media-analyzer' }, { n: 'Social Media Manager', s: 'social-media-manager' },
+                { n: 'Video Content Strategist', s: 'video-content-strategist' }, { n: 'X/Twitter Growth', s: 'x-twitter-growth' }
             ]},
-            { name: 'C-Level Advisory', icon: '&#127942;', meta: 'Strategy / Leadership / Finance', skills: [
-                'Agent Protocol', 'Board Deck Builder', 'Board Meeting', 'CEO Advisor', 'CFO Advisor',
-                'Change Management', 'Chief of Staff', 'CHRO Advisor', 'CISO Advisor', 'CMO Advisor',
-                'Company OS', 'Competitive Intel', 'Context Engine', 'COO Advisor', 'CPO Advisor', 'CRO Advisor',
-                'CS Onboard', 'CTO Advisor', 'Culture Architect', 'Decision Logger', 'Executive Mentor',
-                'Founder Coach', 'Internal Narrative', 'International Expansion', 'M&A Playbook',
-                'Org Health Diagnostic', 'Scenario War Room', 'Strategic Alignment'
+            { name: 'C-Level Advisory', tag: 'C-LVL', cat: 'c-level-advisor', meta: 'Strategy / Leadership / Finance', skills: [
+                { n: 'Agent Protocol', s: 'agent-protocol' }, { n: 'Board Deck Builder', s: 'board-deck-builder' },
+                { n: 'Board Meeting', s: 'board-meeting' }, { n: 'CEO Advisor', s: 'ceo-advisor' },
+                { n: 'CFO Advisor', s: 'cfo-advisor' }, { n: 'Change Management', s: 'change-management' },
+                { n: 'Chief of Staff', s: 'chief-of-staff' }, { n: 'CHRO Advisor', s: 'chro-advisor' },
+                { n: 'CISO Advisor', s: 'ciso-advisor' }, { n: 'CMO Advisor', s: 'cmo-advisor' },
+                { n: 'Company OS', s: 'company-os' }, { n: 'Competitive Intel', s: 'competitive-intel' },
+                { n: 'Context Engine', s: 'context-engine' }, { n: 'COO Advisor', s: 'coo-advisor' },
+                { n: 'CPO Advisor', s: 'cpo-advisor' }, { n: 'CRO Advisor', s: 'cro-advisor' },
+                { n: 'CS Onboard', s: 'cs-onboard' }, { n: 'CTO Advisor', s: 'cto-advisor' },
+                { n: 'Culture Architect', s: 'culture-architect' }, { n: 'Decision Logger', s: 'decision-logger' },
+                { n: 'Executive Mentor', s: 'executive-mentor' }, { n: 'Founder Coach', s: 'founder-coach' },
+                { n: 'Internal Narrative', s: 'internal-narrative' }, { n: 'International Expansion', s: 'intl-expansion' },
+                { n: 'M&A Playbook', s: 'ma-playbook' }, { n: 'Org Health Diagnostic', s: 'org-health-diagnostic' },
+                { n: 'Scenario War Room', s: 'scenario-war-room' }, { n: 'Strategic Alignment', s: 'strategic-alignment' }
             ]},
-            { name: 'Product Team', icon: '&#128203;', meta: 'Product / Research / Design', skills: [
-                'Agile Product Owner', 'Code to PRD', 'Competitive Teardown', 'Experiment Designer',
-                'Landing Page Generator', 'Product Analytics', 'Product Discovery', 'Product Manager Toolkit',
-                'Product Strategist', 'Research Summarizer', 'Roadmap Communicator', 'SaaS Scaffolder',
-                'UI Design System', 'UX Researcher Designer'
+            { name: 'Product Team', tag: 'PROD', cat: 'product-team', meta: 'Product / Research / Design', skills: [
+                { n: 'Agile Product Owner', s: 'agile-product-owner' }, { n: 'Code to PRD', s: 'code-to-prd' },
+                { n: 'Competitive Teardown', s: 'competitive-teardown' }, { n: 'Experiment Designer', s: 'experiment-designer' },
+                { n: 'Landing Page Generator', s: 'landing-page-generator' }, { n: 'Product Analytics', s: 'product-analytics' },
+                { n: 'Product Discovery', s: 'product-discovery' }, { n: 'Product Manager Toolkit', s: 'product-manager-toolkit' },
+                { n: 'Product Strategist', s: 'product-strategist' }, { n: 'Research Summarizer', s: 'research-summarizer' },
+                { n: 'Roadmap Communicator', s: 'roadmap-communicator' }, { n: 'SaaS Scaffolder', s: 'saas-scaffolder' },
+                { n: 'UI Design System', s: 'ui-design-system' }, { n: 'UX Researcher Designer', s: 'ux-researcher-designer' }
             ]},
-            { name: 'Project Management', icon: '&#128197;', meta: 'Agile / Scrum / Communication', skills: [
-                'Atlassian Admin', 'Atlassian Templates', 'Confluence Expert', 'Jira Expert',
-                'Meeting Analyzer', 'Scrum Master', 'Senior PM', 'Team Communications'
+            { name: 'Project Management', tag: 'PM', cat: 'project-management', meta: 'Agile / Scrum / Communication', skills: [
+                { n: 'Atlassian Admin', s: 'atlassian-admin' }, { n: 'Atlassian Templates', s: 'atlassian-templates' },
+                { n: 'Confluence Expert', s: 'confluence-expert' }, { n: 'Jira Expert', s: 'jira-expert' },
+                { n: 'Meeting Analyzer', s: 'meeting-analyzer' }, { n: 'Scrum Master', s: 'scrum-master' },
+                { n: 'Senior PM', s: 'senior-pm' }, { n: 'Team Communications', s: 'team-communications' }
             ]},
-            { name: 'Finance', icon: '&#128176;', meta: 'Investment / Metrics / Modeling', skills: [
-                'Business Investment Advisor', 'Financial Analyst', 'SaaS Metrics Coach'
+            { name: 'Finance', tag: 'FIN', cat: 'finance', meta: 'Investment / Metrics / Modeling', skills: [
+                { n: 'Business Investment Advisor', s: 'business-investment-advisor' },
+                { n: 'Financial Analyst', s: 'financial-analyst' }, { n: 'SaaS Metrics Coach', s: 'saas-metrics-coach' }
             ]},
-            { name: 'Business Growth', icon: '&#128200;', meta: 'Sales / Revenue / Proposals', skills: [
-                'Contract & Proposal Writer', 'Customer Success Manager', 'Revenue Operations', 'Sales Engineer'
+            { name: 'Business Growth', tag: 'BIZ', cat: 'business-growth', meta: 'Sales / Revenue / Proposals', skills: [
+                { n: 'Contract & Proposal Writer', s: 'contract-and-proposal-writer' },
+                { n: 'Customer Success Manager', s: 'customer-success-manager' },
+                { n: 'Revenue Operations', s: 'revenue-operations' }, { n: 'Sales Engineer', s: 'sales-engineer' }
             ]},
-            { name: 'Regulatory & QMS', icon: '&#128220;', meta: 'Compliance / Quality / Audit', skills: [
-                'CAPA Officer', 'FDA Consultant Specialist', 'GDPR/DSGVO Expert', 'Information Security Manager ISO 27001',
-                'ISMS Audit Expert', 'MDR 745 Specialist', 'QMS Audit Expert', 'Quality Documentation Manager',
-                'Quality Manager QMR', 'Quality Manager QMS ISO 13485', 'Regulatory Affairs Head',
-                'Risk Management Specialist', 'SOC2 Compliance'
+            { name: 'Regulatory & QMS', tag: 'QMS', cat: 'ra-qm-team', meta: 'Compliance / Quality / Audit', skills: [
+                { n: 'CAPA Officer', s: 'capa-officer' }, { n: 'FDA Consultant Specialist', s: 'fda-consultant-specialist' },
+                { n: 'GDPR/DSGVO Expert', s: 'gdpr-dsgvo-expert' }, { n: 'Info Security Manager ISO 27001', s: 'information-security-manager-iso27001' },
+                { n: 'ISMS Audit Expert', s: 'isms-audit-expert' }, { n: 'MDR 745 Specialist', s: 'mdr-745-specialist' },
+                { n: 'QMS Audit Expert', s: 'qms-audit-expert' }, { n: 'Quality Documentation Manager', s: 'quality-documentation-manager' },
+                { n: 'Quality Manager QMR', s: 'quality-manager-qmr' }, { n: 'Quality Manager QMS ISO 13485', s: 'quality-manager-qms-iso13485' },
+                { n: 'Regulatory Affairs Head', s: 'regulatory-affairs-head' }, { n: 'Risk Management Specialist', s: 'risk-management-specialist' },
+                { n: 'SOC2 Compliance', s: 'soc2-compliance' }
             ]}
         ];
 
+        // Skill modal logic
+        var modalOverlay = document.getElementById('skill-modal-overlay');
+        var modalTitle = document.getElementById('skill-modal-title');
+        var modalCategory = document.getElementById('skill-modal-category');
+        var modalBody = document.getElementById('skill-modal-body');
+        var modalClose = document.getElementById('skill-modal-close');
+
+        function openSkillModal(skillName, slug, categoryName) {
+            modalTitle.textContent = skillName;
+            modalCategory.textContent = categoryName;
+            modalBody.innerHTML = '<div class="skill-modal-loading">Loading skill...</div>';
+            modalOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            fetch('/api/skills/' + encodeURIComponent(slug))
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.content) {
+                        // Strip YAML frontmatter, show the body
+                        var body = data.content.replace(/^---[\s\S]*?---\n*/, '');
+                        modalBody.innerHTML = '<pre>' + body.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</pre>';
+                    } else {
+                        modalBody.innerHTML = '<div class="skill-modal-loading">Skill not found. Start the Nigents dashboard server to browse skill files.</div>';
+                    }
+                })
+                .catch(function() {
+                    modalBody.innerHTML = '<div class="skill-modal-loading">Could not load skill. Make sure the Nigents dashboard is running.</div>';
+                });
+        }
+
+        function closeSkillModal() {
+            modalOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        modalClose.addEventListener('click', closeSkillModal);
+        modalOverlay.addEventListener('click', function(e) {
+            if (e.target === modalOverlay) closeSkillModal();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeSkillModal();
+        });
+
+        // Render skill folders
         var browserEl = document.getElementById('skills-browser');
         skillsData.forEach(function(cat, i) {
             var folder = document.createElement('div');
             folder.className = 'skill-folder animate-on-scroll delay-' + Math.min(i + 1, 6);
+            var chips = cat.skills.map(function(sk) {
+                return '<span class="skill-chip" data-slug="' + sk.s + '" data-cat="' + cat.name + '" data-name="' + sk.n + '">' + sk.n + '</span>';
+            }).join('');
             folder.innerHTML =
                 '<div class="skill-folder-header" onclick="this.parentElement.classList.toggle(\'open\')">' +
-                    '<div class="skill-folder-icon">' + cat.icon + '</div>' +
+                    '<div class="skill-folder-icon">' + cat.tag + '</div>' +
                     '<div class="skill-folder-info">' +
                         '<div class="skill-folder-name">' + cat.name + '</div>' +
                         '<div class="skill-folder-meta">' + cat.meta + '</div>' +
@@ -1749,11 +1953,17 @@
                     '<div class="skill-folder-arrow">&#9660;</div>' +
                 '</div>' +
                 '<div class="skill-folder-body">' +
-                    '<div class="skill-folder-list">' +
-                        cat.skills.map(function(s) { return '<span class="skill-chip">' + s + '</span>'; }).join('') +
-                    '</div>' +
+                    '<div class="skill-folder-list">' + chips + '</div>' +
                 '</div>';
             browserEl.appendChild(folder);
+        });
+
+        // Delegate click on skill chips to open modal
+        browserEl.addEventListener('click', function(e) {
+            var chip = e.target.closest('.skill-chip');
+            if (!chip) return;
+            e.stopPropagation();
+            openSkillModal(chip.dataset.name, chip.dataset.slug, chip.dataset.cat);
         });
 
         // Re-observe dynamically created skill folders
