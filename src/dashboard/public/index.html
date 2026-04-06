@@ -2024,9 +2024,14 @@
             fetch('/skills/' + encodeURIComponent(slug) + '.md')
                 .then(function(r) {
                     if (!r.ok) throw new Error('not found');
+                    var ct = r.headers.get('content-type') || '';
+                    // Reject if server returned HTML (catch-all SPA route)
+                    if (ct.indexOf('html') !== -1) throw new Error('got html');
                     return r.text();
                 })
                 .then(function(md) {
+                    // Extra guard: if it starts with <!DOCTYPE or <html, it's not markdown
+                    if (md.trim().substring(0, 15).toLowerCase().indexOf('<!doctype') !== -1) throw new Error('got html');
                     modalBody.innerHTML = renderMarkdown(md);
                 })
                 .catch(function() {
@@ -2038,11 +2043,11 @@
                                 var body = data.content.replace(/^---[\s\S]*?---\n*/, '');
                                 modalBody.innerHTML = renderMarkdown(body);
                             } else {
-                                modalBody.innerHTML = '<div class="skill-modal-loading">Skill "' + skillName + '" not found.</div>';
+                                modalBody.innerHTML = '<div class="skill-modal-loading">Skill "' + skillName + '" could not be loaded.</div>';
                             }
                         })
                         .catch(function() {
-                            modalBody.innerHTML = '<div class="skill-modal-loading">Skill "' + skillName + '" not found.</div>';
+                            modalBody.innerHTML = '<div class="skill-modal-loading">Skill "' + skillName + '" could not be loaded.</div>';
                         });
                 });
         }

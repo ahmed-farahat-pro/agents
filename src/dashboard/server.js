@@ -96,7 +96,11 @@ app.get('/downloads/:file', (req, res, next) => {
   });
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.md')) res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+  }
+}));
 
 // CORS: allow any origin for public materials API (subscribe / download) – no auth required
 const materialsPublicPaths = ['/api/materials/subscribe', '/api/materials/download'];
@@ -3223,6 +3227,10 @@ app.get('*', (req, res) => {
   // Don't interfere with API routes
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ success: false, error: 'API endpoint not found' });
+  }
+  // Don't catch-all static asset requests — let them 404 naturally
+  if (/\.\w{1,5}$/.test(req.path) && !req.path.endsWith('.html')) {
+    return res.status(404).send('Not found');
   }
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
