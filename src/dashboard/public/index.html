@@ -10,29 +10,23 @@
     <style>
         :root {
             --bg-primary: #09080c;
-            --bg-secondary: #141116;
-            --bg-tertiary: #1a181f;
-            --bg-card: #111111;
-            --border: #2a2a35;
-            --text-primary: #ffffff;
-            --text-secondary: #a0a0a0;
-            --text-muted: #666666;
-            --accent-orange: #ff570a;
-            --accent-green: #19d59e;
-            --accent-purple: #8b5cf6;
+            --bg-secondary: #111014;
+            --bg-card: #0f0e13;
+            --border: #1e1c24;
+            --border-hover: #ff570a;
+            --text-primary: #f0f0f0;
+            --text-secondary: #8a8a9a;
+            --text-muted: #555560;
+            --accent: #ff570a;
+            --accent-glow: rgba(255, 87, 10, 0.15);
+            --green: #19d59e;
+            --purple: #8b5cf6;
             --font-mono: 'IBM Plex Mono', monospace;
             --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
 
         body {
             font-family: var(--font-mono);
@@ -43,23 +37,34 @@
             overflow-x: hidden;
         }
 
-        /* Background Grid Pattern */
+        /* Subtle grid background */
         body::before {
             content: '';
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image: 
-                linear-gradient(rgba(255, 87, 10, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 87, 10, 0.03) 1px, transparent 1px);
-            background-size: 60px 60px;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255, 87, 10, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 87, 10, 0.02) 1px, transparent 1px);
+            background-size: 80px 80px;
             pointer-events: none;
             z-index: 0;
         }
 
-        /* Navigation */
+        /* ── Scroll-reveal animations ── */
+        .reveal {
+            opacity: 0;
+            transform: translateY(32px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .reveal-delay-1 { transition-delay: 0.1s; }
+        .reveal-delay-2 { transition-delay: 0.2s; }
+        .reveal-delay-3 { transition-delay: 0.3s; }
+
+        /* ── Navigation ── */
         .nav {
             position: fixed;
             top: 0;
@@ -73,144 +78,73 @@
             background: linear-gradient(to bottom, var(--bg-primary) 0%, transparent 100%);
             transition: background 0.3s, backdrop-filter 0.3s, border-bottom 0.3s;
         }
-
         .nav-brand {
             display: flex;
             align-items: center;
             gap: 12px;
             text-decoration: none;
         }
-
         .nav-logo {
-            width: 40px;
-            height: 40px;
-            background: var(--accent-orange);
+            width: 36px;
+            height: 36px;
+            background: var(--accent);
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            font-size: 20px;
+            font-size: 18px;
             color: var(--bg-primary);
+            font-family: var(--font-sans);
         }
-
         .nav-title {
             font-family: var(--font-sans);
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 700;
             color: var(--text-primary);
             letter-spacing: -0.5px;
         }
-
         .nav-links {
             display: flex;
             align-items: center;
-            gap: 32px;
+            gap: 28px;
         }
-
         .nav-link {
             color: var(--text-secondary);
             text-decoration: none;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             transition: color 0.2s;
         }
-
-        .nav-link:hover {
-            color: var(--text-primary);
-        }
-
-        .soon-pill {
-            display: inline-block;
-            margin-left: 6px;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--bg-primary);
-            background: var(--accent-orange);
-            padding: 3px 9px;
-            border-radius: 999px;
-            vertical-align: middle;
-        }
-
+        .nav-link:hover { color: var(--text-primary); }
         .nav-cta {
-            padding: 10px 20px;
-            border: 1px solid var(--accent-orange);
-            color: var(--accent-orange);
+            padding: 8px 20px;
+            border: 1px solid var(--accent);
+            color: var(--accent);
             text-decoration: none;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             transition: all 0.2s;
         }
-
         .nav-cta:hover {
-            background: var(--accent-orange);
+            background: var(--accent);
             color: var(--bg-primary);
         }
-
-        /* Mobile menu (hamburger) */
         .nav-toggle {
             display: none;
-            width: 44px;
-            height: 44px;
+            width: 40px;
+            height: 40px;
             align-items: center;
             justify-content: center;
-            margin-left: auto;
-            background: rgba(255, 255, 255, 0.06);
+            background: transparent;
             border: 1px solid var(--border);
-            border-radius: 10px;
+            border-radius: 8px;
             color: var(--text-primary);
             cursor: pointer;
-            flex-shrink: 0;
-            -webkit-tap-highlight-color: transparent;
+            font-size: 20px;
         }
 
-        .nav-toggle:focus-visible {
-            outline: 2px solid var(--accent-orange);
-            outline-offset: 2px;
-        }
-
-        .nav-toggle-icon-open,
-        .nav-toggle-icon-close {
-            font-size: 22px;
-            line-height: 1;
-            font-weight: 600;
-        }
-
-        .nav-toggle-icon-close {
-            display: none;
-            font-size: 28px;
-        }
-
-        body.nav-open .nav-toggle-icon-open {
-            display: none;
-        }
-
-        body.nav-open .nav-toggle-icon-close {
-            display: block;
-        }
-
-        .nav-backdrop {
-            display: none;
-            position: fixed;
-            inset: 0;
-            top: 0;
-            background: rgba(0, 0, 0, 0.55);
-            z-index: 998;
-            backdrop-filter: blur(2px);
-        }
-
-        body.nav-open .nav-backdrop {
-            display: block;
-        }
-
-        body.nav-open {
-            overflow: hidden;
-            touch-action: none;
-        }
-
-        /* Hero Section */
+        /* ── Hero ── */
         .hero {
             min-height: 100vh;
             display: flex;
@@ -223,46 +157,42 @@
             max-width: 1400px;
             margin: 0 auto;
         }
-
         .hero-content {
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: center;
         }
-
         .hero-visual {
             flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-width: 0;
         }
-
         .hero-badge {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             padding: 8px 16px;
-            background: rgba(255, 87, 10, 0.1);
-            border: 1px solid rgba(255, 87, 10, 0.3);
-            color: var(--accent-orange);
-            font-size: 13px;
-            font-weight: 500;
+            background: var(--accent-glow);
+            border: 1px solid rgba(255, 87, 10, 0.25);
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
             margin-bottom: 32px;
+            width: fit-content;
         }
-
         .hero-badge-dot {
             width: 8px;
             height: 8px;
-            background: var(--accent-green);
+            background: var(--green);
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
-
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(25, 213, 158, 0.4); }
+            50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(25, 213, 158, 0); }
         }
 
         /* Scroll Animations */
@@ -350,47 +280,44 @@
 
         .hero-title {
             font-family: var(--font-sans);
-            font-size: 64px;
-            font-weight: 500;
-            line-height: 1.1;
-            max-width: 900px;
+            font-size: 60px;
+            font-weight: 600;
+            line-height: 1.08;
+            max-width: 700px;
             margin-bottom: 24px;
             letter-spacing: -2px;
         }
-
         .hero-title span {
-            color: var(--accent-orange);
+            background: linear-gradient(135deg, var(--accent) 0%, #ff8a4c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-
         .hero-subtitle {
-            font-size: 18px;
+            font-size: 16px;
             color: var(--text-secondary);
-            max-width: 600px;
+            max-width: 520px;
             margin-bottom: 40px;
-            line-height: 1.6;
+            line-height: 1.7;
         }
-
         .hero-actions {
             display: flex;
             gap: 16px;
             flex-wrap: wrap;
-            justify-content: center;
         }
-
         .btn {
             display: inline-flex;
             align-items: center;
             gap: 8px;
             padding: 14px 28px;
             font-family: var(--font-mono);
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             text-decoration: none;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.25s;
             border: none;
         }
-
         .btn-primary {
             background: transparent;
             border: 1px solid var(--accent-orange);
@@ -424,43 +351,46 @@
             transform: translateY(-2px);
             box-shadow: 0 8px 25px -8px rgba(255, 87, 10, 0.4);
         }
-
+        .btn-primary:hover {
+            background: #ff7033;
+            box-shadow: 0 0 30px rgba(255, 87, 10, 0.3);
+        }
         .btn-secondary {
             background: transparent;
             border: 1px solid var(--border);
             color: var(--text-secondary);
         }
-
         .btn-secondary:hover {
             border-color: var(--text-primary);
             color: var(--text-primary);
         }
-
         .hero-meta {
             margin-top: 48px;
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 24px;
             color: var(--text-muted);
-            font-size: 13px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
-
-        .hero-meta-icons {
+        .hero-meta-item {
             display: flex;
-            gap: 12px;
             align-items: center;
+            gap: 8px;
+        }
+        .hero-meta-dot {
+            width: 4px;
+            height: 4px;
+            background: var(--accent);
+            border-radius: 50%;
         }
 
-        .hero-meta-icon {
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        /* Code Window */
-        .code-window {
+        /* ── Terminal Window ── */
+        .terminal {
             width: 100%;
-            max-width: 600px;
-            background: #0d0c0f;
+            max-width: 560px;
+            background: #0a090d;
             border: 1px solid var(--border);
             border-radius: 12px;
             overflow: hidden;
@@ -478,227 +408,78 @@
                 0 0 120px -20px rgba(255, 87, 10, 0.15);
             transform: translateY(-4px);
         }
-
-        .code-header {
+        .terminal-bar {
             display: flex;
             align-items: center;
-            padding: 12px 16px;
+            padding: 14px 16px;
             background: var(--bg-secondary);
             border-bottom: 1px solid var(--border);
-        }
-
-        .code-dots {
-            display: flex;
             gap: 8px;
-            margin-right: 16px;
         }
-
-        .code-dot {
-            width: 12px;
-            height: 12px;
+        .terminal-dot {
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
         }
-
-        .code-dot.red { background: #ff5f56; }
-        .code-dot.yellow { background: #ffbd2e; }
-        .code-dot.green { background: #27c93f; }
-
-        .code-tabs {
-            display: flex;
-            gap: 4px;
-        }
-
-        .code-tab {
-            padding: 6px 16px;
+        .terminal-dot-r { background: #ff5f56; }
+        .terminal-dot-y { background: #ffbd2e; }
+        .terminal-dot-g { background: #27c93f; }
+        .terminal-filename {
+            margin-left: 12px;
             font-size: 12px;
-            font-family: var(--font-mono);
             color: var(--text-muted);
-            background: transparent;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
         }
-
-        .code-tab.active {
-            color: var(--text-primary);
-            background: #0d0c0f;
-        }
-
-        .code-status {
-            margin-left: auto;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 11px;
-            font-family: var(--font-mono);
-            color: var(--accent-green);
-        }
-
-        .status-dot {
-            width: 6px;
-            height: 6px;
-            background: var(--accent-green);
-            border-radius: 50%;
-            animation: blink 1s ease-in-out infinite;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-
-        .code-content {
-            padding: 24px;
-            font-family: var(--font-mono);
+        .terminal-body {
+            padding: 20px;
             font-size: 13px;
-            line-height: 1.7;
-            min-height: 160px;
-            max-height: 200px;
-            overflow: hidden;
-            position: relative;
+            line-height: 1.9;
+            min-height: 220px;
         }
-
-        .agent-indicator {
+        .t-line {
             display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            padding: 12px 16px;
-            background: rgba(255, 87, 10, 0.08);
-            border: 1px solid rgba(255, 87, 10, 0.2);
-            border-radius: 8px;
+            gap: 16px;
         }
-
-        .agent-avatar-small {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, var(--accent-orange) 0%, #ff8a4c 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: var(--font-mono);
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--bg-primary);
-        }
-
-        .agent-info-small {
-            flex: 1;
-        }
-
-        .agent-name-small {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .agent-action-small {
-            font-size: 11px;
+        .t-num {
             color: var(--text-muted);
-            margin-top: 2px;
-        }
-
-        .typing-indicator {
-            display: flex;
-            gap: 4px;
-            padding: 4px 8px;
-            background: var(--bg-card);
-            border-radius: 4px;
-        }
-
-        .typing-indicator span {
-            width: 4px;
-            height: 4px;
-            background: var(--accent-orange);
-            border-radius: 50%;
-            animation: typing 1.4s ease-in-out infinite;
-        }
-
-        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes typing {
-            0%, 60%, 100% { transform: translateY(0); }
-            30% { transform: translateY(-4px); }
-        }
-
-        .code-area {
-            color: var(--text-primary);
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-
-        .code-line {
-            display: flex;
-            counter-increment: line;
-        }
-
-        .line-number {
-            width: 40px;
-            color: var(--text-muted);
+            min-width: 20px;
             text-align: right;
-            padding-right: 16px;
             user-select: none;
-            flex-shrink: 0;
         }
-
-        .line-content {
-            flex: 1;
-            color: #e2e2e2;
-        }
-
-        .cursor {
+        .t-txt { color: #c8c8d0; }
+        .t-kw { color: var(--accent); }
+        .t-fn { color: var(--purple); }
+        .t-str { color: var(--green); }
+        .t-cmt { color: #4a4a58; font-style: italic; }
+        .t-cursor {
             display: inline-block;
             width: 8px;
-            height: 18px;
-            background: var(--accent-orange);
-            animation: cursor-blink 1s step-end infinite;
+            height: 16px;
+            background: var(--accent);
+            animation: blink 1s step-end infinite;
             vertical-align: middle;
             margin-left: 2px;
         }
-
-        @keyframes cursor-blink {
+        @keyframes blink {
             0%, 50% { opacity: 1; }
             51%, 100% { opacity: 0; }
         }
 
-        /* Syntax Highlighting */
-        .keyword { color: #ff7b72; }
-        .string { color: #a5d6ff; }
-        .function { color: #d2a8ff; }
-        .comment { color: #8b949e; font-style: italic; }
-        .number { color: #79c0ff; }
-        .operator { color: #ff7b72; }
-        .variable { color: #ffa657; }
-        .property { color: #7ee787; }
-
-        /* Stats Section */
+        /* ── Stats ── */
         .stats {
-            padding: 80px 40px;
+            padding: 64px 40px;
             border-top: 1px solid var(--border);
             border-bottom: 1px solid var(--border);
             position: relative;
             z-index: 1;
         }
-
         .stats-grid {
             max-width: 1200px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
             gap: 40px;
             text-align: center;
         }
-
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-
         .stat-value {
             font-family: var(--font-sans);
             font-size: clamp(32px, 5vw, 48px);
@@ -711,65 +492,56 @@
             color: var(--accent-orange);
             transform: scale(1.1);
         }
-
+        .stat-value .accent { color: var(--accent); }
         .stat-label {
-            font-size: 14px;
-            color: var(--text-secondary);
+            font-size: 12px;
+            color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.1em;
         }
 
-        /* Features Section */
+        /* ── Section shared ── */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .section-header {
+            text-align: center;
+            margin-bottom: 72px;
+        }
+        .section-tag {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+        .section-title {
+            font-family: var(--font-sans);
+            font-size: 44px;
+            font-weight: 600;
+            letter-spacing: -1.5px;
+            margin-bottom: 16px;
+        }
+        .section-subtitle {
+            font-size: 15px;
+            color: var(--text-secondary);
+            max-width: 560px;
+            margin: 0 auto;
+        }
+
+        /* ── Features ── */
         .features {
             padding: 120px 40px;
             position: relative;
             z-index: 1;
         }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 64px;
-        }
-
-        .section-label {
-            display: inline-block;
-            padding: 6px 12px;
-            background: rgba(255, 87, 10, 0.1);
-            border: 1px solid rgba(255, 87, 10, 0.3);
-            color: var(--accent-orange);
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 16px;
-        }
-
-        .section-title {
-            font-family: var(--font-sans);
-            font-size: 40px;
-            font-weight: 500;
-            margin-bottom: 16px;
-            letter-spacing: -1px;
-        }
-
-        .section-subtitle {
-            font-size: 16px;
-            color: var(--text-secondary);
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
         }
-
         .feature-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
@@ -778,7 +550,6 @@
             transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             will-change: transform;
         }
-
         .feature-card:hover {
             border-color: rgba(255, 87, 10, 0.5);
             transform: translateY(-6px);
@@ -795,36 +566,33 @@
             transform: scale(1.1) rotate(-3deg);
             background: rgba(255, 87, 10, 0.2);
         }
-
-        .feature-icon {
-            width: 48px;
-            height: 48px;
-            background: rgba(255, 87, 10, 0.1);
-            border: 1px solid rgba(255, 87, 10, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: var(--font-mono);
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--accent-orange);
-            margin-bottom: 20px;
+        .feature-card:hover::before {
+            opacity: 1;
         }
-
+        .feature-tag {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+        .feature-tag.new {
+            color: var(--green);
+        }
         .feature-title {
             font-family: var(--font-sans);
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 600;
             margin-bottom: 12px;
         }
-
         .feature-desc {
-            font-size: 14px;
+            font-size: 13px;
             color: var(--text-secondary);
-            line-height: 1.6;
+            line-height: 1.7;
         }
 
-        /* Agents Section */
+        /* ── Agents ── */
         .agents {
             padding: 120px 40px;
             background: var(--bg-secondary);
@@ -833,15 +601,13 @@
             position: relative;
             z-index: 1;
         }
-
         .agents-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(5, 1fr);
             gap: 16px;
         }
-
         .agent-card {
-            background: var(--bg-card);
+            background: var(--bg-primary);
             border: 1px solid var(--border);
             padding: 24px;
             border-radius: 8px;
@@ -851,7 +617,6 @@
             transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             will-change: transform;
         }
-
         .agent-card:hover {
             border-color: var(--accent-orange);
             transform: translateY(-4px) scale(1.02);
@@ -866,122 +631,169 @@
             transform: scale(1.1);
             animation: glowPulse 2s infinite;
         }
-
-        .agent-avatar {
-            width: 48px;
-            height: 48px;
-            background: var(--accent-orange);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: var(--font-mono);
-            font-size: 14px;
+        .agent-card.new-agent::after {
+            content: 'NEW';
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 9px;
             font-weight: 700;
+            letter-spacing: 0.1em;
             color: var(--bg-primary);
-            flex-shrink: 0;
+            background: var(--green);
+            padding: 2px 6px;
+            border-radius: 3px;
         }
-
-        .agent-info {
-            flex: 1;
+        .agent-code {
+            font-family: var(--font-mono);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 14px;
+            letter-spacing: 2px;
         }
-
         .agent-name {
             font-family: var(--font-sans);
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
+        }
+        .agent-role {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
         }
 
-        .agent-role {
-            font-size: 13px;
-            color: var(--text-secondary);
+        /* ── Enhancements / What We Built ── */
+        .enhancements {
+            padding: 120px 40px;
+            position: relative;
+            z-index: 1;
+        }
+        .enhancements-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        .enhancement-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 32px;
+            display: flex;
+            gap: 20px;
+            transition: all 0.3s ease;
+        }
+        .enhancement-card:hover {
+            border-color: rgba(255, 87, 10, 0.3);
+        }
+        .enhancement-num {
+            font-family: var(--font-sans);
+            font-size: 36px;
+            font-weight: 700;
+            color: rgba(255, 87, 10, 0.2);
+            line-height: 1;
+            min-width: 48px;
+        }
+        .enhancement-body { flex: 1; }
+        .enhancement-title {
+            font-family: var(--font-sans);
+            font-size: 17px;
+            font-weight: 600;
             margin-bottom: 8px;
         }
-
-        .agent-model {
-            display: inline-block;
-            padding: 4px 8px;
-            background: rgba(255, 87, 10, 0.1);
-            color: var(--accent-orange);
+        .enhancement-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+        .enhancement-meta {
+            margin-top: 12px;
             font-size: 11px;
-            font-weight: 600;
+            color: var(--text-muted);
             text-transform: uppercase;
+            letter-spacing: 0.08em;
         }
 
-        /* CTA Section */
+        /* ── Architecture diagram ── */
+        .architecture {
+            padding: 120px 40px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            position: relative;
+            z-index: 1;
+        }
+        .arch-diagram {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 40px;
+            font-size: 13px;
+            line-height: 2;
+            color: var(--text-secondary);
+            overflow-x: auto;
+        }
+        .arch-diagram pre {
+            font-family: var(--font-mono);
+            white-space: pre;
+        }
+        .arch-highlight { color: var(--accent); font-weight: 600; }
+        .arch-green { color: var(--green); }
+        .arch-purple { color: var(--purple); }
+
+        /* ── CTA ── */
         .cta {
             padding: 120px 40px;
             text-align: center;
             position: relative;
             z-index: 1;
         }
-
         .cta-title {
             font-family: var(--font-sans);
-            font-size: 48px;
-            font-weight: 500;
+            font-size: 44px;
+            font-weight: 600;
+            letter-spacing: -1.5px;
             margin-bottom: 16px;
-            letter-spacing: -1px;
         }
-
         .cta-subtitle {
-            font-size: 16px;
+            font-size: 15px;
             color: var(--text-secondary);
-            margin-bottom: 32px;
+            margin-bottom: 40px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
-        /* Footer */
+        /* ── Footer ── */
         .footer {
-            padding: 60px 40px;
+            padding: 32px 40px;
             border-top: 1px solid var(--border);
-            position: relative;
-            z-index: 1;
-        }
-
-        .footer-content {
-            max-width: 1200px;
-            margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 24px;
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
         }
-
-        .footer-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .footer-logo {
-            width: 32px;
-            height: 32px;
-            background: var(--accent-orange);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--bg-primary);
-        }
-
         .footer-text {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-muted);
         }
-
         .footer-links {
             display: flex;
             gap: 24px;
         }
-
         .footer-link {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-muted);
             text-decoration: none;
             transition: color 0.2s;
         }
+        .footer-link:hover { color: var(--accent); }
 
         .footer-link:hover {
             color: var(--accent-orange);
@@ -1004,11 +816,6 @@
         @media (max-width: 1024px) {
             .hero {
                 flex-direction: column;
-                gap: 40px;
-                padding-top: 100px;
-            }
-
-            .hero-content {
                 text-align: center;
                 align-items: center;
                 animation: fadeInUp 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s both;
@@ -1019,25 +826,23 @@
                 max-width: 600px;
                 animation: fadeInUp 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s both;
             }
+            .hero-content { align-items: center; }
+            .hero-subtitle { margin-left: auto; margin-right: auto; }
+            .hero-actions { justify-content: center; }
+            .hero-meta { justify-content: center; }
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
+            .agents-grid { grid-template-columns: repeat(3, 1fr); }
+            .enhancements-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
         }
-
-        @media (max-width: 900px) {
-            .nav-toggle {
-                display: flex;
-            }
-
+        @media (max-width: 768px) {
+            .nav { padding: 16px 20px; }
+            .nav-toggle { display: flex; }
             .nav-links {
                 display: none;
                 position: fixed;
-                left: 0;
-                right: 0;
-                top: 0;
-                margin-top: 72px;
-                padding: 12px 20px 24px;
-                padding-bottom: max(24px, env(safe-area-inset-bottom));
-                flex-direction: column;
-                align-items: stretch;
-                gap: 0;
+                inset: 0;
+                top: 72px;
                 background: var(--bg-primary);
                 border-bottom: 1px solid var(--border);
                 box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
@@ -1220,107 +1025,103 @@
             .agent-card:hover {
                 transform: none;
             }
+            .nav-links.active { display: flex; }
+            .hero { padding: 100px 20px 60px; }
+            .hero-title { font-size: 36px; letter-spacing: -1px; }
+            .terminal { display: none; }
+            .features, .agents, .enhancements, .architecture, .cta { padding: 80px 20px; }
+            .section-title, .cta-title { font-size: 28px; }
+            .features-grid, .agents-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+            .stat-value { font-size: 36px; }
+            .footer { flex-direction: column; gap: 16px; text-align: center; padding: 24px 20px; }
+            .arch-diagram { padding: 20px; font-size: 11px; }
         }
     </style>
 </head>
 <body>
     <!-- Navigation -->
     <nav class="nav">
-        <a href="/" class="nav-brand">
+        <a href="index.html" class="nav-brand">
             <div class="nav-logo">N</div>
             <span class="nav-title">Nigents</span>
         </a>
-        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
-            <span class="nav-toggle-icon-open" aria-hidden="true">☰</span>
-            <span class="nav-toggle-icon-close" aria-hidden="true">×</span>
-        </button>
-        <div class="nav-links" id="nav-links" role="navigation" aria-label="Main">
+        <div class="nav-links" id="nav-links">
             <a href="#features" class="nav-link">Features</a>
             <a href="#agents" class="nav-link">Agents</a>
-            <a href="/how-it-works.html" class="nav-link">How it works</a>
-            <a href="/materials.html" class="nav-link">Free Materials</a>
-            <a href="/crazy-apps.html" class="nav-link">Crazy apps</a>
-            <a href="/opencode-kits.html" class="nav-link">OpenCode kits <span class="soon-pill">Soon</span></a>
-            <a href="/bonyad/" class="nav-link">Bonyad</a>
-            <a href="/login.html" class="nav-cta">Login →</a>
+            <a href="#enhancements" class="nav-link">What's New</a>
+            <a href="how-it-works.html" class="nav-link">How it Works</a>
+            <a href="https://gitlab.com/bonyad-tech/nigents" class="nav-link" target="_blank">GitLab</a>
+            <a href="#get-started" class="nav-cta">Get Started</a>
         </div>
+        <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+            <span id="toggle-icon">&#9776;</span>
+        </button>
     </nav>
-    <div class="nav-backdrop" id="nav-backdrop" aria-hidden="true" hidden></div>
 
-    <!-- Hero Section -->
+    <!-- Hero -->
     <section class="hero">
-        <div class="hero-content">
+        <div class="hero-content reveal">
             <div class="hero-badge">
-                <div class="hero-badge-dot"></div>
-                <span>System Online</span>
+                <span class="hero-badge-dot"></span>
+                System Online — 10 Agents Active
             </div>
             <h1 class="hero-title">
                 Ship code overnight.<br>
                 <span>Wake up to merge requests.</span>
             </h1>
             <p class="hero-subtitle">
-                7 AI agents working together to plan, code, test, and review — 
-                while you sleep. Integrated with GitLab.
+                10 specialized AI agents that plan, code, test, review, and secure your GitLab projects.
+                With self-healing workflows, parallel execution, and cross-task memory.
             </p>
             <div class="hero-actions">
-                <a href="/login.html" class="btn btn-primary">Get Started →</a>
-                <a href="#features" class="btn btn-secondary">See How It Works</a>
+                <a href="#get-started" class="btn btn-primary">Get Started</a>
+                <a href="#features" class="btn btn-secondary">See Features</a>
             </div>
             <div class="hero-meta">
-                <span>Works with</span>
-                <div class="hero-meta-icons">
+                <div class="hero-meta-item">
+                    <span class="hero-meta-dot"></span>
                     <span>GitLab</span>
-                    <span>•</span>
+                </div>
+                <div class="hero-meta-item">
+                    <span class="hero-meta-dot"></span>
                     <span>Telegram</span>
+                </div>
+                <div class="hero-meta-item">
+                    <span class="hero-meta-dot"></span>
+                    <span>MCP Tools</span>
                 </div>
             </div>
         </div>
-        
-        <div class="hero-visual">
-            <div class="code-window">
-                <div class="code-header">
-                    <div class="code-dots">
-                        <div class="code-dot red"></div>
-                        <div class="code-dot yellow"></div>
-                        <div class="code-dot green"></div>
-                    </div>
-                    <div class="code-tabs">
-                        <button class="code-tab active">AuthService.ts</button>
-                        <button class="code-tab">Login.tsx</button>
-                    </div>
-                    <div class="code-status">
-                        <span class="status-dot"></span>
-                        backend-dev writing...
-                    </div>
+
+        <div class="hero-visual reveal reveal-delay-2">
+            <div class="terminal">
+                <div class="terminal-bar">
+                    <div class="terminal-dot terminal-dot-r"></div>
+                    <div class="terminal-dot terminal-dot-y"></div>
+                    <div class="terminal-dot terminal-dot-g"></div>
+                    <span class="terminal-filename">nigents workflow</span>
                 </div>
-                
-                <div class="code-content">
-                    <div class="agent-indicator">
-                        <div class="agent-avatar-small">BE</div>
-                        <div class="agent-info-small">
-                            <div class="agent-name-small">backend-dev</div>
-                            <div class="agent-action-small">Implementing user authentication</div>
-                        </div>
-                        <div class="typing-indicator">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
-                    </div>
-                    
-                    <div class="code-area" id="code-area">
-                        <div class="code-line">
-                            <span class="line-number">1</span>
-                            <span class="line-content" id="line-1"></span><span class="cursor"></span>
-                        </div>
-                    </div>
+                <div class="terminal-body" id="terminal-body">
+                    <div class="t-line"><span class="t-num">1</span><span class="t-txt"><span class="t-cmt">// Agent workflow — live</span></span></div>
+                    <div class="t-line"><span class="t-num">2</span><span class="t-txt"></span></div>
+                    <div class="t-line"><span class="t-num">3</span><span class="t-txt"><span class="t-kw">task</span>: <span class="t-str">"Add user authentication"</span></span></div>
+                    <div class="t-line"><span class="t-num">4</span><span class="t-txt"></span></div>
+                    <div class="t-line"><span class="t-num">5</span><span class="t-txt"><span class="t-fn">Orchestrator</span>  <span class="t-cmt">routing...</span></span></div>
+                    <div class="t-line"><span class="t-num">6</span><span class="t-txt"><span class="t-fn">Planner</span>      <span class="t-cmt">planning...</span></span></div>
+                    <div class="t-line"><span class="t-num">7</span><span class="t-txt"><span class="t-fn">BackendDev</span>   <span class="t-str">implementing</span></span></div>
+                    <div class="t-line"><span class="t-num">8</span><span class="t-txt"><span class="t-fn">FrontendDev</span>  <span class="t-str">implementing</span>  <span class="t-kw">// parallel</span></span></div>
+                    <div class="t-line"><span class="t-num">9</span><span class="t-txt"><span class="t-fn">Security</span>     <span class="t-str">scanning</span></span></div>
+                    <div class="t-line"><span class="t-num">10</span><span class="t-txt"><span class="t-fn">CodeReviewer</span> <span class="t-str">reviewing</span></span></div>
+                    <div class="t-line"><span class="t-num">11</span><span class="t-txt"></span></div>
+                    <div class="t-line"><span class="t-num">12</span><span class="t-txt"><span class="t-kw">status</span>: <span class="t-str">MR created</span><span class="t-cursor"></span></span></div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Stats Section -->
-    <section class="stats">
+    <!-- Stats -->
+    <section class="stats reveal">
         <div class="stats-grid">
             <div class="stat-item animate-on-scroll delay-1">
                 <div class="stat-value">7</div>
@@ -1341,13 +1142,13 @@
         </div>
     </section>
 
-    <!-- Features Section -->
+    <!-- Features -->
     <section class="features" id="features">
         <div class="container">
-            <div class="section-header">
-                <div class="section-label">Features</div>
-                <h2 class="section-title">Everything you need to ship faster</h2>
-                <p class="section-subtitle">A complete AI development team that works while you sleep</p>
+            <div class="section-header reveal">
+                <p class="section-tag">Capabilities</p>
+                <h2 class="section-title">Everything You Need to Ship Faster</h2>
+                <p class="section-subtitle">A complete AI development team with self-healing, parallel execution, and intelligent cost optimization.</p>
             </div>
             <div class="features-grid">
                 <div class="feature-card animate-on-scroll delay-1">
@@ -1363,7 +1164,7 @@
                 <div class="feature-card animate-on-scroll delay-3">
                     <div class="feature-icon">MR</div>
                     <h3 class="feature-title">GitLab Integration</h3>
-                    <p class="feature-desc">Automatic branch creation, commits, and merge requests. Works seamlessly with your existing workflow.</p>
+                    <p class="feature-desc">Automatic branch creation, commits, and merge requests. Pipeline monitoring and deployment readiness checks built in.</p>
                 </div>
                 <div class="feature-card animate-on-scroll delay-4">
                     <div class="feature-icon">AI</div>
@@ -1384,13 +1185,13 @@
         </div>
     </section>
 
-    <!-- Agents Section -->
+    <!-- Agents -->
     <section class="agents" id="agents">
         <div class="container">
-            <div class="section-header">
-                <div class="section-label">The Team</div>
-                <h2 class="section-title">7 Specialized Agents</h2>
-                <p class="section-subtitle">Each agent has a unique role and expertise</p>
+            <div class="section-header reveal">
+                <p class="section-tag">The Team</p>
+                <h2 class="section-title">10 Specialized Agents</h2>
+                <p class="section-subtitle">Each agent has a unique role. They communicate via pub/sub bus, share memory across tasks, and execute in parallel.</p>
             </div>
             <div class="agents-grid">
                 <div class="agent-card animate-on-scroll delay-1">
@@ -1453,8 +1254,8 @@
         </div>
     </section>
 
-    <!-- CTA Section -->
-    <section class="cta">
+    <!-- Architecture -->
+    <section class="architecture">
         <div class="container">
             <h2 class="cta-title animate-on-scroll">Ready to ship overnight?</h2>
             <p class="cta-subtitle animate-on-scroll delay-1">Start using Nigents today and wake up to finished features.</p>
@@ -1462,186 +1263,108 @@
         </div>
     </section>
 
+    <!-- CTA -->
+    <section class="cta reveal" id="get-started">
+        <h2 class="cta-title">Ready to Ship Overnight?</h2>
+        <p class="cta-subtitle">Connect your GitLab and let 10 agents handle the rest.</p>
+        <a href="https://gitlab.com/bonyad-tech/nigents" class="btn btn-primary" target="_blank">View on GitLab</a>
+    </section>
+
     <!-- Footer -->
     <footer class="footer">
-        <div class="footer-content">
-            <div class="footer-brand">
-                <div class="footer-logo">N</div>
-                <span class="footer-text">© 2025 Nigents. All rights reserved.</span>
-            </div>
-            <div class="footer-links">
-                <a href="https://gitlab.com/bonyad-tech/nigents" class="footer-link" target="_blank">GitLab</a>
-                <a href="/login.html" class="footer-link">Login</a>
-            </div>
+        <span class="footer-text">2025 Nigents. AI-Powered Development for GitLab.</span>
+        <div class="footer-links">
+            <a href="https://gitlab.com/bonyad-tech/nigents" class="footer-link" target="_blank">GitLab</a>
+            <a href="how-it-works.html" class="footer-link">How it Works</a>
         </div>
     </footer>
 
     <script>
-        (function () {
-            var toggle = document.getElementById('nav-toggle');
-            var backdrop = document.getElementById('nav-backdrop');
-            if (!toggle || !backdrop) return;
-            function setOpen(open) {
-                document.body.classList.toggle('nav-open', open);
-                backdrop.hidden = !open;
-                backdrop.setAttribute('aria-hidden', open ? 'false' : 'true');
-                toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-                toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
-            }
-            toggle.addEventListener('click', function () {
-                setOpen(!document.body.classList.contains('nav-open'));
+        // Mobile nav toggle
+        const toggle = document.getElementById('nav-toggle');
+        const links = document.getElementById('nav-links');
+        const icon = document.getElementById('toggle-icon');
+        toggle.addEventListener('click', () => {
+            const open = links.classList.toggle('active');
+            icon.innerHTML = open ? '&times;' : '&#9776;';
+            toggle.setAttribute('aria-expanded', open);
+        });
+        links.querySelectorAll('a').forEach(a => {
+            a.addEventListener('click', () => {
+                links.classList.remove('active');
+                icon.innerHTML = '&#9776;';
+                toggle.setAttribute('aria-expanded', 'false');
             });
-            backdrop.addEventListener('click', function () { setOpen(false); });
-            document.querySelectorAll('#nav-links a').forEach(function (a) {
-                a.addEventListener('click', function () { setOpen(false); });
-            });
-            window.addEventListener('resize', function () {
-                if (window.innerWidth > 900) setOpen(false);
-            });
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape') setOpen(false);
-            });
-        })();
+        });
 
-        // Code Streaming Animation
-        const codeSnippets = [
-            {
-                agent: 'backend-dev',
-                action: 'Implementing user authentication service',
-                file: 'AuthService.ts',
-                code: `<span class="keyword">import</span> { <span class="variable">Injectable</span>, <span class="variable">UnauthorizedException</span> } <span class="keyword">from</span> <span class="string">'@nestjs/common'</span>;
-<span class="keyword">import</span> { <span class="variable">JwtService</span> } <span class="keyword">from</span> <span class="string">'@nestjs/jwt'</span>;
-<span class="keyword">import</span> * <span class="keyword">as</span> <span class="variable">bcrypt</span> <span class="keyword">from</span> <span class="string">'bcrypt'</span>;
-
-<span class="keyword">@Injectable</span>()
-<span class="keyword">export class</span> <span class="function">AuthService</span> {
-  <span class="keyword">constructor</span>(
-    <span class="keyword">private</span> <span class="variable">jwtService</span>: <span class="variable">JwtService</span>,
-  ) {}
-
-  <span class="keyword">async</span> <span class="function">validateUser</span>(<span class="variable">email</span>: <span class="variable">string</span>, <span class="variable">pass</span>: <span class="variable">string</span>) {
-    <span class="keyword">const</span> <span class="variable">user</span> = <span class="keyword">await</span> <span class="keyword">this</span>.<span class="property">usersService</span>.<span class="function">findOne</span>(<span class="variable">email</span>);
-    <span class="keyword">if</span> (<span class="variable">user</span> && <span class="variable">user</span>.<span class="property">password</span> === <span class="variable">pass</span>) {
-      <span class="keyword">return</span> <span class="variable">user</span>;
-    }
-    <span class="keyword">return null</span>;
-  }
-}`
-            },
-            {
-                agent: 'frontend-dev',
-                action: 'Creating login form component',
-                file: 'Login.tsx',
-                code: `<span class="keyword">import</span> { <span class="variable">useState</span> } <span class="keyword">from</span> <span class="string">'react'</span>;
-<span class="keyword">import</span> { <span class="variable">useAuth</span> } <span class="keyword">from</span> <span class="string">'@/hooks/useAuth'</span>;
-
-<span class="keyword">export function</span> <span class="function">LoginForm</span>() {
-  <span class="keyword">const</span> [<span class="variable">email</span>, <span class="function">setEmail</span>] = <span class="function">useState</span>(<span class="string">''</span>);
-  <span class="keyword">const</span> [<span class="variable">password</span>, <span class="function">setPassword</span>] = <span class="function">useState</span>(<span class="string">''</span>);
-  <span class="keyword">const</span> { <span class="function">login</span> } = <span class="function">useAuth</span>();
-
-  <span class="keyword">const</span> <span class="function">handleSubmit</span> = <span class="keyword">async</span> (<span class="variable">e</span>) => {
-    <span class="variable">e</span>.<span class="function">preventDefault</span>();
-    <span class="keyword">await</span> <span class="function">login</span>(<span class="variable">email</span>, <span class="variable">password</span>);
-  };
-
-  <span class="keyword">return</span> (
-    <span class="operator">&lt;</span><span class="variable">form</span> <span class="property">onSubmit</span>={<span class="function">handleSubmit</span>}<span class="operator">&gt;</span>
-      <span class="operator">&lt;</span><span class="variable">input</span> <span class="property">type</span>=<span class="string">"email"</span> <span class="property">value</span>={<span class="variable">email</span>} /&gt;
-    <span class="operator">&lt;/</span><span class="variable">form</span><span class="operator">&gt;</span>
-  );
-}`
-            }
-        ];
-        
-        let currentSnippetIndex = 0;
-        let currentCharIndex = 0;
-        let isPaused = false;
-        
-        const codeArea = document.getElementById('code-area');
-        const agentNameEl = document.querySelector('.agent-name-small');
-        const agentActionEl = document.querySelector('.agent-action-small');
-        const codeTabs = document.querySelectorAll('.code-tab');
-        /** Only type this many lines per cycle so the demo never scrolls off the hero */
-        const MAX_CODE_LINES = 5;
-
-        function truncateCodeToLines(codeStr, maxLines) {
-            if (!codeStr || maxLines < 1) return '';
-            const parts = codeStr.split('\n');
-            return parts.slice(0, maxLines).join('\n');
-        }
-
-        function getAgentColor(name) {
-            const colors = {
-                'backend-dev': '#ff570a',
-                'frontend-dev': '#19d59e',
-                'qa-tester': '#8b5cf6'
-            };
-            return colors[name] || '#ff570a';
-        }
-        
-        function switchToNextSnippet() {
-            currentSnippetIndex = (currentSnippetIndex + 1) % codeSnippets.length;
-            currentCharIndex = 0;
-            isPaused = false;
-            
-            // Clear and start fresh immediately (no deletion lag)
-            codeArea.innerHTML = `
-                <div class="code-line">
-                    <span class="line-number">1</span>
-                    <span class="line-content" id="line-1"></span><span class="cursor"></span>
-                </div>
-            `;
-            
-            typeCode();
-        }
-        
-        function typeCode() {
-            const snippet = codeSnippets[currentSnippetIndex];
-            const code = truncateCodeToLines(snippet.code, MAX_CODE_LINES);
-            
-            // Update agent info
-            agentNameEl.textContent = snippet.agent;
-            agentActionEl.textContent = snippet.action;
-            document.querySelector('.agent-avatar-small').style.background = 
-                `linear-gradient(135deg, ${getAgentColor(snippet.agent)} 0%, ${getAgentColor(snippet.agent)}aa 100%)`;
-            
-            // Update tabs
-            codeTabs[0].textContent = snippet.file;
-            
-            if (isPaused) {
-                setTimeout(switchToNextSnippet, 1500);
-                return;
-            }
-            
-            // Typing
-            if (currentCharIndex < code.length) {
-                const char = code[currentCharIndex];
-                
-                if (char === '\n') {
-                    const lineCount = (code.substring(0, currentCharIndex).match(/\n/g) || []).length + 2;
-                    codeArea.innerHTML += `
-                        <div class="code-line">
-                            <span class="line-number">${lineCount}</span>
-                            <span class="line-content" id="line-${lineCount}"></span><span class="cursor"></span>
-                        </div>
-                    `;
-                } else {
-                    const lines = codeArea.querySelectorAll('.line-content');
-                    const currentLine = lines[lines.length - 1];
-                    if (currentLine) {
-                        currentLine.innerHTML = code.substring(0, currentCharIndex + 1).split('\n').pop();
-                    }
+        // Scroll-reveal
+        const reveals = document.querySelectorAll('.reveal');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    e.target.classList.add('visible');
                 }
-                
-                currentCharIndex++;
-                const speed = Math.random() * 15 + 3; // Faster typing
-                setTimeout(typeCode, speed);
-            } else {
-                // Finished typing, pause then switch (no deletion)
-                isPaused = true;
-                setTimeout(switchToNextSnippet, 1500);
-            }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+        reveals.forEach(el => observer.observe(el));
+
+        // Terminal typing animation
+        const workflows = [
+            [
+                { num: '1', txt: '<span class="t-cmt">// Agent workflow — live</span>' },
+                { num: '2', txt: '' },
+                { num: '3', txt: '<span class="t-kw">task</span>: <span class="t-str">"Add user authentication"</span>' },
+                { num: '4', txt: '' },
+                { num: '5', txt: '<span class="t-fn">Orchestrator</span>  routing...' },
+                { num: '6', txt: '<span class="t-fn">Planner</span>      creating plan...' },
+                { num: '7', txt: '<span class="t-fn">BackendDev</span>   <span class="t-str">implementing</span>' },
+                { num: '8', txt: '<span class="t-fn">FrontendDev</span>  <span class="t-str">implementing</span>  <span class="t-kw">// parallel</span>' },
+                { num: '9', txt: '<span class="t-fn">Security</span>     <span class="t-str">scanning... 0 critical</span>' },
+                { num: '10', txt: '<span class="t-fn">CodeReviewer</span> <span class="t-str">approved</span>' },
+                { num: '11', txt: '' },
+                { num: '12', txt: '<span class="t-kw">status</span>: <span class="t-str">MR created & merged</span>' },
+            ],
+            [
+                { num: '1', txt: '<span class="t-cmt">// Self-healing in action</span>' },
+                { num: '2', txt: '' },
+                { num: '3', txt: '<span class="t-kw">task</span>: <span class="t-str">"Fix payment API"</span>' },
+                { num: '4', txt: '' },
+                { num: '5', txt: '<span class="t-fn">BackendDev</span>   <span class="t-str">implementing...</span>' },
+                { num: '6', txt: '<span class="t-kw">compile</span>:     <span style="color:#ff5f56">FAILED</span>' },
+                { num: '7', txt: '<span class="t-fn">BackendDev</span>   <span class="t-str">auto-fixing...</span>  <span class="t-kw">cycle 1</span>' },
+                { num: '8', txt: '<span class="t-kw">compile</span>:     <span class="t-str">PASSED</span>' },
+                { num: '9', txt: '<span class="t-fn">Security</span>     <span class="t-str">0 vulnerabilities</span>' },
+                { num: '10', txt: '<span class="t-fn">DevOps</span>       <span class="t-str">pipeline green</span>' },
+                { num: '11', txt: '' },
+                { num: '12', txt: '<span class="t-kw">status</span>: <span class="t-str">deployed to staging</span>' },
+            ],
+            [
+                { num: '1', txt: '<span class="t-cmt">// Cost-optimized routing</span>' },
+                { num: '2', txt: '' },
+                { num: '3', txt: '<span class="t-kw">task</span>: <span class="t-str">"Update README"</span>' },
+                { num: '4', txt: '<span class="t-kw">complexity</span>: <span class="t-str">trivial</span>' },
+                { num: '5', txt: '<span class="t-kw">model</span>:      <span class="t-str">deepseek</span>  <span class="t-cmt">// cheapest</span>' },
+                { num: '6', txt: '' },
+                { num: '7', txt: '<span class="t-kw">task</span>: <span class="t-str">"Redesign auth system"</span>' },
+                { num: '8', txt: '<span class="t-kw">complexity</span>: <span class="t-str">complex</span>' },
+                { num: '9', txt: '<span class="t-kw">model</span>:      <span class="t-str">anthropic-opus</span>  <span class="t-cmt">// premium</span>' },
+                { num: '10', txt: '' },
+                { num: '11', txt: '<span class="t-kw">budget</span>:  <span class="t-str">$12.40 / $50.00 daily</span>' },
+                { num: '12', txt: '<span class="t-kw">saved</span>:   <span class="t-str">38% vs uniform routing</span>' },
+            ]
+        ];
+
+        let currentWorkflow = 0;
+        const termBody = document.getElementById('terminal-body');
+
+        function renderWorkflow(index) {
+            const wf = workflows[index];
+            let html = '';
+            wf.forEach(line => {
+                const isLast = line === wf[wf.length - 1];
+                html += `<div class="t-line"><span class="t-num">${line.num}</span><span class="t-txt">${line.txt}${isLast ? '<span class="t-cursor"></span>' : ''}</span></div>`;
+            });
+            termBody.innerHTML = html;
         }
         
         // Start the animation
