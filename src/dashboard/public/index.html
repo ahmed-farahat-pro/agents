@@ -23,6 +23,7 @@
             --purple: #8b5cf6;
             --font-mono: 'IBM Plex Mono', monospace;
             --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --accent-orange: #ff570a;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -864,8 +865,11 @@
                 background: rgba(255, 255, 255, 0.06);
             }
 
-            body.nav-open .nav-links {
+            .nav-links.active {
                 display: flex;
+                flex-direction: column;
+                gap: 4px;
+                padding: 16px;
             }
 
             .features-grid {
@@ -1367,27 +1371,32 @@
             termBody.innerHTML = html;
         }
         
-        // Start the animation
+        // Start the animation — cycle through workflows every 4s
+        function typeCode() {
+            renderWorkflow(currentWorkflow);
+            currentWorkflow = (currentWorkflow + 1) % workflows.length;
+            setTimeout(typeCode, 4000);
+        }
         setTimeout(typeCode, 500);
 
         // Scroll Animation Observer
-        const observerOptions = {
+        const scrollObserverOptions = {
             root: null,
             rootMargin: '0px 0px -60px 0px',
             threshold: 0.1
         };
 
-        const observer = new IntersectionObserver(function(entries) {
+        const scrollObserver = new IntersectionObserver(function(entries) {
             entries.forEach(function(entry) {
                 if (entry.isIntersecting) {
                     entry.target.classList.add('visible');
-                    observer.unobserve(entry.target);
+                    scrollObserver.unobserve(entry.target);
                 }
             });
-        }, observerOptions);
+        }, scrollObserverOptions);
 
         document.querySelectorAll('.animate-on-scroll').forEach(function(el) {
-            observer.observe(el);
+            scrollObserver.observe(el);
         });
 
         // Smooth nav background on scroll
