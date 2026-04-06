@@ -22,6 +22,9 @@
             --accent-purple: #8b5cf6;
             --font-mono: 'IBM Plex Mono', monospace;
             --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --transition-fast: 0.2s ease;
+            --transition-med: 0.35s ease;
+            --transition-slow: 0.6s ease;
         }
 
         * {
@@ -51,7 +54,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-image: 
+            background-image:
                 linear-gradient(rgba(255, 87, 10, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 87, 10, 0.03) 1px, transparent 1px);
             background-size: 60px 60px;
@@ -59,7 +62,59 @@
             z-index: 0;
         }
 
-        /* Navigation */
+        /* ─── Entrance Animations ─────────────────────────── */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(32px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-40px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(40px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.92); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes glowPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 87, 10, 0.15), 0 0 60px rgba(255, 87, 10, 0.05); }
+            50%       { box-shadow: 0 0 40px rgba(255, 87, 10, 0.3),  0 0 80px rgba(255, 87, 10, 0.1);  }
+        }
+
+        /* Scroll-triggered animation base state */
+        .anim-hidden {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity 0.65s ease, transform 0.65s ease;
+        }
+
+        .anim-hidden.anim-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Stagger delays for grid children */
+        .anim-stagger > *:nth-child(1) { transition-delay: 0.05s; }
+        .anim-stagger > *:nth-child(2) { transition-delay: 0.13s; }
+        .anim-stagger > *:nth-child(3) { transition-delay: 0.21s; }
+        .anim-stagger > *:nth-child(4) { transition-delay: 0.29s; }
+        .anim-stagger > *:nth-child(5) { transition-delay: 0.37s; }
+        .anim-stagger > *:nth-child(6) { transition-delay: 0.45s; }
+        .anim-stagger > *:nth-child(7) { transition-delay: 0.53s; }
+
+        /* ─── Navigation ──────────────────────────────────── */
         .nav {
             position: fixed;
             top: 0;
@@ -71,6 +126,15 @@
             justify-content: space-between;
             align-items: center;
             background: linear-gradient(to bottom, var(--bg-primary) 0%, transparent 100%);
+            transition: background var(--transition-med), backdrop-filter var(--transition-med), padding var(--transition-med);
+        }
+
+        .nav.scrolled {
+            padding: 14px 40px;
+            background: rgba(9, 8, 12, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(42, 42, 53, 0.6);
         }
 
         .nav-brand {
@@ -78,6 +142,7 @@
             align-items: center;
             gap: 12px;
             text-decoration: none;
+            flex-shrink: 0;
         }
 
         .nav-logo {
@@ -91,6 +156,12 @@
             font-weight: 700;
             font-size: 20px;
             color: var(--bg-primary);
+            transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+        }
+
+        .nav-brand:hover .nav-logo {
+            transform: scale(1.08) rotate(-3deg);
+            box-shadow: 0 4px 16px rgba(255, 87, 10, 0.4);
         }
 
         .nav-title {
@@ -112,11 +183,27 @@
             text-decoration: none;
             font-size: 14px;
             font-weight: 500;
-            transition: color 0.2s;
+            position: relative;
+            transition: color var(--transition-fast);
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--accent-orange);
+            transition: width var(--transition-fast);
         }
 
         .nav-link:hover {
             color: var(--text-primary);
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
         }
 
         .soon-pill {
@@ -140,15 +227,17 @@
             text-decoration: none;
             font-size: 14px;
             font-weight: 600;
-            transition: all 0.2s;
+            transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
         }
 
         .nav-cta:hover {
             background: var(--accent-orange);
             color: var(--bg-primary);
+            box-shadow: 0 0 20px rgba(255, 87, 10, 0.35);
+            transform: translateY(-1px);
         }
 
-        /* Mobile menu (hamburger) */
+        /* Mobile hamburger */
         .nav-toggle {
             display: none;
             width: 44px;
@@ -163,6 +252,12 @@
             cursor: pointer;
             flex-shrink: 0;
             -webkit-tap-highlight-color: transparent;
+            transition: background var(--transition-fast), border-color var(--transition-fast);
+        }
+
+        .nav-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent-orange);
         }
 
         .nav-toggle:focus-visible {
@@ -182,34 +277,23 @@
             font-size: 28px;
         }
 
-        body.nav-open .nav-toggle-icon-open {
-            display: none;
-        }
-
-        body.nav-open .nav-toggle-icon-close {
-            display: block;
-        }
+        body.nav-open .nav-toggle-icon-open  { display: none; }
+        body.nav-open .nav-toggle-icon-close { display: block; }
 
         .nav-backdrop {
             display: none;
             position: fixed;
             inset: 0;
-            top: 0;
             background: rgba(0, 0, 0, 0.55);
             z-index: 998;
             backdrop-filter: blur(2px);
+            animation: fadeIn 0.2s ease;
         }
 
-        body.nav-open .nav-backdrop {
-            display: block;
-        }
+        body.nav-open .nav-backdrop { display: block; }
+        body.nav-open { overflow: hidden; touch-action: none; }
 
-        body.nav-open {
-            overflow: hidden;
-            touch-action: none;
-        }
-
-        /* Hero Section */
+        /* ─── Hero ────────────────────────────────────────── */
         .hero {
             min-height: 100vh;
             display: flex;
@@ -221,6 +305,20 @@
             gap: 60px;
             max-width: 1400px;
             margin: 0 auto;
+        }
+
+        /* Radial glow behind hero */
+        .hero::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 30%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255, 87, 10, 0.07) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: -1;
         }
 
         .hero-content {
@@ -238,6 +336,7 @@
             min-width: 0;
         }
 
+        /* Hero entrance animations */
         .hero-badge {
             display: inline-flex;
             align-items: center;
@@ -249,6 +348,8 @@
             font-size: 13px;
             font-weight: 500;
             margin-bottom: 32px;
+            animation: fadeInUp 0.6s ease both;
+            animation-delay: 0.1s;
         }
 
         .hero-badge-dot {
@@ -260,39 +361,68 @@
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.5; transform: scale(0.85); }
         }
 
         .hero-title {
             font-family: var(--font-sans);
-            font-size: 64px;
+            font-size: clamp(36px, 5vw, 64px);
             font-weight: 500;
             line-height: 1.1;
             max-width: 900px;
             margin-bottom: 24px;
             letter-spacing: -2px;
+            animation: fadeInUp 0.6s ease both;
+            animation-delay: 0.2s;
         }
 
-        .hero-title span {
-            color: var(--accent-orange);
-        }
+        .hero-title span { color: var(--accent-orange); }
 
         .hero-subtitle {
-            font-size: 18px;
+            font-size: clamp(15px, 2vw, 18px);
             color: var(--text-secondary);
             max-width: 600px;
             margin-bottom: 40px;
             line-height: 1.6;
+            animation: fadeInUp 0.6s ease both;
+            animation-delay: 0.3s;
         }
 
         .hero-actions {
             display: flex;
             gap: 16px;
             flex-wrap: wrap;
-            justify-content: center;
+            animation: fadeInUp 0.6s ease both;
+            animation-delay: 0.4s;
         }
 
+        .hero-meta {
+            margin-top: 48px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            color: var(--text-muted);
+            font-size: 13px;
+            animation: fadeIn 0.6s ease both;
+            animation-delay: 0.55s;
+        }
+
+        .hero-meta-icons {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .hero-meta-icon { font-size: 13px; color: var(--text-muted); }
+
+        /* Hero visual entrance */
+        .hero-visual {
+            animation: slideInRight 0.75s ease both;
+            animation-delay: 0.35s;
+        }
+
+        /* ─── Buttons ─────────────────────────────────────── */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -303,9 +433,13 @@
             font-weight: 600;
             text-decoration: none;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: background var(--transition-fast), color var(--transition-fast),
+                        border-color var(--transition-fast), transform var(--transition-fast),
+                        box-shadow var(--transition-fast);
             border: none;
         }
+
+        .btn:active { transform: translateY(1px) !important; }
 
         .btn-primary {
             background: transparent;
@@ -316,6 +450,8 @@
         .btn-primary:hover {
             background: var(--accent-orange);
             color: var(--bg-primary);
+            box-shadow: 0 0 28px rgba(255, 87, 10, 0.45);
+            transform: translateY(-2px);
         }
 
         .btn-secondary {
@@ -327,29 +463,10 @@
         .btn-secondary:hover {
             border-color: var(--text-primary);
             color: var(--text-primary);
+            transform: translateY(-2px);
         }
 
-        .hero-meta {
-            margin-top: 48px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            color: var(--text-muted);
-            font-size: 13px;
-        }
-
-        .hero-meta-icons {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        .hero-meta-icon {
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        /* Code Window */
+        /* ─── Code Window ─────────────────────────────────── */
         .code-window {
             width: 100%;
             max-width: 600px;
@@ -357,10 +474,19 @@
             border: 1px solid var(--border);
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 
+            box-shadow:
                 0 0 0 1px rgba(255, 87, 10, 0.1),
                 0 20px 60px -20px rgba(0, 0, 0, 0.8),
                 0 0 100px -20px rgba(255, 87, 10, 0.1);
+            transition: box-shadow var(--transition-med), transform var(--transition-med);
+        }
+
+        .code-window:hover {
+            transform: translateY(-4px);
+            box-shadow:
+                0 0 0 1px rgba(255, 87, 10, 0.2),
+                0 32px 80px -20px rgba(0, 0, 0, 0.9),
+                0 0 120px -20px rgba(255, 87, 10, 0.2);
         }
 
         .code-header {
@@ -371,26 +497,22 @@
             border-bottom: 1px solid var(--border);
         }
 
-        .code-dots {
-            display: flex;
-            gap: 8px;
-            margin-right: 16px;
-        }
+        .code-dots { display: flex; gap: 8px; margin-right: 16px; }
 
         .code-dot {
             width: 12px;
             height: 12px;
             border-radius: 50%;
+            transition: transform var(--transition-fast);
         }
 
-        .code-dot.red { background: #ff5f56; }
+        .code-window:hover .code-dot { transform: scale(1.15); }
+
+        .code-dot.red    { background: #ff5f56; }
         .code-dot.yellow { background: #ffbd2e; }
-        .code-dot.green { background: #27c93f; }
+        .code-dot.green  { background: #27c93f; }
 
-        .code-tabs {
-            display: flex;
-            gap: 4px;
-        }
+        .code-tabs { display: flex; gap: 4px; }
 
         .code-tab {
             padding: 6px 16px;
@@ -401,7 +523,7 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: color var(--transition-fast), background var(--transition-fast);
         }
 
         .code-tab.active {
@@ -429,7 +551,7 @@
 
         @keyframes blink {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+            50%       { opacity: 0.3; }
         }
 
         .code-content {
@@ -452,6 +574,7 @@
             background: rgba(255, 87, 10, 0.08);
             border: 1px solid rgba(255, 87, 10, 0.2);
             border-radius: 8px;
+            transition: background var(--transition-fast);
         }
 
         .agent-avatar-small {
@@ -466,11 +589,10 @@
             font-size: 10px;
             font-weight: 700;
             color: var(--bg-primary);
+            flex-shrink: 0;
         }
 
-        .agent-info-small {
-            flex: 1;
-        }
+        .agent-info-small { flex: 1; }
 
         .agent-name-small {
             font-size: 13px;
@@ -505,19 +627,11 @@
 
         @keyframes typing {
             0%, 60%, 100% { transform: translateY(0); }
-            30% { transform: translateY(-4px); }
+            30%            { transform: translateY(-4px); }
         }
 
-        .code-area {
-            color: var(--text-primary);
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-
-        .code-line {
-            display: flex;
-            counter-increment: line;
-        }
+        .code-area   { color: var(--text-primary); white-space: pre-wrap; word-break: break-all; }
+        .code-line   { display: flex; counter-increment: line; }
 
         .line-number {
             width: 40px;
@@ -528,10 +642,7 @@
             flex-shrink: 0;
         }
 
-        .line-content {
-            flex: 1;
-            color: #e2e2e2;
-        }
+        .line-content { flex: 1; color: #e2e2e2; }
 
         .cursor {
             display: inline-block;
@@ -544,21 +655,21 @@
         }
 
         @keyframes cursor-blink {
-            0%, 50% { opacity: 1; }
+            0%, 50%   { opacity: 1; }
             51%, 100% { opacity: 0; }
         }
 
-        /* Syntax Highlighting */
-        .keyword { color: #ff7b72; }
-        .string { color: #a5d6ff; }
+        /* Syntax */
+        .keyword  { color: #ff7b72; }
+        .string   { color: #a5d6ff; }
         .function { color: #d2a8ff; }
-        .comment { color: #8b949e; font-style: italic; }
-        .number { color: #79c0ff; }
+        .comment  { color: #8b949e; font-style: italic; }
+        .number   { color: #79c0ff; }
         .operator { color: #ff7b72; }
         .variable { color: #ffa657; }
         .property { color: #7ee787; }
 
-        /* Stats Section */
+        /* ─── Stats ───────────────────────────────────────── */
         .stats {
             padding: 80px 40px;
             border-top: 1px solid var(--border);
@@ -571,7 +682,7 @@
             max-width: 1200px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
             gap: 40px;
             text-align: center;
         }
@@ -581,14 +692,27 @@
             flex-direction: column;
             align-items: center;
             gap: 8px;
+            padding: 24px;
+            border: 1px solid transparent;
+            transition: border-color var(--transition-med), background var(--transition-med), transform var(--transition-med);
+            border-radius: 4px;
+        }
+
+        .stat-item:hover {
+            border-color: rgba(255, 87, 10, 0.25);
+            background: rgba(255, 87, 10, 0.04);
+            transform: translateY(-4px);
         }
 
         .stat-value {
             font-family: var(--font-sans);
-            font-size: 48px;
+            font-size: clamp(32px, 4vw, 48px);
             font-weight: 600;
             color: var(--text-primary);
+            transition: color var(--transition-fast);
         }
+
+        .stat-item:hover .stat-value { color: var(--accent-orange); }
 
         .stat-label {
             font-size: 14px;
@@ -597,7 +721,7 @@
             letter-spacing: 1px;
         }
 
-        /* Features Section */
+        /* ─── Features ────────────────────────────────────── */
         .features {
             padding: 120px 40px;
             position: relative;
@@ -629,7 +753,7 @@
 
         .section-title {
             font-family: var(--font-sans);
-            font-size: 40px;
+            font-size: clamp(26px, 3.5vw, 40px);
             font-weight: 500;
             margin-bottom: 16px;
             letter-spacing: -1px;
@@ -644,7 +768,7 @@
 
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 24px;
         }
 
@@ -652,12 +776,28 @@
             background: var(--bg-card);
             border: 1px solid var(--border);
             padding: 32px;
-            transition: all 0.3s;
+            transition: border-color var(--transition-med), transform var(--transition-med),
+                        box-shadow var(--transition-med), background var(--transition-med);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 0%, rgba(255, 87, 10, 0.06) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity var(--transition-med);
         }
 
         .feature-card:hover {
             border-color: rgba(255, 87, 10, 0.5);
+            transform: translateY(-6px);
+            box-shadow: 0 20px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 87, 10, 0.15);
         }
+
+        .feature-card:hover::before { opacity: 1; }
 
         .feature-icon {
             width: 48px;
@@ -672,6 +812,13 @@
             font-weight: 700;
             color: var(--accent-orange);
             margin-bottom: 20px;
+            transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+        }
+
+        .feature-card:hover .feature-icon {
+            background: rgba(255, 87, 10, 0.2);
+            border-color: rgba(255, 87, 10, 0.6);
+            transform: scale(1.1) rotate(-3deg);
         }
 
         .feature-title {
@@ -687,7 +834,7 @@
             line-height: 1.6;
         }
 
-        /* Agents Section */
+        /* ─── Agents ──────────────────────────────────────── */
         .agents {
             padding: 120px 40px;
             background: var(--bg-secondary);
@@ -699,7 +846,7 @@
 
         .agents-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 16px;
         }
 
@@ -710,11 +857,15 @@
             display: flex;
             align-items: center;
             gap: 16px;
-            transition: all 0.3s;
+            transition: border-color var(--transition-med), transform var(--transition-med),
+                        box-shadow var(--transition-med), background var(--transition-med);
         }
 
         .agent-card:hover {
             border-color: var(--accent-orange);
+            transform: translateY(-4px);
+            background: rgba(255, 87, 10, 0.03);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 87, 10, 0.2);
         }
 
         .agent-avatar {
@@ -729,11 +880,15 @@
             font-weight: 700;
             color: var(--bg-primary);
             flex-shrink: 0;
+            transition: transform var(--transition-fast), box-shadow var(--transition-fast);
         }
 
-        .agent-info {
-            flex: 1;
+        .agent-card:hover .agent-avatar {
+            transform: scale(1.1) rotate(-4deg);
+            box-shadow: 0 4px 16px rgba(255, 87, 10, 0.4);
         }
+
+        .agent-info { flex: 1; }
 
         .agent-name {
             font-family: var(--font-sans);
@@ -756,19 +911,38 @@
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
+            transition: background var(--transition-fast);
         }
 
-        /* CTA Section */
+        .agent-card:hover .agent-model {
+            background: rgba(255, 87, 10, 0.2);
+        }
+
+        /* ─── CTA ─────────────────────────────────────────── */
         .cta {
             padding: 120px 40px;
             text-align: center;
             position: relative;
             z-index: 1;
+            overflow: hidden;
+        }
+
+        .cta::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 400px;
+            background: radial-gradient(ellipse, rgba(255, 87, 10, 0.08) 0%, transparent 65%);
+            pointer-events: none;
+            animation: glowPulse 4s ease-in-out infinite;
         }
 
         .cta-title {
             font-family: var(--font-sans);
-            font-size: 48px;
+            font-size: clamp(32px, 4vw, 48px);
             font-weight: 500;
             margin-bottom: 16px;
             letter-spacing: -1px;
@@ -780,7 +954,7 @@
             margin-bottom: 32px;
         }
 
-        /* Footer */
+        /* ─── Footer ──────────────────────────────────────── */
         .footer {
             padding: 60px 40px;
             border-top: 1px solid var(--border);
@@ -814,52 +988,87 @@
             font-size: 14px;
             font-weight: 700;
             color: var(--bg-primary);
+            transition: transform var(--transition-fast);
         }
 
-        .footer-text {
-            font-size: 13px;
-            color: var(--text-muted);
-        }
+        .footer-logo:hover { transform: rotate(-5deg) scale(1.1); }
 
-        .footer-links {
-            display: flex;
-            gap: 24px;
-        }
+        .footer-text { font-size: 13px; color: var(--text-muted); }
+
+        .footer-links { display: flex; gap: 24px; }
 
         .footer-link {
             font-size: 13px;
             color: var(--text-muted);
             text-decoration: none;
-            transition: color 0.2s;
+            transition: color var(--transition-fast);
+            position: relative;
         }
 
-        .footer-link:hover {
-            color: var(--accent-orange);
+        .footer-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--accent-orange);
+            transition: width var(--transition-fast);
         }
 
-        /* Responsive */
+        .footer-link:hover { color: var(--accent-orange); }
+        .footer-link:hover::after { width: 100%; }
+
+        /* ═══════════════════════════════════════════════════
+           RESPONSIVE BREAKPOINTS
+           ═══════════════════════════════════════════════════ */
+
+        /* Large tablet / small desktop */
+        @media (max-width: 1100px) {
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 24px;
+            }
+        }
+
+        /* Tablet */
         @media (max-width: 1024px) {
             .hero {
                 flex-direction: column;
                 gap: 40px;
                 padding-top: 100px;
+                text-align: center;
             }
 
             .hero-content {
-                text-align: center;
                 align-items: center;
+            }
+
+            .hero-actions {
+                justify-content: center;
+            }
+
+            .hero-meta {
+                justify-content: center;
             }
 
             .hero-visual {
                 width: 100%;
                 max-width: 600px;
             }
+
+            .hero::after {
+                left: 50%;
+            }
         }
 
+        /* Mobile nav breakpoint */
         @media (max-width: 900px) {
-            .nav-toggle {
-                display: flex;
-            }
+            .nav-toggle { display: flex; }
 
             .nav-links {
                 display: none;
@@ -868,7 +1077,7 @@
                 right: 0;
                 top: 0;
                 margin-top: 72px;
-                padding: 12px 20px 24px;
+                padding: 12px 20px;
                 padding-bottom: max(24px, env(safe-area-inset-bottom));
                 flex-direction: column;
                 align-items: stretch;
@@ -887,18 +1096,22 @@
                 padding: 14px 12px;
                 border-radius: 8px;
                 text-align: left;
+                transition: background var(--transition-fast);
             }
 
-            .nav-links .nav-link:active,
-            .nav-links .nav-cta:active {
+            .nav-links .nav-link:hover,
+            .nav-links .nav-cta:hover {
                 background: rgba(255, 255, 255, 0.06);
+                transform: none;
+                box-shadow: none;
             }
 
-            body.nav-open .nav-links {
-                display: flex;
-            }
+            .nav-links .nav-link::after { display: none; }
+
+            body.nav-open .nav-links { display: flex; }
         }
 
+        /* Mobile */
         @media (max-width: 768px) {
             .nav {
                 padding: 16px 20px;
@@ -906,22 +1119,46 @@
                 padding-right: max(16px, env(safe-area-inset-right));
             }
 
+            .nav.scrolled { padding: 12px 20px; }
+
             .hero {
                 padding: 100px 20px 60px;
+                min-height: auto;
+                gap: 32px;
             }
 
+            .hero-badge { font-size: 12px; }
+
             .hero-title {
-                font-size: 36px;
+                font-size: clamp(30px, 8vw, 42px);
                 letter-spacing: -1px;
             }
 
-            .hero-subtitle {
-                font-size: 15px;
+            .hero-subtitle { font-size: 15px; }
+
+            .hero-actions {
+                flex-direction: column;
+                width: 100%;
+                max-width: 320px;
             }
 
-            .code-window {
-                display: none;
+            .btn { justify-content: center; width: 100%; }
+
+            .hero-meta { flex-wrap: wrap; justify-content: center; font-size: 12px; }
+
+            /* Hide code window on small mobile to keep it clean */
+            .code-window { display: none; }
+
+            .stats {
+                padding: 60px 20px;
             }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px;
+            }
+
+            .stat-item { padding: 16px 8px; }
 
             .features,
             .agents,
@@ -929,32 +1166,88 @@
                 padding: 80px 20px;
             }
 
-            .section-title {
-                font-size: 28px;
-            }
+            .section-header { margin-bottom: 48px; }
 
             .features-grid {
                 grid-template-columns: 1fr;
+                gap: 16px;
             }
 
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
+            .feature-card { padding: 24px; }
+
+            .agents-grid {
+                grid-template-columns: 1fr;
             }
 
-            .stat-value {
-                font-size: 32px;
+            .cta-title { font-size: clamp(28px, 7vw, 38px); }
+
+            .footer {
+                padding: 48px 20px;
             }
 
             .footer-content {
                 flex-direction: column;
                 text-align: center;
+                gap: 16px;
             }
+
+            .footer-links { justify-content: center; }
+        }
+
+        /* Small phones */
+        @media (max-width: 480px) {
+            .hero-title {
+                font-size: clamp(26px, 9vw, 34px);
+                letter-spacing: -0.5px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .stat-value { font-size: clamp(24px, 8vw, 32px); }
+            .stat-label { font-size: 11px; letter-spacing: 0.5px; }
+
+            .section-title { font-size: clamp(22px, 7vw, 28px); letter-spacing: -0.5px; }
+
+            .feature-card { padding: 20px; }
+            .feature-title { font-size: 17px; }
+
+            .agent-card { padding: 18px; }
+        }
+
+        /* Very small phones */
+        @media (max-width: 360px) {
+            .nav { padding: 14px 16px; }
+            .nav-title { font-size: 18px; }
+
+            .hero { padding: 90px 16px 48px; }
+
+            .features,
+            .agents,
+            .cta { padding: 64px 16px; }
+
+            .footer { padding: 40px 16px; }
+        }
+
+        /* Respect reduced motion preference */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+
+            .anim-hidden { opacity: 1; transform: none; }
         }
     </style>
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="nav">
+    <nav class="nav" id="main-nav">
         <a href="/" class="nav-brand">
             <div class="nav-logo">N</div>
             <span class="nav-title">Nigents</span>
@@ -988,7 +1281,7 @@
                 <span>Wake up to merge requests.</span>
             </h1>
             <p class="hero-subtitle">
-                7 AI agents working together to plan, code, test, and review — 
+                7 AI agents working together to plan, code, test, and review —
                 while you sleep. Integrated with GitLab.
             </p>
             <div class="hero-actions">
@@ -1004,7 +1297,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="hero-visual">
             <div class="code-window">
                 <div class="code-header">
@@ -1022,7 +1315,7 @@
                         backend-dev writing...
                     </div>
                 </div>
-                
+
                 <div class="code-content">
                     <div class="agent-indicator">
                         <div class="agent-avatar-small">BE</div>
@@ -1036,7 +1329,7 @@
                             <span></span>
                         </div>
                     </div>
-                    
+
                     <div class="code-area" id="code-area">
                         <div class="code-line">
                             <span class="line-number">1</span>
@@ -1050,7 +1343,7 @@
 
     <!-- Stats Section -->
     <section class="stats">
-        <div class="stats-grid">
+        <div class="stats-grid anim-hidden anim-stagger">
             <div class="stat-item">
                 <div class="stat-value">7</div>
                 <div class="stat-label">AI Agents</div>
@@ -1073,12 +1366,12 @@
     <!-- Features Section -->
     <section class="features" id="features">
         <div class="container">
-            <div class="section-header">
+            <div class="section-header anim-hidden">
                 <div class="section-label">Features</div>
                 <h2 class="section-title">Everything you need to ship faster</h2>
                 <p class="section-subtitle">A complete AI development team that works while you sleep</p>
             </div>
-            <div class="features-grid">
+            <div class="features-grid anim-hidden anim-stagger">
                 <div class="feature-card">
                     <div class="feature-icon">24/7</div>
                     <h3 class="feature-title">Always On</h3>
@@ -1116,12 +1409,12 @@
     <!-- Agents Section -->
     <section class="agents" id="agents">
         <div class="container">
-            <div class="section-header">
+            <div class="section-header anim-hidden">
                 <div class="section-label">The Team</div>
                 <h2 class="section-title">7 Specialized Agents</h2>
                 <p class="section-subtitle">Each agent has a unique role and expertise</p>
             </div>
-            <div class="agents-grid">
+            <div class="agents-grid anim-hidden anim-stagger">
                 <div class="agent-card">
                     <div class="agent-avatar">OR</div>
                     <div class="agent-info">
@@ -1184,7 +1477,7 @@
 
     <!-- CTA Section -->
     <section class="cta">
-        <div class="container">
+        <div class="container anim-hidden">
             <h2 class="cta-title">Ready to ship overnight?</h2>
             <p class="cta-subtitle">Start using Nigents today and wake up to finished features.</p>
             <a href="/login.html" class="btn btn-primary">Get Started Now →</a>
@@ -1206,10 +1499,12 @@
     </footer>
 
     <script>
+        /* ── Nav mobile toggle ─────────────────────────────── */
         (function () {
-            var toggle = document.getElementById('nav-toggle');
+            var toggle   = document.getElementById('nav-toggle');
             var backdrop = document.getElementById('nav-backdrop');
             if (!toggle || !backdrop) return;
+
             function setOpen(open) {
                 document.body.classList.toggle('nav-open', open);
                 backdrop.hidden = !open;
@@ -1217,6 +1512,7 @@
                 toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
                 toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
             }
+
             toggle.addEventListener('click', function () {
                 setOpen(!document.body.classList.contains('nav-open'));
             });
@@ -1232,148 +1528,121 @@
             });
         })();
 
-        // Code Streaming Animation
-        const codeSnippets = [
+        /* ── Nav scroll glass effect ───────────────────────── */
+        (function () {
+            var nav = document.getElementById('main-nav');
+            if (!nav) return;
+            var ticking = false;
+            window.addEventListener('scroll', function () {
+                if (!ticking) {
+                    requestAnimationFrame(function () {
+                        nav.classList.toggle('scrolled', window.scrollY > 60);
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            }, { passive: true });
+        })();
+
+        /* ── Scroll-triggered animations ──────────────────── */
+        (function () {
+            var els = document.querySelectorAll('.anim-hidden');
+            if (!els.length) return;
+
+            var observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('anim-visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+            els.forEach(function (el) { observer.observe(el); });
+        })();
+
+        /* ── Code streaming animation ──────────────────────── */
+        var codeSnippets = [
             {
                 agent: 'backend-dev',
                 action: 'Implementing user authentication service',
                 file: 'AuthService.ts',
-                code: `<span class="keyword">import</span> { <span class="variable">Injectable</span>, <span class="variable">UnauthorizedException</span> } <span class="keyword">from</span> <span class="string">'@nestjs/common'</span>;
-<span class="keyword">import</span> { <span class="variable">JwtService</span> } <span class="keyword">from</span> <span class="string">'@nestjs/jwt'</span>;
-<span class="keyword">import</span> * <span class="keyword">as</span> <span class="variable">bcrypt</span> <span class="keyword">from</span> <span class="string">'bcrypt'</span>;
-
-<span class="keyword">@Injectable</span>()
-<span class="keyword">export class</span> <span class="function">AuthService</span> {
-  <span class="keyword">constructor</span>(
-    <span class="keyword">private</span> <span class="variable">jwtService</span>: <span class="variable">JwtService</span>,
-  ) {}
-
-  <span class="keyword">async</span> <span class="function">validateUser</span>(<span class="variable">email</span>: <span class="variable">string</span>, <span class="variable">pass</span>: <span class="variable">string</span>) {
-    <span class="keyword">const</span> <span class="variable">user</span> = <span class="keyword">await</span> <span class="keyword">this</span>.<span class="property">usersService</span>.<span class="function">findOne</span>(<span class="variable">email</span>);
-    <span class="keyword">if</span> (<span class="variable">user</span> && <span class="variable">user</span>.<span class="property">password</span> === <span class="variable">pass</span>) {
-      <span class="keyword">return</span> <span class="variable">user</span>;
-    }
-    <span class="keyword">return null</span>;
-  }
-}`
+                code: '<span class="keyword">import</span> { <span class="variable">Injectable</span>, <span class="variable">UnauthorizedException</span> } <span class="keyword">from</span> <span class="string">\'@nestjs/common\'</span>;\n<span class="keyword">import</span> { <span class="variable">JwtService</span> } <span class="keyword">from</span> <span class="string">\'@nestjs/jwt\'</span>;\n<span class="keyword">import</span> * <span class="keyword">as</span> <span class="variable">bcrypt</span> <span class="keyword">from</span> <span class="string">\'bcrypt\'</span>;\n\n<span class="keyword">@Injectable</span>()\n<span class="keyword">export class</span> <span class="function">AuthService</span> {\n  <span class="keyword">constructor</span>(\n    <span class="keyword">private</span> <span class="variable">jwtService</span>: <span class="variable">JwtService</span>,\n  ) {}\n\n  <span class="keyword">async</span> <span class="function">validateUser</span>(<span class="variable">email</span>: <span class="variable">string</span>, <span class="variable">pass</span>: <span class="variable">string</span>) {\n    <span class="keyword">const</span> <span class="variable">user</span> = <span class="keyword">await</span> <span class="keyword">this</span>.<span class="property">usersService</span>.<span class="function">findOne</span>(<span class="variable">email</span>);\n    <span class="keyword">if</span> (<span class="variable">user</span> && <span class="variable">user</span>.<span class="property">password</span> === <span class="variable">pass</span>) {\n      <span class="keyword">return</span> <span class="variable">user</span>;\n    }\n    <span class="keyword">return null</span>;\n  }\n}'
             },
             {
                 agent: 'frontend-dev',
                 action: 'Creating login form component',
                 file: 'Login.tsx',
-                code: `<span class="keyword">import</span> { <span class="variable">useState</span> } <span class="keyword">from</span> <span class="string">'react'</span>;
-<span class="keyword">import</span> { <span class="variable">useAuth</span> } <span class="keyword">from</span> <span class="string">'@/hooks/useAuth'</span>;
-
-<span class="keyword">export function</span> <span class="function">LoginForm</span>() {
-  <span class="keyword">const</span> [<span class="variable">email</span>, <span class="function">setEmail</span>] = <span class="function">useState</span>(<span class="string">''</span>);
-  <span class="keyword">const</span> [<span class="variable">password</span>, <span class="function">setPassword</span>] = <span class="function">useState</span>(<span class="string">''</span>);
-  <span class="keyword">const</span> { <span class="function">login</span> } = <span class="function">useAuth</span>();
-
-  <span class="keyword">const</span> <span class="function">handleSubmit</span> = <span class="keyword">async</span> (<span class="variable">e</span>) => {
-    <span class="variable">e</span>.<span class="function">preventDefault</span>();
-    <span class="keyword">await</span> <span class="function">login</span>(<span class="variable">email</span>, <span class="variable">password</span>);
-  };
-
-  <span class="keyword">return</span> (
-    <span class="operator">&lt;</span><span class="variable">form</span> <span class="property">onSubmit</span>={<span class="function">handleSubmit</span>}<span class="operator">&gt;</span>
-      <span class="operator">&lt;</span><span class="variable">input</span> <span class="property">type</span>=<span class="string">"email"</span> <span class="property">value</span>={<span class="variable">email</span>} /&gt;
-    <span class="operator">&lt;/</span><span class="variable">form</span><span class="operator">&gt;</span>
-  );
-}`
+                code: '<span class="keyword">import</span> { <span class="variable">useState</span> } <span class="keyword">from</span> <span class="string">\'react\'</span>;\n<span class="keyword">import</span> { <span class="variable">useAuth</span> } <span class="keyword">from</span> <span class="string">\'@/hooks/useAuth\'</span>;\n\n<span class="keyword">export function</span> <span class="function">LoginForm</span>() {\n  <span class="keyword">const</span> [<span class="variable">email</span>, <span class="function">setEmail</span>] = <span class="function">useState</span>(<span class="string">\'\'</span>);\n  <span class="keyword">const</span> [<span class="variable">password</span>, <span class="function">setPassword</span>] = <span class="function">useState</span>(<span class="string">\'\'</span>);\n  <span class="keyword">const</span> { <span class="function">login</span> } = <span class="function">useAuth</span>();\n\n  <span class="keyword">const</span> <span class="function">handleSubmit</span> = <span class="keyword">async</span> (<span class="variable">e</span>) => {\n    <span class="variable">e</span>.<span class="function">preventDefault</span>();\n    <span class="keyword">await</span> <span class="function">login</span>(<span class="variable">email</span>, <span class="variable">password</span>);\n  };\n\n  <span class="keyword">return</span> (\n    <span class="operator">&lt;</span><span class="variable">form</span> <span class="property">onSubmit</span>={<span class="function">handleSubmit</span>}<span class="operator">&gt;</span>\n      <span class="operator">&lt;</span><span class="variable">input</span> <span class="property">type</span>=<span class="string">"email"</span> <span class="property">value</span>={<span class="variable">email</span>} /&gt;\n    <span class="operator">&lt;/</span><span class="variable">form</span><span class="operator">&gt;</span>\n  );\n}'
             }
         ];
-        
-        let currentSnippetIndex = 0;
-        let currentCharIndex = 0;
-        let isPaused = false;
-        
-        const codeArea = document.getElementById('code-area');
-        const agentNameEl = document.querySelector('.agent-name-small');
-        const agentActionEl = document.querySelector('.agent-action-small');
-        const codeTabs = document.querySelectorAll('.code-tab');
-        /** Only type this many lines per cycle so the demo never scrolls off the hero */
-        const MAX_CODE_LINES = 5;
+
+        var currentSnippetIndex = 0;
+        var currentCharIndex    = 0;
+        var isPaused            = false;
+        var MAX_CODE_LINES      = 5;
+
+        var codeArea      = document.getElementById('code-area');
+        var agentNameEl   = document.querySelector('.agent-name-small');
+        var agentActionEl = document.querySelector('.agent-action-small');
+        var codeTabs      = document.querySelectorAll('.code-tab');
 
         function truncateCodeToLines(codeStr, maxLines) {
             if (!codeStr || maxLines < 1) return '';
-            const parts = codeStr.split('\n');
-            return parts.slice(0, maxLines).join('\n');
+            return codeStr.split('\n').slice(0, maxLines).join('\n');
         }
 
         function getAgentColor(name) {
-            const colors = {
-                'backend-dev': '#ff570a',
-                'frontend-dev': '#19d59e',
-                'qa-tester': '#8b5cf6'
-            };
+            var colors = { 'backend-dev': '#ff570a', 'frontend-dev': '#19d59e', 'qa-tester': '#8b5cf6' };
             return colors[name] || '#ff570a';
         }
-        
+
         function switchToNextSnippet() {
             currentSnippetIndex = (currentSnippetIndex + 1) % codeSnippets.length;
-            currentCharIndex = 0;
-            isPaused = false;
-            
-            // Clear and start fresh immediately (no deletion lag)
-            codeArea.innerHTML = `
-                <div class="code-line">
-                    <span class="line-number">1</span>
-                    <span class="line-content" id="line-1"></span><span class="cursor"></span>
-                </div>
-            `;
-            
+            currentCharIndex    = 0;
+            isPaused            = false;
+
+            codeArea.innerHTML = '<div class="code-line"><span class="line-number">1</span><span class="line-content" id="line-1"></span><span class="cursor"></span></div>';
             typeCode();
         }
-        
+
         function typeCode() {
-            const snippet = codeSnippets[currentSnippetIndex];
-            const code = truncateCodeToLines(snippet.code, MAX_CODE_LINES);
-            
-            // Update agent info
-            agentNameEl.textContent = snippet.agent;
+            var snippet = codeSnippets[currentSnippetIndex];
+            var code    = truncateCodeToLines(snippet.code, MAX_CODE_LINES);
+
+            agentNameEl.textContent   = snippet.agent;
             agentActionEl.textContent = snippet.action;
-            document.querySelector('.agent-avatar-small').style.background = 
-                `linear-gradient(135deg, ${getAgentColor(snippet.agent)} 0%, ${getAgentColor(snippet.agent)}aa 100%)`;
-            
-            // Update tabs
+            document.querySelector('.agent-avatar-small').style.background =
+                'linear-gradient(135deg, ' + getAgentColor(snippet.agent) + ' 0%, ' + getAgentColor(snippet.agent) + 'aa 100%)';
             codeTabs[0].textContent = snippet.file;
-            
+
             if (isPaused) {
                 setTimeout(switchToNextSnippet, 1500);
                 return;
             }
-            
-            // Typing
+
             if (currentCharIndex < code.length) {
-                const char = code[currentCharIndex];
-                
+                var char = code[currentCharIndex];
+
                 if (char === '\n') {
-                    const lineCount = (code.substring(0, currentCharIndex).match(/\n/g) || []).length + 2;
-                    codeArea.innerHTML += `
-                        <div class="code-line">
-                            <span class="line-number">${lineCount}</span>
-                            <span class="line-content" id="line-${lineCount}"></span><span class="cursor"></span>
-                        </div>
-                    `;
+                    var lineCount = (code.substring(0, currentCharIndex).match(/\n/g) || []).length + 2;
+                    codeArea.innerHTML += '<div class="code-line"><span class="line-number">' + lineCount + '</span><span class="line-content" id="line-' + lineCount + '"></span><span class="cursor"></span></div>';
                 } else {
-                    const lines = codeArea.querySelectorAll('.line-content');
-                    const currentLine = lines[lines.length - 1];
+                    var lines = codeArea.querySelectorAll('.line-content');
+                    var currentLine = lines[lines.length - 1];
                     if (currentLine) {
                         currentLine.innerHTML = code.substring(0, currentCharIndex + 1).split('\n').pop();
                     }
                 }
-                
+
                 currentCharIndex++;
-                const speed = Math.random() * 15 + 3; // Faster typing
-                setTimeout(typeCode, speed);
+                setTimeout(typeCode, Math.random() * 15 + 3);
             } else {
-                // Finished typing, pause then switch (no deletion)
                 isPaused = true;
                 setTimeout(switchToNextSnippet, 1500);
             }
         }
-        
-        // Start the animation
+
         setTimeout(typeCode, 500);
     </script>
 </body>
