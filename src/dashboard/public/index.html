@@ -6,7 +6,7 @@
     <title>Nigents - AI Development Team for GitLab</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-primary: #09080c;
@@ -21,8 +21,8 @@
             --accent-glow: rgba(255, 87, 10, 0.15);
             --green: #19d59e;
             --purple: #8b5cf6;
-            --font-mono: 'IBM Plex Mono', monospace;
-            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+            --font-sans: 'Poppins', 'Sakkal Majalla', -apple-system, BlinkMacSystemFont, sans-serif;
             --accent-orange: #ff570a;
         }
 
@@ -30,7 +30,7 @@
         html { scroll-behavior: smooth; }
 
         body {
-            font-family: var(--font-mono);
+            font-family: var(--font-sans);
             background: var(--bg-primary);
             color: var(--text-primary);
             line-height: 1.6;
@@ -446,7 +446,7 @@
         .t-kw { color: var(--accent); }
         .t-fn { color: var(--purple); }
         .t-str { color: var(--green); }
-        .t-cmt { color: #4a4a58; font-style: italic; }
+        .t-cmt { color: #4a4a58; font-style: normal; }
         .t-cursor {
             display: inline-block;
             width: 8px;
@@ -710,6 +710,123 @@
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.08em;
+        }
+
+        /* ── Skills Browser ── */
+        .skills-browser {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        .skill-folder {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: border-color 0.3s;
+        }
+        .skill-folder.open {
+            border-color: rgba(255, 87, 10, 0.4);
+        }
+        .skill-folder-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 20px 24px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+        .skill-folder-header:hover {
+            background: rgba(255, 87, 10, 0.04);
+        }
+        .skill-folder-icon {
+            font-size: 22px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 87, 10, 0.1);
+            border-radius: 8px;
+            flex-shrink: 0;
+            transition: transform 0.3s, background 0.3s;
+        }
+        .skill-folder.open .skill-folder-icon {
+            background: rgba(255, 87, 10, 0.2);
+            transform: scale(1.1);
+        }
+        .skill-folder-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .skill-folder-name {
+            font-family: var(--font-sans);
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        .skill-folder-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .skill-folder-count {
+            font-family: var(--font-sans);
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent);
+            min-width: 36px;
+            text-align: right;
+        }
+        .skill-folder-arrow {
+            color: var(--text-muted);
+            font-size: 14px;
+            transition: transform 0.3s;
+            margin-left: 4px;
+        }
+        .skill-folder.open .skill-folder-arrow {
+            transform: rotate(180deg);
+            color: var(--accent);
+        }
+        .skill-folder-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .skill-folder.open .skill-folder-body {
+            max-height: 2000px;
+        }
+        .skill-folder-list {
+            padding: 0 24px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .skill-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 14px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            cursor: default;
+        }
+        .skill-chip:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+            background: rgba(255, 87, 10, 0.06);
+        }
+        @media (max-width: 1024px) {
+            .skills-browser { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .skills-browser { grid-template-columns: 1fr; }
         }
 
         /* ── Architecture diagram ── */
@@ -1273,58 +1390,9 @@
             <div class="section-header reveal">
                 <p class="section-tag">233 Skills</p>
                 <h2 class="section-title">Supercharge Agents with Expert Skills</h2>
-                <p class="section-subtitle">Activate any of 233 specialist skills per agent — from the dashboard or Telegram. Skills inject expert domain knowledge into agent prompts.</p>
+                <p class="section-subtitle">Activate any of 233 specialist skills per agent — from the dashboard or Telegram. Click any category to browse all skills.</p>
             </div>
-            <div class="enhancements-grid">
-                <div class="enhancement-card animate-on-scroll delay-1">
-                    <div class="enhancement-num">43</div>
-                    <div class="enhancement-body">
-                        <div class="enhancement-title">Engineering Skills</div>
-                        <div class="enhancement-desc">Senior Backend, Frontend, DevOps, ML Engineer, Architect, API Design, Database Design, CI/CD Pipeline Builder, Performance Profiler, and more.</div>
-                        <div class="enhancement-meta">Architecture / Code Review / Testing</div>
-                    </div>
-                </div>
-                <div class="enhancement-card animate-on-scroll delay-2">
-                    <div class="enhancement-num">37</div>
-                    <div class="enhancement-body">
-                        <div class="enhancement-title">Engineering Team Skills</div>
-                        <div class="enhancement-desc">Security pen-testing, cloud architecture (AWS/Azure/GCP), Terraform patterns, Helm charts, incident response, red team, threat detection.</div>
-                        <div class="enhancement-meta">Security / Cloud / Infrastructure</div>
-                    </div>
-                </div>
-                <div class="enhancement-card animate-on-scroll delay-3">
-                    <div class="enhancement-num">45</div>
-                    <div class="enhancement-body">
-                        <div class="enhancement-title">Marketing Skills</div>
-                        <div class="enhancement-desc">SEO audit, content strategy, copywriting, A/B testing, CRO (signup, paywall, popup, page), social media, paid ads, email sequences.</div>
-                        <div class="enhancement-meta">Growth / Content / Analytics</div>
-                    </div>
-                </div>
-                <div class="enhancement-card animate-on-scroll delay-4">
-                    <div class="enhancement-num">29</div>
-                    <div class="enhancement-body">
-                        <div class="enhancement-title">C-Level Advisory</div>
-                        <div class="enhancement-desc">CEO, CTO, CFO, CMO, COO, CISO, CPO advisors. Board deck builder, competitive intelligence, M&A playbook, org health diagnostics.</div>
-                        <div class="enhancement-meta">Strategy / Leadership / Finance</div>
-                    </div>
-                </div>
-                <div class="enhancement-card animate-on-scroll delay-5">
-                    <div class="enhancement-num">15</div>
-                    <div class="enhancement-body">
-                        <div class="enhancement-title">Product Skills</div>
-                        <div class="enhancement-desc">Product discovery, analytics, competitive teardown, experiment design, roadmap communication, UX research, SaaS scaffolding.</div>
-                        <div class="enhancement-meta">Product / Research / Design</div>
-                    </div>
-                </div>
-                <div class="enhancement-card animate-on-scroll delay-6">
-                    <div class="enhancement-num">14</div>
-                    <div class="enhancement-body">
-                        <div class="enhancement-title">Regulatory & QMS</div>
-                        <div class="enhancement-desc">ISO 13485, MDR 745, FDA submissions, GDPR/DSGVO, SOC2, ISO 27001, CAPA management, risk management for regulated industries.</div>
-                        <div class="enhancement-meta">Compliance / Quality / Audit</div>
-                    </div>
-                </div>
-            </div>
+            <div class="skills-browser" id="skills-browser"></div>
         </div>
     </section>
 
@@ -1597,6 +1665,95 @@
 
         document.querySelectorAll('.animate-on-scroll').forEach(function(el) {
             scrollObserver.observe(el);
+        });
+
+        // Skills Browser — all 233 skills in 9 categories
+        var skillsData = [
+            { name: 'Engineering', icon: '&#128736;', meta: 'Architecture / DevOps / APIs', skills: [
+                'Agent Designer', 'Agent Workflow Designer', 'AgentHub', 'API Design Reviewer', 'API Test Suite Builder',
+                'AutoResearch Agent', 'BeHuman', 'Browser Automation', 'Changelog Generator', 'CI/CD Pipeline Builder',
+                'Code Tour', 'Codebase Onboarding', 'Data Quality Auditor', 'Database Designer', 'Database Schema Designer',
+                'Demo Video', 'Dependency Auditor', 'Docker Development', 'Env Secrets Manager', 'Focused Fix',
+                'Git Worktree Manager', 'Helm Chart Builder', 'Interview System Designer', 'LLM Cost Optimizer',
+                'MCP Server Builder', 'Migration Architect', 'Monorepo Navigator', 'Observability Designer',
+                'Performance Profiler', 'PR Review Expert', 'Prompt Governance', 'RAG Architect', 'Release Manager',
+                'Runbook Generator', 'Secrets Vault Manager', 'Self Eval', 'Skill Security Auditor', 'Skill Tester',
+                'Spec Driven Workflow', 'SQL Database Assistant', 'Tech Debt Tracker', 'Terraform Patterns'
+            ]},
+            { name: 'Engineering Team', icon: '&#128101;', meta: 'Security / Cloud / Infrastructure', skills: [
+                'A11y Audit', 'Adversarial Reviewer', 'AI Security', 'AWS Solution Architect', 'Azure Cloud Architect',
+                'Cloud Security', 'Code Reviewer', 'Email Template Builder', 'Epic Design', 'GCP Cloud Architect',
+                'Google Workspace CLI', 'Incident Commander', 'Incident Response', 'MS365 Tenant Manager',
+                'Playwright Pro', 'Red Team', 'Security Pen Testing', 'Self Improving Agent', 'Senior Architect',
+                'Senior Backend', 'Senior Computer Vision', 'Senior Data Engineer', 'Senior Data Scientist',
+                'Senior DevOps', 'Senior Frontend', 'Senior Fullstack', 'Senior ML Engineer', 'Senior Prompt Engineer',
+                'Senior QA', 'Senior SecOps', 'Senior Security', 'Snowflake Development', 'Stripe Integration Expert',
+                'TDD Guide', 'Tech Stack Evaluator', 'Threat Detection'
+            ]},
+            { name: 'Marketing', icon: '&#128640;', meta: 'Growth / Content / Analytics', skills: [
+                'A/B Test Setup', 'Ad Creative', 'AI SEO', 'Analytics Tracking', 'App Store Optimization',
+                'Brand Guidelines', 'Campaign Analytics', 'Churn Prevention', 'Cold Email', 'Competitor Alternatives',
+                'Content Creator', 'Content Humanizer', 'Content Production', 'Content Strategy', 'Copy Editing',
+                'Copywriting', 'Email Sequence', 'Form CRO', 'Free Tool Strategy', 'Launch Strategy',
+                'Marketing Context', 'Marketing Demand Acquisition', 'Marketing Ideas', 'Marketing Ops',
+                'Marketing Psychology', 'Marketing Strategy PMM', 'Onboarding CRO', 'Page CRO', 'Paid Ads',
+                'Paywall Upgrade CRO', 'Popup CRO', 'Pricing Strategy', 'Programmatic SEO', 'Prompt Engineer Toolkit',
+                'Referral Program', 'Schema Markup', 'SEO Audit', 'Signup Flow CRO', 'Site Architecture',
+                'Social Content', 'Social Media Analyzer', 'Social Media Manager', 'Video Content Strategist',
+                'X/Twitter Growth'
+            ]},
+            { name: 'C-Level Advisory', icon: '&#127942;', meta: 'Strategy / Leadership / Finance', skills: [
+                'Agent Protocol', 'Board Deck Builder', 'Board Meeting', 'CEO Advisor', 'CFO Advisor',
+                'Change Management', 'Chief of Staff', 'CHRO Advisor', 'CISO Advisor', 'CMO Advisor',
+                'Company OS', 'Competitive Intel', 'Context Engine', 'COO Advisor', 'CPO Advisor', 'CRO Advisor',
+                'CS Onboard', 'CTO Advisor', 'Culture Architect', 'Decision Logger', 'Executive Mentor',
+                'Founder Coach', 'Internal Narrative', 'International Expansion', 'M&A Playbook',
+                'Org Health Diagnostic', 'Scenario War Room', 'Strategic Alignment'
+            ]},
+            { name: 'Product Team', icon: '&#128203;', meta: 'Product / Research / Design', skills: [
+                'Agile Product Owner', 'Code to PRD', 'Competitive Teardown', 'Experiment Designer',
+                'Landing Page Generator', 'Product Analytics', 'Product Discovery', 'Product Manager Toolkit',
+                'Product Strategist', 'Research Summarizer', 'Roadmap Communicator', 'SaaS Scaffolder',
+                'UI Design System', 'UX Researcher Designer'
+            ]},
+            { name: 'Project Management', icon: '&#128197;', meta: 'Agile / Scrum / Communication', skills: [
+                'Atlassian Admin', 'Atlassian Templates', 'Confluence Expert', 'Jira Expert',
+                'Meeting Analyzer', 'Scrum Master', 'Senior PM', 'Team Communications'
+            ]},
+            { name: 'Finance', icon: '&#128176;', meta: 'Investment / Metrics / Modeling', skills: [
+                'Business Investment Advisor', 'Financial Analyst', 'SaaS Metrics Coach'
+            ]},
+            { name: 'Business Growth', icon: '&#128200;', meta: 'Sales / Revenue / Proposals', skills: [
+                'Contract & Proposal Writer', 'Customer Success Manager', 'Revenue Operations', 'Sales Engineer'
+            ]},
+            { name: 'Regulatory & QMS', icon: '&#128220;', meta: 'Compliance / Quality / Audit', skills: [
+                'CAPA Officer', 'FDA Consultant Specialist', 'GDPR/DSGVO Expert', 'Information Security Manager ISO 27001',
+                'ISMS Audit Expert', 'MDR 745 Specialist', 'QMS Audit Expert', 'Quality Documentation Manager',
+                'Quality Manager QMR', 'Quality Manager QMS ISO 13485', 'Regulatory Affairs Head',
+                'Risk Management Specialist', 'SOC2 Compliance'
+            ]}
+        ];
+
+        var browserEl = document.getElementById('skills-browser');
+        skillsData.forEach(function(cat, i) {
+            var folder = document.createElement('div');
+            folder.className = 'skill-folder animate-on-scroll delay-' + Math.min(i + 1, 6);
+            folder.innerHTML =
+                '<div class="skill-folder-header" onclick="this.parentElement.classList.toggle(\'open\')">' +
+                    '<div class="skill-folder-icon">' + cat.icon + '</div>' +
+                    '<div class="skill-folder-info">' +
+                        '<div class="skill-folder-name">' + cat.name + '</div>' +
+                        '<div class="skill-folder-meta">' + cat.meta + '</div>' +
+                    '</div>' +
+                    '<div class="skill-folder-count">' + cat.skills.length + '</div>' +
+                    '<div class="skill-folder-arrow">&#9660;</div>' +
+                '</div>' +
+                '<div class="skill-folder-body">' +
+                    '<div class="skill-folder-list">' +
+                        cat.skills.map(function(s) { return '<span class="skill-chip">' + s + '</span>'; }).join('') +
+                    '</div>' +
+                '</div>';
+            browserEl.appendChild(folder);
         });
 
         // Smooth nav background on scroll

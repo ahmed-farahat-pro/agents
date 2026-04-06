@@ -2109,7 +2109,7 @@ async function sendRoadmapEmail(subscriber, roadmap) {
     to: email,
     subject: `Your ${roadmapTitle} Developer Roadmap`,
     html: `
-      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="font-family: 'Poppins', 'Sakkal Majalla', -apple-system, BlinkMacSystemFont, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #141116; padding: 28px 30px; text-align: center; border-radius: 12px 12px 0 0; border: 1px solid #2a2a35; border-bottom: none;">
           <div style="display: inline-block; width: 44px; height: 44px; background: #ff570a; border-radius: 10px; line-height: 44px; font-size: 22px; font-weight: 700; color: #09080c;">N</div>
           <h1 style="color: #ffffff; margin: 12px 0 0 0; font-size: 22px; font-weight: 700; letter-spacing: -0.5px;">Nigents</h1>
