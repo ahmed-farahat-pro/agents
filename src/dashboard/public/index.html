@@ -892,17 +892,82 @@
             color: var(--text-primary);
         }
         .skill-modal-body {
-            padding: 24px;
+            padding: 24px 28px;
             overflow-y: auto;
             flex: 1;
+            font-size: 14px;
+            line-height: 1.75;
+            color: var(--text-secondary);
+        }
+        .skill-modal-body h1,
+        .skill-modal-body h2,
+        .skill-modal-body h3 {
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            margin: 24px 0 12px;
+            line-height: 1.3;
+        }
+        .skill-modal-body h1 { font-size: 22px; font-weight: 700; margin-top: 0; }
+        .skill-modal-body h2 { font-size: 17px; font-weight: 600; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+        .skill-modal-body h3 { font-size: 15px; font-weight: 600; }
+        .skill-modal-body p { margin: 0 0 12px; }
+        .skill-modal-body ul, .skill-modal-body ol {
+            margin: 0 0 16px;
+            padding-left: 24px;
+        }
+        .skill-modal-body li { margin-bottom: 4px; }
+        .skill-modal-body code {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            background: rgba(255, 87, 10, 0.08);
+            color: var(--accent);
+            padding: 2px 6px;
+            border-radius: 4px;
         }
         .skill-modal-body pre {
-            font-family: var(--font-mono);
-            font-size: 13px;
-            line-height: 1.7;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 0 0 16px;
+            overflow-x: auto;
+        }
+        .skill-modal-body pre code {
+            background: none;
+            padding: 0;
             color: var(--text-secondary);
-            white-space: pre-wrap;
-            word-break: break-word;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .skill-modal-body strong { color: var(--text-primary); font-weight: 600; }
+        .skill-modal-body blockquote {
+            border-left: 3px solid var(--accent);
+            margin: 0 0 16px;
+            padding: 8px 16px;
+            color: var(--text-muted);
+            background: rgba(255, 87, 10, 0.03);
+            border-radius: 0 6px 6px 0;
+        }
+        .skill-modal-body hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 20px 0;
+        }
+        .skill-modal-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 0 16px;
+            font-size: 13px;
+        }
+        .skill-modal-body th, .skill-modal-body td {
+            text-align: left;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+        }
+        .skill-modal-body th {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-weight: 600;
         }
         .skill-modal-loading {
             text-align: center;
@@ -1898,6 +1963,56 @@
         var modalBody = document.getElementById('skill-modal-body');
         var modalClose = document.getElementById('skill-modal-close');
 
+        // Lightweight markdown to HTML
+        function renderMarkdown(md) {
+            var html = md
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                // Code blocks (``` ... ```)
+                .replace(/```(\w*)\n([\s\S]*?)```/g, function(_, lang, code) {
+                    return '<pre><code>' + code.trim() + '</code></pre>';
+                })
+                // Tables
+                .replace(/^(\|.+\|)\n(\|[-| :]+\|)\n((?:\|.+\|\n?)+)/gm, function(_, header, sep, body) {
+                    var ths = header.split('|').filter(Boolean).map(function(c) { return '<th>' + c.trim() + '</th>'; }).join('');
+                    var rows = body.trim().split('\n').map(function(row) {
+                        var tds = row.split('|').filter(Boolean).map(function(c) { return '<td>' + c.trim() + '</td>'; }).join('');
+                        return '<tr>' + tds + '</tr>';
+                    }).join('');
+                    return '<table><thead><tr>' + ths + '</tr></thead><tbody>' + rows + '</tbody></table>';
+                })
+                // Headers
+                .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+                // Horizontal rules
+                .replace(/^---$/gm, '<hr>')
+                // Bold + italic
+                .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                // Inline code
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                // Blockquotes
+                .replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>')
+                // Unordered lists
+                .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
+                // Ordered lists
+                .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+                // Wrap consecutive <li> in <ul>
+                .replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>')
+                // Paragraphs (double newline)
+                .replace(/\n\n+/g, '</p><p>')
+                // Single newlines inside paragraphs
+                .replace(/\n/g, '<br>');
+            // Wrap in paragraph if not starting with block element
+            if (!/^<(h[1-3]|pre|ul|ol|table|blockquote|hr)/.test(html)) {
+                html = '<p>' + html + '</p>';
+            }
+            // Clean up empty paragraphs
+            html = html.replace(/<p>\s*<\/p>/g, '').replace(/<p>\s*(<h[1-3]|<pre|<ul|<ol|<table|<blockquote|<hr)/g, '$1').replace(/(<\/h[1-3]>|<\/pre>|<\/ul>|<\/ol>|<\/table>|<\/blockquote>|<hr>)\s*<\/p>/g, '$1');
+            return html;
+        }
+
         function openSkillModal(skillName, slug, categoryName) {
             modalTitle.textContent = skillName;
             modalCategory.textContent = categoryName;
@@ -1905,19 +2020,30 @@
             modalOverlay.classList.add('active');
             document.body.style.overflow = 'hidden';
 
-            fetch('/api/skills/' + encodeURIComponent(slug))
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    if (data.content) {
-                        // Strip YAML frontmatter, show the body
-                        var body = data.content.replace(/^---[\s\S]*?---\n*/, '');
-                        modalBody.innerHTML = '<pre>' + body.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</pre>';
-                    } else {
-                        modalBody.innerHTML = '<div class="skill-modal-loading">Skill not found. Start the Nigents dashboard server to browse skill files.</div>';
-                    }
+            // Try static file first, then API fallback
+            fetch('/skills/' + encodeURIComponent(slug) + '.md')
+                .then(function(r) {
+                    if (!r.ok) throw new Error('not found');
+                    return r.text();
+                })
+                .then(function(md) {
+                    modalBody.innerHTML = renderMarkdown(md);
                 })
                 .catch(function() {
-                    modalBody.innerHTML = '<div class="skill-modal-loading">Could not load skill. Make sure the Nigents dashboard is running.</div>';
+                    // Fallback to API if dashboard server is running
+                    fetch('/api/skills/' + encodeURIComponent(slug))
+                        .then(function(r) { return r.json(); })
+                        .then(function(data) {
+                            if (data.content) {
+                                var body = data.content.replace(/^---[\s\S]*?---\n*/, '');
+                                modalBody.innerHTML = renderMarkdown(body);
+                            } else {
+                                modalBody.innerHTML = '<div class="skill-modal-loading">Skill "' + skillName + '" not found.</div>';
+                            }
+                        })
+                        .catch(function() {
+                            modalBody.innerHTML = '<div class="skill-modal-loading">Skill "' + skillName + '" not found.</div>';
+                        });
                 });
         }
 

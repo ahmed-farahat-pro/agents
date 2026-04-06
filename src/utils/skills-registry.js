@@ -9,7 +9,7 @@ const path = require('path');
 const logger = require('./logger');
 
 // Default skills directory — override via SKILLS_DIR env
-const SKILLS_DIR = process.env.SKILLS_DIR || path.resolve(__dirname, '../../../../claude-skills');
+const SKILLS_DIR = process.env.SKILLS_DIR || path.resolve(require('os').homedir(), 'Desktop/claude-skills');
 
 /** In-memory cache: slug -> skill metadata */
 let skillsCache = null;
