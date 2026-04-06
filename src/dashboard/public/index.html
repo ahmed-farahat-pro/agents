@@ -347,14 +347,10 @@
         }
 
         .btn-primary:hover {
-            background: var(--accent-orange);
+            background: #ff7033;
             color: var(--bg-primary);
             transform: translateY(-2px);
             box-shadow: 0 8px 25px -8px rgba(255, 87, 10, 0.4);
-        }
-        .btn-primary:hover {
-            background: #ff7033;
-            box-shadow: 0 0 30px rgba(255, 87, 10, 0.3);
         }
         .btn-secondary {
             background: transparent;
@@ -796,10 +792,6 @@
         }
         .footer-link:hover { color: var(--accent); }
 
-        .footer-link:hover {
-            color: var(--accent-orange);
-        }
-
         /* Responsive - fluid typography */
         .hero-title {
             font-size: clamp(36px, 5vw, 64px);
@@ -931,7 +923,9 @@
 
             .features,
             .agents,
-            .cta {
+            .cta,
+            .enhancements,
+            .architecture {
                 padding: 60px 16px;
             }
 
@@ -1033,7 +1027,7 @@
             .hero { padding: 100px 20px 60px; }
             .hero-title { font-size: 36px; letter-spacing: -1px; }
             .terminal { display: none; }
-            .features, .agents, .enhancements, .architecture, .cta { padding: 80px 20px; }
+            .features, .agents, .enhancements, .architecture, .cta, #meetings, #skills { padding: 80px 20px; }
             .section-title, .cta-title { font-size: 28px; }
             .features-grid, .agents-grid { grid-template-columns: 1fr; }
             .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
@@ -1053,8 +1047,9 @@
         <div class="nav-links" id="nav-links">
             <a href="#features" class="nav-link">Features</a>
             <a href="#agents" class="nav-link">Agents</a>
-            <a href="#enhancements" class="nav-link">What's New</a>
-            <a href="how-it-works.html" class="nav-link">How it Works</a>
+            <a href="#skills" class="nav-link">Skills</a>
+            <a href="#comparison" class="nav-link">vs Claude</a>
+            <a href="#meetings" class="nav-link">Meetings</a>
             <a href="https://gitlab.com/bonyad-tech/nigents" class="nav-link" target="_blank">GitLab</a>
             <a href="#get-started" class="nav-cta">Get Started</a>
         </div>
@@ -1128,12 +1123,12 @@
     <section class="stats reveal">
         <div class="stats-grid">
             <div class="stat-item animate-on-scroll delay-1">
-                <div class="stat-value">7</div>
+                <div class="stat-value">10</div>
                 <div class="stat-label">AI Agents</div>
             </div>
             <div class="stat-item animate-on-scroll delay-2">
-                <div class="stat-value">24/7</div>
-                <div class="stat-label">Operation</div>
+                <div class="stat-value">233</div>
+                <div class="stat-label">Skills</div>
             </div>
             <div class="stat-item animate-on-scroll delay-3">
                 <div class="stat-value">4</div>
@@ -1173,17 +1168,17 @@
                 <div class="feature-card animate-on-scroll delay-4">
                     <div class="feature-icon">AI</div>
                     <h3 class="feature-title">Multi-Model AI</h3>
-                    <p class="feature-desc">Use a custom model (e.g. GLM) for agents; OpenAI for voice. Configurable via dashboard.</p>
+                    <p class="feature-desc">4 providers: Claude, GLM-5, Kimi, DeepSeek. Cost-optimized routing sends trivial tasks to cheap models, complex ones to premium.</p>
                 </div>
                 <div class="feature-card animate-on-scroll delay-5">
-                    <div class="feature-icon">38</div>
-                    <h3 class="feature-title">MCP Tools</h3>
-                    <p class="feature-desc">Filesystem, git, databases, search, and custom MCP tools give your agents superpowers.</p>
+                    <div class="feature-icon">233</div>
+                    <h3 class="feature-title">Activatable Skills</h3>
+                    <p class="feature-desc">233 expert skills across 9 domains. Activate per agent from dashboard or Telegram. Skills inject domain knowledge into agent prompts.</p>
                 </div>
                 <div class="feature-card animate-on-scroll delay-6">
                     <div class="feature-icon">UI</div>
                     <h3 class="feature-title">Live Dashboard</h3>
-                    <p class="feature-desc">Watch agents work in real-time. See code edits, conversations, and progress as it happens.</p>
+                    <p class="feature-desc">Watch agents work in real-time. Manage skills, start meetings, browse agent conversations — all from a Socket.IO-powered live UI.</p>
                 </div>
             </div>
         </div>
@@ -1203,7 +1198,13 @@
                     <div class="agent-info">
                         <div class="agent-name">Orchestrator</div>
                         <div class="agent-role">Team Lead & Router</div>
-                        <span class="agent-model">GLM-5</span>
+                    </div>
+                </div>
+                <div class="agent-card animate-on-scroll delay-1">
+                    <div class="agent-avatar">AR</div>
+                    <div class="agent-info">
+                        <div class="agent-name">Architect</div>
+                        <div class="agent-role">Solutions Architect</div>
                     </div>
                 </div>
                 <div class="agent-card animate-on-scroll delay-2">
@@ -1211,75 +1212,274 @@
                     <div class="agent-info">
                         <div class="agent-name">Planner</div>
                         <div class="agent-role">Architecture & Planning</div>
-                        <span class="agent-model">GLM-5</span>
                     </div>
                 </div>
-                <div class="agent-card animate-on-scroll delay-3">
+                <div class="agent-card animate-on-scroll delay-2">
                     <div class="agent-avatar">BE</div>
                     <div class="agent-info">
                         <div class="agent-name">Backend Dev</div>
                         <div class="agent-role">Backend Developer</div>
-                        <span class="agent-model">GLM-5</span>
                     </div>
                 </div>
-                <div class="agent-card animate-on-scroll delay-4">
+                <div class="agent-card animate-on-scroll delay-3">
                     <div class="agent-avatar">FE</div>
                     <div class="agent-info">
                         <div class="agent-name">Frontend Dev</div>
                         <div class="agent-role">Frontend Developer</div>
-                        <span class="agent-model">GLM-4 Plus</span>
                     </div>
                 </div>
-                <div class="agent-card animate-on-scroll delay-5">
+                <div class="agent-card animate-on-scroll delay-3">
+                    <div class="agent-avatar">DO</div>
+                    <div class="agent-info">
+                        <div class="agent-name">DevOps</div>
+                        <div class="agent-role">DevOps & Infrastructure</div>
+                    </div>
+                </div>
+                <div class="agent-card animate-on-scroll delay-4">
+                    <div class="agent-avatar">SC</div>
+                    <div class="agent-info">
+                        <div class="agent-name">Security</div>
+                        <div class="agent-role">Security Analyst</div>
+                    </div>
+                </div>
+                <div class="agent-card animate-on-scroll delay-4">
                     <div class="agent-avatar">QA</div>
                     <div class="agent-info">
                         <div class="agent-name">QA Tester</div>
                         <div class="agent-role">Quality Assurance</div>
-                        <span class="agent-model">GLM-4</span>
                     </div>
                 </div>
                 <div class="agent-card animate-on-scroll delay-5">
                     <div class="agent-avatar">CR</div>
                     <div class="agent-info">
                         <div class="agent-name">Code Reviewer</div>
-                        <div class="agent-role">Security & Quality</div>
-                        <span class="agent-model">GLM-5</span>
+                        <div class="agent-role">Code Review & Quality</div>
                     </div>
                 </div>
-                <div class="agent-card animate-on-scroll delay-6">
+                <div class="agent-card animate-on-scroll delay-5">
                     <div class="agent-avatar">RP</div>
                     <div class="agent-info">
                         <div class="agent-name">Reporter</div>
                         <div class="agent-role">Updates & Reports</div>
-                        <span class="agent-model">GLM-4</span>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Architecture -->
-    <section class="architecture">
+    <!-- Skills -->
+    <section class="enhancements" id="skills">
         <div class="container">
-            <h2 class="cta-title animate-on-scroll">Ready to ship overnight?</h2>
-            <p class="cta-subtitle animate-on-scroll delay-1">Start using Nigents today and wake up to finished features.</p>
-            <a href="/login.html" class="btn btn-primary animate-on-scroll delay-2">Get Started Now →</a>
+            <div class="section-header reveal">
+                <p class="section-tag">233 Skills</p>
+                <h2 class="section-title">Supercharge Agents with Expert Skills</h2>
+                <p class="section-subtitle">Activate any of 233 specialist skills per agent — from the dashboard or Telegram. Skills inject expert domain knowledge into agent prompts.</p>
+            </div>
+            <div class="enhancements-grid">
+                <div class="enhancement-card animate-on-scroll delay-1">
+                    <div class="enhancement-num">43</div>
+                    <div class="enhancement-body">
+                        <div class="enhancement-title">Engineering Skills</div>
+                        <div class="enhancement-desc">Senior Backend, Frontend, DevOps, ML Engineer, Architect, API Design, Database Design, CI/CD Pipeline Builder, Performance Profiler, and more.</div>
+                        <div class="enhancement-meta">Architecture / Code Review / Testing</div>
+                    </div>
+                </div>
+                <div class="enhancement-card animate-on-scroll delay-2">
+                    <div class="enhancement-num">37</div>
+                    <div class="enhancement-body">
+                        <div class="enhancement-title">Engineering Team Skills</div>
+                        <div class="enhancement-desc">Security pen-testing, cloud architecture (AWS/Azure/GCP), Terraform patterns, Helm charts, incident response, red team, threat detection.</div>
+                        <div class="enhancement-meta">Security / Cloud / Infrastructure</div>
+                    </div>
+                </div>
+                <div class="enhancement-card animate-on-scroll delay-3">
+                    <div class="enhancement-num">45</div>
+                    <div class="enhancement-body">
+                        <div class="enhancement-title">Marketing Skills</div>
+                        <div class="enhancement-desc">SEO audit, content strategy, copywriting, A/B testing, CRO (signup, paywall, popup, page), social media, paid ads, email sequences.</div>
+                        <div class="enhancement-meta">Growth / Content / Analytics</div>
+                    </div>
+                </div>
+                <div class="enhancement-card animate-on-scroll delay-4">
+                    <div class="enhancement-num">29</div>
+                    <div class="enhancement-body">
+                        <div class="enhancement-title">C-Level Advisory</div>
+                        <div class="enhancement-desc">CEO, CTO, CFO, CMO, COO, CISO, CPO advisors. Board deck builder, competitive intelligence, M&A playbook, org health diagnostics.</div>
+                        <div class="enhancement-meta">Strategy / Leadership / Finance</div>
+                    </div>
+                </div>
+                <div class="enhancement-card animate-on-scroll delay-5">
+                    <div class="enhancement-num">15</div>
+                    <div class="enhancement-body">
+                        <div class="enhancement-title">Product Skills</div>
+                        <div class="enhancement-desc">Product discovery, analytics, competitive teardown, experiment design, roadmap communication, UX research, SaaS scaffolding.</div>
+                        <div class="enhancement-meta">Product / Research / Design</div>
+                    </div>
+                </div>
+                <div class="enhancement-card animate-on-scroll delay-6">
+                    <div class="enhancement-num">14</div>
+                    <div class="enhancement-body">
+                        <div class="enhancement-title">Regulatory & QMS</div>
+                        <div class="enhancement-desc">ISO 13485, MDR 745, FDA submissions, GDPR/DSGVO, SOC2, ISO 27001, CAPA management, risk management for regulated industries.</div>
+                        <div class="enhancement-meta">Compliance / Quality / Audit</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Nigents vs Claude Comparison -->
+    <section class="architecture" id="comparison">
+        <div class="container">
+            <div class="section-header reveal">
+                <p class="section-tag">Why Nigents</p>
+                <h2 class="section-title">Nigents vs Claude Code / Remote / Dispatch</h2>
+                <p class="section-subtitle">Nigents is built for teams that need autonomous, overnight AI development with full GitLab integration.</p>
+            </div>
+            <div class="arch-diagram animate-on-scroll">
+<pre>
+<span class="arch-highlight">Feature</span>                        <span class="arch-highlight">Nigents</span>          <span class="arch-purple">Claude Code</span>      <span class="arch-green">Remote/Dispatch</span>
+
+<span class="arch-highlight">Specialized agents</span>              10 agents          1 general         1 general
+<span class="arch-highlight">Activatable skills</span>              233 skills         ~50 built-in      Limited
+<span class="arch-highlight">GitLab-native integration</span>       Full pipeline      Manual            API only
+<span class="arch-highlight">Telegram voice control</span>          Built-in           None              None
+<span class="arch-highlight">Team voice meetings (Jitsi)</span>     10 agents speak    None              None
+<span class="arch-highlight">Multi-model routing</span>             4 providers        Claude only       Claude only
+<span class="arch-highlight">Cost-optimized routing</span>          Per-complexity      Fixed             Fixed
+<span class="arch-highlight">Self-healing workflows</span>          Auto-fix + retry   Manual            Manual
+<span class="arch-highlight">Parallel agent execution</span>        Built-in           Sequential        Sequential
+<span class="arch-highlight">Cross-task memory</span>               Persistent         Session only      None
+<span class="arch-highlight">Overnight autonomous mode</span>       24/7 unattended    Requires session  Requires trigger
+<span class="arch-highlight">Arabic/RTL support</span>              Native             None              None
+<span class="arch-highlight">Architecture agent</span>              Dedicated          Manual            None
+<span class="arch-highlight">Security scanning agent</span>         OWASP + STRIDE     Manual            None
+<span class="arch-highlight">DevOps agent</span>                    CI/CD + Docker     Manual            None
+<span class="arch-highlight">Real-time dashboard</span>             Socket.IO live     CLI output        Webhook logs
+<span class="arch-highlight">MCP tool ecosystem</span>              38 tools           File + search     Limited
+<span class="arch-highlight">Regulatory skills</span>               ISO/FDA/GDPR       None              None
+<span class="arch-highlight">Open source</span>                     Yes (GitLab)       Proprietary       Proprietary
+</pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- Voice Meetings -->
+    <section class="features" id="meetings">
+        <div class="container">
+            <div class="section-header reveal">
+                <p class="section-tag">Voice Meetings</p>
+                <h2 class="section-title">Talk to Your AI Team</h2>
+                <p class="section-subtitle">Start a meeting from Telegram. All 10 agents auto-join with voice. Ask questions, get answers from each specialist in turn.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card animate-on-scroll delay-1">
+                    <div class="feature-tag new">New</div>
+                    <h3 class="feature-title">Telegram /meeting</h3>
+                    <p class="feature-desc">One command creates a meeting room. All 10 agents pre-join and introduce themselves. You walk into a room that's already staffed.</p>
+                </div>
+                <div class="feature-card animate-on-scroll delay-2">
+                    <div class="feature-tag new">New</div>
+                    <h3 class="feature-title">Voice In, Voice Out</h3>
+                    <p class="feature-desc">Speak naturally using your browser mic. Each agent responds with synthesized voice in strict turn order — no cross-talk, no chaos.</p>
+                </div>
+                <div class="feature-card animate-on-scroll delay-3">
+                    <div class="feature-tag new">New</div>
+                    <h3 class="feature-title">Jitsi + AI Hybrid</h3>
+                    <p class="feature-desc">Human teammates join via Jitsi link. AI agents join the roundtable. Mix human voice with AI analysis in real-time.</p>
+                </div>
+                <div class="feature-card animate-on-scroll delay-4">
+                    <div class="feature-tag">Telegram</div>
+                    <h3 class="feature-title">Chat with Any Agent</h3>
+                    <p class="feature-desc">Use /meet backend or /meet security to chat directly with any of the 10 agents. Each has their own personality and expertise.</p>
+                </div>
+                <div class="feature-card animate-on-scroll delay-5">
+                    <div class="feature-tag">Skills</div>
+                    <h3 class="feature-title">Skill-Enhanced Responses</h3>
+                    <p class="feature-desc">Activate skills per agent from Telegram: /skill activate security red-team. The agent gains that expert knowledge instantly.</p>
+                </div>
+                <div class="feature-card animate-on-scroll delay-6">
+                    <div class="feature-tag">Dashboard</div>
+                    <h3 class="feature-title">Skills Management UI</h3>
+                    <p class="feature-desc">Browse 233 skills by category. Drag-and-drop activate skills per agent. See which agent has which expertise at a glance.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="enhancements" id="enhancements">
+        <div class="container">
+            <div class="section-header reveal">
+                <p class="section-tag">How It Works</p>
+                <h2 class="section-title">From Task to Merge Request</h2>
+                <p class="section-subtitle">Send a task before you sleep. Nigents handles the rest.</p>
+            </div>
+            <div class="enhancements-grid">
+                <div class="enhancement-card animate-on-scroll delay-1">
+                    <div class="enhancement-num">01</div>
+                    <div class="enhancement-body">
+                        <div class="enhancement-title">Send Task via Telegram</div>
+                        <div class="enhancement-desc">Text or voice message: "Add user authentication to the API." The Orchestrator understands intent in Arabic or English and routes it.</div>
+                    </div>
+                </div>
+                <div class="enhancement-card animate-on-scroll delay-2">
+                    <div class="enhancement-num">02</div>
+                    <div class="enhancement-body">
+                        <div class="enhancement-title">Architect Designs, Planner Breaks Down</div>
+                        <div class="enhancement-desc">The Architect evaluates the system design. The Planner reads your codebase via GitLab API and creates a step-by-step plan with exact file paths.</div>
+                    </div>
+                </div>
+                <div class="enhancement-card animate-on-scroll delay-3">
+                    <div class="enhancement-num">03</div>
+                    <div class="enhancement-body">
+                        <div class="enhancement-title">Agents Code in Parallel</div>
+                        <div class="enhancement-desc">Backend Dev and Frontend Dev work simultaneously on feature branches. DevOps sets up the pipeline. Security scans as code is written.</div>
+                    </div>
+                </div>
+                <div class="enhancement-card animate-on-scroll delay-4">
+                    <div class="enhancement-num">04</div>
+                    <div class="enhancement-body">
+                        <div class="enhancement-title">Self-Healing on Failure</div>
+                        <div class="enhancement-desc">If compilation fails, the agent auto-fixes and retries. If tests fail, QA reports the issue and the dev agent patches it — no human needed.</div>
+                    </div>
+                </div>
+                <div class="enhancement-card animate-on-scroll delay-5">
+                    <div class="enhancement-num">05</div>
+                    <div class="enhancement-body">
+                        <div class="enhancement-title">Review, Test, Secure</div>
+                        <div class="enhancement-desc">Code Reviewer audits every diff. QA Tester runs the test suite. Security performs OWASP scanning. All three must pass before proceeding.</div>
+                    </div>
+                </div>
+                <div class="enhancement-card animate-on-scroll delay-6">
+                    <div class="enhancement-num">06</div>
+                    <div class="enhancement-body">
+                        <div class="enhancement-title">Wake Up to a Merge Request</div>
+                        <div class="enhancement-desc">Reporter sends you a Telegram summary with MR links, test results, and security report. Approve and merge from your phone.</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- CTA -->
     <section class="cta reveal" id="get-started">
         <h2 class="cta-title">Ready to Ship Overnight?</h2>
-        <p class="cta-subtitle">Connect your GitLab and let 10 agents handle the rest.</p>
-        <a href="https://gitlab.com/bonyad-tech/nigents" class="btn btn-primary" target="_blank">View on GitLab</a>
+        <p class="cta-subtitle">Connect your GitLab. Activate skills. Let 10 agents handle the rest while you sleep.</p>
+        <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+            <a href="https://gitlab.com/bonyad-tech/nigents" class="btn btn-primary" target="_blank">View on GitLab</a>
+            <a href="/login.html" class="btn btn-secondary">Open Dashboard</a>
+        </div>
     </section>
 
     <!-- Footer -->
     <footer class="footer">
-        <span class="footer-text">2025 Nigents. AI-Powered Development for GitLab.</span>
+        <span class="footer-text">2025 Nigents. 10 AI Agents. 233 Skills. Ship overnight.</span>
         <div class="footer-links">
             <a href="https://gitlab.com/bonyad-tech/nigents" class="footer-link" target="_blank">GitLab</a>
             <a href="how-it-works.html" class="footer-link">How it Works</a>
+            <a href="#comparison" class="footer-link">vs Claude</a>
+            <a href="#skills" class="footer-link">Skills</a>
         </div>
     </footer>
 

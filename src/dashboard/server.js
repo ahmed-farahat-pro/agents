@@ -2960,6 +2960,119 @@ app.post('/api/meeting/roundtable', async (req, res) => {
 });
 
 // ============================================================================
+// Skills Management API
+// ============================================================================
+
+const skillsRegistry = require('../utils/skills-registry');
+
+/** List all skills, optionally filtered by category or search query */
+app.get('/api/skills', (req, res) => {
+  try {
+    const q = (req.query.q || '').trim();
+    const category = (req.query.category || '').trim();
+    let skills;
+    if (q) {
+      skills = skillsRegistry.searchSkills(q);
+    } else if (category) {
+      const grouped = skillsRegistry.getSkillsByCategory();
+      skills = grouped[category] || [];
+    } else {
+      skills = [...skillsRegistry.getAllSkills().values()];
+    }
+    const grouped = skillsRegistry.getSkillsByCategory();
+    res.json({
+      success: true,
+      total: skills.length,
+      categories: Object.keys(grouped).sort(),
+      skills: skills.map(s => ({
+        slug: s.slug,
+        name: s.name,
+        description: s.description,
+        category: s.category,
+        version: s.version,
+        domain: s.domain,
+        hasScripts: s.hasScripts,
+        hasTemplates: s.hasTemplates,
+      })),
+    });
+  } catch (e) {
+    logger.error('[Skills] API list error:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/** Get full skill content (SKILL.md body) */
+app.get('/api/skills/:slug', (req, res) => {
+  try {
+    const content = skillsRegistry.getSkillContent(req.params.slug);
+    if (!content) return res.status(404).json({ success: false, error: 'Skill not found' });
+    const allSkills = skillsRegistry.getAllSkills();
+    const meta = allSkills.get(req.params.slug);
+    res.json({ success: true, skill: meta, content });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/** Activate a skill for an agent */
+app.post('/api/skills/activate', (req, res) => {
+  try {
+    const { agent, skill } = req.body;
+    if (!agent || !skill) return res.status(400).json({ success: false, error: 'agent and skill required' });
+    const allSkills = skillsRegistry.getAllSkills();
+    if (!allSkills.has(skill)) return res.status(404).json({ success: false, error: `Skill "${skill}" not found` });
+    skillsRegistry.activateSkill(agent, skill);
+    res.json({ success: true, message: `Activated ${skill} for ${agent}` });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/** Deactivate a skill for an agent */
+app.post('/api/skills/deactivate', (req, res) => {
+  try {
+    const { agent, skill } = req.body;
+    if (!agent || !skill) return res.status(400).json({ success: false, error: 'agent and skill required' });
+    skillsRegistry.deactivateSkill(agent, skill);
+    res.json({ success: true, message: `Deactivated ${skill} for ${agent}` });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/** Activate all skills in a category for an agent */
+app.post('/api/skills/activate-category', (req, res) => {
+  try {
+    const { agent, category } = req.body;
+    if (!agent || !category) return res.status(400).json({ success: false, error: 'agent and category required' });
+    const count = skillsRegistry.activateCategory(agent, category);
+    res.json({ success: true, message: `Activated ${count} skills from ${category} for ${agent}`, count });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/** Get all agent skill assignments */
+app.get('/api/skills/assignments', (req, res) => {
+  try {
+    const assignments = skillsRegistry.getAssignmentsSummary();
+    res.json({ success: true, assignments });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/** Get skills for a specific agent */
+app.get('/api/skills/agent/:name', (req, res) => {
+  try {
+    const skills = skillsRegistry.getAgentSkills(req.params.name);
+    res.json({ success: true, agent: req.params.name, skills });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// ============================================================================
 // Socket.IO
 // ============================================================================
 

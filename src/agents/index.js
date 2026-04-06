@@ -1,5 +1,5 @@
 /**
- * 🦉 Nigents - Agent Exports
+ * Nigents - Agent Exports (10 Agents)
  */
 
 const OrchestratorAgent = require('./orchestrator');
@@ -9,6 +9,9 @@ const FrontendDevAgent = require('./frontend-dev');
 const QATesterAgent = require('./qa-tester');
 const CodeReviewerAgent = require('./code-reviewer');
 const ReporterAgent = require('./reporter');
+const DevOpsAgent = require('./devops');
+const SecurityAgent = require('./security');
+const ArchitectAgent = require('./architect');
 
 module.exports = {
   OrchestratorAgent,
@@ -18,4 +21,7 @@ module.exports = {
   QATesterAgent,
   CodeReviewerAgent,
   ReporterAgent,
+  DevOpsAgent,
+  SecurityAgent,
+  ArchitectAgent,
 };

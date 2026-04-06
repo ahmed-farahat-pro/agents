@@ -50,6 +50,9 @@ const {
   QATesterAgent,
   CodeReviewerAgent,
   ReporterAgent,
+  DevOpsAgent,
+  SecurityAgent,
+  ArchitectAgent,
 } = require('./agents');
 
 // Initialize bot
@@ -150,6 +153,9 @@ orchestrator.registerAgent(new FrontendDevAgent());
 orchestrator.registerAgent(new QATesterAgent());
 orchestrator.registerAgent(new CodeReviewerAgent());
 orchestrator.registerAgent(reporter);
+orchestrator.registerAgent(new DevOpsAgent());
+orchestrator.registerAgent(new SecurityAgent());
+orchestrator.registerAgent(new ArchitectAgent());
 
 // Bot state
 const botState = {
@@ -231,17 +237,43 @@ async function sendMeetingLinksToTelegram(chatId, telegramUserId) {
     base = meetingSessions.getPublicDashboardUrl();
   }
   const roomUrl = `${base}/meeting-room.html?token=${encodeURIComponent(session.token)}`;
-  const text = `<b>🎙️ Team voice meeting</b>
 
-<b>1) AI roundtable + instant voice replies</b>
-<a href="${roomUrl}">Open Nigents meeting room</a>
-<i>Chrome/Edge: speak to the team; agents answer in turn with voice. Use HTTPS in production.</i>
+  // Pre-warm the meeting: send initial roundtable so agents are "present" when user joins
+  try {
+    const { runRoundtable } = require('./utils/meeting-roundtable');
+    const meetingRoomState = require('./utils/meeting-room-state');
+    const allAgents = ['orchestrator', 'architect', 'planner', 'backend-dev', 'frontend-dev', 'devops', 'security', 'qa-tester', 'code-reviewer', 'reporter'];
+    meetingRoomState.appendUserMessage(session.token, { content: 'Meeting started. All agents standing by.', from: 'System' });
+    const warmup = await runRoundtable({
+      message: 'The team lead has started a meeting. Each agent: introduce yourself in one sentence and confirm you are ready.',
+      context: 'Nigents team standup meeting',
+      agents: allAgents,
+      history: [],
+    });
+    if (warmup.turns) {
+      meetingRoomState.appendAgentTurns(session.token, warmup.turns);
+    }
+    logger.info(`[Bot] Meeting pre-warmed with ${warmup.turns?.length || 0} agent intros`);
+  } catch (e) {
+    logger.warn('[Bot] Meeting pre-warm failed (non-critical):', e.message);
+  }
 
-<b>2) Human voice room (Jitsi)</b>
+  const text = `<b>🎙️ Team Voice Meeting — All 10 Agents Ready</b>
+
+<b>1) AI Roundtable (voice + text)</b>
+<a href="${roomUrl}">Open Nigents Meeting Room</a>
+<i>All 10 agents are pre-joined and ready. Speak or type — each agent replies with voice in turn.</i>
+
+<b>Agents in this meeting:</b>
+🔸 Orchestrator · Architect · Planner
+🔸 Backend Dev · Frontend Dev · DevOps
+🔸 Security · QA Tester · Code Reviewer · Reporter
+
+<b>2) Human Voice Room (Jitsi)</b>
 <a href="${session.jitsiUrl}">Join Jitsi</a>
-<i>Share with teammates for real-time voice.</i>
+<i>Share with teammates for real-time voice discussion.</i>
 
-Use <code>/meeting</code> again for a fresh link.`;
+Use <code>/meeting</code> for a fresh session.`;
   await bot.sendMessage(chatId, text, { parse_mode: 'HTML', disable_web_page_preview: false });
 }
 
@@ -328,8 +360,15 @@ Send voice notes or text naturally:
 
 <b>Agent Chat:</b>
 • /meet agent — Chat with specific agent
-  (planner, backend, frontend, qa, reviewer)
-• /meeting — Voice meeting link (AI room + Jitsi)
+  (planner, backend, frontend, qa, reviewer, devops, security, architect)
+• /meeting — Voice meeting with all agents (Jitsi + AI voice)
+
+<b>Skills:</b>
+• /skills — List all 233 available skills
+• /skill name — View skill details
+• /skill activate agent skill — Add skill to agent
+• /skill deactivate agent skill — Remove skill from agent
+• /agentskills agent — List skills for an agent
 
 <b>Management:</b>
 • /run — Start implementation now
@@ -2394,6 +2433,121 @@ bot.onText(/\/meeting(?:\s|$)/, async (msg) => {
   } catch (e) {
     logger.error('[Bot] /meeting failed:', e.message);
     await bot.sendMessage(msg.chat.id, `Could not create meeting links: ${e.message}`);
+  }
+});
+
+// /skills — list all available skills by category
+bot.onText(/\/skills(?:\s|$)/, async (msg) => {
+  if (!isAuthorized(msg.chat.id)) return;
+  try {
+    const skillsRegistry = require('./utils/skills-registry');
+    const grouped = skillsRegistry.getSkillsByCategory();
+    const cats = Object.keys(grouped).sort();
+    let text = '<b>Available Skills (233)</b>\n\n';
+    for (const cat of cats) {
+      const skills = grouped[cat];
+      text += `<b>${escapeHtml(cat)}</b> (${skills.length}):\n`;
+      text += skills.map(s => `  • <code>${escapeHtml(s.slug)}</code>`).join('\n');
+      text += '\n\n';
+    }
+    text += 'Use <code>/skill activate agent-name skill-name</code> to add a skill to an agent.';
+    // Split if too long for Telegram
+    if (text.length > 4000) {
+      const chunks = [];
+      let chunk = '';
+      for (const line of text.split('\n')) {
+        if ((chunk + '\n' + line).length > 4000) {
+          chunks.push(chunk);
+          chunk = line;
+        } else {
+          chunk += (chunk ? '\n' : '') + line;
+        }
+      }
+      if (chunk) chunks.push(chunk);
+      for (const c of chunks) {
+        await bot.sendMessage(msg.chat.id, c, { parse_mode: 'HTML' });
+      }
+    } else {
+      await bot.sendMessage(msg.chat.id, text, { parse_mode: 'HTML' });
+    }
+  } catch (e) {
+    logger.error('[Bot] /skills failed:', e.message);
+    await bot.sendMessage(msg.chat.id, `Error listing skills: ${e.message}`);
+  }
+});
+
+// /skill activate|deactivate agent skill — manage per-agent skills
+bot.onText(/\/skill\s+activate\s+(\S+)\s+(\S+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+  try {
+    const skillsRegistry = require('./utils/skills-registry');
+    const agentName = match[1].trim();
+    const skillSlug = match[2].trim();
+    const allSkills = skillsRegistry.getAllSkills();
+    if (!allSkills.has(skillSlug)) {
+      await bot.sendMessage(msg.chat.id, `Skill <code>${escapeHtml(skillSlug)}</code> not found. Use /skills to see available skills.`, { parse_mode: 'HTML' });
+      return;
+    }
+    skillsRegistry.activateSkill(agentName, skillSlug);
+    const skill = allSkills.get(skillSlug);
+    await bot.sendMessage(msg.chat.id, `✅ Activated <b>${escapeHtml(skill.name)}</b> (${escapeHtml(skill.category)}) for agent <b>${escapeHtml(agentName)}</b>`, { parse_mode: 'HTML' });
+  } catch (e) {
+    logger.error('[Bot] /skill activate failed:', e.message);
+    await bot.sendMessage(msg.chat.id, `Error: ${e.message}`);
+  }
+});
+
+bot.onText(/\/skill\s+deactivate\s+(\S+)\s+(\S+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+  try {
+    const skillsRegistry = require('./utils/skills-registry');
+    skillsRegistry.deactivateSkill(match[1].trim(), match[2].trim());
+    await bot.sendMessage(msg.chat.id, `Deactivated <b>${escapeHtml(match[2].trim())}</b> for <b>${escapeHtml(match[1].trim())}</b>`, { parse_mode: 'HTML' });
+  } catch (e) {
+    await bot.sendMessage(msg.chat.id, `Error: ${e.message}`);
+  }
+});
+
+// /skill name — view skill details
+bot.onText(/\/skill\s+(?!activate|deactivate)(\S+)\s*$/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+  try {
+    const skillsRegistry = require('./utils/skills-registry');
+    const slug = match[1].trim();
+    const allSkills = skillsRegistry.getAllSkills();
+    const skill = allSkills.get(slug);
+    if (!skill) {
+      await bot.sendMessage(msg.chat.id, `Skill "${slug}" not found. Use /skills to browse.`);
+      return;
+    }
+    let text = `<b>${escapeHtml(skill.name)}</b>\n`;
+    text += `Category: ${escapeHtml(skill.category)}\n`;
+    text += `Version: ${escapeHtml(skill.version)}\n`;
+    if (skill.domain) text += `Domain: ${escapeHtml(skill.domain)}\n`;
+    text += `\n${escapeHtml(skill.description).slice(0, 600)}\n`;
+    text += `\nActivate: <code>/skill activate agent-name ${escapeHtml(slug)}</code>`;
+    await bot.sendMessage(msg.chat.id, text, { parse_mode: 'HTML' });
+  } catch (e) {
+    await bot.sendMessage(msg.chat.id, `Error: ${e.message}`);
+  }
+});
+
+// /agentskills agent — list active skills for an agent
+bot.onText(/\/agentskills\s+(\S+)/, async (msg, match) => {
+  if (!isAuthorized(msg.chat.id)) return;
+  try {
+    const skillsRegistry = require('./utils/skills-registry');
+    const agent = match[1].trim();
+    const skills = skillsRegistry.getAgentSkills(agent);
+    if (skills.length === 0) {
+      await bot.sendMessage(msg.chat.id, `No skills activated for <b>${escapeHtml(agent)}</b>.\nUse <code>/skill activate ${escapeHtml(agent)} skill-name</code>`, { parse_mode: 'HTML' });
+      return;
+    }
+    let text = `<b>Active skills for ${escapeHtml(agent)}</b> (${skills.length}):\n\n`;
+    text += skills.map(s => `• <code>${escapeHtml(s.slug)}</code> — ${escapeHtml(s.category)}`).join('\n');
+    await bot.sendMessage(msg.chat.id, text, { parse_mode: 'HTML' });
+  } catch (e) {
+    await bot.sendMessage(msg.chat.id, `Error: ${e.message}`);
   }
 });
 
