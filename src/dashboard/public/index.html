@@ -1,4 +1,3 @@
---- src/dashboard/public/index.html ---
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,29 +10,23 @@
     <style>
         :root {
             --bg-primary: #09080c;
-            --bg-secondary: #141116;
-            --bg-tertiary: #1a181f;
-            --bg-card: #111111;
-            --border: #2a2a35;
-            --text-primary: #ffffff;
-            --text-secondary: #a0a0a0;
-            --text-muted: #666666;
-            --accent-orange: #ff570a;
-            --accent-green: #19d59e;
-            --accent-purple: #8b5cf6;
+            --bg-secondary: #111014;
+            --bg-card: #0f0e13;
+            --border: #1e1c24;
+            --border-hover: #ff570a;
+            --text-primary: #f0f0f0;
+            --text-secondary: #8a8a9a;
+            --text-muted: #555560;
+            --accent: #ff570a;
+            --accent-glow: rgba(255, 87, 10, 0.15);
+            --green: #19d59e;
+            --purple: #8b5cf6;
             --font-mono: 'IBM Plex Mono', monospace;
             --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
 
         body {
             font-family: var(--font-mono);
@@ -44,23 +37,34 @@
             overflow-x: hidden;
         }
 
-        /* Background Grid Pattern */
+        /* Subtle grid background */
         body::before {
             content: '';
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image: 
-                linear-gradient(rgba(255, 87, 10, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 87, 10, 0.03) 1px, transparent 1px);
-            background-size: 60px 60px;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255, 87, 10, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 87, 10, 0.02) 1px, transparent 1px);
+            background-size: 80px 80px;
             pointer-events: none;
             z-index: 0;
         }
 
-        /* Navigation */
+        /* ── Scroll-reveal animations ── */
+        .reveal {
+            opacity: 0;
+            transform: translateY(32px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .reveal-delay-1 { transition-delay: 0.1s; }
+        .reveal-delay-2 { transition-delay: 0.2s; }
+        .reveal-delay-3 { transition-delay: 0.3s; }
+
+        /* ── Navigation ── */
         .nav {
             position: fixed;
             top: 0;
@@ -71,146 +75,77 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: linear-gradient(to bottom, var(--bg-primary) 0%, transparent 100%);
+            background: rgba(9, 8, 12, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
         }
-
         .nav-brand {
             display: flex;
             align-items: center;
             gap: 12px;
             text-decoration: none;
         }
-
         .nav-logo {
-            width: 40px;
-            height: 40px;
-            background: var(--accent-orange);
+            width: 36px;
+            height: 36px;
+            background: var(--accent);
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            font-size: 20px;
+            font-size: 18px;
             color: var(--bg-primary);
+            font-family: var(--font-sans);
         }
-
         .nav-title {
             font-family: var(--font-sans);
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 700;
             color: var(--text-primary);
             letter-spacing: -0.5px;
         }
-
         .nav-links {
             display: flex;
             align-items: center;
-            gap: 32px;
+            gap: 28px;
         }
-
         .nav-link {
             color: var(--text-secondary);
             text-decoration: none;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             transition: color 0.2s;
         }
-
-        .nav-link:hover {
-            color: var(--text-primary);
-        }
-
-        .soon-pill {
-            display: inline-block;
-            margin-inline-start: 6px;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--bg-primary);
-            background: var(--accent-orange);
-            padding: 3px 9px;
-            border-radius: 999px;
-            vertical-align: middle;
-        }
-
+        .nav-link:hover { color: var(--text-primary); }
         .nav-cta {
-            padding: 10px 20px;
-            border: 1px solid var(--accent-orange);
-            color: var(--accent-orange);
+            padding: 8px 20px;
+            border: 1px solid var(--accent);
+            color: var(--accent);
             text-decoration: none;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             transition: all 0.2s;
         }
-
         .nav-cta:hover {
-            background: var(--accent-orange);
+            background: var(--accent);
             color: var(--bg-primary);
         }
-
-        /* Mobile menu (hamburger) */
         .nav-toggle {
             display: none;
-            width: 44px;
-            height: 44px;
+            width: 40px;
+            height: 40px;
             align-items: center;
             justify-content: center;
-            margin-inline-start: auto;
-            background: rgba(255, 255, 255, 0.06);
+            background: transparent;
             border: 1px solid var(--border);
-            border-radius: 10px;
+            border-radius: 8px;
             color: var(--text-primary);
             cursor: pointer;
-            flex-shrink: 0;
-            -webkit-tap-highlight-color: transparent;
+            font-size: 20px;
         }
 
-        .nav-toggle:focus-visible {
-            outline: 2px solid var(--accent-orange);
-            outline-offset: 2px;
-        }
-
-        .nav-toggle-icon-open,
-        .nav-toggle-icon-close {
-            font-size: 22px;
-            line-height: 1;
-            font-weight: 600;
-        }
-
-        .nav-toggle-icon-close {
-            display: none;
-            font-size: 28px;
-        }
-
-        body.nav-open .nav-toggle-icon-open {
-            display: none;
-        }
-
-        body.nav-open .nav-toggle-icon-close {
-            display: block;
-        }
-
-        .nav-backdrop {
-            display: none;
-            position: fixed;
-            inset: 0;
-            top: 0;
-            background: rgba(0, 0, 0, 0.55);
-            z-index: 998;
-            backdrop-filter: blur(2px);
-        }
-
-        body.nav-open .nav-backdrop {
-            display: block;
-        }
-
-        body.nav-open {
-            overflow: hidden;
-            touch-action: none;
-        }
-
-        /* Hero Section */
+        /* ── Hero ── */
         .hero {
             min-height: 100vh;
             display: flex;
@@ -223,678 +158,1013 @@
             max-width: 1400px;
             margin: 0 auto;
         }
-
         .hero-content {
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: center;
         }
-
         .hero-visual {
             flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-width: 0;
         }
-
         .hero-badge {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             padding: 8px 16px;
-            background: rgba(255, 87, 10, 0.1);
-            border: 1px solid rgba(255, 87, 10, 0.3);
-            color: var(--accent-orange);
-            font-size: 13px;
-            font-weight: 500;
+            background: var(--accent-glow);
+            border: 1px solid rgba(255, 87, 10, 0.25);
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
             margin-bottom: 32px;
+            width: fit-content;
         }
-
         .hero-badge-dot {
             width: 8px;
             height: 8px;
-            background: var(--accent-green);
+            background: var(--green);
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
-
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(25, 213, 158, 0.4); }
+            50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(25, 213, 158, 0); }
         }
-
         .hero-title {
             font-family: var(--font-sans);
-            font-size: 64px;
-            font-weight: 500;
-            line-height: 1.1;
-            max-width: 900px;
+            font-size: 60px;
+            font-weight: 600;
+            line-height: 1.08;
+            max-width: 700px;
             margin-bottom: 24px;
             letter-spacing: -2px;
         }
-
         .hero-title span {
-            color: var(--accent-orange);
+            background: linear-gradient(135deg, var(--accent) 0%, #ff8a4c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-
         .hero-subtitle {
-            font-size: 18px;
+            font-size: 16px;
             color: var(--text-secondary);
-            max-width: 600px;
+            max-width: 520px;
             margin-bottom: 40px;
-            line-height: 1.6;
+            line-height: 1.7;
         }
-
         .hero-actions {
             display: flex;
             gap: 16px;
             flex-wrap: wrap;
-            justify-content: center;
         }
-
         .btn {
             display: inline-flex;
             align-items: center;
             gap: 8px;
             padding: 14px 28px;
             font-family: var(--font-mono);
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             text-decoration: none;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.25s;
             border: none;
         }
-
         .btn-primary {
-            background: transparent;
-            border: 1px solid var(--accent-orange);
-            color: var(--accent-orange);
-        }
-
-        .btn-primary:hover {
-            background: var(--accent-orange);
+            background: var(--accent);
             color: var(--bg-primary);
         }
-
+        .btn-primary:hover {
+            background: #ff7033;
+            box-shadow: 0 0 30px rgba(255, 87, 10, 0.3);
+        }
         .btn-secondary {
             background: transparent;
             border: 1px solid var(--border);
             color: var(--text-secondary);
         }
-
         .btn-secondary:hover {
             border-color: var(--text-primary);
             color: var(--text-primary);
         }
-
         .hero-meta {
             margin-top: 48px;
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 24px;
             color: var(--text-muted);
-            font-size: 13px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
-
-        .hero-meta-icons {
+        .hero-meta-item {
             display: flex;
-            gap: 12px;
             align-items: center;
+            gap: 8px;
+        }
+        .hero-meta-dot {
+            width: 4px;
+            height: 4px;
+            background: var(--accent);
+            border-radius: 50%;
         }
 
-        .hero-meta-icon {
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        /* Code Window */
-        .code-window {
+        /* ── Terminal Window ── */
+        .terminal {
             width: 100%;
-            max-width: 600px;
-            background: #0d0c0f;
+            max-width: 560px;
+            background: #0a090d;
             border: 1px solid var(--border);
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 
-                0 0 0 1px rgba(255, 87, 10, 0.1),
-                0 20px 60px -20px rgba(0, 0, 0, 0.8),
-                0 0 100px -20px rgba(255, 87, 10, 0.1);
+            box-shadow:
+                0 0 0 1px rgba(255, 87, 10, 0.06),
+                0 24px 80px -16px rgba(0, 0, 0, 0.9),
+                0 0 120px -30px rgba(255, 87, 10, 0.08);
         }
-
-        .code-header {
+        .terminal-bar {
             display: flex;
             align-items: center;
-            padding: 12px 16px;
+            padding: 14px 16px;
             background: var(--bg-secondary);
             border-bottom: 1px solid var(--border);
-        }
-
-        .code-dots {
-            display: flex;
             gap: 8px;
         }
-
-        .code-dot {
-            width: 12px;
-            height: 12px;
+        .terminal-dot {
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
         }
-
-        .code-dot-red { background: #ff5f56; }
-        .code-dot-yellow { background: #ffbd2e; }
-        .code-dot-green { background: #27ca40; }
-
-        .code-filename {
-            margin-inline-start: 16px;
-            font-size: 13px;
+        .terminal-dot-r { background: #ff5f56; }
+        .terminal-dot-y { background: #ffbd2e; }
+        .terminal-dot-g { background: #27c93f; }
+        .terminal-filename {
+            margin-left: 12px;
+            font-size: 12px;
             color: var(--text-muted);
         }
-
-        .code-content {
+        .terminal-body {
             padding: 20px;
             font-size: 13px;
-            line-height: 1.8;
-            overflow-x: auto;
+            line-height: 1.9;
+            min-height: 220px;
         }
-
-        .code-line {
+        .t-line {
             display: flex;
-            gap: 20px;
+            gap: 16px;
         }
-
-        .code-number {
+        .t-num {
             color: var(--text-muted);
-            min-width: 24px;
-            text-align: end;
+            min-width: 20px;
+            text-align: right;
             user-select: none;
         }
-
-        .code-text {
-            color: var(--text-secondary);
+        .t-txt { color: #c8c8d0; }
+        .t-kw { color: var(--accent); }
+        .t-fn { color: var(--purple); }
+        .t-str { color: var(--green); }
+        .t-cmt { color: #4a4a58; font-style: italic; }
+        .t-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--accent);
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+            margin-left: 2px;
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
         }
 
-        .code-comment { color: #6a737d; }
-        .code-keyword { color: var(--accent-orange); }
-        .code-string { color: var(--accent-green); }
-        .code-function { color: var(--accent-purple); }
-
-        /* Features Section */
-        .features {
-            padding: 120px 40px;
+        /* ── Stats ── */
+        .stats {
+            padding: 64px 40px;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
             position: relative;
             z-index: 1;
         }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 80px;
-        }
-
-        .section-label {
-            font-size: 12px;
-            font-weight: 600;
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-            color: var(--accent-orange);
-            margin-bottom: 16px;
-        }
-
-        .section-title {
-            font-family: var(--font-sans);
-            font-size: 48px;
-            font-weight: 600;
-            letter-spacing: -1px;
-            margin-bottom: 16px;
-        }
-
-        .section-subtitle {
-            font-size: 16px;
-            color: var(--text-secondary);
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
+        .stats-grid {
             max-width: 1200px;
             margin: 0 auto;
-        }
-
-        .feature-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            padding: 32px;
-            transition: all 0.3s;
-        }
-
-        .feature-card:hover {
-            border-color: var(--accent-orange);
-            transform: translateY(-4px);
-        }
-
-        .feature-icon {
-            width: 48px;
-            height: 48px;
-            background: rgba(255, 87, 10, 0.1);
-            border: 1px solid rgba(255, 87, 10, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            margin-bottom: 24px;
-        }
-
-        .feature-title {
-            font-family: var(--font-sans);
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 12px;
-        }
-
-        .feature-desc {
-            font-size: 14px;
-            color: var(--text-secondary);
-            line-height: 1.6;
-        }
-
-        /* Agents Section */
-        .agents {
-            padding: 120px 40px;
-            background: var(--bg-secondary);
-            position: relative;
-            z-index: 1;
-        }
-
-        .agents-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .agent-card {
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            padding: 24px;
+            gap: 40px;
             text-align: center;
-            transition: all 0.3s;
         }
-
-        .agent-card:hover {
-            border-color: var(--accent-orange);
-        }
-
-        .agent-avatar {
-            width: 64px;
-            height: 64px;
-            background: linear-gradient(135deg, var(--accent-orange), var(--accent-purple));
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            margin: 0 auto 16px;
-        }
-
-        .agent-name {
+        .stat-value {
             font-family: var(--font-sans);
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1;
             margin-bottom: 8px;
         }
-
-        .agent-role {
+        .stat-value .accent { color: var(--accent); }
+        .stat-label {
             font-size: 12px;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.1em;
         }
 
-        /* CTA Section */
+        /* ── Section shared ── */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .section-header {
+            text-align: center;
+            margin-bottom: 72px;
+        }
+        .section-tag {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+        .section-title {
+            font-family: var(--font-sans);
+            font-size: 44px;
+            font-weight: 600;
+            letter-spacing: -1.5px;
+            margin-bottom: 16px;
+        }
+        .section-subtitle {
+            font-size: 15px;
+            color: var(--text-secondary);
+            max-width: 560px;
+            margin: 0 auto;
+        }
+
+        /* ── Features ── */
+        .features {
+            padding: 120px 40px;
+            position: relative;
+            z-index: 1;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 32px;
+            transition: all 0.35s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            opacity: 0;
+            transition: opacity 0.35s;
+        }
+        .feature-card:hover {
+            border-color: rgba(255, 87, 10, 0.3);
+            transform: translateY(-2px);
+        }
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+        .feature-tag {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+        .feature-tag.new {
+            color: var(--green);
+        }
+        .feature-title {
+            font-family: var(--font-sans);
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .feature-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        /* ── Agents ── */
+        .agents {
+            padding: 120px 40px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            position: relative;
+            z-index: 1;
+        }
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+        }
+        .agent-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            padding: 28px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .agent-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(255, 87, 10, 0.08);
+        }
+        .agent-card.new-agent::after {
+            content: 'NEW';
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            color: var(--bg-primary);
+            background: var(--green);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .agent-code {
+            font-family: var(--font-mono);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 14px;
+            letter-spacing: 2px;
+        }
+        .agent-name {
+            font-family: var(--font-sans);
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .agent-role {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        /* ── Enhancements / What We Built ── */
+        .enhancements {
+            padding: 120px 40px;
+            position: relative;
+            z-index: 1;
+        }
+        .enhancements-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        .enhancement-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 32px;
+            display: flex;
+            gap: 20px;
+            transition: all 0.3s ease;
+        }
+        .enhancement-card:hover {
+            border-color: rgba(255, 87, 10, 0.3);
+        }
+        .enhancement-num {
+            font-family: var(--font-sans);
+            font-size: 36px;
+            font-weight: 700;
+            color: rgba(255, 87, 10, 0.2);
+            line-height: 1;
+            min-width: 48px;
+        }
+        .enhancement-body { flex: 1; }
+        .enhancement-title {
+            font-family: var(--font-sans);
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .enhancement-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+        .enhancement-meta {
+            margin-top: 12px;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        /* ── Architecture diagram ── */
+        .architecture {
+            padding: 120px 40px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            position: relative;
+            z-index: 1;
+        }
+        .arch-diagram {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 40px;
+            font-size: 13px;
+            line-height: 2;
+            color: var(--text-secondary);
+            overflow-x: auto;
+        }
+        .arch-diagram pre {
+            font-family: var(--font-mono);
+            white-space: pre;
+        }
+        .arch-highlight { color: var(--accent); font-weight: 600; }
+        .arch-green { color: var(--green); }
+        .arch-purple { color: var(--purple); }
+
+        /* ── CTA ── */
         .cta {
             padding: 120px 40px;
             text-align: center;
             position: relative;
             z-index: 1;
         }
-
         .cta-title {
             font-family: var(--font-sans);
-            font-size: 48px;
+            font-size: 44px;
             font-weight: 600;
-            letter-spacing: -1px;
-            margin-bottom: 24px;
+            letter-spacing: -1.5px;
+            margin-bottom: 16px;
         }
-
         .cta-subtitle {
-            font-size: 18px;
+            font-size: 15px;
             color: var(--text-secondary);
             margin-bottom: 40px;
-            max-width: 600px;
-            margin-inline: auto;
-            margin-bottom: 40px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
-        /* Footer */
+        /* ── Footer ── */
         .footer {
-            padding: 40px;
+            padding: 32px 40px;
             border-top: 1px solid var(--border);
-            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             position: relative;
             z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
         }
-
         .footer-text {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-muted);
         }
+        .footer-links {
+            display: flex;
+            gap: 24px;
+        }
+        .footer-link {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .footer-link:hover { color: var(--accent); }
 
-        /* Responsive */
+        /* ── Responsive ── */
         @media (max-width: 1024px) {
             .hero {
                 flex-direction: column;
                 text-align: center;
                 padding-top: 140px;
+                gap: 40px;
             }
-
-            .hero-title {
-                font-size: 48px;
-            }
-
-            .hero-subtitle {
-                margin-inline: auto;
-            }
-
-            .features-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .agents-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
+            .hero-content { align-items: center; }
+            .hero-subtitle { margin-left: auto; margin-right: auto; }
+            .hero-actions { justify-content: center; }
+            .hero-meta { justify-content: center; }
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
+            .agents-grid { grid-template-columns: repeat(3, 1fr); }
+            .enhancements-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
         }
-
         @media (max-width: 768px) {
-            .nav {
-                padding: 16px 20px;
-            }
-
+            .nav { padding: 16px 20px; }
+            .nav-toggle { display: flex; }
             .nav-links {
                 display: none;
                 position: fixed;
-                top: 0;
-                inset-inline-start: 0;
-                right: 0;
-                bottom: 0;
+                inset: 0;
+                top: 72px;
                 background: var(--bg-primary);
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                gap: 32px;
+                gap: 24px;
                 z-index: 999;
             }
-
-            .nav-links.active {
-                display: flex;
-            }
-
-            .nav-toggle {
-                display: flex;
-            }
-
-            .hero {
-                padding: 100px 20px 60px;
-            }
-
-            .hero-title {
-                font-size: 36px;
-            }
-
-            .features,
-            .agents,
-            .cta {
-                padding: 80px 20px;
-            }
-
-            .section-title,
-            .cta-title {
-                font-size: 32px;
-            }
-
-            .features-grid,
-            .agents-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .footer {
-                padding: 24px 20px;
-            }
+            .nav-links.active { display: flex; }
+            .hero { padding: 100px 20px 60px; }
+            .hero-title { font-size: 36px; letter-spacing: -1px; }
+            .terminal { display: none; }
+            .features, .agents, .enhancements, .architecture, .cta { padding: 80px 20px; }
+            .section-title, .cta-title { font-size: 28px; }
+            .features-grid, .agents-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+            .stat-value { font-size: 36px; }
+            .footer { flex-direction: column; gap: 16px; text-align: center; padding: 24px 20px; }
+            .arch-diagram { padding: 20px; font-size: 11px; }
         }
     </style>
 </head>
 <body>
+    <!-- Navigation -->
     <nav class="nav">
         <a href="index.html" class="nav-brand">
             <div class="nav-logo">N</div>
             <span class="nav-title">Nigents</span>
         </a>
-        <div class="nav-links">
-            <a href="survey.html" class="nav-link">Survey</a>
+        <div class="nav-links" id="nav-links">
             <a href="#features" class="nav-link">Features</a>
             <a href="#agents" class="nav-link">Agents</a>
+            <a href="#enhancements" class="nav-link">What's New</a>
             <a href="how-it-works.html" class="nav-link">How it Works</a>
-            <a href="https://gitlab.com/nigents" class="nav-link" target="_blank">GitLab</a>
+            <a href="https://gitlab.com/bonyad-tech/nigents" class="nav-link" target="_blank">GitLab</a>
             <a href="#get-started" class="nav-cta">Get Started</a>
         </div>
-        <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
-            <span class="nav-toggle-icon-open">☰</span>
-            <span class="nav-toggle-icon-close">×</span>
+        <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+            <span id="toggle-icon">&#9776;</span>
         </button>
     </nav>
-    <div class="nav-backdrop"></div>
 
+    <!-- Hero -->
     <section class="hero">
-        <div class="hero-content">
+        <div class="hero-content reveal">
             <div class="hero-badge">
                 <span class="hero-badge-dot"></span>
-                AI-Powered Development
+                System Online — 10 Agents Active
             </div>
-            <h1 class="hero-title">Your AI <span>Development Team</span> for GitLab</h1>
-            <p class="hero-subtitle">Nigents deploys a team of specialized AI agents that work 24/7 on your GitLab projects. From planning to deployment, our agents handle it all.</p>
+            <h1 class="hero-title">
+                Ship code overnight.<br>
+                <span>Wake up to merge requests.</span>
+            </h1>
+            <p class="hero-subtitle">
+                10 specialized AI agents that plan, code, test, review, and secure your GitLab projects.
+                With self-healing workflows, parallel execution, and cross-task memory.
+            </p>
             <div class="hero-actions">
-                <a href="#get-started" class="btn btn-primary">Get Started →</a>
-                <a href="how-it-works.html" class="btn btn-secondary">Learn More</a>
+                <a href="#get-started" class="btn btn-primary">Get Started</a>
+                <a href="#features" class="btn btn-secondary">See Features</a>
             </div>
             <div class="hero-meta">
-                <div class="hero-meta-icons">
-                    <span class="hero-meta-icon">⚡ Instant Setup</span>
-                    <span class="hero-meta-icon">🔒 Secure</span>
-                    <span class="hero-meta-icon">🌐 Multi-Language</span>
+                <div class="hero-meta-item">
+                    <span class="hero-meta-dot"></span>
+                    <span>GitLab</span>
+                </div>
+                <div class="hero-meta-item">
+                    <span class="hero-meta-dot"></span>
+                    <span>Telegram</span>
+                </div>
+                <div class="hero-meta-item">
+                    <span class="hero-meta-dot"></span>
+                    <span>MCP Tools</span>
                 </div>
             </div>
         </div>
-        <div class="hero-visual">
-            <div class="code-window">
-                <div class="code-header">
-                    <div class="code-dots">
-                        <div class="code-dot code-dot-red"></div>
-                        <div class="code-dot code-dot-yellow"></div>
-                        <div class="code-dot code-dot-green"></div>
-                    </div>
-                    <span class="code-filename">gitlab-issue.md</span>
+
+        <div class="hero-visual reveal reveal-delay-2">
+            <div class="terminal">
+                <div class="terminal-bar">
+                    <div class="terminal-dot terminal-dot-r"></div>
+                    <div class="terminal-dot terminal-dot-y"></div>
+                    <div class="terminal-dot terminal-dot-g"></div>
+                    <span class="terminal-filename">nigents workflow</span>
                 </div>
-                <div class="code-content">
-                    <div class="code-line">
-                        <span class="code-number">1</span>
-                        <span class="code-text"><span class="code-comment">// Nigents AI Agent Workflow</span></span>
-                    </div>
-                    <div class="code-line">
-                        <span class="code-number">2</span>
-                        <span class="code-text"></span>
-                    </div>
-                    <div class="code-line">
-                        <span class="code-number">3</span>
-                        <span class="code-text"><span class="code-keyword">issue</span>: <span class="code-string">"Add user authentication"</span></span>
-                    </div>
-                    <div class="code-line">
-                        <span class="code-number">4</span>
-                        <span class="code-text"></span>
-                    </div>
-                    <div class="code-line">
-                        <span class="code-number">5</span>
-                        <span class="code-text"><span class="code-function">Orchestrator</span> → <span class="code-function">Planner</span></span>
-                    </div>
-                    <div class="code-line">
-                        <span class="code-number">6</span>
-                        <span class="code-text"><span class="code-function">Planner</span> → <span class="code-function">BackendDev</span></span>
-                    </div>
-                    <div class="code-line">
-                        <span class="code-number">7</span>
-                        <span class="code-text"><span class="code-function">BackendDev</span> → <span class="code-function">QATester</span></span>
-                    </div>
-                    <div class="code-line">
-                        <span class="code-number">8</span>
-                        <span class="code-text"></span>
-                    </div>
-                    <div class="code-line">
-                        <span class="code-number">9</span>
-                        <span class="code-text"><span class="code-comment">// ✅ MR created & merged</span></span>
-                    </div>
+                <div class="terminal-body" id="terminal-body">
+                    <div class="t-line"><span class="t-num">1</span><span class="t-txt"><span class="t-cmt">// Agent workflow — live</span></span></div>
+                    <div class="t-line"><span class="t-num">2</span><span class="t-txt"></span></div>
+                    <div class="t-line"><span class="t-num">3</span><span class="t-txt"><span class="t-kw">task</span>: <span class="t-str">"Add user authentication"</span></span></div>
+                    <div class="t-line"><span class="t-num">4</span><span class="t-txt"></span></div>
+                    <div class="t-line"><span class="t-num">5</span><span class="t-txt"><span class="t-fn">Orchestrator</span>  <span class="t-cmt">routing...</span></span></div>
+                    <div class="t-line"><span class="t-num">6</span><span class="t-txt"><span class="t-fn">Planner</span>      <span class="t-cmt">planning...</span></span></div>
+                    <div class="t-line"><span class="t-num">7</span><span class="t-txt"><span class="t-fn">BackendDev</span>   <span class="t-str">implementing</span></span></div>
+                    <div class="t-line"><span class="t-num">8</span><span class="t-txt"><span class="t-fn">FrontendDev</span>  <span class="t-str">implementing</span>  <span class="t-kw">// parallel</span></span></div>
+                    <div class="t-line"><span class="t-num">9</span><span class="t-txt"><span class="t-fn">Security</span>     <span class="t-str">scanning</span></span></div>
+                    <div class="t-line"><span class="t-num">10</span><span class="t-txt"><span class="t-fn">CodeReviewer</span> <span class="t-str">reviewing</span></span></div>
+                    <div class="t-line"><span class="t-num">11</span><span class="t-txt"></span></div>
+                    <div class="t-line"><span class="t-num">12</span><span class="t-txt"><span class="t-kw">status</span>: <span class="t-str">MR created</span><span class="t-cursor"></span></span></div>
                 </div>
             </div>
         </div>
     </section>
 
+    <!-- Stats -->
+    <section class="stats reveal">
+        <div class="stats-grid">
+            <div>
+                <div class="stat-value"><span class="accent">10</span></div>
+                <div class="stat-label">AI Agents</div>
+            </div>
+            <div>
+                <div class="stat-value">24/7</div>
+                <div class="stat-label">Operation</div>
+            </div>
+            <div>
+                <div class="stat-value">4+</div>
+                <div class="stat-label">AI Providers</div>
+            </div>
+            <div>
+                <div class="stat-value">38</div>
+                <div class="stat-label">MCP Tools</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
     <section class="features" id="features">
-        <div class="section-header">
-            <p class="section-label">Features</p>
-            <h2 class="section-title">Everything You Need</h2>
-            <p class="section-subtitle">Our AI agents work together to deliver complete solutions, from initial planning to final deployment.</p>
-        </div>
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon">🎯</div>
-                <h3 class="feature-title">Smart Planning</h3>
-                <p class="feature-desc">Planner agent analyzes issues and creates comprehensive implementation strategies with clear milestones.</p>
+        <div class="container">
+            <div class="section-header reveal">
+                <p class="section-tag">Capabilities</p>
+                <h2 class="section-title">Everything You Need to Ship Faster</h2>
+                <p class="section-subtitle">A complete AI development team with self-healing, parallel execution, and intelligent cost optimization.</p>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon">💻</div>
-                <h3 class="feature-title">Full-Stack Development</h3>
-                <p class="feature-desc">Frontend and Backend agents collaborate to write clean, tested, production-ready code.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">🔍</div>
-                <h3 class="feature-title">Code Review</h3>
-                <p class="feature-desc">Automated code reviews ensure quality, security, and adherence to best practices.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">🧪</div>
-                <h3 class="feature-title">Automated Testing</h3>
-                <p class="feature-desc">QA agents generate and run tests to catch bugs before they reach production.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">🚀</div>
-                <h3 class="feature-title">GitLab Integration</h3>
-                <p class="feature-desc">Seamless integration with GitLab issues, merge requests, and CI/CD pipelines.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">📊</div>
-                <h3 class="feature-title">Progress Tracking</h3>
-                <p class="feature-desc">Real-time visibility into agent activities with detailed status updates and reports.</p>
+            <div class="features-grid">
+                <div class="feature-card reveal">
+                    <div class="feature-tag">Core</div>
+                    <h3 class="feature-title">Parallel Execution</h3>
+                    <p class="feature-desc">Backend and frontend agents work simultaneously on fullstack tasks. Code reviews run security, quality, and RTL checks in parallel.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-1">
+                    <div class="feature-tag">Core</div>
+                    <h3 class="feature-title">Self-Healing Workflows</h3>
+                    <p class="feature-desc">Compile failures trigger automatic fix-and-retry cycles. Provider fallback chains ensure AI calls never silently fail.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-2">
+                    <div class="feature-tag new">New</div>
+                    <h3 class="feature-title">Security Scanning</h3>
+                    <p class="feature-desc">Dedicated security agent scans for secrets, OWASP Top 10 vulnerabilities, and dependency CVEs. Blocks MRs on critical findings.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-tag new">New</div>
+                    <h3 class="feature-title">Agent Memory</h3>
+                    <p class="feature-desc">Cross-task learning with LRU eviction. Agents remember codebase structure, recurring issues, and compile-fix patterns.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-1">
+                    <div class="feature-tag new">New</div>
+                    <h3 class="feature-title">Cost Optimization</h3>
+                    <p class="feature-desc">Smart model selection based on task complexity. Trivial tasks use cheaper models, complex tasks get premium AI with budget tracking.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-2">
+                    <div class="feature-tag new">New</div>
+                    <h3 class="feature-title">Agent Communication Bus</h3>
+                    <p class="feature-desc">Pub/sub event system for inter-agent messaging. Agents share findings laterally instead of routing through the orchestrator.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-tag">Core</div>
+                    <h3 class="feature-title">GitLab Integration</h3>
+                    <p class="feature-desc">Automatic branch creation, commits, and merge requests. Pipeline monitoring and deployment readiness checks built in.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-1">
+                    <div class="feature-tag">Core</div>
+                    <h3 class="feature-title">Telegram Control</h3>
+                    <p class="feature-desc">Send voice or text commands from anywhere. Get real-time progress updates and results in Arabic or English.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-2">
+                    <div class="feature-tag">Core</div>
+                    <h3 class="feature-title">Multi-Model AI</h3>
+                    <p class="feature-desc">Provider fallback chains across GLM, Kimi, DeepSeek, and Anthropic. Automatic failover ensures zero downtime.</p>
+                </div>
             </div>
         </div>
     </section>
 
+    <!-- Agents -->
     <section class="agents" id="agents">
-        <div class="section-header">
-            <p class="section-label">AI Agents</p>
-            <h2 class="section-title">Meet Your Team</h2>
-            <p class="section-subtitle">Specialized AI agents working together to deliver exceptional results.</p>
-        </div>
-        <div class="agents-grid">
-            <div class="agent-card">
-                <div class="agent-avatar">🎯</div>
-                <h3 class="agent-name">Orchestrator</h3>
-                <p class="agent-role">Team Coordinator</p>
+        <div class="container">
+            <div class="section-header reveal">
+                <p class="section-tag">The Team</p>
+                <h2 class="section-title">10 Specialized Agents</h2>
+                <p class="section-subtitle">Each agent has a unique role. They communicate via pub/sub bus, share memory across tasks, and execute in parallel.</p>
             </div>
-            <div class="agent-card">
-                <div class="agent-avatar">📋</div>
-                <h3 class="agent-name">Planner</h3>
-                <p class="agent-role">Strategy Lead</p>
-            </div>
-            <div class="agent-card">
-                <div class="agent-avatar">🎨</div>
-                <h3 class="agent-name">Frontend Dev</h3>
-                <p class="agent-role">UI/UX Expert</p>
-            </div>
-            <div class="agent-card">
-                <div class="agent-avatar">⚙️</div>
-                <h3 class="agent-name">Backend Dev</h3>
-                <p class="agent-role">API Architect</p>
-            </div>
-            <div class="agent-card">
-                <div class="agent-avatar">🔍</div>
-                <h3 class="agent-name">Code Reviewer</h3>
-                <p class="agent-role">Quality Guardian</p>
-            </div>
-            <div class="agent-card">
-                <div class="agent-avatar">🧪</div>
-                <h3 class="agent-name">QA Tester</h3>
-                <p class="agent-role">Test Engineer</p>
-            </div>
-            <div class="agent-card">
-                <div class="agent-avatar">📝</div>
-                <h3 class="agent-name">Reporter</h3>
-                <p class="agent-role">Documentation</p>
-            </div>
-            <div class="agent-card">
-                <div class="agent-avatar">🔐</div>
-                <h3 class="agent-name">Security</h3>
-                <p class="agent-role">Security Analyst</p>
+            <div class="agents-grid">
+                <div class="agent-card reveal">
+                    <div class="agent-code">OR</div>
+                    <h3 class="agent-name">Orchestrator</h3>
+                    <p class="agent-role">Team Lead</p>
+                </div>
+                <div class="agent-card reveal reveal-delay-1">
+                    <div class="agent-code">PL</div>
+                    <h3 class="agent-name">Planner</h3>
+                    <p class="agent-role">Architecture</p>
+                </div>
+                <div class="agent-card reveal reveal-delay-2">
+                    <div class="agent-code">BE</div>
+                    <h3 class="agent-name">Backend Dev</h3>
+                    <p class="agent-role">Server Logic</p>
+                </div>
+                <div class="agent-card reveal reveal-delay-3">
+                    <div class="agent-code">FE</div>
+                    <h3 class="agent-name">Frontend Dev</h3>
+                    <p class="agent-role">UI / UX</p>
+                </div>
+                <div class="agent-card reveal">
+                    <div class="agent-code">CR</div>
+                    <h3 class="agent-name">Code Reviewer</h3>
+                    <p class="agent-role">Quality</p>
+                </div>
+                <div class="agent-card reveal reveal-delay-1">
+                    <div class="agent-code">QA</div>
+                    <h3 class="agent-name">QA Tester</h3>
+                    <p class="agent-role">Testing</p>
+                </div>
+                <div class="agent-card reveal reveal-delay-2">
+                    <div class="agent-code">RP</div>
+                    <h3 class="agent-name">Reporter</h3>
+                    <p class="agent-role">Updates</p>
+                </div>
+                <div class="agent-card new-agent reveal reveal-delay-3">
+                    <div class="agent-code">DC</div>
+                    <h3 class="agent-name">Documentation</h3>
+                    <p class="agent-role">Docs & ADRs</p>
+                </div>
+                <div class="agent-card new-agent reveal">
+                    <div class="agent-code">DO</div>
+                    <h3 class="agent-name">DevOps</h3>
+                    <p class="agent-role">CI/CD</p>
+                </div>
+                <div class="agent-card new-agent reveal reveal-delay-1">
+                    <div class="agent-code">SC</div>
+                    <h3 class="agent-name">Security</h3>
+                    <p class="agent-role">Vulnerability Scan</p>
+                </div>
             </div>
         </div>
     </section>
 
-    <section class="cta" id="get-started">
-        <h2 class="cta-title">Ready to Get Started?</h2>
-        <p class="cta-subtitle">Deploy your AI development team in minutes. Connect your GitLab and let the agents handle the rest.</p>
-        <a href="https://gitlab.com/nigents" class="btn btn-primary" target="_blank">Connect GitLab →</a>
+    <!-- What We Built -->
+    <section class="enhancements" id="enhancements">
+        <div class="container">
+            <div class="section-header reveal">
+                <p class="section-tag">What's New</p>
+                <h2 class="section-title">Latest Enhancements</h2>
+                <p class="section-subtitle">9 implementation phases, 139 passing tests, 3 new agents, and 6 new infrastructure systems.</p>
+            </div>
+            <div class="enhancements-grid">
+                <div class="enhancement-card reveal">
+                    <div class="enhancement-num">01</div>
+                    <div class="enhancement-body">
+                        <h3 class="enhancement-title">Testing Infrastructure</h3>
+                        <p class="enhancement-desc">Built from scratch with Jest. 139 tests covering BaseAgent, Planner, Code Reviewer, QA Tester, Reporter, and all new utilities.</p>
+                        <p class="enhancement-meta">7 test suites -- 139 passing</p>
+                    </div>
+                </div>
+                <div class="enhancement-card reveal reveal-delay-1">
+                    <div class="enhancement-num">02</div>
+                    <div class="enhancement-body">
+                        <h3 class="enhancement-title">Parallel Executor</h3>
+                        <p class="enhancement-desc">Concurrency-controlled task runner. Backend and frontend agents now work simultaneously on fullstack implementations.</p>
+                        <p class="enhancement-meta">src/utils/parallel-executor.js</p>
+                    </div>
+                </div>
+                <div class="enhancement-card reveal">
+                    <div class="enhancement-num">03</div>
+                    <div class="enhancement-body">
+                        <h3 class="enhancement-title">Self-Healing Workflows</h3>
+                        <p class="enhancement-desc">Compile failures trigger automatic fix-and-retry cycles (up to 2 attempts). Provider fallback chains across all agents.</p>
+                        <p class="enhancement-meta">Orchestrator + BaseAgent enhanced</p>
+                    </div>
+                </div>
+                <div class="enhancement-card reveal reveal-delay-1">
+                    <div class="enhancement-num">04</div>
+                    <div class="enhancement-body">
+                        <h3 class="enhancement-title">Agent Communication Bus</h3>
+                        <p class="enhancement-desc">Singleton pub/sub EventEmitter for inter-agent messaging. Subscribe, publish, sendDirect, broadcast with message logging.</p>
+                        <p class="enhancement-meta">src/utils/agent-bus.js</p>
+                    </div>
+                </div>
+                <div class="enhancement-card reveal">
+                    <div class="enhancement-num">05</div>
+                    <div class="enhancement-body">
+                        <h3 class="enhancement-title">Cross-Task Agent Memory</h3>
+                        <p class="enhancement-desc">Persistent learning with LRU eviction and relevance scoring. Agents remember patterns, failures, and codebase structure.</p>
+                        <p class="enhancement-meta">src/utils/agent-memory.js</p>
+                    </div>
+                </div>
+                <div class="enhancement-card reveal reveal-delay-1">
+                    <div class="enhancement-num">06</div>
+                    <div class="enhancement-body">
+                        <h3 class="enhancement-title">Cost-Aware Model Selection</h3>
+                        <p class="enhancement-desc">Three-tier model routing: trivial (DeepSeek), standard (GLM/Kimi), complex (Anthropic Opus). Daily and monthly budget tracking.</p>
+                        <p class="enhancement-meta">src/utils/cost-optimizer.js</p>
+                    </div>
+                </div>
+                <div class="enhancement-card reveal">
+                    <div class="enhancement-num">07</div>
+                    <div class="enhancement-body">
+                        <h3 class="enhancement-title">Documentation Agent</h3>
+                        <p class="enhancement-desc">Generates docs, changelogs, and ADRs. Audits code comments. Stores doc structure patterns in agent memory per project.</p>
+                        <p class="enhancement-meta">src/agents/documentation.js</p>
+                    </div>
+                </div>
+                <div class="enhancement-card reveal reveal-delay-1">
+                    <div class="enhancement-num">08</div>
+                    <div class="enhancement-body">
+                        <h3 class="enhancement-title">DevOps Agent</h3>
+                        <p class="enhancement-desc">Pipeline monitoring, failure analysis, deployment readiness checks, and Dockerfile review. Publishes events to agent bus.</p>
+                        <p class="enhancement-meta">src/agents/devops.js</p>
+                    </div>
+                </div>
+                <div class="enhancement-card reveal">
+                    <div class="enhancement-num">09</div>
+                    <div class="enhancement-body">
+                        <h3 class="enhancement-title">Security Agent</h3>
+                        <p class="enhancement-desc">Parallel scans for secrets, OWASP Top 10, and dependency CVEs. Blocks MR creation on critical/high findings.</p>
+                        <p class="enhancement-meta">src/agents/security.js</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </section>
 
+    <!-- Architecture -->
+    <section class="architecture">
+        <div class="container">
+            <div class="section-header reveal">
+                <p class="section-tag">Architecture</p>
+                <h2 class="section-title">How Agents Work Together</h2>
+            </div>
+            <div class="arch-diagram reveal">
+                <pre>
+  <span class="arch-highlight">Telegram / Dashboard</span>
+          |
+          v
+  <span class="arch-highlight">[ Orchestrator ]</span> -----> <span class="arch-green">Agent Bus (pub/sub)</span>
+          |                         |
+    +-----+-----+           +------+------+
+    |     |     |           |      |      |
+    v     v     v           v      v      v
+  <span class="arch-purple">Plan</span>  <span class="arch-purple">BE</span>   <span class="arch-purple">FE</span>       <span class="arch-green">DC</span>    <span class="arch-green">DO</span>    <span class="arch-green">SC</span>
+    |     |     |           |      |      |
+    |   <span class="arch-highlight">[parallel]</span>          |      |      |
+    |     +--+--+           |      |      |
+    |        |              |      |      |
+    v        v              |      |      |
+  <span class="arch-purple">QA</span>  <span class="arch-purple">Code Review</span> <-------+------+------+
+    |        |
+    |    <span class="arch-highlight">[self-heal]</span>
+    |        |
+    v        v
+  <span class="arch-highlight">[ Merge Request ]</span> ----> <span class="arch-green">Pipeline Monitor</span>
+          |
+          v
+  <span class="arch-highlight">[ Reporter ]</span> ----> Telegram Notification
+
+  <span class="arch-green">[ Agent Memory ]</span> -- shared across all agents
+  <span class="arch-green">[ Cost Optimizer ]</span> -- routes to optimal AI model
+                </pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta reveal" id="get-started">
+        <h2 class="cta-title">Ready to Ship Overnight?</h2>
+        <p class="cta-subtitle">Connect your GitLab and let 10 agents handle the rest.</p>
+        <a href="https://gitlab.com/bonyad-tech/nigents" class="btn btn-primary" target="_blank">View on GitLab</a>
+    </section>
+
+    <!-- Footer -->
     <footer class="footer">
-        <p class="footer-text">© 2024 Nigents. AI-Powered Development Team for GitLab.</p>
+        <span class="footer-text">2025 Nigents. AI-Powered Development for GitLab.</span>
+        <div class="footer-links">
+            <a href="https://gitlab.com/bonyad-tech/nigents" class="footer-link" target="_blank">GitLab</a>
+            <a href="how-it-works.html" class="footer-link">How it Works</a>
+        </div>
     </footer>
 
     <script>
-        // Mobile menu toggle
-        const navToggle = document.querySelector('.nav-toggle');
-        const navLinks = document.querySelector('.nav-links');
-        const navBackdrop = document.querySelector('.nav-backdrop');
-        
-        function toggleNav() {
-            document.body.classList.toggle('nav-open');
-            navLinks.classList.toggle('active');
-            const isOpen = document.body.classList.contains('nav-open');
-            navToggle.setAttribute('aria-expanded', isOpen);
-        }
-        
-        navToggle.addEventListener('click', toggleNav);
-        navBackdrop.addEventListener('click', toggleNav);
-        
-        // Close menu on link click
-        navLinks.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', () => {
-                document.body.classList.remove('nav-open');
-                navLinks.classList.remove('active');
-                navToggle.setAttribute('aria-expanded', 'false');
+        // Mobile nav toggle
+        const toggle = document.getElementById('nav-toggle');
+        const links = document.getElementById('nav-links');
+        const icon = document.getElementById('toggle-icon');
+        toggle.addEventListener('click', () => {
+            const open = links.classList.toggle('active');
+            icon.innerHTML = open ? '&times;' : '&#9776;';
+            toggle.setAttribute('aria-expanded', open);
+        });
+        links.querySelectorAll('a').forEach(a => {
+            a.addEventListener('click', () => {
+                links.classList.remove('active');
+                icon.innerHTML = '&#9776;';
+                toggle.setAttribute('aria-expanded', 'false');
             });
         });
+
+        // Scroll-reveal
+        const reveals = document.querySelectorAll('.reveal');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    e.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+        reveals.forEach(el => observer.observe(el));
+
+        // Terminal typing animation
+        const workflows = [
+            [
+                { num: '1', txt: '<span class="t-cmt">// Agent workflow — live</span>' },
+                { num: '2', txt: '' },
+                { num: '3', txt: '<span class="t-kw">task</span>: <span class="t-str">"Add user authentication"</span>' },
+                { num: '4', txt: '' },
+                { num: '5', txt: '<span class="t-fn">Orchestrator</span>  routing...' },
+                { num: '6', txt: '<span class="t-fn">Planner</span>      creating plan...' },
+                { num: '7', txt: '<span class="t-fn">BackendDev</span>   <span class="t-str">implementing</span>' },
+                { num: '8', txt: '<span class="t-fn">FrontendDev</span>  <span class="t-str">implementing</span>  <span class="t-kw">// parallel</span>' },
+                { num: '9', txt: '<span class="t-fn">Security</span>     <span class="t-str">scanning... 0 critical</span>' },
+                { num: '10', txt: '<span class="t-fn">CodeReviewer</span> <span class="t-str">approved</span>' },
+                { num: '11', txt: '' },
+                { num: '12', txt: '<span class="t-kw">status</span>: <span class="t-str">MR created & merged</span>' },
+            ],
+            [
+                { num: '1', txt: '<span class="t-cmt">// Self-healing in action</span>' },
+                { num: '2', txt: '' },
+                { num: '3', txt: '<span class="t-kw">task</span>: <span class="t-str">"Fix payment API"</span>' },
+                { num: '4', txt: '' },
+                { num: '5', txt: '<span class="t-fn">BackendDev</span>   <span class="t-str">implementing...</span>' },
+                { num: '6', txt: '<span class="t-kw">compile</span>:     <span style="color:#ff5f56">FAILED</span>' },
+                { num: '7', txt: '<span class="t-fn">BackendDev</span>   <span class="t-str">auto-fixing...</span>  <span class="t-kw">cycle 1</span>' },
+                { num: '8', txt: '<span class="t-kw">compile</span>:     <span class="t-str">PASSED</span>' },
+                { num: '9', txt: '<span class="t-fn">Security</span>     <span class="t-str">0 vulnerabilities</span>' },
+                { num: '10', txt: '<span class="t-fn">DevOps</span>       <span class="t-str">pipeline green</span>' },
+                { num: '11', txt: '' },
+                { num: '12', txt: '<span class="t-kw">status</span>: <span class="t-str">deployed to staging</span>' },
+            ],
+            [
+                { num: '1', txt: '<span class="t-cmt">// Cost-optimized routing</span>' },
+                { num: '2', txt: '' },
+                { num: '3', txt: '<span class="t-kw">task</span>: <span class="t-str">"Update README"</span>' },
+                { num: '4', txt: '<span class="t-kw">complexity</span>: <span class="t-str">trivial</span>' },
+                { num: '5', txt: '<span class="t-kw">model</span>:      <span class="t-str">deepseek</span>  <span class="t-cmt">// cheapest</span>' },
+                { num: '6', txt: '' },
+                { num: '7', txt: '<span class="t-kw">task</span>: <span class="t-str">"Redesign auth system"</span>' },
+                { num: '8', txt: '<span class="t-kw">complexity</span>: <span class="t-str">complex</span>' },
+                { num: '9', txt: '<span class="t-kw">model</span>:      <span class="t-str">anthropic-opus</span>  <span class="t-cmt">// premium</span>' },
+                { num: '10', txt: '' },
+                { num: '11', txt: '<span class="t-kw">budget</span>:  <span class="t-str">$12.40 / $50.00 daily</span>' },
+                { num: '12', txt: '<span class="t-kw">saved</span>:   <span class="t-str">38% vs uniform routing</span>' },
+            ]
+        ];
+
+        let currentWorkflow = 0;
+        const termBody = document.getElementById('terminal-body');
+
+        function renderWorkflow(index) {
+            const wf = workflows[index];
+            let html = '';
+            wf.forEach(line => {
+                const isLast = line === wf[wf.length - 1];
+                html += `<div class="t-line"><span class="t-num">${line.num}</span><span class="t-txt">${line.txt}${isLast ? '<span class="t-cursor"></span>' : ''}</span></div>`;
+            });
+            termBody.innerHTML = html;
+        }
+
+        setInterval(() => {
+            currentWorkflow = (currentWorkflow + 1) % workflows.length;
+            termBody.style.opacity = '0';
+            setTimeout(() => {
+                renderWorkflow(currentWorkflow);
+                termBody.style.opacity = '1';
+            }, 300);
+        }, 5000);
+
+        termBody.style.transition = 'opacity 0.3s ease';
     </script>
 </body>
 </html>
