@@ -118,6 +118,19 @@
             transition: color 0.2s;
         }
         .nav-link:hover { color: var(--text-primary); }
+        .soon-pill {
+            display: inline-block;
+            margin-left: 5px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--bg-primary);
+            background: var(--accent);
+            padding: 2px 7px;
+            border-radius: 999px;
+            vertical-align: middle;
+        }
         .nav-cta {
             padding: 8px 20px;
             border: 1px solid var(--accent);
@@ -1317,11 +1330,12 @@
         <div class="nav-links" id="nav-links">
             <a href="#features" class="nav-link">Features</a>
             <a href="#agents" class="nav-link">Agents</a>
-            <a href="#skills" class="nav-link">Skills</a>
-            <a href="#comparison" class="nav-link">vs Claude</a>
-            <a href="#meetings" class="nav-link">Meetings</a>
-            <a href="https://gitlab.com/bonyad-tech/nigents" class="nav-link" target="_blank">GitLab</a>
-            <a href="#get-started" class="nav-cta">Get Started</a>
+            <a href="/how-it-works.html" class="nav-link">How it works</a>
+            <a href="/materials.html" class="nav-link">Free Materials</a>
+            <a href="/crazy-apps.html" class="nav-link">Crazy apps</a>
+            <a href="/opencode-kits.html" class="nav-link">OpenCode kits <span class="soon-pill">Soon</span></a>
+            <a href="/bonyad/" class="nav-link">Bonyad</a>
+            <a href="/login.html" class="nav-cta">Login →</a>
         </div>
         <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
             <span id="toggle-icon">&#9776;</span>
