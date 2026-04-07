@@ -21,6 +21,7 @@
             --accent-heat: #ff3d5c;
             --accent-volt: #2dd4bf;
             --accent-breath: #67e8f9;
+            --accent-flip: #818cf8;
             --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
             --font-sans: 'Poppins', 'Sakkal Majalla', -apple-system, BlinkMacSystemFont, sans-serif;
         }
@@ -327,6 +328,16 @@
             border-color: rgba(103, 232, 249, 0.4);
         }
 
+        .app-pick.lf::before {
+            background: linear-gradient(90deg, var(--accent-flip), var(--accent-green));
+        }
+
+        .app-pick.lf .icon {
+            color: var(--accent-flip);
+            background: rgba(129, 140, 248, 0.1);
+            border-color: rgba(129, 140, 248, 0.35);
+        }
+
         .app-pick h2 {
             font-size: 1.35rem;
             font-weight: 700;
@@ -457,6 +468,15 @@
                 <div class="app-actions">
                     <a class="btn-landing" href="/breathbar.html">Open landing</a>
                     <a class="btn-dl" href="/downloads/BreathBar-1.0.0.dmg" download>Download DMG</a>
+                </div>
+            </article>
+            <article class="app-pick lf">
+                <div class="icon">LF</div>
+                <h2>LangFlip</h2>
+                <p>Typed in the wrong keyboard layout? Triple-tap ⌘ to flip mistyped Arabic ↔ English text in-place — no retyping, clipboard untouched.</p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/langflip.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/LangFlip-1.0.dmg" download>Download DMG</a>
                 </div>
             </article>
         </div>
