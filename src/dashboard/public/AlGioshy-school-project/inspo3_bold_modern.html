@@ -158,6 +158,284 @@
     .sec-title { font-size: 2rem; }
   }
 
+
+/* ══ ANIMATION LAYER ════════════════════════════════════════════════════ */
+/* Scroll-reveal base */
+.anim-reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.anim-reveal.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+/* Stagger classes */
+.anim-d1 { transition-delay: 0.06s; }
+.anim-d2 { transition-delay: 0.12s; }
+.anim-d3 { transition-delay: 0.18s; }
+.anim-d4 { transition-delay: 0.24s; }
+.anim-d5 { transition-delay: 0.30s; }
+.anim-d6 { transition-delay: 0.36s; }
+.anim-d7 { transition-delay: 0.42s; }
+
+/* Hero entrance */
+.hero-left, .hero-l, .hero-r, .hero-right {
+  opacity: 0;
+}
+.hero-left, .hero-l {
+  transform: translateX(-36px);
+  animation: heroSlideRight 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+}
+.hero-right, .hero-r {
+  transform: translateX(36px);
+  animation: heroSlideLeft 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.35s forwards;
+}
+@keyframes heroSlideRight {
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes heroSlideLeft {
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Hero badge pop-in */
+.hero-badge, .h-eyebrow, .hero-badge-text {
+  opacity: 0;
+  transform: translateY(12px) scale(0.95);
+  animation: badgeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+}
+@keyframes badgeIn {
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Hero title cascade */
+.hero-h1, h1 {
+  opacity: 0;
+  transform: translateY(24px);
+  animation: titleIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+}
+@keyframes titleIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Hero description + buttons */
+.hero-desc, .hero-p, .hero-slogan-ar, .hero-slogan-en, .hero-ar, .hero-ar-tag {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.55s forwards;
+}
+.hero-btns {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.7s forwards;
+}
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Campus frame / hero image float */
+.campus-frame, .hero-card, .hero-img-box, .hero-prog {
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.4s ease;
+}
+.campus-frame:hover, .hero-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+}
+
+/* Stat numbers — count pulse */
+.stat-n, .hs-n, .sb-n, .qf-num {
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.stat-n.in-view, .hs-n.in-view, .sb-n.in-view, .qf-num.in-view {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Stat label — slide up */
+.stat-l, .hs-l, .sb-l, .qf-label {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.4s ease 0.15s, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.15s;
+}
+.stat-l.in-view, .hs-l.in-view, .sb-l.in-view, .qf-label.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Section titles */
+.sec-label, .kicker, .sec-title {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sec-label.in-view, .kicker.in-view, .sec-title.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Cards — hover lift + glow sweep */
+.prog-card, .why-card, .feature-card, .feat-card, .fac-item, .fac-card {
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1),
+              box-shadow 0.35s ease,
+              border-color 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.prog-card::after, .why-card::after, .feature-card::after, .feat-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%);
+  transition: left 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+.prog-card:hover::after, .why-card:hover::after, .feature-card:hover::after, .feat-card:hover::after {
+  left: 140%;
+}
+.prog-card:hover, .why-card:hover, .feature-card:hover, .feat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 14px 44px rgba(0,0,0,0.12);
+}
+
+/* Facility items — scale pop */
+.fac-item, .fac-card {
+  opacity: 0;
+  transform: scale(0.88);
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fac-item.in-view, .fac-card.in-view {
+  opacity: 1;
+  transform: scale(1);
+}
+.fac-item:hover, .fac-card:hover {
+  transform: scale(1.05);
+}
+
+/* Buttons — lift + glow */
+.btn-gold, .btn-blue, .btn-outline, .btn-ghost, .btn-ghost-w, .nav-cta, .nav-apply {
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1),
+              box-shadow 0.2s ease,
+              background 0.2s ease,
+              color 0.2s ease,
+              border-color 0.2s ease !important;
+}
+.btn-gold:hover, .btn-blue:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2) !important;
+}
+.btn-outline:hover, .btn-ghost:hover, .btn-ghost-w:hover {
+  transform: translateY(-2px) !important;
+}
+
+/* Nav links — underline sweep */
+.nav-links a, .nav-menu a {
+  position: relative;
+}
+.nav-links a::after, .nav-menu a::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  right: 50%;
+  height: 2px;
+  background: currentColor;
+  transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              right 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0.6;
+}
+.nav-links a:hover::after, .nav-menu a:hover::after {
+  left: 0;
+  right: 0;
+}
+
+/* Gold divider — shimmer */
+.gold-div {
+  position: relative;
+  overflow: hidden;
+}
+.gold-div::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+  animation: shimmerDiv 3.5s ease-in-out infinite;
+}
+@keyframes shimmerDiv {
+  0% { left: -100%; }
+  100% { left: 200%; }
+}
+
+/* Quick facts — stagger in */
+.qf-item {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.qf-item.in-view { opacity: 1; transform: translateY(0); }
+
+/* Form — smooth focus */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(21,80,240,0.15);
+  transition: box-shadow 0.2s ease;
+}
+
+/* Scroll progress indicator at the top */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, currentColor, currentColor);
+  z-index: 99999;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 0.1s linear;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Parallax-like float on hero shapes */
+@keyframes gentleFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+.arch-outer, .arch-inner, .hero-bg-shape {
+  animation: gentleFloat 6s ease-in-out infinite;
+}
+.arch-inner { animation-delay: 0.8s; }
+
+/* Reduce motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .anim-reveal, .hero-left, .hero-l, .hero-right, .hero-r,
+  .hero-badge, .h-eyebrow, .hero-h1, h1,
+  .hero-desc, .hero-p, .hero-btns,
+  .stat-n, .hs-n, .sb-n, .qf-num,
+  .stat-l, .hs-l, .sb-l, .qf-label,
+  .sec-label, .kicker, .sec-title,
+  .fac-item, .fac-card, .qf-item {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+}
+/* ══ END ANIMATION LAYER ════════════════════════════════════════════════ */
+
 /* ══ RESPONSIVE PATCH ══════════════════════════════════════════════════ */
 /* Tablet (≤900px already partially handled; we strengthen it)           */
 @media (max-width: 900px) {
