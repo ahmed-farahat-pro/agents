@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smart College International Schools — Proposal by Problem-X</title>
+<title>Smart College International Schools — Website Proposal</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -324,6 +324,52 @@ tbody td:last-child{text-align:right;font-weight:700;color:var(--ink)}
   [style*="AlGioshy"] { flex-wrap: wrap !important; gap: 6px !important; font-size: 10px !important; }
 }
 /* ══ END RESPONSIVE PATCH ═══════════════════════════════════════════════ */
+
+/* ══ PRICING TOGGLE ═════════════════════════════════════════════════════ */
+/* When body has .hide-pricing, all pricing-only content is hidden */
+body.hide-pricing .pricing-only { display: none !important; }
+body.hide-pricing .pricing-text { visibility: hidden; font-size: 0; height: 0; overflow: hidden; margin: 0; padding: 0; }
+
+/* Toggle switch in Nigents bar */
+.mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: #a0a0a0;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.mode-toggle-track {
+  width: 36px;
+  height: 20px;
+  background: #2a2a35;
+  border-radius: 10px;
+  position: relative;
+  transition: background 0.25s ease;
+  flex-shrink: 0;
+}
+.mode-toggle-track::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: #666;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.25s ease;
+}
+.mode-toggle.active .mode-toggle-track {
+  background: rgba(75, 110, 245, 0.3);
+}
+.mode-toggle.active .mode-toggle-track::after {
+  transform: translateX(16px);
+  background: #4B6EF5;
+}
+.mode-label { white-space: nowrap; }
+/* ══ END PRICING TOGGLE ════════════════════════════════════════════════ */
 
 /* ══ ANIMATION LAYER ════════════════════════════════════════════════════ */
 
@@ -733,7 +779,13 @@ tbody tr.in-view {
     <span style="color:#2a2a35;">/</span>
     <span style="color:#ffffff;">AlGioshy-school-project</span>
   </a>
-  <a href="/" style="color:#666666;text-decoration:none;font-size:10px;letter-spacing:0.05em;">← Back to Nigents</a>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <label class="mode-toggle active" id="pricing-toggle" title="Toggle pricing visibility">
+      <span class="mode-label">Pricing</span>
+      <div class="mode-toggle-track"></div>
+    </label>
+    <a href="/" style="color:#666666;text-decoration:none;font-size:10px;letter-spacing:0.05em;">← Back to Nigents</a>
+  </div>
 </div>
 
 <!-- NAV DOTS -->
@@ -750,9 +802,8 @@ tbody tr.in-view {
 
 <!-- ══════════ TOPBAR ══════════ -->
 <div class="topbar no-print">
-  <a href="https://www.problem-x.com" target="_blank" class="px-word">Problem-<span class="x">X</span></a>
+  <span class="px-word">Smart College</span>
   <div class="topbar-right">
-    <span class="topbar-url">problem-x.com</span>
     <div class="topbar-tag">Client Proposal</div>
   </div>
 </div>
@@ -767,14 +818,14 @@ tbody tr.in-view {
     <h1 class="cover-h1">Smart College<br><span class="thin">International Schools</span></h1>
     <p class="cover-desc" style="margin-top:1.2rem">
       Portfolio website + online admission form.<br>
-      Built by <strong>Problem-X</strong> — delivered by <strong>Sunday.</strong>
+      Delivered by <strong>Sunday.</strong>
     </p>
   </div>
 
   <div class="cover-mid">
     <div class="cover-sep"></div>
     <div class="cover-meta">
-      <div class="cm"><div class="cm-label">Investment</div><div class="cm-val lg">20,000 EGP</div></div>
+      <div class="cm pricing-only"><div class="cm-label">Investment</div><div class="cm-val lg">30,000 EGP</div></div>
       <div class="cm"><div class="cm-label">Delivery</div><div class="cm-val">This Sunday</div></div>
       <div class="cm"><div class="cm-label">Deliverables</div><div class="cm-val">2 Items</div></div>
       <div class="cm"><div class="cm-label">Phase</div><div class="cm-val">Phase 1 Only</div></div>
@@ -788,9 +839,7 @@ tbody tr.in-view {
       <div class="cb-sub">Chairman · Smart College International Schools · Heliopolis, Cairo</div>
     </div>
     <div class="cb-right">
-      <span>info@smartcollegeschool.com</span><br>
-      <span>01036323222 · 01035533221</span><br>
-      <span>Prepared by Problem-X · problem-x.com</span>
+      <span>Heliopolis, Cairo, Egypt</span>
     </div>
   </div>
 </div>
@@ -996,21 +1045,21 @@ tbody tr.in-view {
 
   <div class="divider"></div>
 
-  <!-- QUOTATION -->
-  <div class="section" id="quote">
+  <!-- QUOTATION (pricing-only: hidden when toggle is off) -->
+  <div class="section pricing-only" id="quote">
     <div class="kicker">Quotation</div>
     <h2>Phase 1 — <span>Full Breakdown</span></h2>
 
     <table>
       <thead><tr><th>Item</th><th>What It Covers</th><th>Cost (EGP)</th></tr></thead>
       <tbody>
-        <tr><td>Portfolio Website</td><td>Full responsive bilingual website — all pages, content, mobile, SEO</td><td>12,000</td></tr>
-        <tr><td>Admission Form</td><td>Form embedded on site — all fields, validation, email on submit</td><td>8,000</td></tr>
-        <tr class="tr-total"><td colspan="2"><strong>Total — Phase 1</strong></td><td><strong>20,000 EGP</strong></td></tr>
+        <tr><td>Portfolio Website</td><td>Full responsive bilingual website — all pages, content, mobile, SEO</td><td>18,000</td></tr>
+        <tr><td>Admission Form</td><td>Form embedded on site — all fields, validation, email on submit</td><td>12,000</td></tr>
+        <tr class="tr-total"><td colspan="2"><strong>Total — Phase 1</strong></td><td><strong>30,000 EGP</strong></td></tr>
       </tbody>
     </table>
 
-    <h3>Additional Costs — Paid Separately by Client, Not Included in 20K</h3>
+    <h3>Additional Costs — Paid Separately by Client</h3>
 
     <table>
       <thead><tr><th>Item</th><th>Notes</th><th>Avg Cost</th></tr></thead>
@@ -1022,12 +1071,12 @@ tbody tr.in-view {
 
     <div class="callout c-blue">
       <div class="ct">Total Cost to Go Live</div>
-      <p><strong>20,000 EGP</strong> to Problem-X for development + approximately <strong>4,000 EGP per year</strong> for domain and hosting paid directly by Smart College to the providers. We guide you through registering both — it takes under 30 minutes.</p>
+      <p><strong>30,000 EGP</strong> for development + approximately <strong>4,000 EGP per year</strong> for domain and hosting paid directly by Smart College to the providers. We guide you through registering both — it takes under 30 minutes.</p>
     </div>
 
     <div class="qbox">
       <div class="qbox-label">Total Investment — Phase 1</div>
-      <div class="qbox-total">20,000 <span>EGP</span></div>
+      <div class="qbox-total">30,000 <span>EGP</span></div>
       <div class="qbox-sub">Domain + hosting ~4,000 EGP/yr paid separately by client directly to providers.</div>
       <div class="qbox-grid">
         <div><div class="qbg-label">Delivery</div><div class="qbg-val a">This Sunday</div><div class="qbg-note">From design selection</div></div>
@@ -1040,9 +1089,9 @@ tbody tr.in-view {
     <table>
       <thead><tr><th>Instalment</th><th>When</th><th>Amount</th></tr></thead>
       <tbody>
-        <tr><td>First — 50%</td><td>On agreement + design selection confirmed</td><td>10,000 EGP</td></tr>
-        <tr><td>Final — 50%</td><td>When the site is live on Sunday</td><td>10,000 EGP</td></tr>
-        <tr class="tr-total"><td colspan="2"><strong>Total</strong></td><td><strong>20,000 EGP</strong></td></tr>
+        <tr><td>First — 50%</td><td>On agreement + design selection confirmed</td><td>15,000 EGP</td></tr>
+        <tr><td>Final — 50%</td><td>When the site is live on Sunday</td><td>15,000 EGP</td></tr>
+        <tr class="tr-total"><td colspan="2"><strong>Total</strong></td><td><strong>30,000 EGP</strong></td></tr>
       </tbody>
     </table>
   </div>
@@ -1086,7 +1135,7 @@ tbody tr.in-view {
           <div class="tl-tasks"><ul>
             <li>Full admission form built and embedded on the admissions page</li>
             <li>All fields, validation, and confirmation message set up</li>
-            <li>All submissions forwarded to info@smartcollegeschool.com</li>
+            <li>All submissions forwarded to school email</li>
           </ul></div>
         </div>
       </div>
@@ -1107,7 +1156,7 @@ tbody tr.in-view {
           <div class="tl-phase"><span class="tb tb-l">Live</span> Launch</div>
           <div class="tl-tasks"><ul>
             <li>Site connected to your domain and goes live</li>
-            <li>Final payment of 10,000 EGP received</li>
+            <li class="pricing-only">Final payment of 15,000 EGP received</li>
             <li>14-day free support period begins</li>
           </ul></div>
         </div>
@@ -1152,13 +1201,13 @@ tbody tr.in-view {
       <div class="rcard">
         <div class="rcard-num">Needed Before Launch</div>
         <div class="rcard-title">Hosting Account</div>
-        <div class="rcard-body">A hosting account to keep the website running — approximately 2,000 EGP per year. We recommend a provider and walk you through setup. This is separate from and in addition to the 20,000 EGP development fee.</div>
+        <div class="rcard-body">A hosting account to keep the website running — approximately 2,000 EGP per year. We recommend a provider and walk you through setup. This is separate from and in addition to the development fee.</div>
       </div>
     </div>
 
     <div class="callout c-blue">
       <div class="ct">How the Admission Form Works in Phase 1</div>
-      <p>A parent visits the admissions page, fills in the form, and submits. They see a confirmation message on screen. At the same time, a full copy of their submission is emailed automatically to <strong>info@smartcollegeschool.com</strong>. Your admissions team reads the email, calls or emails the family, and handles everything from there. Clean, direct, and requires no dashboard or database in Phase 1.</p>
+      <p>A parent visits the admissions page, fills in the form, and submits. They see a confirmation message on screen. At the same time, a full copy of their submission is emailed automatically to the school inbox. Your admissions team reads the email, calls or emails the family, and handles everything from there. Clean, direct, and requires no dashboard or database in Phase 1.</p>
     </div>
   </div>
 
@@ -1174,15 +1223,15 @@ tbody tr.in-view {
       <tbody>
         <tr><td>Sunday Delivery</td><td>Site live and form working by Sunday — provided design is selected and first payment is made within 24 hours of this proposal.</td></tr>
         <tr><td>14-Day Free Support</td><td>Any bugs or issues reported within 14 days of launch are fixed at no extra cost.</td></tr>
-        <tr><td>Full Ownership</td><td>On final payment, Smart College owns 100% of the code and website files. No ongoing fees owed to Problem-X.</td></tr>
+        <tr><td>Full Ownership</td><td>On final payment, Smart College owns 100% of the code and website files. No ongoing fees.</td></tr>
         <tr><td>2 Revision Rounds</td><td>Two rounds of changes included. Additional rounds quoted separately if needed.</td></tr>
-        <tr><td>Confidentiality</td><td>All information shared by the school is kept strictly confidential by the Problem-X team.</td></tr>
+        <tr><td>Confidentiality</td><td>All information shared by the school is kept strictly confidential.</td></tr>
       </tbody>
     </table>
 
     <div class="callout c-neutral" style="margin-top:1.5rem">
       <div class="ct">Proposal Validity</div>
-      <p>The 20,000 EGP price and the Sunday delivery date are valid for 7 days from the date of this document. The Sunday timeline is calculated from the day design is confirmed and first payment is received.</p>
+      <p class="pricing-only">The 30,000 EGP price and the Sunday delivery date are valid for 7 days from the date of this document. The Sunday timeline is calculated from the day design is confirmed and first payment is received.</p>
     </div>
   </div>
 
@@ -1198,10 +1247,10 @@ tbody tr.in-view {
       <p>
         <strong>Step 1 —</strong> Open the 10 HTML design files in this folder and pick one.<br>
         <strong>Step 2 —</strong> Send us your logo, photos, and chairman's message — whatever you have ready.<br>
-        <strong>Step 3 —</strong> First payment: 10,000 EGP. Work begins immediately.<br>
+        <span class="pricing-only"><strong>Step 3 —</strong> First payment: 15,000 EGP. Work begins immediately.<br></span>
         <strong>Step 4 —</strong> Register your domain + hosting (~4,000 EGP/yr). We guide you through it.<br>
         <strong>Step 5 —</strong> Review the preview link we send you. One round of feedback.<br>
-        <strong>Step 6 —</strong> Final payment: 10,000 EGP. Site goes live Sunday.
+        <span class="pricing-only"><strong>Step 6 —</strong> Final payment: 15,000 EGP. Site goes live Sunday.</span>
       </p>
     </div>
 
@@ -1216,8 +1265,8 @@ tbody tr.in-view {
         </div>
         <div>
           <div class="sig-label">Prepared By</div>
-          <div class="sig-name">Problem-X</div>
-          <div class="sig-sub">Digital Development · problem-x.com</div>
+          <div class="sig-name">Development Team</div>
+          <div class="sig-sub">Digital Development</div>
           <div class="sig-space"></div>
           <div class="sig-date">Signature &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date: _______ / _______ / 2025</div>
         </div>
@@ -1229,23 +1278,13 @@ tbody tr.in-view {
 
 <!-- FOOTER -->
 <div class="foot">
-  <div class="foot-logo-row">
-    <div class="foot-mark">
-      <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-        <path d="M3 3 L10 10 L3 17" stroke="white" stroke-width="2.5" stroke-linecap="square"/>
-        <path d="M10 3 L17 10 L10 17" stroke="white" stroke-width="2.5" stroke-linecap="square"/>
-      </svg>
-    </div>
-    <div class="foot-word">Problem-<span class="x">X</span></div>
-  </div>
   <div class="foot-school">Smart College International Schools</div>
   <div class="foot-ar">مدرسة سمارت كوليدج الدولية</div>
   <div class="foot-contact">
-    22 Othman Ibn Affan, El-Bostan, Heliopolis, Cairo, Egypt<br>
-    01036323222 · 01035533221 · info@smartcollegeschool.com
+    22 Othman Ibn Affan, El-Bostan, Heliopolis, Cairo, Egypt
   </div>
   <div class="foot-slogan">Shaping Futures. Empowering Minds.</div>
-  <div class="foot-ref">SCIS-2025-P1 · PREPARED BY PROBLEM-X · CONFIDENTIAL</div>
+  <div class="foot-ref">SCIS-2025-P1 · CONFIDENTIAL</div>
 </div>
 
 <script>
@@ -1335,6 +1374,26 @@ ids.forEach(id=>{const el=document.getElementById(id);if(el)obs.observe(el)});
   }, { passive: true });
 })();
 /* ══ END PROPOSAL ANIMATION JS ═════════════════════════════════════════ */
+
+/* ══ PRICING TOGGLE JS ═════════════════════════════════════════════════ */
+(function(){
+  var toggle = document.getElementById('pricing-toggle');
+  if (!toggle) return;
+  var KEY = 'algioshy-show-pricing';
+  /* Read saved state (default: pricing ON) */
+  var show = localStorage.getItem(KEY) !== 'false';
+  function apply(showPricing) {
+    document.body.classList.toggle('hide-pricing', !showPricing);
+    toggle.classList.toggle('active', showPricing);
+    localStorage.setItem(KEY, showPricing ? 'true' : 'false');
+  }
+  apply(show);
+  toggle.addEventListener('click', function() {
+    show = !show;
+    apply(show);
+  });
+})();
+/* ══ END PRICING TOGGLE JS ═════════════════════════════════════════════ */
 </script>
 </body>
 </html>
