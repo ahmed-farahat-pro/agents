@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart College International — Warm Premium</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,300;1,9..144,500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --terracotta: #b05c3a;
+    --terra-light: #d4795a;
+    --sand: #f7f2ea;
+    --sand2: #ede7db;
+    --ochre: #c49a30;
+    --dark: #1e1810;
+    --ink: #2c2418;
+    --muted: #6e5f4a;
+    --dim: #a8967e;
+    --border: #d8cfc0;
+    --white: #fff;
+  }
+  html { scroll-behavior: smooth; }
+  body { background: var(--sand); color: var(--ink); font-family: 'Plus Jakarta Sans', sans-serif; }
+
+  /* TOPBAR */
+  .topbar { background: var(--dark); display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 3.5rem; }
+  .topbar-left { font-size: 0.62rem; color: rgba(255,255,255,0.4); letter-spacing: 0.1em; }
+  .topbar-right { font-size: 0.62rem; color: rgba(255,255,255,0.4); letter-spacing: 0.1em; display: flex; gap: 1.5rem; }
+  .topbar-right a { color: rgba(255,255,255,0.4); text-decoration: none; transition: color 0.2s; }
+  .topbar-right a:hover { color: var(--ochre); }
+
+  /* NAV */
+  nav { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 3.5rem; display: flex; align-items: center; justify-content: space-between; height: 72px; position: sticky; top: 0; z-index: 100; }
+  .nav-logo { display: flex; align-items: center; gap: 0.9rem; }
+  .nav-emblem { width: 44px; height: 44px; border: 2px solid var(--terracotta); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .nav-text-main { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 500; color: var(--ink); line-height: 1.15; }
+  .nav-text-sub { font-size: 0.55rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--dim); }
+  .nav-links { display: flex; gap: 0; }
+  .nav-links a { text-decoration: none; font-size: 0.7rem; font-weight: 500; color: var(--muted); padding: 0 1.2rem; height: 72px; display: flex; align-items: center; transition: color 0.2s; position: relative; }
+  .nav-links a::after { content: ''; position: absolute; bottom: 0; left: 1.2rem; right: 1.2rem; height: 2px; background: var(--terracotta); transform: scaleX(0); transition: transform 0.3s; }
+  .nav-links a:hover { color: var(--terracotta); }
+  .nav-links a:hover::after { transform: scaleX(1); }
+  .nav-cta { background: var(--terracotta); color: var(--white); padding: 0.65rem 1.8rem; font-size: 0.7rem; font-weight: 600; border: none; cursor: pointer; border-radius: 4px; font-family: 'Plus Jakarta Sans', sans-serif; transition: background 0.2s; text-decoration: none; }
+  .nav-cta:hover { background: var(--terra-light); }
+
+  /* HERO */
+  .hero { min-height: 92vh; display: grid; grid-template-columns: 1fr 1fr; }
+  .hero-left { padding: 5rem 3.5rem; display: flex; flex-direction: column; justify-content: center; }
+  .hero-overline { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
+  .hero-tag { font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--terracotta); }
+  .hero-tag-line { flex: 1; height: 1px; background: var(--border); max-width: 60px; }
+  .hero-h1 { font-family: 'Fraunces', serif; font-size: 4rem; line-height: 1.05; font-weight: 500; margin-bottom: 1.5rem; }
+  .hero-h1 em { font-style: italic; color: var(--terracotta); }
+  .hero-h1-ar { font-size: 1.5rem; color: rgba(44,36,24,0.18); line-height: 1.1; margin-bottom: 2rem; font-family: 'Fraunces', serif; font-style: italic; }
+  .hero-body { font-size: 0.9rem; line-height: 1.85; color: var(--muted); max-width: 480px; margin-bottom: 3rem; }
+  .hero-actions { display: flex; gap: 1rem; align-items: center; }
+  .btn-terra { background: var(--terracotta); color: var(--white); padding: 0.9rem 2.2rem; font-size: 0.72rem; font-weight: 600; border: none; cursor: pointer; border-radius: 4px; font-family: 'Plus Jakarta Sans', sans-serif; transition: background 0.2s; text-decoration: none; display: inline-block; }
+  .btn-terra:hover { background: var(--terra-light); }
+  .btn-nude { background: transparent; color: var(--muted); padding: 0.9rem 2rem; font-size: 0.72rem; font-weight: 500; border: 1px solid var(--border); cursor: pointer; border-radius: 4px; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.2s; text-decoration: none; display: inline-block; }
+  .btn-nude:hover { border-color: var(--terracotta); color: var(--terracotta); }
+  .hero-contact-strip { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border); display: flex; gap: 2rem; }
+  .hcs-item { }
+  .hcs-label { font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--dim); margin-bottom: 0.2rem; }
+  .hcs-val { font-family: 'Fraunces', serif; font-size: 0.95rem; color: var(--ink); }
+  .hero-right { background: var(--sand2); display: flex; flex-direction: column; }
+  .hero-img { flex: 1; background: linear-gradient(160deg, #e8ddd0 0%, #d4c9ba 100%); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+  .campus-placeholder { font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--dim); }
+  .hero-facts { display: grid; grid-template-columns: repeat(3,1fr); }
+  .hf-item { padding: 1.5rem; border-top: 1px solid var(--border); border-right: 1px solid var(--border); text-align: center; background: var(--white); }
+  .hf-item:last-child { border-right: none; }
+  .hf-n { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 500; color: var(--terracotta); }
+  .hf-l { font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); margin-top: 0.2rem; }
+  .hero-programs { padding: 1.5rem; background: var(--dark); display: grid; grid-template-columns: 1fr 1fr; gap: 1px; }
+  .hp-item { background: rgba(255,255,255,0.04); padding: 1.2rem; transition: background 0.2s; cursor: pointer; }
+  .hp-item:hover { background: rgba(176,92,58,0.15); }
+  .hp-tag { font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ochre); margin-bottom: 0.3rem; }
+  .hp-name { font-size: 0.8rem; color: rgba(255,255,255,0.7); font-weight: 500; }
+
+  /* FEATURES */
+  .features { padding: 6rem 3.5rem; background: var(--white); }
+  .feat-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3rem; }
+  .feat-title { font-family: 'Fraunces', serif; font-size: 2.5rem; font-weight: 500; line-height: 1.15; }
+  .feat-title em { font-style: italic; color: var(--terracotta); }
+  .feat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 2rem; }
+  .feat-card { padding: 2rem; border: 1px solid var(--border); border-radius: 8px; transition: all 0.3s; }
+  .feat-card:hover { border-color: var(--terracotta); }
+  .feat-num { font-family: 'Fraunces', serif; font-size: 3.5rem; font-weight: 300; color: var(--border); line-height: 1; margin-bottom: 1rem; }
+  .feat-name { font-size: 0.82rem; font-weight: 700; margin-bottom: 0.6rem; color: var(--ink); }
+  .feat-desc { font-size: 0.75rem; line-height: 1.75; color: var(--muted); }
+
+  /* CAMPUS */
+  .campus { padding: 6rem 3.5rem; background: var(--sand); }
+  .campus-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+  .campus-fac-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.75rem; margin-top: 2rem; }
+  .cff { background: var(--white); border: 1px solid var(--border); padding: 1rem; border-radius: 6px; }
+  .cff-name { font-size: 0.7rem; font-weight: 600; color: var(--ink); }
+  .cff-ar { font-size: 0.62rem; color: var(--dim); margin-top: 0.1rem; }
+  .campus-text h2 { font-family: 'Fraunces', serif; font-size: 2.5rem; font-weight: 500; line-height: 1.15; margin-bottom: 1.5rem; }
+  .campus-text p { font-size: 0.85rem; line-height: 1.8; color: var(--muted); margin-bottom: 2rem; }
+
+  /* ADMISSION FORM FULL */
+  .adm { background: var(--dark); padding: 6rem 3.5rem; }
+  .adm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; }
+  .adm-title { font-family: 'Fraunces', serif; font-size: 2.8rem; font-weight: 500; line-height: 1.1; color: var(--white); margin-bottom: 0.5rem; }
+  .adm-title em { font-style: italic; color: var(--ochre); }
+  .adm-sub { font-size: 0.82rem; color: rgba(255,255,255,0.4); margin-bottom: 3rem; }
+  .steps { display: flex; gap: 0; margin-bottom: 2.5rem; }
+  .step { flex: 1; text-align: center; position: relative; }
+  .step::after { content: ''; position: absolute; top: 14px; left: 50%; right: -50%; height: 1px; background: rgba(255,255,255,0.1); z-index: 0; }
+  .step:last-child::after { display: none; }
+  .step-dot { width: 28px; height: 28px; border-radius: 50%; margin: 0 auto 0.5rem; font-size: 0.65rem; font-weight: 700; display: flex; align-items: center; justify-content: center; position: relative; z-index: 1; }
+  .step-dot.done { background: var(--terracotta); color: var(--white); }
+  .step-dot.active { background: var(--white); color: var(--dark); }
+  .step-dot.pending { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.3); }
+  .step-label { font-size: 0.55rem; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.3); }
+  .step-label.active { color: rgba(255,255,255,0.8); }
+  .fg { margin-bottom: 1.2rem; }
+  .frow { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .fl { display: block; font-size: 0.6rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 0.4rem; }
+  .fi { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--white); padding: 0.75rem 1rem; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.8rem; outline: none; border-radius: 4px; transition: border-color 0.2s; }
+  .fi:focus { border-color: var(--terracotta); background: rgba(176,92,58,0.08); }
+  .fi::placeholder { color: rgba(255,255,255,0.2); }
+  .fi option { background: var(--dark); color: var(--white); }
+  .prog-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.2rem; }
+  .po { border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 1rem; cursor: pointer; background: rgba(255,255,255,0.03); transition: all 0.2s; font-family: 'Plus Jakarta Sans', sans-serif; text-align: left; }
+  .po:hover { border-color: rgba(176,92,58,0.5); }
+  .po.active { border-color: var(--terracotta); background: rgba(176,92,58,0.1); }
+  .po-en { font-size: 0.82rem; font-weight: 600; color: rgba(255,255,255,0.7); }
+  .po.active .po-en { color: var(--terra-light); }
+  .po-sub { font-size: 0.65rem; color: rgba(255,255,255,0.3); margin-top: 0.2rem; }
+  .fsub { width: 100%; background: var(--terracotta); color: var(--white); padding: 1rem; border: none; border-radius: 4px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: background 0.2s; margin-top: 0.5rem; }
+  .fsub:hover { background: var(--terra-light); }
+  .adm-right { display: flex; flex-direction: column; gap: 2rem; padding-top: 5rem; }
+  .ar-quote { font-family: 'Fraunces', serif; font-size: 1.3rem; font-style: italic; color: rgba(255,255,255,0.6); line-height: 1.5; padding-left: 1.5rem; border-left: 2px solid var(--terracotta); }
+  .ar-contact { }
+  .arc-title { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-bottom: 1.2rem; }
+  .arc-item { padding: 0.9rem 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .arc-label { font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-bottom: 0.25rem; }
+  .arc-val { font-size: 0.82rem; color: rgba(255,255,255,0.6); line-height: 1.5; }
+  .ar-socials { display: flex; gap: 0.75rem; }
+  .ars { border: 1px solid rgba(255,255,255,0.1); padding: 0.4rem 1rem; font-size: 0.6rem; color: rgba(255,255,255,0.35); text-decoration: none; border-radius: 100px; transition: all 0.2s; }
+  .ars:hover { border-color: var(--ochre); color: var(--ochre); }
+
+  /* FOOTER */
+  footer { background: var(--sand2); padding: 3.5rem 3.5rem 0; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 3rem; border-top: 1px solid var(--border); }
+  .ftl-name { font-family: 'Fraunces', serif; font-size: 1.1rem; color: var(--ink); margin-bottom: 0.25rem; }
+  .ftl-ar { font-size: 0.85rem; color: var(--dim); margin-bottom: 0.75rem; }
+  .ftl-p { font-size: 0.75rem; line-height: 1.7; color: var(--dim); max-width: 260px; }
+  .ftl-soc { display: flex; gap: 0.5rem; margin-top: 1.2rem; }
+  .ftls { padding: 0.3rem 0.8rem; border: 1px solid var(--border); font-size: 0.6rem; color: var(--muted); text-decoration: none; border-radius: 100px; transition: all 0.2s; }
+  .ftls:hover { border-color: var(--terracotta); color: var(--terracotta); }
+  .ftc-title { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; }
+  .ftc-item { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.5rem; line-height: 1.5; }
+  .ftbottom { border-top: 1px solid var(--border); padding: 1.2rem 3.5rem; display: flex; justify-content: space-between; }
+  .ftcopy { font-size: 0.6rem; color: var(--dim); }
+
+  @media (max-width: 900px) {
+    nav { padding: 0 1.5rem; }
+    .nav-links { display: none; }
+    .hero { grid-template-columns: 1fr; }
+    .hero-right { display: none; }
+    .feat-grid { grid-template-columns: 1fr; }
+    .campus-grid { grid-template-columns: 1fr; }
+    .adm-grid { grid-template-columns: 1fr; }
+    footer { grid-template-columns: 1fr; }
+    .hero-left { padding: 3rem 1.5rem; }
+    .hero-h1 { font-size: 2.8rem; }
+    .features, .campus, .adm { padding: 3rem 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">📞 01036323222 &nbsp;·&nbsp; 01035533221 &nbsp;·&nbsp; <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="94fdfaf2fbd4e7f9f5e6e0f7fbf8f8f1f3f1e7f7fcfbfbf8baf7fbf9">[email&#160;protected]</a></div>
+  <div class="topbar-right">
+    <a href="https://instagram.com/smartcollege.sc">Instagram</a>
+    <a href="#">Facebook</a>
+    <a href="#">TikTok</a>
+  </div>
+</div>
+
+<nav>
+  <div class="nav-logo">
+    <div class="nav-emblem"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><polygon points="11,3 15,9 21,9 16,14 18,20 11,16 4,20 6,14 1,9 7,9" fill="none" stroke="#b05c3a" stroke-width="1.2"/></svg></div>
+    <div>
+      <div class="nav-text-main">Smart College International</div>
+      <div class="nav-text-sub">Schools · Heliopolis · Cairo</div>
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="#about">About</a>
+    <a href="#programs">Programs</a>
+    <a href="#campus">Campus</a>
+    <a href="#admissions">Admissions</a>
+    <a href="#contact">Contact</a>
+  </div>
+  <a href="#admissions" class="nav-cta">Apply for Admission</a>
+</nav>
+
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-overline"><div class="hero-tag-line"></div><div class="hero-tag">Heliopolis · Cairo · Est. 2025</div></div>
+    <h1 class="hero-h1">Where Heritage<br>Meets <em>Excellence.</em></h1>
+    <div class="hero-h1-ar">نصنع العقول ونبني المستقبل</div>
+    <p class="hero-body">Smart College International Schools offers IG and American Diploma programs for Grades 10–12 in a prestigious Heliopolis heritage campus — where academic distinction, creativity, and character are seamlessly nurtured.</p>
+    <div class="hero-actions">
+      <a href="#admissions" class="btn-terra">Apply for Admission</a>
+      <a href="#about" class="btn-nude">Our Story</a>
+    </div>
+    <div class="hero-contact-strip">
+      <div class="hcs-item"><div class="hcs-label">Phone</div><div class="hcs-val">01036323222</div></div>
+      <div class="hcs-item"><div class="hcs-label">Location</div><div class="hcs-val">Heliopolis, Cairo</div></div>
+      <div class="hcs-item"><div class="hcs-label">Programs</div><div class="hcs-val">IG · American Diploma</div></div>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="hero-img"><div class="campus-placeholder">Campus Photography Coming Soon</div></div>
+    <div class="hero-facts">
+      <div class="hf-item"><div class="hf-n">360</div><div class="hf-l">Students</div></div>
+      <div class="hf-item"><div class="hf-n">18</div><div class="hf-l">Classes</div></div>
+      <div class="hf-item"><div class="hf-n">20</div><div class="hf-l">Per Class</div></div>
+    </div>
+    <div class="hero-programs">
+      <div class="hp-item"><div class="hp-tag">Program 01</div><div class="hp-name">IG Certificate — Gr. 10 & 11</div></div>
+      <div class="hp-item"><div class="hp-tag">Program 02</div><div class="hp-name">American Diploma — Gr. 12</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="features" id="about">
+  <div class="feat-header">
+    <div class="feat-title">Why Smart College<br>is <em>Different</em></div>
+    <div style="font-size:0.72rem;color:var(--dim);max-width:280px;line-height:1.6">A carefully curated environment where every element of the student journey is thoughtfully designed to inspire ambition.</div>
+  </div>
+  <div class="feat-grid">
+    <div class="feat-card"><div class="feat-num">01</div><div class="feat-name">Prestigious Heritage Location</div><div class="feat-desc">Situated in the heart of Heliopolis within a distinguished landmark — offering both prominence and accessibility.</div></div>
+    <div class="feat-card"><div class="feat-num">02</div><div class="feat-name">Academic Excellence</div><div class="feat-desc">Rigorously designed curriculum with global perspective — positioning students for the world's finest universities.</div></div>
+    <div class="feat-card"><div class="feat-num">03</div><div class="feat-name">Distinguished Faculty</div><div class="feat-desc">Handpicked educators providing personalised guidance — just 20 students per class for deep individual focus.</div></div>
+    <div class="feat-card"><div class="feat-num">04</div><div class="feat-name">Global Collaborations</div><div class="feat-desc">Strategic partnerships with leading international institutions enriching programmes and broadening opportunities.</div></div>
+    <div class="feat-card"><div class="feat-num">05</div><div class="feat-name">Future-Ready Facilities</div><div class="feat-desc">Modern labs, theaters, pools, sports courts, and creative spaces reflecting the expectations of today's generation.</div></div>
+    <div class="feat-card"><div class="feat-num">06</div><div class="feat-name">Holistic Wellbeing</div><div class="feat-desc">Highest standards of hygiene, safety, physical health, and mental wellbeing — a nurturing campus environment.</div></div>
+  </div>
+</section>
+
+<section class="campus" id="campus">
+  <div class="campus-grid">
+    <div class="campus-text">
+      <div style="font-size:0.62rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--terracotta);margin-bottom:1rem">Campus Life</div>
+      <h2>World-Class<br><em style="font-family:'Fraunces',serif;font-style:italic;color:var(--terracotta)">Facilities</em></h2>
+      <p>Our campus offers a refined selection of facilities designed to enrich both academic and extracurricular life. Every space is thoughtfully designed to inspire movement, creativity, and connection.</p>
+      <div class="campus-fac-grid">
+        <div class="cff"><div class="cff-name">ICT Lab</div><div class="cff-ar">معمل تقنية</div></div>
+        <div class="cff"><div class="cff-name">Chem Lab</div><div class="cff-ar">كيمياء</div></div>
+        <div class="cff"><div class="cff-name">Bio Lab</div><div class="cff-ar">أحياء</div></div>
+        <div class="cff"><div class="cff-name">Physics Lab</div><div class="cff-ar">فيزياء</div></div>
+        <div class="cff"><div class="cff-name">Art Studio</div><div class="cff-ar">فنون</div></div>
+        <div class="cff"><div class="cff-name">Music Room</div><div class="cff-ar">موسيقى</div></div>
+        <div class="cff"><div class="cff-name">Theater</div><div class="cff-ar">مسرح</div></div>
+        <div class="cff"><div class="cff-name">Outdoor Stage</div><div class="cff-ar">مسرح خارجي</div></div>
+        <div class="cff"><div class="cff-name">Pool</div><div class="cff-ar">حمام سباحة</div></div>
+        <div class="cff"><div class="cff-name">Gymnasium</div><div class="cff-ar">جيم</div></div>
+        <div class="cff"><div class="cff-name">Padel Courts</div><div class="cff-ar">بادل</div></div>
+        <div class="cff"><div class="cff-name">CrossFit</div><div class="cff-ar">كروسفت</div></div>
+        <div class="cff"><div class="cff-name">Mosque</div><div class="cff-ar">مسجد</div></div>
+        <div class="cff"><div class="cff-name">Cafeteria</div><div class="cff-ar">كافيتيريا</div></div>
+        <div class="cff"><div class="cff-name">Playground</div><div class="cff-ar">ملعب</div></div>
+      </div>
+    </div>
+    <div>
+      <div style="background:var(--sand2);height:400px;display:flex;align-items:center;justify-content:center;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--dim);border:1px solid var(--border)">Campus Photography Coming Soon</div>
+      <div style="background:var(--terracotta);padding:2rem;color:var(--white);margin-top:1px">
+        <div style="font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:0.5rem">Transportation</div>
+        <div style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:500;line-height:1.4">Comprehensive bus service available for all students — seamless and secure.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="adm" id="admissions">
+  <div class="adm-title">Begin Your<br><em>Application</em></div>
+  <div class="adm-sub">Admissions for Academic Year 2025–2026 — We invite you to join a community defined by excellence.</div>
+  <div class="adm-grid">
+    <form onsubmit="doSub(event)">
+      <div class="steps">
+        <div class="step"><div class="step-dot done">✓</div><div class="step-label">Program</div></div>
+        <div class="step"><div class="step-dot active">2</div><div class="step-label active">Student</div></div>
+        <div class="step"><div class="step-dot pending">3</div><div class="step-label">Parent</div></div>
+        <div class="step"><div class="step-dot pending">4</div><div class="step-label">Docs</div></div>
+        <div class="step"><div class="step-dot pending">5</div><div class="step-label">Submit</div></div>
+      </div>
+      <div class="frow fg">
+        <div><label class="fl">First Name</label><input type="text" class="fi" placeholder="Ahmed" required></div>
+        <div><label class="fl">Last Name</label><input type="text" class="fi" placeholder="Hassan" required></div>
+      </div>
+      <div class="frow fg">
+        <div><label class="fl">Date of Birth</label><input type="date" class="fi" required></div>
+        <div><label class="fl">Nationality</label><select class="fi"><option value="">Select</option><option>Egyptian</option><option>Saudi</option><option>Other</option></select></div>
+      </div>
+      <div class="frow fg">
+        <div><label class="fl">Grade</label><select class="fi" required><option value="">Grade...</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option></select></div>
+        <div><label class="fl">National ID / Passport</label><input type="text" class="fi" placeholder="ID No."></div>
+      </div>
+      <div class="fg"><label class="fl" style="margin-bottom:0.6rem;display:block">Program</label>
+      <div class="prog-opts">
+        <button type="button" class="po active" onclick="selPO(this)"><div class="po-en">IG Program</div><div class="po-sub">International Certificate</div></button>
+        <button type="button" class="po" onclick="selPO(this)"><div class="po-en">American Diploma</div><div class="po-sub">US Curriculum</div></button>
+      </div></div>
+      <div class="frow fg">
+        <div><label class="fl">Parent / Guardian</label><input type="text" class="fi" placeholder="Full name" required></div>
+        <div><label class="fl">Phone</label><input type="tel" class="fi" placeholder="01XXXXXXXXX" required></div>
+      </div>
+      <div class="fg"><label class="fl">Email</label><input type="email" class="fi" placeholder="your@email.com" required></div>
+      <div class="fg"><label class="fl">Message / Notes</label><textarea class="fi" rows="3" style="resize:vertical" placeholder="Any questions..."></textarea></div>
+      <button type="submit" class="fsub" id="fsub2">Submit Application</button>
+      <div id="suc2" style="display:none;margin-top:1rem;padding:1rem;background:rgba(176,92,58,0.15);border:1px solid var(--terracotta);border-radius:4px;color:var(--terra-light);font-size:0.78rem;text-align:center">Application received! We will contact you within 48 hours.</div>
+    </form>
+    <div class="adm-right">
+      <div class="ar-quote">"We invite you to join a community defined by excellence — where every student is known, valued, and inspired."</div>
+      <div class="ar-contact">
+        <div class="arc-title">Contact & Location</div>
+        <div class="arc-item"><div class="arc-label">Address</div><div class="arc-val">22 Othman Ibn Affan, El-Bostan, Heliopolis, Cairo</div></div>
+        <div class="arc-item"><div class="arc-label">Phone</div><div class="arc-val">01036323222 · 01035533221</div></div>
+        <div class="arc-item"><div class="arc-label">Email</div><div class="arc-val"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="365f58505976455b57444255595a5a53515345555e59595a1855595b">[email&#160;protected]</a></div></div>
+        <div class="arc-item"><div class="arc-label">Programs</div><div class="arc-val">IG Certificate · American Diploma</div></div>
+        <div class="arc-item"><div class="arc-label">Grades</div><div class="arc-val">Grade 10, Grade 11, Grade 12</div></div>
+      </div>
+      <div>
+        <div style="font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:0.75rem">Follow Us</div>
+        <div class="ar-socials">
+          <a href="https://instagram.com/smartcollege.sc" class="ars">Instagram</a>
+          <a href="#" class="ars">Facebook</a>
+          <a href="#" class="ars">TikTok</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer id="contact">
+  <div>
+    <div class="ftl-name">Smart College International Schools</div>
+    <div class="ftl-ar">نصنع العقول ونبني المستقبل</div>
+    <p class="ftl-p">A distinguished educational destination in the heart of Heliopolis — where heritage meets innovation, and excellence is defined.</p>
+    <div class="ftl-soc">
+      <a href="https://instagram.com/smartcollege.sc" class="ftls">Instagram</a>
+      <a href="#" class="ftls">Facebook</a>
+      <a href="#" class="ftls">TikTok</a>
+    </div>
+  </div>
+  <div>
+    <div class="ftc-title">Contact</div>
+    <div class="ftc-item">📞 01036323222</div>
+    <div class="ftc-item">📞 01035533221</div>
+    <div class="ftc-item">✉️ <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="751c1b131a350618140701161a191910121006161d1a1a195b161a18">[email&#160;protected]</a></div>
+  </div>
+  <div>
+    <div class="ftc-title">Address</div>
+    <div class="ftc-item">22 Othman Ibn Affan<br>El-Bostan, Heliopolis<br>Cairo, Egypt</div>
+  </div>
+</footer>
+<div class="ftbottom">
+  <div class="ftcopy">© 2025 Smart College International Schools. All Rights Reserved.</div>
+  <div class="ftcopy">Shaping Futures. Empowering Minds.</div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+  function selPO(el) { document.querySelectorAll('.po').forEach(b=>b.classList.remove('active')); el.classList.a

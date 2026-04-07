@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart College International Schools — Proposal by Problem-X</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --blue:#4B6EF5;
+  --blue2:#3a5ce0;
+  --blue-l:#6B8EFF;
+  --blue-dim:rgba(75,110,245,0.10);
+  --blue-dim2:rgba(75,110,245,0.18);
+  --navy:#1a2a5e;
+  --navy2:#0f1a40;
+  --cream:#f5f3ee;
+  --cream2:#faf8f3;
+  --white:#ffffff;
+  --ink:#1a1a2e;
+  --mid:#505070;
+  --gray:#888899;
+  --border:#e2e0db;
+  --border2:#d0cec8;
+  --card:#ffffff;
+}
+html{scroll-behavior:smooth}
+body{background:var(--cream2);color:var(--ink);font-family:'Inter',sans-serif;font-size:15px;line-height:1.75}
+
+@media print{
+  .no-print{display:none!important}
+  body{background:#fff;font-size:11px}
+  .cover{-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:always}
+  .section{page-break-inside:avoid}
+}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:var(--white);border-bottom:1px solid var(--border);
+  padding:.9rem 3rem;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;box-shadow:0 1px 8px rgba(0,0,0,.05);
+}
+.px-word{font-family:'Inter',sans-serif;font-weight:900;font-size:1.1rem;letter-spacing:-.02em;color:var(--ink);text-decoration:none}
+.px-word .x{color:var(--blue)}
+.topbar-right{display:flex;align-items:center;gap:1rem}
+.topbar-tag{background:var(--blue-dim2);border:1px solid var(--blue);color:var(--blue);padding:.3rem .9rem;font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.topbar-url{font-size:.68rem;color:var(--gray)}
+
+/* ── COVER ── */
+.cover{
+  background:linear-gradient(135deg,#4B6EF5 0%,#6B8EFF 100%);
+  min-height:88vh;padding:5rem 6rem;
+  display:flex;flex-direction:column;justify-content:space-between;
+  position:relative;overflow:hidden;
+}
+.cover-dots{
+  position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(255,255,255,.13) 1px,transparent 1px);
+  background-size:30px 30px;
+}
+.cover-glow{position:absolute;bottom:-180px;right:-180px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.1) 0%,transparent 60%);pointer-events:none}
+.cover-top{position:relative;z-index:2}
+.cover-badge{display:inline-block;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:.35rem 1.1rem;font-size:.6rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;border-radius:100px;margin-bottom:2.5rem}
+.cover-h1{font-size:3.8rem;font-weight:900;line-height:1.05;letter-spacing:-.03em;color:#fff;margin-bottom:1rem}
+.cover-h1 .thin{font-weight:300;opacity:.8}
+.cover-desc{font-size:1.05rem;color:rgba(255,255,255,.75);max-width:540px;line-height:1.8}
+.cover-desc strong{color:#fff;font-weight:700}
+.cover-mid{position:relative;z-index:2}
+.cover-sep{height:1px;background:rgba(255,255,255,.2);margin:3rem 0}
+.cover-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:1.5rem}
+.cm{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:1.2rem 1.4rem}
+.cm-label{font-size:.55rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:.35rem}
+.cm-val{font-size:1rem;font-weight:800;color:#fff}
+.cm-val.lg{font-size:1.25rem}
+.cover-bottom{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1.5rem}
+.cb-client-lbl{font-size:.55rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:.4rem}
+.cb-name{font-size:1.3rem;font-weight:800;color:#fff}
+.cb-sub{font-size:.75rem;color:rgba(255,255,255,.6);margin-top:.2rem}
+.cb-right{text-align:right;font-size:.65rem;color:rgba(255,255,255,.45);line-height:2.1}
+.cb-right span{color:rgba(255,255,255,.7)}
+
+/* ── LAYOUT ── */
+.wrap{max-width:960px;margin:0 auto;padding:4rem 3rem}
+.section{margin-bottom:5rem}
+.divider{height:1px;background:var(--border);margin:4rem 0}
+
+/* ── SECTION HEADER ── */
+.kicker{font-size:.58rem;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:var(--blue);margin-bottom:.5rem;display:flex;align-items:center;gap:.75rem}
+.kicker::before{content:'';display:block;width:18px;height:2px;background:var(--blue)}
+h2{font-size:1.9rem;font-weight:800;letter-spacing:-.02em;color:var(--ink);margin-bottom:1.5rem;line-height:1.2}
+h2 span{color:var(--blue)}
+h3{font-size:.88rem;font-weight:700;color:var(--ink);margin:2rem 0 .75rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+p{color:var(--mid);margin-bottom:1rem;font-size:.88rem;line-height:1.85}
+strong{color:var(--ink);font-weight:600}
+
+/* ── CARD ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:2rem}
+.card-blue{border-top:3px solid var(--blue)}
+
+/* ── SCOPE GRID ── */
+.scope-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin:1.5rem 0}
+.sc-num{font-size:.57rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--blue);margin-bottom:.6rem}
+.sc-title{font-size:1rem;font-weight:700;color:var(--ink);margin-bottom:1rem}
+.sc-list{list-style:none;padding:0}
+.sc-list li{font-size:.78rem;color:var(--mid);padding:.35rem 0;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:.6rem}
+.sc-list li:last-child{border-bottom:none}
+.sc-list li::before{content:'—';color:var(--blue);font-size:.7rem;flex-shrink:0}
+
+/* ── CALLOUT ── */
+.callout{padding:1.4rem 1.8rem;margin:1.5rem 0;border-radius:8px}
+.c-blue{background:var(--blue-dim);border-left:3px solid var(--blue)}
+.c-blue .ct{color:var(--blue)}
+.c-neutral{background:var(--cream);border:1px solid var(--border2)}
+.c-neutral .ct{color:var(--ink)}
+.ct{font-size:.58rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;margin-bottom:.5rem}
+.callout p{margin-bottom:0;font-size:.82rem}
+
+/* ── INSPO GRID ── */
+.inspo-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin:1.5rem 0}
+.icard{background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:all .25s}
+.icard:hover{border-color:var(--blue);box-shadow:0 6px 24px rgba(75,110,245,.12);transform:translateY(-2px)}
+.ithumb{height:88px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.ithumb-n{font-size:3rem;font-weight:900;color:rgba(255,255,255,.08);position:absolute;left:10px;bottom:-6px}
+.ithumb-tag{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.35);color:rgba(255,255,255,.8);padding:.18rem .55rem;font-size:.56rem;font-weight:700;letter-spacing:.05em;border-radius:3px}
+.ibody{padding:1.2rem}
+.ititle{font-size:.82rem;font-weight:700;color:var(--ink);margin-bottom:.2rem}
+.iinsp{font-size:.62rem;color:var(--gray);margin-bottom:.5rem}
+.idesc{font-size:.74rem;color:var(--mid);line-height:1.6;margin-bottom:.9rem}
+.itags{display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:.9rem}
+.itag{background:var(--cream);border:1px solid var(--border);color:var(--gray);padding:.15rem .5rem;font-size:.56rem;font-weight:600;border-radius:100px}
+.ibtn{display:inline-block;background:var(--blue);color:#fff;padding:.4rem 1rem;font-size:.65rem;font-weight:700;text-decoration:none;border-radius:5px;transition:background .2s}
+.ibtn:hover{background:var(--blue2)}
+
+/* ── TABLE ── */
+table{width:100%;border-collapse:collapse;margin:1.5rem 0;font-size:.82rem;background:var(--white);border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+thead tr{background:var(--navy)}
+thead th{padding:.85rem 1rem;text-align:left;font-weight:700;font-size:.63rem;letter-spacing:.1em;text-transform:uppercase;color:#fff}
+thead th:last-child{text-align:right}
+tbody tr{border-bottom:1px solid var(--border)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--cream)}
+tbody td{padding:.85rem 1rem;color:var(--mid)}
+tbody td:first-child{color:var(--ink);font-weight:600}
+tbody td:last-child{text-align:right;font-weight:700;color:var(--ink)}
+.tr-total td{background:var(--blue)!important;color:#fff!important;font-weight:800!important;font-size:.9rem}
+.tr-total td:last-child{color:#fff!important;font-size:1.1rem}
+.tr-excl td{color:var(--gray)!important;font-style:italic}
+.tr-excl td:first-child{color:var(--gray)!important;font-weight:400!important}
+
+/* ── QUOTE BOX ── */
+.qbox{background:var(--navy);border-radius:10px;padding:3rem;margin:2rem 0}
+.qbox-label{font-size:.56rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.75rem}
+.qbox-total{font-size:4rem;font-weight:900;letter-spacing:-.04em;color:#fff;line-height:1;margin-bottom:.2rem}
+.qbox-total span{color:var(--blue-l)}
+.qbox-sub{font-size:.8rem;color:rgba(255,255,255,.4);margin-bottom:2.5rem}
+.qbox-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;border-top:1px solid rgba(255,255,255,.1);padding-top:2rem}
+.qbg-label{font-size:.55rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:.3rem}
+.qbg-val{font-size:1rem;font-weight:800;color:#fff}
+.qbg-val.a{color:var(--blue-l)}
+.qbg-note{font-size:.64rem;color:rgba(255,255,255,.3);margin-top:.15rem}
+
+/* ── TIMELINE ── */
+.tl-wrap{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:2rem;margin:1.5rem 0}
+.tl-row{display:grid;grid-template-columns:90px 1fr;gap:2rem;padding:1.5rem 0;border-bottom:1px solid var(--border)}
+.tl-row:first-child{padding-top:0}
+.tl-row:last-child{border-bottom:none;padding-bottom:0}
+.tl-week{font-size:.68rem;font-weight:800;color:var(--blue);white-space:nowrap;padding-top:.15rem}
+.tl-phase{font-size:.82rem;font-weight:700;color:var(--ink);margin-bottom:.35rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.tb{padding:.12rem .5rem;font-size:.55rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:3px}
+.tb-d{background:rgba(255,165,0,.1);color:#c87000;border:1px solid rgba(255,165,0,.2)}
+.tb-b{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(75,110,245,.2)}
+.tb-q{background:rgba(0,160,80,.08);color:#008040;border:1px solid rgba(0,160,80,.15)}
+.tb-l{background:var(--navy);color:#fff;border:1px solid var(--navy)}
+.tl-tasks{font-size:.75rem;color:var(--gray);line-height:1.7}
+.tl-tasks ul{padding-left:1rem;margin-top:.3rem}
+.tl-tasks li{margin-bottom:.2rem}
+
+/* ── REQ GRID ── */
+.req-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin:1.5rem 0}
+.rcard{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:1.8rem}
+.rcard-num{font-size:.56rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--blue);margin-bottom:.5rem}
+.rcard-title{font-size:.9rem;font-weight:700;color:var(--ink);margin-bottom:.6rem}
+.rcard-body{font-size:.78rem;color:var(--mid);line-height:1.75}
+
+/* ── SIGN OFF ── */
+.sig-block{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:2.5rem;margin-top:2rem}
+.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:3rem}
+.sig-label{font-size:.56rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gray);margin-bottom:.75rem}
+.sig-name{font-size:.95rem;font-weight:700;color:var(--ink);margin-bottom:.15rem}
+.sig-sub{font-size:.72rem;color:var(--gray)}
+.sig-space{height:48px;border-bottom:1px solid var(--border);margin:2rem 0 .5rem}
+.sig-date{font-size:.62rem;color:var(--gray)}
+
+/* ── FOOTER ── */
+.foot{background:var(--navy2);padding:3rem 6rem;text-align:center;margin-top:4rem}
+.foot-logo-row{display:flex;justify-content:center;align-items:center;gap:10px;margin-bottom:1.5rem}
+.foot-mark{width:32px;height:32px;background:var(--blue);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.foot-word{font-weight:900;font-size:.95rem;color:#fff;font-family:'Inter',sans-serif}
+.foot-word .x{color:var(--blue-l)}
+.foot-school{font-size:1rem;font-weight:700;color:#fff;margin-bottom:.3rem}
+.foot-ar{font-family:'Cairo',sans-serif;font-size:.85rem;color:rgba(255,255,255,.3);direction:rtl;margin-bottom:.75rem}
+.foot-contact{font-size:.72rem;color:rgba(255,255,255,.4);line-height:2}
+.foot-slogan{font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:var(--blue-l);margin-top:1.2rem}
+.foot-ref{font-size:.55rem;color:rgba(255,255,255,.15);margin-top:.75rem;letter-spacing:.1em}
+
+/* ── NAV DOTS ── */
+.nav-dots{position:fixed;right:1.5rem;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:.6rem;z-index:999}
+.nd{width:8px;height:8px;border-radius:50%;background:var(--border2);cursor:pointer;border:none;padding:0;transition:all .2s}
+.nd.active,.nd:hover{background:var(--blue);transform:scale(1.4)}
+
+@media(max-width:800px){
+  .topbar{padding:.8rem 1.5rem}
+  .cover{padding:3rem 2rem}.cover-h1{font-size:2.4rem}
+  .cover-meta{grid-template-columns:1fr 1fr}.cover-bottom{flex-direction:column}
+  .wrap{padding:3rem 1.5rem}
+  .scope-grid,.inspo-grid,.sig-grid,.qbox-grid,.req-grid{grid-template-columns:1fr}
+  .tl-row{grid-template-columns:1fr;gap:.4rem}
+  .nav-dots,.topbar{display:none}
+  .foot{padding:2.5rem 2rem}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV DOTS -->
+<div class="nav-dots no-print">
+  <button class="nd active" onclick="g('cover')"></button>
+  <button class="nd" onclick="g('scope')"></button>
+  <button class="nd" onclick="g('designs')"></button>
+  <button class="nd" onclick="g('quote')"></button>
+  <button class="nd" onclick="g('timeline')"></button>
+  <button class="nd" onclick="g('requirements')"></button>
+  <button class="nd" onclick="g('terms')"></button>
+  <button class="nd" onclick="g('signoff')"></button>
+</div>
+
+<!-- ══════════ TOPBAR ══════════ -->
+<div class="topbar no-print">
+  <a href="https://www.problem-x.com" target="_blank" class="px-word">Problem-<span class="x">X</span></a>
+  <div class="topbar-right">
+    <span class="topbar-url">problem-x.com</span>
+    <div class="topbar-tag">Client Proposal</div>
+  </div>
+</div>
+
+<!-- ══════════ COVER ══════════ -->
+<div class="cover" id="cover">
+  <div class="cover-dots"></div>
+  <div class="cover-glow"></div>
+
+  <div class="cover-top">
+    <div class="cover-badge">Phase 1 — Website Proposal</div>
+    <h1 class="cover-h1">Smart College<br><span class="thin">International Schools</span></h1>
+    <p class="cover-desc" style="margin-top:1.2rem">
+      Portfolio website + online admission form.<br>
+      Built by <strong>Problem-X</strong> — delivered by <strong>Sunday.</strong>
+    </p>
+  </div>
+
+  <div class="cover-mid">
+    <div class="cover-sep"></div>
+    <div class="cover-meta">
+      <div class="cm"><div class="cm-label">Investment</div><div class="cm-val lg">20,000 EGP</div></div>
+      <div class="cm"><div class="cm-label">Delivery</div><div class="cm-val">This Sunday</div></div>
+      <div class="cm"><div class="cm-label">Deliverables</div><div class="cm-val">2 Items</div></div>
+      <div class="cm"><div class="cm-label">Phase</div><div class="cm-val">Phase 1 Only</div></div>
+    </div>
+  </div>
+
+  <div class="cover-bottom">
+    <div>
+      <div class="cb-client-lbl">Prepared For</div>
+      <div class="cb-name">Mr. Tarek AlGioshy</div>
+      <div class="cb-sub">Chairman · Smart College International Schools · Heliopolis, Cairo</div>
+    </div>
+    <div class="cb-right">
+      <span>info@smartcollegeschool.com</span><br>
+      <span>01036323222 · 01035533221</span><br>
+      <span>Prepared by Problem-X · problem-x.com</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ CONTENT ══════════ -->
+<div class="wrap">
+
+  <!-- SCOPE -->
+  <div class="section" id="scope">
+    <div class="kicker">What We Are Building</div>
+    <h2>Phase 1 — <span>Two Deliverables</span></h2>
+    <p>Phase 1 is two things only. The website goes live and the admission form works by Sunday. Nothing outside this list is in scope for this phase.</p>
+
+    <div class="scope-grid">
+      <div class="card card-blue">
+        <div class="sc-num">Deliverable 01</div>
+        <div class="sc-title">Portfolio Website</div>
+        <ul class="sc-list">
+          <li>Full public school website</li>
+          <li>Arabic + English, mobile-first</li>
+          <li>Home, About, Programs, Facilities, Contact</li>
+          <li>All content from the school PDF</li>
+          <li>Chairman's message section</li>
+          <li>All 15 campus facilities listed</li>
+          <li>IG + American Diploma pages</li>
+          <li>Google Maps + phone + email</li>
+          <li>Instagram, Facebook, TikTok links</li>
+          <li>SEO metadata on every page</li>
+        </ul>
+      </div>
+      <div class="card card-blue">
+        <div class="sc-num">Deliverable 02</div>
+        <div class="sc-title">Online Admission Form</div>
+        <ul class="sc-list">
+          <li>Student full name (AR + EN)</li>
+          <li>Date of birth</li>
+          <li>Nationality</li>
+          <li>National ID / Passport number</li>
+          <li>Grade applying for (10, 11, 12)</li>
+          <li>Program selection (IG / American Diploma)</li>
+          <li>Parent name + phone + email</li>
+          <li>Notes / additional message field</li>
+          <li>Validation before submit</li>
+          <li>All submissions sent to school email</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout c-neutral">
+      <div class="ct">Not Included in Phase 1</div>
+      <p>No admin dashboard. No database. No login. No file uploads. No payment gateway. No mobile app. Domain and hosting are also not included — see the quotation below for those.</p>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- DESIGNS -->
+  <div class="section" id="designs">
+    <div class="kicker">Design Direction</div>
+    <h2>10 HTML <span>Design Options</span></h2>
+    <p>10 complete HTML pages are in this folder — each a fully different visual direction. Open any file in Chrome to see the full design and test the working admission form. <strong>Pick one before we start.</strong></p>
+
+    <div class="callout c-blue">
+      <div class="ct">How to Preview</div>
+      <p>All 10 files are in this same folder. Double-click any to open in your browser. Fill in the admission form inside to see exactly how it will feel for parents submitting on the live site.</p>
+    </div>
+
+    <div class="inspo-grid">
+
+      <div class="icard">
+        <div class="ithumb" style="background:linear-gradient(135deg,#0d0d0b,#1c1c17)">
+          <div class="ithumb-n">1</div><div class="ithumb-tag">Dark Luxury</div>
+        </div>
+        <div class="ibody">
+          <div class="ititle">Dark Luxury Heritage</div>
+          <div class="iinsp">Inspired by elite British boarding schools</div>
+          <div class="idesc">Black background, gold accents, Playfair serif. The most premium and exclusive feel — positions Smart College above every competitor in Egypt.</div>
+          <div class="itags"><span class="itag">Dark</span><span class="itag">Gold</span><span class="itag">Luxury</span></div>
+          <a href="inspo1_dark_luxury.html" class="ibtn">Open Design →</a>
+        </div>
+      </div>
+
+      <div class="icard">
+        <div class="ithumb" style="background:linear-gradient(135deg,#1c3d2e,#e8dfc4)">
+          <div class="ithumb-n">2</div><div class="ithumb-tag">Editorial</div>
+        </div>
+        <div class="ibody">
+          <div class="ititle">Editorial / Newspaper</div>
+          <div class="iinsp">Inspired by AIS Egypt layout</div>
+          <div class="idesc">Cream paper, forest green, structured columns. The editorial feel signals academic rigour — what research-driven Egyptian parents respond to most.</div>
+          <div class="itags"><span class="itag">Cream</span><span class="itag">Green</span><span class="itag">Grid</span></div>
+          <a href="inspo2_editorial.html" class="ibtn">Open Design →</a>
+        </div>
+      </div>
+
+      <div class="icard">
+        <div class="ithumb" style="background:linear-gradient(135deg,#e8eeff,#fff)">
+          <div class="ithumb-n" style="color:rgba(0,0,0,.05)">3</div>
+          <div class="ithumb-tag" style="color:rgba(0,0,0,.45);background:rgba(0,0,0,.07)">Bold Modern</div>
+        </div>
+        <div class="ibody">
+          <div class="ititle">Bold Modern</div>
+          <div class="iinsp">Tech-forward international school</div>
+          <div class="idesc">White + electric blue, large display type, animated marquee strip. The most contemporary design — appeals to parents who value innovation alongside academics.</div>
+          <div class="itags"><span class="itag">White</span><span class="itag">Blue</span><span class="itag">Modern</span></div>
+          <a href="inspo3_bold_modern.html" class="ibtn">Open Design →</a>
+        </div>
+      </div>
+
+      <div class="icard">
+        <div class="ithumb" style="background:linear-gradient(135deg,#1c3d2e,#d4a843)">
+          <div class="ithumb-n">4</div><div class="ithumb-tag">Bilingual</div>
+        </div>
+        <div class="ibody">
+          <div class="ititle">Bilingual Arabic / English</div>
+          <div class="iinsp">Built for Egyptian and Gulf families</div>
+          <div class="idesc">Full Arabic + English side by side throughout. Green + gold. All labels in both languages — highest trust with Arabic-speaking parents.</div>
+          <div class="itags"><span class="itag">Bilingual</span><span class="itag">Green</span><span class="itag">RTL</span></div>
+          <a href="inspo4_bilingual.html" class="ibtn">Open Design →</a>
+        </div>
+      </div>
+
+      <div class="icard">
+        <div class="ithumb" style="background:linear-gradient(135deg,#b05c3a,#f7f2ea)">
+          <div class="ithumb-n">5</div><div class="ithumb-tag">Warm Premium</div>
+        </div>
+        <div class="ibody">
+          <div class="ititle">Warm Premium</div>
+          <div class="iinsp">Boutique private school — UK style</div>
+          <div class="idesc">Terracotta, cream, sand tones. Fraunces serif. The most refined and inviting feel — the admission form here has the best UX with a visible multi-step progress bar.</div>
+          <div class="itags"><span class="itag">Terracotta</span><span class="itag">Warm</span><span class="itag">Steps</span></div>
+          <a href="inspo5_warm_premium.html" class="ibtn">Open Design →</a>
+        </div>
+      </div>
+
+      <div class="icard">
+        <div class="ithumb" style="background:linear-gradient(135deg,#002147,#c9922a)">
+          <div class="ithumb-n">6</div><div class="ithumb-tag">Institutional</div>
+        </div>
+        <div class="ibody">
+          <div class="ititle">Institutional Prestige</div>
+          <div class="iinsp">Inspired by AUC (American University in Cairo)</div>
+          <div class="idesc">Navy + gold, school seal, Caslon serif, admissions alert banner. Mirrors AUC's design language — the highest credibility signal for Cairo elite parents.</div>
+          <div class="itags"><span class="itag">Navy</span><span class="itag">Gold</span><span class="itag">AUC Style</span></div>
+          <a href="inspo6_institutional.html" class="ibtn">Open Design →</a>
+        </div>
+      </div>
+
+      <div class="icard">
+        <div class="ithumb" style="background:linear-gradient(135deg,#00707a,#111)">
+          <div class="ithumb-n">7</div><div class="ithumb-tag">European Grid</div>
+        </div>
+        <div class="ibody">
+          <div class="ititle">European Clean Grid</div>
+          <div class="iinsp">Inspired by GUC / BUE Egypt</div>
+          <div class="idesc">Teal + amber, Barlow Condensed, tight grid. Feels German/British academic — strong for parents who associate structure with quality of education.</div>
+          <div class="itags"><span class="itag">Teal</span><span class="itag">Amber</span><span class="itag">Grid</span></div>
+          <a href="inspo7_european_grid.html" class="ibtn">Open Design →</a>
+        </div>
+      </div>
+
+      <div class="icard">
+        <div class="ithumb" style="background:linear-gradient(135deg,#e05a1a,#1c1410)">
+          <div class="ithumb-n">8</div><div class="ithumb-tag">Community</div>
+        </div>
+        <div class="ibody">
+          <div class="ititle">Community &amp; Warmth</div>
+          <div class="iinsp">Inspired by Highlands School / Nefertari</div>
+          <div class="idesc">Orange + cream, Lora serif, full-bleed hero, rounded cards. Mirrors how Highlands and Nefertari communicate family and belonging.</div>
+          <div class="itags"><span class="itag">Orange</span><span class="itag">Warm</span><span class="itag">Community</span></div>
+          <a href="inspo8_community_warmth.html" class="ibtn">Open Design →</a>
+        </div>
+      </div>
+
+      <div class="icard">
+        <div class="ithumb" style="background:linear-gradient(135deg,#1a1a1a,#c41230)">
+          <div class="ithumb-n">9</div><div class="ithumb-tag">Modern Prestige</div>
+        </div>
+        <div class="ibody">
+          <div class="ititle">Modern Prestige</div>
+          <div class="iinsp">Inspired by AIS Egypt — Egypt's top int'l school</div>
+          <div class="idesc">Charcoal + scarlet, Spectral serif, trust badge strip. Mirrors AIS Egypt's design language — the most established flagship international school feel.</div>
+          <div class="itags"><span class="itag">Charcoal</span><span class="itag">Scarlet</span><span class="itag">AIS Style</span></div>
+          <a href="inspo9_modern_prestige.html" class="ibtn">Open Design →</a>
+        </div>
+      </div>
+
+      <div class="icard">
+        <div class="ithumb" style="background:linear-gradient(135deg,#1c4a30,#d4a843)">
+          <div class="ithumb-n">10</div><div class="ithumb-tag">Arabic First</div>
+        </div>
+        <div class="ibody">
+          <div class="ititle">Arabic-First RTL</div>
+          <div class="iinsp">Fully Arabic — Egyptian Islamic aesthetic</div>
+          <div class="idesc">Full RTL Arabic layout, Cairo + Tajawal fonts, deep green + gold, geometric pattern. The only fully Arabic design — wins with parents who trust Arabic-first schools.</div>
+          <div class="itags"><span class="itag">Arabic RTL</span><span class="itag">Green</span><span class="itag">Gold</span></div>
+          <a href="inspo10_arabic_first.html" class="ibtn">Open Design →</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- QUOTATION -->
+  <div class="section" id="quote">
+    <div class="kicker">Quotation</div>
+    <h2>Phase 1 — <span>Full Breakdown</span></h2>
+
+    <table>
+      <thead><tr><th>Item</th><th>What It Covers</th><th>Cost (EGP)</th></tr></thead>
+      <tbody>
+        <tr><td>Portfolio Website</td><td>Full responsive bilingual website — all pages, content, mobile, SEO</td><td>12,000</td></tr>
+        <tr><td>Admission Form</td><td>Form embedded on site — all fields, validation, email on submit</td><td>8,000</td></tr>
+        <tr class="tr-total"><td colspan="2"><strong>Total — Phase 1</strong></td><td><strong>20,000 EGP</strong></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Additional Costs — Paid Separately by Client, Not Included in 20K</h3>
+
+    <table>
+      <thead><tr><th>Item</th><th>Notes</th><th>Avg Cost</th></tr></thead>
+      <tbody>
+        <tr class="tr-excl"><td>Domain Name</td><td>Register smartcollegeschool.com or preferred domain. Paid directly by the school to the domain provider. We will walk you through it.</td><td>~2,000 EGP / yr</td></tr>
+        <tr class="tr-excl"><td>Hosting / Server</td><td>Web hosting to keep the site running. Paid directly by the school to the hosting provider. We will recommend one and guide setup.</td><td>~2,000 EGP / yr</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout c-blue">
+      <div class="ct">Total Cost to Go Live</div>
+      <p><strong>20,000 EGP</strong> to Problem-X for development + approximately <strong>4,000 EGP per year</strong> for domain and hosting paid directly by Smart College to the providers. We guide you through registering both — it takes under 30 minutes.</p>
+    </div>
+
+    <div class="qbox">
+      <div class="qbox-label">Total Investment — Phase 1</div>
+      <div class="qbox-total">20,000 <span>EGP</span></div>
+      <div class="qbox-sub">Domain + hosting ~4,000 EGP/yr paid separately by client directly to providers.</div>
+      <div class="qbox-grid">
+        <div><div class="qbg-label">Delivery</div><div class="qbg-val a">This Sunday</div><div class="qbg-note">From design selection</div></div>
+        <div><div class="qbg-label">Payment Split</div><div class="qbg-val">50% / 50%</div><div class="qbg-note">Upfront then on delivery</div></div>
+        <div><div class="qbg-label">Post-Launch Support</div><div class="qbg-val">14 Days</div><div class="qbg-note">Free fixes after launch</div></div>
+      </div>
+    </div>
+
+    <h3>Payment Schedule</h3>
+    <table>
+      <thead><tr><th>Instalment</th><th>When</th><th>Amount</th></tr></thead>
+      <tbody>
+        <tr><td>First — 50%</td><td>On agreement + design selection confirmed</td><td>10,000 EGP</td></tr>
+        <tr><td>Final — 50%</td><td>When the site is live on Sunday</td><td>10,000 EGP</td></tr>
+        <tr class="tr-total"><td colspan="2"><strong>Total</strong></td><td><strong>20,000 EGP</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- TIMELINE -->
+  <div class="section" id="timeline">
+    <div class="kicker">Timeline</div>
+    <h2>Live by <span>Sunday</span></h2>
+    <p>From the moment you select a design and confirm the first payment, here is exactly how the next few days go.</p>
+
+    <div class="tl-wrap">
+      <div class="tl-row">
+        <div class="tl-week">Day 1</div>
+        <div>
+          <div class="tl-phase"><span class="tb tb-d">Start</span> Design Selection + Kickoff</div>
+          <div class="tl-tasks"><ul>
+            <li>You pick one of the 10 HTML designs</li>
+            <li>First payment confirmed — work begins immediately</li>
+            <li>Domain and hosting setup guidance sent to you</li>
+          </ul></div>
+        </div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-week">Day 2 – 3</div>
+        <div>
+          <div class="tl-phase"><span class="tb tb-b">Build</span> Website Development</div>
+          <div class="tl-tasks"><ul>
+            <li>All pages built on the chosen design direction</li>
+            <li>All content from your PDF entered — Arabic + English</li>
+            <li>Mobile-responsive across all screen sizes</li>
+            <li>Google Maps, social links, phone numbers all connected</li>
+          </ul></div>
+        </div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-week">Day 4</div>
+        <div>
+          <div class="tl-phase"><span class="tb tb-b">Build</span> Admission Form</div>
+          <div class="tl-tasks"><ul>
+            <li>Full admission form built and embedded on the admissions page</li>
+            <li>All fields, validation, and confirmation message set up</li>
+            <li>All submissions forwarded to info@smartcollegeschool.com</li>
+          </ul></div>
+        </div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-week">Day 5</div>
+        <div>
+          <div class="tl-phase"><span class="tb tb-q">Review</span> Preview + Your Feedback</div>
+          <div class="tl-tasks"><ul>
+            <li>Preview link sent to you to review everything</li>
+            <li>Mobile + form testing done on our side</li>
+            <li>Your feedback collected — changes applied same day</li>
+          </ul></div>
+        </div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-week">Sunday</div>
+        <div>
+          <div class="tl-phase"><span class="tb tb-l">Live</span> Launch</div>
+          <div class="tl-tasks"><ul>
+            <li>Site connected to your domain and goes live</li>
+            <li>Final payment of 10,000 EGP received</li>
+            <li>14-day free support period begins</li>
+          </ul></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- REQUIREMENTS -->
+  <div class="section" id="requirements">
+    <div class="kicker">What We Need From You</div>
+    <h2>Required From <span>Smart College</span></h2>
+    <p>To deliver by Sunday we need the following from your side. Send whatever you have now — we will work with it and fill gaps with placeholders that can be updated after launch.</p>
+
+    <div class="req-grid">
+      <div class="rcard">
+        <div class="rcard-num">Needed Now</div>
+        <div class="rcard-title">Design Selection</div>
+        <div class="rcard-body">Open the 10 HTML files in this folder and tell us which one you want. If you want to combine elements from two designs — such as the colours of one and the layout of another — just describe it.</div>
+      </div>
+      <div class="rcard">
+        <div class="rcard-num">Needed Now</div>
+        <div class="rcard-title">School Photos</div>
+        <div class="rcard-body">Photos of the campus exterior, classrooms, labs, facilities, and any shots of the Heliopolis building. The more you send, the better the website looks. Without photos, placeholder blocks are used until you provide them.</div>
+      </div>
+      <div class="rcard">
+        <div class="rcard-num">Needed Now</div>
+        <div class="rcard-title">School Logo</div>
+        <div class="rcard-body">The Smart College logo in SVG or high-resolution PNG. If not yet finalised, send whatever you have — we will use it as a placeholder and swap it in when ready.</div>
+      </div>
+      <div class="rcard">
+        <div class="rcard-num">Needed Now</div>
+        <div class="rcard-title">Chairman's Message</div>
+        <div class="rcard-body">A short written message from Mr. Tarek AlGioshy for the About page. 3 to 5 sentences in Arabic, English, or both. If not ready, we add a placeholder and you provide the text after launch.</div>
+      </div>
+      <div class="rcard">
+        <div class="rcard-num">Needed Before Launch</div>
+        <div class="rcard-title">Domain Name</div>
+        <div class="rcard-body">Register smartcollegeschool.com or your preferred domain — approximately 2,000 EGP per year. We will tell you exactly where and how. You need access to the DNS settings to connect it to the live site.</div>
+      </div>
+      <div class="rcard">
+        <div class="rcard-num">Needed Before Launch</div>
+        <div class="rcard-title">Hosting Account</div>
+        <div class="rcard-body">A hosting account to keep the website running — approximately 2,000 EGP per year. We recommend a provider and walk you through setup. This is separate from and in addition to the 20,000 EGP development fee.</div>
+      </div>
+    </div>
+
+    <div class="callout c-blue">
+      <div class="ct">How the Admission Form Works in Phase 1</div>
+      <p>A parent visits the admissions page, fills in the form, and submits. They see a confirmation message on screen. At the same time, a full copy of their submission is emailed automatically to <strong>info@smartcollegeschool.com</strong>. Your admissions team reads the email, calls or emails the family, and handles everything from there. Clean, direct, and requires no dashboard or database in Phase 1.</p>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- TERMS -->
+  <div class="section" id="terms">
+    <div class="kicker">Terms</div>
+    <h2>Our <span>Commitments</span></h2>
+
+    <table>
+      <thead><tr><th>Commitment</th><th>Details</th></tr></thead>
+      <tbody>
+        <tr><td>Sunday Delivery</td><td>Site live and form working by Sunday — provided design is selected and first payment is made within 24 hours of this proposal.</td></tr>
+        <tr><td>14-Day Free Support</td><td>Any bugs or issues reported within 14 days of launch are fixed at no extra cost.</td></tr>
+        <tr><td>Full Ownership</td><td>On final payment, Smart College owns 100% of the code and website files. No ongoing fees owed to Problem-X.</td></tr>
+        <tr><td>2 Revision Rounds</td><td>Two rounds of changes included. Additional rounds quoted separately if needed.</td></tr>
+        <tr><td>Confidentiality</td><td>All information shared by the school is kept strictly confidential by the Problem-X team.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout c-neutral" style="margin-top:1.5rem">
+      <div class="ct">Proposal Validity</div>
+      <p>The 20,000 EGP price and the Sunday delivery date are valid for 7 days from the date of this document. The Sunday timeline is calculated from the day design is confirmed and first payment is received.</p>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SIGN OFF -->
+  <div class="section" id="signoff">
+    <div class="kicker">Approval</div>
+    <h2>Sign Off &amp; <span>Get Started</span></h2>
+
+    <div class="callout c-blue">
+      <div class="ct">Next Steps</div>
+      <p>
+        <strong>Step 1 —</strong> Open the 10 HTML design files in this folder and pick one.<br>
+        <strong>Step 2 —</strong> Send us your logo, photos, and chairman's message — whatever you have ready.<br>
+        <strong>Step 3 —</strong> First payment: 10,000 EGP. Work begins immediately.<br>
+        <strong>Step 4 —</strong> Register your domain + hosting (~4,000 EGP/yr). We guide you through it.<br>
+        <strong>Step 5 —</strong> Review the preview link we send you. One round of feedback.<br>
+        <strong>Step 6 —</strong> Final payment: 10,000 EGP. Site goes live Sunday.
+      </p>
+    </div>
+
+    <div class="sig-block">
+      <div class="sig-grid">
+        <div>
+          <div class="sig-label">Client — Approved By</div>
+          <div class="sig-name">Mr. Tarek AlGioshy</div>
+          <div class="sig-sub">Chairman · Smart College International Schools · Heliopolis, Cairo</div>
+          <div class="sig-space"></div>
+          <div class="sig-date">Signature &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date: _______ / _______ / 2025</div>
+        </div>
+        <div>
+          <div class="sig-label">Prepared By</div>
+          <div class="sig-name">Problem-X</div>
+          <div class="sig-sub">Digital Development · problem-x.com</div>
+          <div class="sig-space"></div>
+          <div class="sig-date">Signature &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date: _______ / _______ / 2025</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="foot">
+  <div class="foot-logo-row">
+    <div class="foot-mark">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+        <path d="M3 3 L10 10 L3 17" stroke="white" stroke-width="2.5" stroke-linecap="square"/>
+        <path d="M10 3 L17 10 L10 17" stroke="white" stroke-width="2.5" stroke-linecap="square"/>
+      </svg>
+    </div>
+    <div class="foot-word">Problem-<span class="x">X</span></div>
+  </div>
+  <div class="foot-school">Smart College International Schools</div>
+  <div class="foot-ar">مدرسة سمارت كوليدج الدولية</div>
+  <div class="foot-contact">
+    22 Othman Ibn Affan, El-Bostan, Heliopolis, Cairo, Egypt<br>
+    01036323222 · 01035533221 · info@smartcollegeschool.com
+  </div>
+  <div class="foot-slogan">Shaping Futures. Empowering Minds.</div>
+  <div class="foot-ref">SCIS-2025-P1 · PREPARED BY PROBLEM-X · CONFIDENTIAL</div>
+</div>
+
+<script>
+function g(id){const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth'})}
+const ids=['cover','scope','designs','quote','timeline','requirements','terms','signoff'];
+const dots=document.querySelectorAll('.nd');
+const obs=new IntersectionObserver(e=>{
+  e.forEach(en=>{
+    if(en.isIntersecting){
+      const i=ids.indexOf(en.target.id);
+      if(i>=0){dots.forEach(d=>d.classList.remove('active'));dots[i]&&dots[i].classList.add('active')}
+    }
+  });
+},{threshold:.35});
+ids.forEach(id=>{const el=document.getElementById(id);if(el)obs.observe(el)});
+</script>
+</body>
+</html>
