@@ -144,6 +144,112 @@ footer{background:#0a0a08;padding:3rem;display:grid;grid-template-columns:2fr 1f
   footer{grid-template-columns:1fr}.section{padding:3rem 1.5rem}
   .hero-l{padding:3rem 1.5rem}
 }
+
+/* ══ RESPONSIVE PATCH ══════════════════════════════════════════════════ */
+/* Tablet (≤900px already partially handled; we strengthen it)           */
+@media (max-width: 900px) {
+  nav, .nav { padding: 1rem 1.5rem !important; }
+  .topbar   { padding: .5rem 1.5rem !important; }
+  h1        { font-size: clamp(1.8rem, 6vw, 3rem) !important; letter-spacing: -.02em !important; }
+  .hero, .hero-l, .hero-left { padding: 3rem 2rem !important; }
+  .hero-r, .hero-right       { padding: 2rem !important; }
+  .fac-grid   { grid-template-columns: repeat(3, 1fr) !important; }
+  .why-grid, .feat-grid, .campus-fac-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .stats, .stats-bar { grid-template-columns: repeat(2, 1fr) !important; gap: 1rem !important; }
+  .adm-inner, .adm-grid, .why-inner { grid-template-columns: 1fr !important; }
+  .prog-grid  { grid-template-columns: repeat(2, 1fr) !important; }
+  .scope-grid, .inspo-grid, .req-grid, .sig-grid { grid-template-columns: 1fr !important; }
+  .cover-meta { grid-template-columns: repeat(2, 1fr) !important; }
+  .qbox-grid  { grid-template-columns: repeat(2, 1fr) !important; }
+  .form-row, .form-2col { grid-template-columns: 1fr !important; }
+}
+
+/* Phone (≤600px) ─ new breakpoint */
+@media (max-width: 600px) {
+  nav, .nav { padding: .75rem 1rem !important; height: auto !important; }
+  .topbar   { padding: .4rem 1rem !important; font-size: .6rem !important; }
+
+  h1        { font-size: clamp(1.6rem, 7vw, 2.4rem) !important; }
+  h2        { font-size: clamp(1.2rem, 5vw, 1.8rem) !important; }
+  h3        { font-size: 1rem !important; }
+
+  /* Hero */
+  .hero, section, .section { padding: 2rem 1rem !important; }
+  .hero-l, .hero-left, .hero-r, .hero-right { padding: 1.5rem 1rem !important; }
+  .hero-spine { display: none !important; }
+  .hero-bg-shape { display: none !important; }
+  .cover-badge { font-size: .55rem !important; }
+
+  /* Grids → 1 col */
+  .fac-grid   { grid-template-columns: repeat(2, 1fr) !important; gap: .6rem !important; }
+  .why-grid, .feat-grid, .campus-fac-grid,
+  .prog-grid, .scope-grid, .inspo-grid,
+  .req-grid, .sig-grid,
+  .adm-inner, .adm-grid, .why-inner,
+  .stats, .stats-bar { grid-template-columns: 1fr !important; gap: .75rem !important; }
+
+  /* Covers / proposal */
+  .cover { padding: 2.5rem 1.2rem !important; min-height: auto !important; }
+  .cover-h1 { font-size: clamp(1.6rem, 7vw, 2.6rem) !important; }
+  .cover-meta { grid-template-columns: repeat(2, 1fr) !important; gap: .6rem !important; }
+  .cover-bottom { flex-direction: column !important; gap: 1rem !important; }
+  .cb-right { text-align: left !important; }
+  .wrap     { padding: 2rem 1rem !important; }
+
+  /* Quote box */
+  .qbox         { padding: 1.5rem 1rem !important; }
+  .qbox-total   { font-size: 2.4rem !important; }
+  .qbox-grid    { grid-template-columns: 1fr !important; gap: 1rem !important; }
+
+  /* Tables — horizontal scroll */
+  table         { display: block !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; white-space: nowrap !important; }
+
+  /* Timeline */
+  .tl-row       { grid-template-columns: 1fr !important; gap: .4rem !important; }
+
+  /* Inspo grid cards */
+  .inspo-grid   { grid-template-columns: 1fr !important; }
+
+  /* Nav links in mobile panels */
+  .nav-links    { padding: 1rem !important; }
+  .nav-links a  { font-size: .9rem !important; padding: .6rem .8rem !important; }
+
+  /* Forms */
+  .form-row, .form-2col    { grid-template-columns: 1fr !important; }
+  input, select, textarea  { font-size: 16px !important; } /* prevent iOS zoom */
+
+  /* Admission panel */
+  .adm-info-panel, .adm-form-wrap { padding: 1.2rem !important; }
+
+  /* Step bar */
+  .step-bar, .prog-steps { flex-direction: column !important; gap: .5rem !important; }
+  .step-connector { display: none !important; }
+
+  /* Marquee — disable animation on small screens */
+  .marquee-wrap { overflow: hidden !important; }
+  .marquee-track { animation-play-state: paused !important; }
+
+  /* Why / features */
+  .why-row, .why-inner { flex-direction: column !important; }
+  .why-img-col, .why-list { width: 100% !important; max-width: 100% !important; }
+
+  /* Trust/stats bars */
+  .trust-bar { flex-wrap: wrap !important; gap: .75rem !important; justify-content: center !important; }
+  .trust-item { min-width: 120px !important; }
+
+  /* Cards */
+  .card, .icard, .feature-card, .prog-card { padding: 1.2rem !important; }
+  .ibtn { display: block !important; text-align: center !important; }
+
+  /* Footer */
+  .foot { padding: 2rem 1rem !important; }
+  .foot-logo-row { flex-wrap: wrap !important; justify-content: center !important; }
+
+  /* Nigents host bar */
+  [style*="AlGioshy"] { flex-wrap: wrap !important; gap: 6px !important; font-size: 10px !important; }
+}
+/* ══ END RESPONSIVE PATCH ═══════════════════════════════════════════════ */
+
 </style>
 </head>
 <body>
