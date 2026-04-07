@@ -325,6 +325,402 @@ tbody td:last-child{text-align:right;font-weight:700;color:var(--ink)}
 }
 /* ══ END RESPONSIVE PATCH ═══════════════════════════════════════════════ */
 
+/* ══ ANIMATION LAYER ════════════════════════════════════════════════════ */
+
+/* Scroll-reveal base */
+.anim-reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.anim-reveal.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+.anim-d1 { transition-delay: 0.07s; }
+.anim-d2 { transition-delay: 0.14s; }
+.anim-d3 { transition-delay: 0.21s; }
+.anim-d4 { transition-delay: 0.28s; }
+.anim-d5 { transition-delay: 0.35s; }
+.anim-d6 { transition-delay: 0.42s; }
+.anim-d7 { transition-delay: 0.49s; }
+.anim-d8 { transition-delay: 0.56s; }
+.anim-d9 { transition-delay: 0.63s; }
+.anim-d10 { transition-delay: 0.70s; }
+
+/* Cover — cinematic entrance */
+.cover-top {
+  opacity: 0;
+  transform: translateY(28px);
+  animation: coverIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+}
+.cover-mid {
+  opacity: 0;
+  transform: translateY(24px);
+  animation: coverIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+}
+.cover-bottom {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: coverIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.75s forwards;
+}
+@keyframes coverIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Cover badge — pop scale */
+.cover-badge {
+  opacity: 0;
+  transform: scale(0.85) translateY(10px);
+  animation: badgePop 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+}
+@keyframes badgePop {
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Cover headline — letter spacing tighten */
+.cover-h1 {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: headlineIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.35s forwards;
+}
+@keyframes headlineIn {
+  0%   { opacity: 0; transform: translateY(20px); letter-spacing: 0.04em; }
+  100% { opacity: 1; transform: translateY(0); letter-spacing: -0.03em; }
+}
+
+/* Cover meta cards — staggered pop */
+.cm {
+  opacity: 0;
+  transform: translateY(16px) scale(0.92);
+  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cm.in-view {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Cover separator — shimmer sweep */
+.cover-sep {
+  position: relative;
+  overflow: hidden;
+}
+.cover-sep::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+  animation: sepShimmer 3s ease-in-out 1s infinite;
+}
+@keyframes sepShimmer {
+  0%   { left: -100%; }
+  100% { left: 200%; }
+}
+
+/* Section kicker — line grow */
+.kicker {
+  opacity: 0;
+  transform: translateX(-16px);
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.kicker.in-view {
+  opacity: 1;
+  transform: translateX(0);
+}
+.kicker::before {
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s;
+  width: 0;
+}
+.kicker.in-view::before {
+  width: 18px;
+}
+
+/* Section h2 */
+h2 {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s,
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s;
+}
+h2.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Section h3 */
+h3 {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.5s ease 0.05s, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.05s;
+}
+h3.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Scope cards — slide up + border glow */
+.card {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.3s ease,
+              box-shadow 0.3s ease;
+}
+.card.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+.card:hover {
+  border-color: var(--blue);
+  box-shadow: 0 8px 32px rgba(75,110,245,0.1);
+  transform: translateY(-3px);
+}
+
+/* Scope list items — stagger in */
+.sc-list li {
+  opacity: 0;
+  transform: translateX(-12px);
+  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sc-list li.in-view {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Callout — slide in from left */
+.callout {
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.callout.in-view {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Inspo design cards — scale pop + hover lift */
+.icard {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.3s ease,
+              box-shadow 0.3s ease;
+}
+.icard.in-view {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.icard:hover {
+  transform: translateY(-5px) scale(1.01) !important;
+  box-shadow: 0 16px 48px rgba(75,110,245,0.15) !important;
+}
+
+/* Inspo thumbnail — hover zoom */
+.ithumb {
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  overflow: hidden;
+}
+.icard:hover .ithumb {
+  transform: scale(1.05);
+}
+
+/* Inspo button — lift */
+.ibtn {
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1),
+              box-shadow 0.2s ease,
+              background 0.2s ease !important;
+}
+.ibtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(75,110,245,0.25);
+}
+
+/* Inspo tags — subtle fade */
+.itag {
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.icard:hover .itag {
+  background: var(--blue-dim);
+  color: var(--blue);
+  border-color: rgba(75,110,245,0.2);
+}
+
+/* Table rows — stagger in */
+tbody tr {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+tbody tr.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Quote box — dramatic entrance */
+.qbox {
+  opacity: 0;
+  transform: translateY(30px) scale(0.97);
+  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.qbox.in-view {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Quote total — count-up scale */
+.qbox-total {
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.5s ease 0.15s, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.15s;
+}
+.qbox-total.in-view {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Quote grid items */
+.qbox-grid > div {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.qbox-grid > div.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Timeline rows — slide from left */
+.tl-row {
+  opacity: 0;
+  transform: translateX(-24px);
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tl-row.in-view {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Timeline badge — pop */
+.tb {
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.tl-row:hover .tb {
+  transform: scale(1.08);
+}
+
+/* Requirement cards — stagger pop */
+.rcard {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.3s ease,
+              box-shadow 0.3s ease;
+}
+.rcard.in-view {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.rcard:hover {
+  border-color: var(--blue);
+  box-shadow: 0 8px 28px rgba(75,110,245,0.08);
+  transform: translateY(-3px);
+}
+
+/* Sign-off block */
+.sig-block {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sig-block.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Dividers — shimmer */
+.divider {
+  position: relative;
+  overflow: hidden;
+}
+.divider::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 40%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(75,110,245,0.25), transparent);
+  animation: divShimmer 4s ease-in-out infinite;
+}
+@keyframes divShimmer {
+  0%   { left: -100%; }
+  100% { left: 250%; }
+}
+
+/* Nav dots — pulse on active */
+.nd.active {
+  animation: dotPulse 2s ease-in-out infinite;
+}
+@keyframes dotPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(75,110,245,0.4); }
+  50%      { box-shadow: 0 0 0 6px rgba(75,110,245,0); }
+}
+
+/* Scroll progress bar */
+.scroll-progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  background: var(--blue);
+  z-index: 99999;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 0.1s linear;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+/* Footer — fade in */
+.foot {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.foot.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .anim-reveal, .cover-top, .cover-mid, .cover-bottom,
+  .cover-badge, .cover-h1, .cm, .kicker, h2, h3,
+  .card, .callout, .icard, .qbox, .qbox-total,
+  .tl-row, .rcard, .sig-block, .foot,
+  .sc-list li, tbody tr, .qbox-grid > div {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+}
+
+/* ══ END ANIMATION LAYER ════════════════════════════════════════════════ */
+
 </style>
 </head>
 <body>
@@ -865,6 +1261,80 @@ const obs=new IntersectionObserver(e=>{
   });
 },{threshold:.35});
 ids.forEach(id=>{const el=document.getElementById(id);if(el)obs.observe(el)});
+</script>
+<script>
+/* ══ PROPOSAL ANIMATION JS ═════════════════════════════════════════════ */
+(function(){
+  /* Scroll-reveal via IntersectionObserver */
+  var selectors = [
+    '.kicker', 'h2', 'h3',
+    '.card', '.callout', '.icard', '.rcard',
+    '.qbox', '.qbox-total', '.qbox-grid > div',
+    '.tl-row', '.sig-block', '.foot', '.cm',
+    '.sc-list li', 'tbody tr'
+  ].join(',');
+
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('in-view');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+
+    document.querySelectorAll(selectors).forEach(function(el) { io.observe(el); });
+
+    /* Auto-stagger grid children: inspo cards, scope cards, req cards, cover meta */
+    var grids = document.querySelectorAll('.inspo-grid, .scope-grid, .req-grid, .cover-meta, .qbox-grid');
+    grids.forEach(function(grid) {
+      var kids = grid.children;
+      for (var i = 0; i < kids.length; i++) {
+        if (!kids[i].classList.contains('in-view')) {
+          kids[i].style.transitionDelay = (0.07 * (i + 1)) + 's';
+        }
+      }
+    });
+
+    /* Stagger timeline rows */
+    var tlRows = document.querySelectorAll('.tl-row');
+    tlRows.forEach(function(row, i) {
+      row.style.transitionDelay = (0.1 * (i + 1)) + 's';
+    });
+
+    /* Stagger table rows */
+    document.querySelectorAll('tbody').forEach(function(tbody) {
+      var rows = tbody.querySelectorAll('tr');
+      rows.forEach(function(row, i) {
+        row.style.transitionDelay = (0.06 * (i + 1)) + 's';
+      });
+    });
+
+    /* Stagger scope list items */
+    document.querySelectorAll('.sc-list').forEach(function(list) {
+      var items = list.querySelectorAll('li');
+      items.forEach(function(li, i) {
+        li.style.transitionDelay = (0.04 * (i + 1)) + 's';
+        io.observe(li);
+      });
+    });
+  } else {
+    document.querySelectorAll(selectors + ', .sc-list li').forEach(function(el) {
+      el.classList.add('in-view');
+    });
+  }
+
+  /* Scroll progress bar */
+  var bar = document.createElement('div');
+  bar.className = 'scroll-progress';
+  document.body.prepend(bar);
+  window.addEventListener('scroll', function() {
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.transform = 'scaleX(' + (h > 0 ? window.scrollY / h : 0) + ')';
+  }, { passive: true });
+})();
+/* ══ END PROPOSAL ANIMATION JS ═════════════════════════════════════════ */
 </script>
 </body>
 </html>
