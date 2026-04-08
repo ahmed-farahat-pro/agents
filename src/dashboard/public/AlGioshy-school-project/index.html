@@ -779,13 +779,7 @@ tbody tr.in-view {
     <span style="color:#2a2a35;">/</span>
     <span style="color:#ffffff;">AlGioshy-school-project</span>
   </a>
-  <div style="display:flex;align-items:center;gap:16px;">
-    <label class="mode-toggle active" id="pricing-toggle" title="Toggle pricing visibility">
-      <span class="mode-label">Pricing</span>
-      <div class="mode-toggle-track"></div>
-    </label>
-    <a href="/" style="color:#666666;text-decoration:none;font-size:10px;letter-spacing:0.05em;">← Back to Nigents</a>
-  </div>
+  <a href="/" style="color:#666666;text-decoration:none;font-size:10px;letter-spacing:0.05em;">← Back to Nigents</a>
 </div>
 
 <!-- NAV DOTS -->
@@ -1377,21 +1371,9 @@ ids.forEach(id=>{const el=document.getElementById(id);if(el)obs.observe(el)});
 
 /* ══ PRICING TOGGLE JS ═════════════════════════════════════════════════ */
 (function(){
-  var toggle = document.getElementById('pricing-toggle');
-  if (!toggle) return;
   var KEY = 'algioshy-show-pricing';
-  /* Read saved state (default: pricing ON) */
   var show = localStorage.getItem(KEY) !== 'false';
-  function apply(showPricing) {
-    document.body.classList.toggle('hide-pricing', !showPricing);
-    toggle.classList.toggle('active', showPricing);
-    localStorage.setItem(KEY, showPricing ? 'true' : 'false');
-  }
-  apply(show);
-  toggle.addEventListener('click', function() {
-    show = !show;
-    apply(show);
-  });
+  document.body.classList.toggle('hide-pricing', !show);
 })();
 /* ══ END PRICING TOGGLE JS ═════════════════════════════════════════════ */
 </script>
