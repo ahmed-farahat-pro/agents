@@ -123,8 +123,8 @@ function isMaterialsPublicPath(p) {
 app.use((req, res, next) => {
   if (!isMaterialsPublicPath(req.path)) return next();
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Admin-Token');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
@@ -148,6 +148,8 @@ function isPublicApiPath(p) {
   if ((pathNorm.includes('/api/materials/subscribe') && !pathNorm.includes('subscribers')) ||
       pathNorm.includes('/api/materials/download')) return true;
   if (pathNorm.startsWith('/api/bonyad')) return true;
+  // AlGioshy routes do their own token-based auth in the route handler
+  if (pathNorm.startsWith('/api/algioshy/')) return true;
   return false;
 }
 
