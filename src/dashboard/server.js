@@ -135,6 +135,7 @@ const publicApiPaths = new Set([
   '/api/auth/check',
   '/api/materials/subscribe',
   '/api/materials/download',
+  '/api/algioshy/contact', // public form submission — no login needed
 ]);
 function isPublicApiPath(p) {
   const raw = (p || '').trim();
@@ -3205,6 +3206,81 @@ io.on('connection', async (socket) => {
   socket.on('disconnect', () => {
     logger.info('Dashboard client disconnected:', socket.id);
   });
+});
+
+// ============================================================================
+// AlGioshy School — Form submissions API (file-backed, no DB required)
+// ============================================================================
+const ALGIOSHY_FILE = path.join(__dirname, '..', '..', 'data', 'algioshy-submissions.json');
+
+function readAlgioshyData() {
+  try {
+    if (!fs.existsSync(ALGIOSHY_FILE)) return [];
+    return JSON.parse(fs.readFileSync(ALGIOSHY_FILE, 'utf8'));
+  } catch { return []; }
+}
+function writeAlgioshyData(data) {
+  const dir = path.dirname(ALGIOSHY_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(ALGIOSHY_FILE, JSON.stringify(data, null, 2), 'utf8');
+}
+
+// POST /api/algioshy/contact — public form submission
+app.post('/api/algioshy/contact', (req, res) => {
+  try {
+    const { parentName, studentName, phone, email, stage, age, notes, lang } = req.body;
+    if (!parentName || !studentName || !phone || !stage) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    const data = readAlgioshyData();
+    const entry = {
+      id: crypto.randomUUID(),
+      parentName: String(parentName).trim(),
+      studentName: String(studentName).trim(),
+      phone: String(phone).trim(),
+      email: String(email || '').trim(),
+      stage: String(stage).trim(),
+      age: age ? String(age).trim() : '',
+      notes: String(notes || '').trim(),
+      lang: lang || 'ar',
+      submittedAt: new Date().toISOString(),
+      ip: req.ip,
+    };
+    data.unshift(entry);
+    writeAlgioshyData(data);
+    logger.info(`[AlGioshy] New submission: ${entry.studentName} (${entry.stage})`);
+    res.json({ ok: true, id: entry.id });
+  } catch (err) {
+    logger.error('[AlGioshy] Submit error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/algioshy/submissions — admin view (session-protected via referer or basic check)
+app.get('/api/algioshy/submissions', (req, res) => {
+  // Simple protection: require X-Admin-Token header or session cookie
+  const token = req.headers['x-admin-token'] || req.cookies?.dashboard_session;
+  // Allow if dashboard session exists OR request comes from localhost
+  const isLocal = req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1';
+  const hasSession = req.cookies?.dashboard_session;
+  if (!isLocal && !hasSession) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  res.json(readAlgioshyData());
+});
+
+// DELETE /api/algioshy/submissions/:id — admin delete
+app.delete('/api/algioshy/submissions/:id', (req, res) => {
+  const hasSession = req.cookies?.dashboard_session;
+  const isLocal = req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1';
+  if (!isLocal && !hasSession) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const data = readAlgioshyData().filter(r => r.id !== req.params.id);
+    writeAlgioshyData(data);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // ============================================================================

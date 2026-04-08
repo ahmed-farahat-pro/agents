@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="مدرسة الجيوشي - بيئة تعليمية متميزة تجمع بين الأصالة والحداثة. نقدم تعليماً متكاملاً من رياض الأطفال حتى الثانوية العامة.">
+<title>مدرسة الجيوشي | AlGioshy School</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Libre+Caslon+Display&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --navy:#002147;--navy2:#003366;--navy3:#0a3d62;
+  --gold:#c9922a;--gold-l:#e8b44a;--gold-d:#a87820;
+  --red:#c0392b;
+  --white:#fff;--off:#f8f6f2;--cream:#f2ede4;
+  --border:#ddd5c5;--muted:#5a5040;--dim:#8a7d6a;
+  --ink:#1a1410;
+  --font-ar:'Cairo',sans-serif;
+  --font-en:'Source Sans 3',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{background:var(--off);color:var(--ink);font-family:var(--font-ar)}
+
+/* ── LANG TOGGLE ── */
+body.en-mode{direction:ltr;font-family:var(--font-en)}
+body.en-mode .ar-text{display:none}
+body.en-mode .en-text{display:block!important}
+.en-text{display:none}
+
+/* ── ALERT BAR ── */
+.alert-bar{background:var(--red);color:#fff;padding:.45rem 2rem;overflow:hidden;white-space:nowrap}
+.alert-inner{display:inline-block;animation:ticker 30s linear infinite}
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.alert-bar:hover .alert-inner{animation-play-state:paused}
+.alert-item{display:inline-block;padding:0 3rem;font-size:.68rem;letter-spacing:.04em}
+.alert-item::before{content:'◆';margin-left:.5rem;color:rgba(255,255,255,.5)}
+body.en-mode .alert-inner{animation-direction:normal}
+
+/* ── TOP NAV ── */
+.nav-top{background:var(--navy);padding:.5rem 3rem;display:flex;justify-content:space-between;align-items:center;gap:1rem}
+.nt-links{display:flex;gap:1.5rem}
+.nt-links a{font-size:.62rem;color:rgba(255,255,255,.5);text-decoration:none;letter-spacing:.04em;transition:color .2s}
+.nt-links a:hover{color:var(--gold)}
+.lang-btn{background:none;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.7);padding:.25rem .75rem;font-size:.62rem;cursor:pointer;font-family:inherit;letter-spacing:.05em;transition:all .2s}
+.lang-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+/* ── MAIN NAV ── */
+nav{background:var(--white);border-bottom:3px solid var(--navy);padding:0 3rem;display:flex;align-items:center;justify-content:space-between;height:76px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.07)}
+.nav-logo-wrap{display:flex;align-items:center;gap:1rem}
+.nav-seal{width:56px;height:56px;border:2px solid var(--navy);border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--navy);flex-shrink:0}
+.nav-seal svg{width:38px;height:38px}
+.nav-name-ar{font-family:var(--font-ar);font-size:1.15rem;font-weight:900;color:var(--navy);line-height:1.1}
+.nav-name-en{font-family:'Libre Caslon Display',serif;font-size:.75rem;color:var(--dim);letter-spacing:.1em;margin-top:.1rem}
+.nav-menu{display:flex;gap:0}
+.nav-menu a{text-decoration:none;font-size:.75rem;font-weight:700;color:var(--muted);padding:0 1rem;height:76px;display:flex;align-items:center;border-bottom:3px solid transparent;margin-bottom:-3px;transition:all .2s}
+.nav-menu a:hover,.nav-menu a.active{color:var(--navy);border-color:var(--gold)}
+.nav-cta{background:var(--navy);color:#fff;padding:.65rem 1.8rem;font-size:.72rem;font-weight:700;border:none;cursor:pointer;font-family:inherit;letter-spacing:.03em;transition:background .2s;text-decoration:none;white-space:nowrap}
+.nav-cta:hover{background:var(--gold);color:var(--ink)}
+.nav-burger{display:none;flex-direction:column;gap:4px;background:none;border:none;cursor:pointer;padding:.5rem}
+.nav-burger span{display:block;width:22px;height:2px;background:var(--navy)}
+
+/* ── HERO SLIDER ── */
+.hero{position:relative;overflow:hidden;min-height:92vh;display:flex;align-items:stretch}
+.hero-slides{position:absolute;inset:0;display:flex;transition:transform .8s cubic-bezier(.4,0,.2,1)}
+.hero-slide{min-width:100%;position:relative}
+.hero-slide img{width:100%;height:100%;object-fit:cover;object-position:center}
+.hero-slide::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,rgba(0,21,71,.92) 40%,rgba(0,33,71,.6) 100%)}
+.hero-content{position:relative;z-index:2;display:grid;grid-template-columns:1fr 1fr;min-height:92vh;align-items:center}
+.hero-l{padding:5rem 3rem;display:flex;flex-direction:column;justify-content:center}
+.h-eyebrow{display:flex;align-items:center;gap:1rem;margin-bottom:2rem}
+body:not(.en-mode) .h-eyebrow{flex-direction:row-reverse}
+.h-eye-line{width:36px;height:2px;background:var(--gold);flex-shrink:0}
+.h-eye-text{font-size:.65rem;letter-spacing:.25em;text-transform:uppercase;color:var(--gold)}
+.hero-title{font-size:3.4rem;line-height:1.15;color:#fff;margin-bottom:1rem;font-weight:900}
+.hero-title em{font-style:normal;color:var(--gold-l)}
+.hero-sub{font-size:1.05rem;line-height:1.8;color:rgba(255,255,255,.65);max-width:480px;margin-bottom:2.5rem;font-weight:300}
+.hero-btns{display:flex;gap:1rem;flex-wrap:wrap}
+.btn-gold{background:var(--gold);color:var(--ink);padding:.9rem 2.2rem;font-size:.78rem;font-weight:700;border:none;cursor:pointer;font-family:inherit;letter-spacing:.03em;transition:all .2s;text-decoration:none;display:inline-block}
+.btn-gold:hover{background:var(--gold-l)}
+.btn-ghost-w{background:transparent;color:rgba(255,255,255,.7);padding:.9rem 2.2rem;font-size:.78rem;font-weight:600;border:1px solid rgba(255,255,255,.3);cursor:pointer;font-family:inherit;transition:all .2s;text-decoration:none;display:inline-block}
+.btn-ghost-w:hover{border-color:var(--gold);color:var(--gold)}
+.hero-r{padding:3rem;display:flex;flex-direction:column;justify-content:center;gap:1.5rem;position:relative;z-index:2}
+.hero-stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:rgba(255,255,255,.1)}
+.hs{background:rgba(0,21,71,.55);backdrop-filter:blur(6px);padding:1.4rem;text-align:center;border:1px solid rgba(255,255,255,.07)}
+.hs-n{font-family:'Libre Caslon Display',serif;font-size:2.2rem;color:var(--gold);line-height:1}
+.hs-l{font-size:.65rem;letter-spacing:.08em;color:rgba(255,255,255,.4);margin-top:.3rem}
+.hero-prog{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:1.5rem;backdrop-filter:blur(6px)}
+.hp-title{font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+.hp-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.hp-item{border-right:2px solid var(--gold);padding-right:.75rem}
+body.en-mode .hp-item{border-right:none;border-left:2px solid var(--gold);padding-right:0;padding-left:.75rem}
+.hp-n{font-size:.78rem;font-weight:700;color:#fff}
+.hp-s{font-size:.65rem;color:rgba(255,255,255,.4);margin-top:.1rem}
+/* Slider controls */
+.hero-dots{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);display:flex;gap:.6rem;z-index:10}
+.hero-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.35);border:none;cursor:pointer;transition:all .3s;padding:0}
+.hero-dot.active{background:var(--gold);width:24px;border-radius:4px}
+.hero-arr{position:absolute;top:50%;transform:translateY(-50%);z-index:10;background:rgba(0,21,71,.5);border:1px solid rgba(255,255,255,.15);color:#fff;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;transition:all .2s;backdrop-filter:blur(4px)}
+.hero-arr:hover{background:var(--gold);border-color:var(--gold);color:var(--ink)}
+.hero-prev{right:1.5rem}
+.hero-next{left:1.5rem}
+body.en-mode .hero-prev{right:auto;left:1.5rem}
+body.en-mode .hero-next{left:auto;right:1.5rem}
+
+/* ── STATS BAR ── */
+.stats-bar{background:var(--navy2);display:grid;grid-template-columns:repeat(5,1fr)}
+.sb{padding:1.6rem 1rem;text-align:center;border-left:1px solid rgba(255,255,255,.08)}
+.sb:last-child{border-left:none}
+.sb-n{font-family:'Libre Caslon Display',serif;font-size:1.8rem;color:var(--gold)}
+.sb-l{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-top:.2rem}
+
+/* ── SECTIONS ── */
+.section{padding:5rem 3rem}
+.section-alt{background:var(--cream)}
+.sec-kicker{font-size:.6rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:.6rem;display:flex;align-items:center;gap:.75rem}
+.sec-kicker::before{content:'';display:block;width:24px;height:2px;background:var(--gold);flex-shrink:0}
+body:not(.en-mode) .sec-kicker{flex-direction:row-reverse}
+body:not(.en-mode) .sec-kicker::before{margin-right:0}
+h2{font-size:2.4rem;font-weight:900;margin-bottom:.5rem;line-height:1.2;color:var(--navy)}
+.sec-sub{font-size:.92rem;color:var(--muted);line-height:1.8;max-width:560px;margin-bottom:3rem;font-weight:300}
+
+/* ── ABOUT ── */
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
+.about-img-wrap{position:relative}
+.about-img-main{width:100%;aspect-ratio:4/3;object-fit:cover}
+.about-img-accent{position:absolute;width:48%;aspect-ratio:1;object-fit:cover;border:5px solid var(--off);bottom:-2rem;right:-2rem}
+body.en-mode .about-img-accent{right:auto;left:-2rem}
+.about-badge{position:absolute;top:2rem;left:2rem;background:var(--navy);color:#fff;padding:1rem 1.4rem;text-align:center}
+body.en-mode .about-badge{left:auto;right:2rem}
+.ab-n{font-family:'Libre Caslon Display',serif;font-size:2rem;color:var(--gold);line-height:1}
+.ab-l{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-top:.2rem}
+.about-points{display:flex;flex-direction:column;gap:1.2rem;margin-top:2rem}
+.apoint{display:flex;gap:1rem;align-items:flex-start}
+body:not(.en-mode) .apoint{flex-direction:row-reverse;text-align:right}
+.apoint-icon{width:36px;height:36px;background:var(--navy);display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:.85rem;flex-shrink:0;margin-top:.1rem}
+.apoint-title{font-size:.85rem;font-weight:700;color:var(--navy);margin-bottom:.2rem}
+.apoint-p{font-size:.78rem;line-height:1.7;color:var(--muted)}
+
+/* ── PROGRAMS ── */
+.programs-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.5rem}
+.prog-card{background:var(--white);border:1px solid var(--border);padding:2rem 1.5rem;text-align:center;transition:all .3s;position:relative;overflow:hidden}
+.prog-card::before{content:'';position:absolute;bottom:0;right:0;width:0;height:3px;background:var(--gold);transition:width .3s}
+body.en-mode .prog-card::before{right:auto;left:0}
+.prog-card:hover{box-shadow:0 8px 32px rgba(0,21,71,.1);transform:translateY(-3px)}
+.prog-card:hover::before{width:100%}
+.prog-icon{width:56px;height:56px;background:var(--navy);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.2rem;font-size:1.3rem;color:var(--gold)}
+.prog-title{font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:.5rem}
+.prog-sub{font-size:.75rem;line-height:1.6;color:var(--muted)}
+.prog-ages{display:inline-block;margin-top:1rem;background:rgba(201,146,42,.1);border:1px solid rgba(201,146,42,.25);color:var(--gold-d);padding:.25rem .75rem;font-size:.6rem;font-weight:700;letter-spacing:.08em}
+
+/* ── WHY US ── */
+.why-grid{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:start}
+.why-list{display:flex;flex-direction:column}
+.why-row{display:flex;gap:1.5rem;padding:1.5rem 0;border-bottom:1px solid var(--border);align-items:flex-start}
+body:not(.en-mode) .why-row{flex-direction:row-reverse;text-align:right}
+.why-row:last-child{border-bottom:none}
+.why-num{font-family:'Libre Caslon Display',serif;font-size:2.2rem;color:var(--border);min-width:50px;flex-shrink:0;line-height:1}
+.why-t{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:.3rem}
+.why-p{font-size:.78rem;line-height:1.7;color:var(--muted)}
+.why-img-col{display:flex;flex-direction:column;gap:1rem}
+.why-img{width:100%;aspect-ratio:16/10;object-fit:cover}
+.why-quote{background:var(--navy);padding:2rem;color:#fff}
+.wq-text{font-size:.88rem;line-height:1.8;color:rgba(255,255,255,.7);font-style:italic;margin-bottom:.75rem}
+.wq-author{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+
+/* ── FACILITIES ── */
+.fac-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.fac-item{position:relative;overflow:hidden;aspect-ratio:4/3;cursor:pointer}
+.fac-item img{width:100%;height:100%;object-fit:cover;transition:transform .5s}
+.fac-item:hover img{transform:scale(1.06)}
+.fac-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,21,71,.85) 0%,transparent 55%);opacity:0;transition:opacity .3s;display:flex;align-items:flex-end;padding:1.2rem}
+.fac-item:hover .fac-overlay{opacity:1}
+.fac-label{color:#fff;font-size:.78rem;font-weight:700;letter-spacing:.04em}
+.fac-item.large{grid-column:span 2;aspect-ratio:16/9}
+
+/* ── GALLERY SLIDER ── */
+.gallery-wrap{position:relative;overflow:hidden}
+.gallery-track{display:flex;gap:1rem;transition:transform .5s ease;padding:.5rem 0}
+.gallery-item{min-width:calc(25% - .75rem);aspect-ratio:4/3;object-fit:cover;flex-shrink:0;cursor:pointer;transition:transform .3s}
+.gallery-item:hover{transform:scale(1.02)}
+.gallery-controls{display:flex;gap:.75rem;justify-content:center;margin-top:1.5rem}
+.gal-btn{width:36px;height:36px;border:1px solid var(--border);background:var(--white);cursor:pointer;font-size:.8rem;color:var(--navy);transition:all .2s;display:flex;align-items:center;justify-content:center}
+.gal-btn:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* ── LIGHTBOX ── */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:999;display:none;align-items:center;justify-content:center}
+.lightbox.open{display:flex}
+.lb-img{max-width:90vw;max-height:85vh;object-fit:contain}
+.lb-close{position:absolute;top:1.5rem;left:1.5rem;background:none;border:none;color:#fff;font-size:1.8rem;cursor:pointer;line-height:1}
+.lb-prev,.lb-next{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.1);border:none;color:#fff;width:50px;height:50px;font-size:1.2rem;cursor:pointer;transition:background .2s}
+.lb-prev:hover,.lb-next:hover{background:var(--gold)}
+.lb-prev{right:2rem}.lb-next{left:2rem}
+
+/* ── ENROLLMENT FORM ── */
+.enroll-section{background:var(--navy);padding:5rem 3rem}
+.enroll-inner{display:grid;grid-template-columns:1fr 1.4fr;gap:5rem;align-items:start;max-width:1100px;margin:0 auto}
+.enroll-text .sec-kicker{color:var(--gold)}
+.enroll-text h2{color:#fff}
+.enroll-text .sec-sub{color:rgba(255,255,255,.55)}
+.enroll-benefits{display:flex;flex-direction:column;gap:1rem;margin-top:2rem}
+.eb-item{display:flex;gap:1rem;align-items:center}
+body:not(.en-mode) .eb-item{flex-direction:row-reverse}
+.eb-check{width:24px;height:24px;background:var(--gold);display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:.75rem;flex-shrink:0}
+.eb-text{font-size:.82rem;color:rgba(255,255,255,.65)}
+.enroll-form{background:var(--white);padding:2.5rem}
+.form-title{font-size:1.1rem;font-weight:700;color:var(--navy);margin-bottom:.25rem}
+.form-sub{font-size:.75rem;color:var(--muted);margin-bottom:1.8rem}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.form-group{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem}
+.form-group label{font-size:.7rem;font-weight:700;letter-spacing:.05em;color:var(--navy)}
+.form-group input,.form-group select,.form-group textarea{width:100%;border:1px solid var(--border);padding:.75rem 1rem;font-family:inherit;font-size:.82rem;color:var(--ink);background:var(--off);transition:border .2s;outline:none}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--navy)}
+.form-group textarea{resize:vertical;min-height:80px}
+.form-submit{width:100%;background:var(--navy);color:#fff;border:none;padding:1rem;font-size:.82rem;font-weight:700;font-family:inherit;letter-spacing:.05em;cursor:pointer;transition:background .2s}
+.form-submit:hover{background:var(--gold);color:var(--ink)}
+.form-success{display:none;background:rgba(0,21,71,.06);border:1px solid rgba(0,21,71,.15);padding:1.5rem;text-align:center;color:var(--navy);font-size:.88rem;line-height:1.7}
+
+/* ── CONTACT ── */
+.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:start}
+.contact-item{display:flex;gap:1.2rem;align-items:flex-start;margin-bottom:1.8rem}
+body:not(.en-mode) .contact-item{flex-direction:row-reverse;text-align:right}
+.ci-icon{width:44px;height:44px;background:var(--navy);display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:1rem;flex-shrink:0}
+.ci-label{font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:.2rem}
+.ci-val{font-size:.88rem;font-weight:600;color:var(--ink)}
+.map-placeholder{width:100%;aspect-ratio:4/3;background:var(--cream);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.map-placeholder iframe{width:100%;height:100%;border:none}
+
+/* ── FOOTER ── */
+footer{background:var(--navy);color:rgba(255,255,255,.5);padding:3rem 3rem 1.5rem}
+.footer-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:3rem;margin-bottom:2.5rem}
+.footer-brand .nav-name-ar{color:#fff;font-size:1.1rem}
+.footer-brand .nav-name-en{color:rgba(255,255,255,.3)}
+.footer-tagline{font-size:.75rem;color:rgba(255,255,255,.35);margin-top:.75rem;line-height:1.7}
+.footer-col h4{font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:.6rem}
+.footer-col ul a{font-size:.75rem;color:rgba(255,255,255,.4);text-decoration:none;transition:color .2s}
+.footer-col ul a:hover{color:var(--gold)}
+.footer-bottom{border-top:1px solid rgba(255,255,255,.08);padding-top:1.5rem;display:flex;justify-content:space-between;align-items:center;font-size:.65rem}
+.footer-bottom a{color:rgba(255,255,255,.3);text-decoration:none}
+.footer-social{display:flex;gap:.75rem}
+.fs-btn{width:32px;height:32px;border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.4);text-decoration:none;font-size:.8rem;transition:all .2s}
+.fs-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+/* ── MOBILE NAV ── */
+.mobile-nav{display:none;flex-direction:column;background:var(--white);border-top:1px solid var(--border);padding:1rem 0}
+.mobile-nav.open{display:flex}
+.mobile-nav a{padding:.9rem 2rem;font-size:.88rem;font-weight:600;color:var(--navy);text-decoration:none;border-bottom:1px solid rgba(0,0,0,.04)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1024px){
+  .programs-grid{grid-template-columns:repeat(2,1fr)}
+  .footer-grid{grid-template-columns:1fr 1fr}
+  h2{font-size:2rem}
+}
+@media(max-width:768px){
+  .nav-top,.nav-menu,.nav-cta{display:none}
+  .nav-burger{display:flex}
+  nav{padding:0 1.5rem}
+  .hero-content{grid-template-columns:1fr}
+  .hero-r{display:none}
+  .hero-l{padding:4rem 1.5rem}
+  .hero-title{font-size:2.2rem}
+  .stats-bar{grid-template-columns:repeat(2,1fr);overflow:hidden}
+  .sb:nth-child(5){grid-column:span 2;border-top:1px solid rgba(255,255,255,.08)}
+  .about-grid,.why-grid,.contact-grid,.enroll-inner{grid-template-columns:1fr}
+  .about-img-accent{display:none}
+  .fac-grid{grid-template-columns:1fr 1fr}
+  .fac-item.large{grid-column:span 2}
+  .gallery-item{min-width:calc(50% - .5rem)}
+  .section{padding:3rem 1.5rem}
+  .footer-grid{grid-template-columns:1fr}
+  .enroll-section{padding:3rem 1.5rem}
+  .programs-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- Alert Bar -->
+<div class="alert-bar">
+  <div class="alert-inner">
+    <span class="alert-item ar-text">🎓 باب التسجيل مفتوح للعام الدراسي 2025-2026 — سارع بالتسجيل الآن</span>
+    <span class="alert-item ar-text">📢 حفل التخرج السنوي — الجمعة القادمة في الساعة 5 مساءً</span>
+    <span class="alert-item ar-text">🏆 مدرسة الجيوشي تحتفل بتفوق طلابها في امتحانات الثانوية العامة</span>
+    <span class="alert-item ar-text">📅 اليوم المفتوح للأهالي — السبت 20 أبريل من 9 صباحاً حتى 1 ظهراً</span>
+    <span class="alert-item en-text">🎓 Enrollment open for 2025–2026 — Register today</span>
+    <span class="alert-item en-text">📢 Annual Graduation Ceremony — Next Friday at 5 PM</span>
+    <span class="alert-item en-text">🏆 AlGioshy students excel in national examinations</span>
+    <span class="alert-item en-text">📅 Open Day — Saturday April 20, 9 AM to 1 PM</span>
+    <!-- duplicate for seamless loop -->
+    <span class="alert-item ar-text">🎓 باب التسجيل مفتوح للعام الدراسي 2025-2026 — سارع بالتسجيل الآن</span>
+    <span class="alert-item ar-text">📢 حفل التخرج السنوي — الجمعة القادمة في الساعة 5 مساءً</span>
+    <span class="alert-item ar-text">🏆 مدرسة الجيوشي تحتفل بتفوق طلابها في امتحانات الثانوية العامة</span>
+    <span class="alert-item ar-text">📅 اليوم المفتوح للأهالي — السبت 20 أبريل من 9 صباحاً حتى 1 ظهراً</span>
+    <span class="alert-item en-text">🎓 Enrollment open for 2025–2026 — Register today</span>
+    <span class="alert-item en-text">📢 Annual Graduation Ceremony — Next Friday at 5 PM</span>
+    <span class="alert-item en-text">🏆 AlGioshy students excel in national examinations</span>
+    <span class="alert-item en-text">📅 Open Day — Saturday April 20, 9 AM to 1 PM</span>
+  </div>
+</div>
+
+<!-- Top Nav -->
+<div class="nav-top">
+  <div class="nt-links">
+    <a href="#about" class="ar-text">عن المدرسة</a>
+    <a href="#about" class="en-text">About</a>
+    <a href="#enroll" class="ar-text">التسجيل</a>
+    <a href="#enroll" class="en-text">Admissions</a>
+    <a href="#contact" class="ar-text">تواصل معنا</a>
+    <a href="#contact" class="en-text">Contact</a>
+    <a href="admin.html" class="ar-text" target="_blank">البوابة الإدارية</a>
+  </div>
+  <button class="lang-btn" onclick="toggleLang()" id="langBtn">English</button>
+</div>
+
+<!-- Main Nav -->
+<nav id="mainNav">
+  <div class="nav-logo-wrap">
+    <div class="nav-seal">
+      <svg viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="19" cy="19" r="17" stroke="#c9922a" stroke-width="1.5"/>
+        <path d="M19 8 L23 15 L31 16 L25 22 L27 30 L19 26 L11 30 L13 22 L7 16 L15 15 Z" fill="#c9922a" opacity=".7"/>
+        <text x="19" y="22" text-anchor="middle" fill="white" font-size="7" font-family="Cairo" font-weight="900">ج</text>
+      </svg>
+    </div>
+    <div>
+      <div class="nav-name-ar ar-text">مدرسة الجيوشي</div>
+      <div class="nav-name-ar en-text" style="font-family:'Libre Caslon Display',serif;font-size:1rem;font-weight:400">AlGioshy School</div>
+      <div class="nav-name-en ar-text">AlGioshy School</div>
+      <div class="nav-name-en en-text">Est. 1998 · Excellence in Education</div>
+    </div>
+  </div>
+  <div class="nav-menu">
+    <a href="#" class="active ar-text">الرئيسية</a>
+    <a href="#about" class="ar-text">عن المدرسة</a>
+    <a href="#programs" class="ar-text">البرامج</a>
+    <a href="#facilities" class="ar-text">المرافق</a>
+    <a href="#gallery" class="ar-text">معرض الصور</a>
+    <a href="#contact" class="ar-text">اتصل بنا</a>
+    <a href="#" class="active en-text">Home</a>
+    <a href="#about" class="en-text">About</a>
+    <a href="#programs" class="en-text">Programs</a>
+    <a href="#facilities" class="en-text">Facilities</a>
+    <a href="#gallery" class="en-text">Gallery</a>
+    <a href="#contact" class="en-text">Contact</a>
+  </div>
+  <a href="#enroll" class="nav-cta ar-text">سجّل الآن</a>
+  <a href="#enroll" class="nav-cta en-text">Apply Now</a>
+  <button class="nav-burger" onclick="toggleMobileNav()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<div class="mobile-nav" id="mobileNav">
+  <a href="#about" onclick="toggleMobileNav()"><span class="ar-text">عن المدرسة</span><span class="en-text">About</span></a>
+  <a href="#programs" onclick="toggleMobileNav()"><span class="ar-text">البرامج الدراسية</span><span class="en-text">Programs</span></a>
+  <a href="#facilities" onclick="toggleMobileNav()"><span class="ar-text">المرافق</span><span class="en-text">Facilities</span></a>
+  <a href="#gallery" onclick="toggleMobileNav()"><span class="ar-text">معرض الصور</span><span class="en-text">Gallery</span></a>
+  <a href="#enroll" onclick="toggleMobileNav()"><span class="ar-text">سجّل الآن</span><span class="en-text">Apply Now</span></a>
+  <a href="#contact" onclick="toggleMobileNav()"><span class="ar-text">اتصل بنا</span><span class="en-text">Contact</span></a>
+</div>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <div class="hero-slides" id="heroSlides">
+    <div class="hero-slide"><img src="https://drive.google.com/thumbnail?id=1BM4hohkM63paKssafnWUQz9vGrJRgJvO&sz=w1600" alt="مدرسة الجيوشي - المبنى الرئيسي" loading="eager"></div>
+    <div class="hero-slide"><img src="https://drive.google.com/thumbnail?id=1A9qjXi9lN1vZvJxJuPXSeZtQlbKgewD4&sz=w1600" alt="مدرسة الجيوشي - الحرم المدرسي" loading="lazy"></div>
+    <div class="hero-slide"><img src="https://drive.google.com/thumbnail?id=1EyKvI4A-HuNPZC9m0C6zwJ7-NHYDBagn&sz=w1600" alt="مدرسة الجيوشي - الملاعب والمرافق" loading="lazy"></div>
+    <div class="hero-slide"><img src="https://drive.google.com/thumbnail?id=1vXCFSVCWo9izlI465avI7hldXBcvEWX0&sz=w1600" alt="مدرسة الجيوشي - الفضاءات الخارجية" loading="lazy"></div>
+  </div>
+  <div class="hero-content">
+    <div class="hero-l">
+      <div class="h-eyebrow">
+        <div class="h-eye-line"></div>
+        <span class="h-eye-text ar-text">منذ ١٩٩٨ · التميز في التعليم</span>
+        <span class="h-eye-text en-text">Since 1998 · Excellence in Education</span>
+      </div>
+      <h1 class="hero-title ar-text">حيث يُصنع <em>المستقبل</em><br>بيد الأجيال</h1>
+      <h1 class="hero-title en-text" style="display:none">Where <em>Futures</em><br>Are Built</h1>
+      <p class="hero-sub ar-text">مدرسة الجيوشي — بيئة تعليمية متكاملة تجمع بين المنهج الأصيل والتقنيات الحديثة، نرعى نمو كل طالب علمياً وشخصياً وقيمياً منذ رياض الأطفال حتى الثانوية.</p>
+      <p class="hero-sub en-text" style="display:none">AlGioshy School — a complete educational environment blending rigorous curriculum with modern technology. We nurture every student academically, personally, and morally from KG through Secondary.</p>
+      <div class="hero-btns">
+        <a href="#enroll" class="btn-gold ar-text">سجّل طفلك الآن</a>
+        <a href="#enroll" class="btn-gold en-text" style="display:none">Enroll Today</a>
+        <a href="#about" class="btn-ghost-w ar-text">اكتشف مدرستنا</a>
+        <a href="#about" class="btn-ghost-w en-text" style="display:none">Discover Our School</a>
+      </div>
+    </div>
+    <div class="hero-r">
+      <div class="hero-stats-grid">
+        <div class="hs"><div class="hs-n">+٢٠٠٠</div><div class="hs-l ar-text">طالب وطالبة</div><div class="hs-l en-text" style="display:none">Students</div></div>
+        <div class="hs"><div class="hs-n">+١٢٠</div><div class="hs-l ar-text">معلم متخصص</div><div class="hs-l en-text" style="display:none">Teachers</div></div>
+        <div class="hs"><div class="hs-n">٢٥+</div><div class="hs-l ar-text">عاماً من التميز</div><div class="hs-l en-text" style="display:none">Years of Excellence</div></div>
+        <div class="hs"><div class="hs-n">٩٨٪</div><div class="hs-l ar-text">نسبة النجاح</div><div class="hs-l en-text" style="display:none">Success Rate</div></div>
+      </div>
+      <div class="hero-prog">
+        <div class="hp-title ar-text">مراحل التعليم</div>
+        <div class="hp-title en-text" style="display:none">Academic Stages</div>
+        <div class="hp-grid">
+          <div class="hp-item"><div class="hp-n ar-text">رياض الأطفال</div><div class="hp-n en-text" style="display:none">KG</div><div class="hp-s ar-text">٣ — ٦ سنوات</div><div class="hp-s en-text" style="display:none">Ages 3–6</div></div>
+          <div class="hp-item"><div class="hp-n ar-text">الابتدائية</div><div class="hp-n en-text" style="display:none">Primary</div><div class="hp-s ar-text">٦ — ١٢ سنة</div><div class="hp-s en-text" style="display:none">Ages 6–12</div></div>
+          <div class="hp-item"><div class="hp-n ar-text">الإعدادية</div><div class="hp-n en-text" style="display:none">Preparatory</div><div class="hp-s ar-text">١٢ — ١٥ سنة</div><div class="hp-s en-text" style="display:none">Ages 12–15</div></div>
+          <div class="hp-item"><div class="hp-n ar-text">الثانوية</div><div class="hp-n en-text" style="display:none">Secondary</div><div class="hp-s ar-text">١٥ — ١٨ سنة</div><div class="hp-s en-text" style="display:none">Ages 15–18</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <button class="hero-arr hero-prev" onclick="moveSlide(1)" aria-label="Previous">&#8249;</button>
+  <button class="hero-arr hero-next" onclick="moveSlide(-1)" aria-label="Next">&#8250;</button>
+  <div class="hero-dots" id="heroDots"></div>
+</section>
+
+<!-- Stats Bar -->
+<div class="stats-bar">
+  <div class="sb"><div class="sb-n">٢٠٠٠+</div><div class="sb-l ar-text">طالب مسجّل</div><div class="sb-l en-text" style="display:none">Students</div></div>
+  <div class="sb"><div class="sb-n">١٢٠+</div><div class="sb-l ar-text">معلم ومعلمة</div><div class="sb-l en-text" style="display:none">Educators</div></div>
+  <div class="sb"><div class="sb-n">٩٨٪</div><div class="sb-l ar-text">نسبة النجاح</div><div class="sb-l en-text" style="display:none">Pass Rate</div></div>
+  <div class="sb"><div class="sb-n">٢٥+</div><div class="sb-l ar-text">عاماً من التميز</div><div class="sb-l en-text" style="display:none">Years</div></div>
+  <div class="sb"><div class="sb-n">١٥+</div><div class="sb-l ar-text">نشاط لامنهجي</div><div class="sb-l en-text" style="display:none">Activities</div></div>
+</div>
+
+<!-- ABOUT -->
+<section class="section" id="about">
+  <div class="about-grid">
+    <div class="about-img-wrap">
+      <img class="about-img-main" src="https://drive.google.com/thumbnail?id=1TuaJrWktT0X5NP71oECC4hHolAe3Um5B&sz=w900" alt="مبنى مدرسة الجيوشي">
+      <img class="about-img-accent" src="https://drive.google.com/thumbnail?id=1qQ8m25ewXUyxOwh86BYaBwKISABvyyPl&sz=w600" alt="طلاب مدرسة الجيوشي">
+      <div class="about-badge"><div class="ab-n">١٩٩٨</div><div class="ab-l ar-text">تأسست عام</div><div class="ab-l en-text" style="display:none">Founded</div></div>
+    </div>
+    <div>
+      <div class="sec-kicker ar-text">من نحن</div>
+      <div class="sec-kicker en-text" style="display:none">About Us</div>
+      <h2 class="ar-text">بيئة تعليمية تُشكّل<br>القادة والمبتكرين</h2>
+      <h2 class="en-text" style="display:none">Shaping Leaders &<br>Innovators Since 1998</h2>
+      <p class="sec-sub ar-text">مدرسة الجيوشي مؤسسة تعليمية رائدة تأسست عام ١٩٩٨، تتميز بمنهجها المتوازن الذي يجمع بين العلوم والآداب والتربية الإسلامية والأنشطة الإبداعية، في بيئة آمنة ومحفزة على التعلم والنمو.</p>
+      <p class="sec-sub en-text" style="display:none">Founded in 1998, AlGioshy School is a leading educational institution renowned for its balanced curriculum integrating sciences, arts, Islamic values, and creative activities — all within a safe, growth-focused environment.</p>
+      <div class="about-points">
+        <div class="apoint">
+          <div class="apoint-icon">📚</div>
+          <div><div class="apoint-title ar-text">منهج وطني معتمد</div><div class="apoint-title en-text" style="display:none">Accredited National Curriculum</div><div class="apoint-p ar-text">نتبع المناهج الوطنية المعتمدة مع إضافات تثرائية في اللغات والتكنولوجيا والفنون.</div><div class="apoint-p en-text" style="display:none">We follow the accredited national curriculum enriched with languages, technology, and arts programs.</div></div>
+        </div>
+        <div class="apoint">
+          <div class="apoint-icon">🏫</div>
+          <div><div class="apoint-title ar-text">مرافق عالمية المستوى</div><div class="apoint-title en-text" style="display:none">World-Class Facilities</div><div class="apoint-p ar-text">فصول دراسية مجهزة بأحدث التقنيات، ومعامل علوم وحاسب آلي، وقاعات رياضية متعددة.</div><div class="apoint-p en-text" style="display:none">Technology-equipped classrooms, science and computer labs, and multiple sports facilities.</div></div>
+        </div>
+        <div class="apoint">
+          <div class="apoint-icon">🌟</div>
+          <div><div class="apoint-title ar-text">كوادر تعليمية متميزة</div><div class="apoint-title en-text" style="display:none">Outstanding Teaching Staff</div><div class="apoint-p ar-text">أكثر من ١٢٠ معلماً ومعلمة من أصحاب الخبرة والكفاءة المعتمدة في مجالاتهم.</div><div class="apoint-p en-text" style="display:none">Over 120 qualified and experienced teachers certified in their respective fields.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROGRAMS -->
+<section class="section section-alt" id="programs">
+  <div style="text-align:center;margin-bottom:1rem">
+    <div class="sec-kicker" style="justify-content:center">
+      <span class="ar-text">البرامج الدراسية</span><span class="en-text" style="display:none">Academic Programs</span>
+    </div>
+    <h2 class="ar-text">مسار تعليمي متكامل<br>من الطفولة حتى التخرج</h2>
+    <h2 class="en-text" style="display:none">A Complete Educational<br>Journey from Childhood to Graduation</h2>
+    <p class="sec-sub" style="margin:1rem auto 2rem;text-align:center" class="ar-text">نوفر بيئة تعليمية شاملة لكل مرحلة عمرية بمناهج ومدرسين متخصصين.</p>
+  </div>
+  <div class="programs-grid">
+    <div class="prog-card">
+      <div class="prog-icon">🌱</div>
+      <div class="prog-title ar-text">رياض الأطفال</div>
+      <div class="prog-title en-text" style="display:none">Kindergarten</div>
+      <div class="prog-sub ar-text">برنامج شامل يُنمّي مهارات الطفل الاجتماعية والحركية والمعرفية في بيئة آمنة وممتعة.</div>
+      <div class="prog-sub en-text" style="display:none">A holistic program developing social, motor, and cognitive skills in a safe and joyful environment.</div>
+      <div class="prog-ages ar-text">٣ – ٦ سنوات</div>
+      <div class="prog-ages en-text" style="display:none">Ages 3–6</div>
+    </div>
+    <div class="prog-card">
+      <div class="prog-icon">📖</div>
+      <div class="prog-title ar-text">المرحلة الابتدائية</div>
+      <div class="prog-title en-text" style="display:none">Primary School</div>
+      <div class="prog-sub ar-text">أساس متين في القراءة والكتابة والحساب واللغة الإنجليزية والعلوم، مع اهتمام بالقرآن الكريم.</div>
+      <div class="prog-sub en-text" style="display:none">Strong foundations in Arabic, English, mathematics, sciences, and Quran memorization.</div>
+      <div class="prog-ages ar-text">٦ – ١٢ سنة</div>
+      <div class="prog-ages en-text" style="display:none">Ages 6–12</div>
+    </div>
+    <div class="prog-card">
+      <div class="prog-icon">🔬</div>
+      <div class="prog-title ar-text">المرحلة الإعدادية</div>
+      <div class="prog-title en-text" style="display:none">Preparatory School</div>
+      <div class="prog-sub ar-text">تعمق في العلوم والرياضيات والتاريخ مع تطوير مهارات التفكير النقدي والبحث العلمي.</div>
+      <div class="prog-sub en-text" style="display:none">Deep dive into sciences, mathematics, and history with critical thinking and research skills.</div>
+      <div class="prog-ages ar-text">١٢ – ١٥ سنة</div>
+      <div class="prog-ages en-text" style="display:none">Ages 12–15</div>
+    </div>
+    <div class="prog-card">
+      <div class="prog-icon">🎓</div>
+      <div class="prog-title ar-text">المرحلة الثانوية</div>
+      <div class="prog-title en-text" style="display:none">Secondary School</div>
+      <div class="prog-sub ar-text">إعداد متكامل للجامعة مع توجيه مهني وأكاديمي وبرامج تقوية وتميز للطلاب المتفوقين.</div>
+      <div class="prog-sub en-text" style="display:none">Comprehensive university preparation with career counseling and excellence programs for top students.</div>
+      <div class="prog-ages ar-text">١٥ – ١٨ سنة</div>
+      <div class="prog-ages en-text" style="display:none">Ages 15–18</div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY US -->
+<section class="section" id="why">
+  <div class="why-grid">
+    <div>
+      <div class="sec-kicker ar-text">لماذا الجيوشي</div>
+      <div class="sec-kicker en-text" style="display:none">Why AlGioshy</div>
+      <h2 class="ar-text">ما يجعلنا الخيار<br>الأول للأسر</h2>
+      <h2 class="en-text" style="display:none">Why Families<br>Choose Us</h2>
+      <div class="why-list">
+        <div class="why-row"><div class="why-num">01</div><div><div class="why-t ar-text">بيئة آمنة ومحفوظة ٢٤ ساعة</div><div class="why-t en-text" style="display:none">24/7 Safe & Secure Campus</div><div class="why-p ar-text">نظام أمني متكامل بكاميرات مراقبة وبوابات إلكترونية وحراسة مدربة على مدار الساعة.</div><div class="why-p en-text" style="display:none">Complete security system with cameras, electronic gates, and trained security around the clock.</div></div></div>
+        <div class="why-row"><div class="why-num">02</div><div><div class="why-t ar-text">تقنية تعليمية متقدمة</div><div class="why-t en-text" style="display:none">Advanced Educational Technology</div><div class="why-p ar-text">ألواح ذكية في كل فصل، وإنترنت فائق السرعة، ومنصة رقمية لمتابعة أداء الطالب.</div><div class="why-p en-text" style="display:none">Smart boards in every class, high-speed internet, and a digital platform for tracking student performance.</div></div></div>
+        <div class="why-row"><div class="why-num">03</div><div><div class="why-t ar-text">برامج الأنشطة اللامنهجية</div><div class="why-t en-text" style="display:none">Extra-curricular Programs</div><div class="why-p ar-text">فرق رياضية، نوادي فنية وعلمية، برلمان طلابي، ورحلات تعليمية تثري تجربة الطالب.</div><div class="why-p en-text" style="display:none">Sports teams, art and science clubs, student parliament, and educational trips.</div></div></div>
+        <div class="why-row"><div class="why-num">04</div><div><div class="why-t ar-text">تواصل مستمر مع أولياء الأمور</div><div class="why-t en-text" style="display:none">Continuous Parent Communication</div><div class="why-p ar-text">تقارير دورية ولقاءات منتظمة وتطبيق خاص لمتابعة أبنائكم في أي وقت.</div><div class="why-p en-text" style="display:none">Periodic reports, regular meetings, and a dedicated app for monitoring your child anytime.</div></div></div>
+      </div>
+    </div>
+    <div class="why-img-col">
+      <img class="why-img" src="https://drive.google.com/thumbnail?id=1SN-3C_AKiyItvzGAS8Uo9FBF3wk-BeGa&sz=w900" alt="مرافق مدرسة الجيوشي">
+      <div class="why-quote">
+        <div class="wq-text ar-text">"اخترنا مدرسة الجيوشي لأبنائنا لأنها تجمع بين الأصالة في القيم والحداثة في الأساليب — وهذا بالضبط ما كنا نبحث عنه."</div>
+        <div class="wq-text en-text" style="display:none">"We chose AlGioshy for our children because it combines authentic values with modern methods — exactly what we were looking for."</div>
+        <div class="wq-author ar-text">— ولي أمر، المرحلة الثانوية</div>
+        <div class="wq-author en-text" style="display:none">— Parent, Secondary Stage</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FACILITIES -->
+<section class="section section-alt" id="facilities">
+  <div style="text-align:center;margin-bottom:2.5rem">
+    <div class="sec-kicker" style="justify-content:center"><span class="ar-text">مرافق المدرسة</span><span class="en-text" style="display:none">Our Facilities</span></div>
+    <h2 class="ar-text">مرافق عالمية المستوى<br>لتجربة تعليمية فريدة</h2>
+    <h2 class="en-text" style="display:none">World-Class Facilities<br>for a Unique Learning Experience</h2>
+  </div>
+  <div class="fac-grid">
+    <div class="fac-item large" onclick="openLightbox(0,'fac')">
+      <img src="https://drive.google.com/thumbnail?id=1b7dny9BGu_eamKSA7cRY2H1FLtyUkS-a&sz=w1200" alt="قاعات الدراسة">
+      <div class="fac-overlay"><span class="fac-label ar-text">الفصول الدراسية الذكية</span><span class="fac-label en-text" style="display:none">Smart Classrooms</span></div>
+    </div>
+    <div class="fac-item" onclick="openLightbox(1,'fac')">
+      <img src="https://drive.google.com/thumbnail?id=1UFxlgWJMIf3yVh01peeH6xojH4cleIDc&sz=w800" alt="معمل العلوم">
+      <div class="fac-overlay"><span class="fac-label ar-text">معمل العلوم</span><span class="fac-label en-text" style="display:none">Science Lab</span></div>
+    </div>
+    <div class="fac-item" onclick="openLightbox(2,'fac')">
+      <img src="https://drive.google.com/thumbnail?id=1CA8KTFm3FDl7YhF9PvhERyPk3AZz3yde&sz=w800" alt="معمل الحاسب">
+      <div class="fac-overlay"><span class="fac-label ar-text">معمل الحاسب الآلي</span><span class="fac-label en-text" style="display:none">Computer Lab</span></div>
+    </div>
+    <div class="fac-item" onclick="openLightbox(3,'fac')">
+      <img src="https://drive.google.com/thumbnail?id=1axjSGRvCe-jxBnsuTdpnz4NI0b47Tbit&sz=w800" alt="المكتبة">
+      <div class="fac-overlay"><span class="fac-label ar-text">المكتبة المدرسية</span><span class="fac-label en-text" style="display:none">School Library</span></div>
+    </div>
+    <div class="fac-item" onclick="openLightbox(4,'fac')">
+      <img src="https://drive.google.com/thumbnail?id=1NPT6T0TImxqMLhvyq1Zdnhnq5JD5os-3&sz=w800" alt="الملاعب">
+      <div class="fac-overlay"><span class="fac-label ar-text">الملاعب الرياضية</span><span class="fac-label en-text" style="display:none">Sports Facilities</span></div>
+    </div>
+    <div class="fac-item" onclick="openLightbox(5,'fac')">
+      <img src="https://drive.google.com/thumbnail?id=1rbjxmuicWLiTVGgHF_4IVEBmWwV4oGtO&sz=w800" alt="المسرح">
+      <div class="fac-overlay"><span class="fac-label ar-text">القاعة متعددة الأغراض</span><span class="fac-label en-text" style="display:none">Multi-purpose Hall</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- GALLERY -->
+<section class="section" id="gallery">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:2rem;flex-wrap:wrap;gap:1rem">
+    <div>
+      <div class="sec-kicker"><span class="ar-text">معرض الصور</span><span class="en-text" style="display:none">Photo Gallery</span></div>
+      <h2 class="ar-text" style="margin-bottom:0">الحياة في مدرسة الجيوشي</h2>
+      <h2 class="en-text" style="display:none;margin-bottom:0">Life at AlGioshy School</h2>
+    </div>
+    <div class="gallery-controls" style="margin-top:0">
+      <button class="gal-btn" onclick="scrollGallery(-1)">&#8250;</button>
+      <button class="gal-btn" onclick="scrollGallery(1)">&#8249;</button>
+    </div>
+  </div>
+  <div class="gallery-wrap">
+    <div class="gallery-track" id="galleryTrack">
+      <img class="gallery-item" src="https://drive.google.com/thumbnail?id=1f9AwqlenGv-tY4a4w0vnxaRH13fuFHnQ&sz=w600" alt="" onclick="openLightbox(0,'gal')">
+      <img class="gallery-item" src="https://drive.google.com/thumbnail?id=1WQVjeVqn5zv3sB9LFGJgxgnVHIWVxs9s&sz=w600" alt="" onclick="openLightbox(1,'gal')">
+      <img class="gallery-item" src="https://drive.google.com/thumbnail?id=1PuClfikKCQNmHpyKeg63pgxmdmEQs8DA&sz=w600" alt="" onclick="openLightbox(2,'gal')">
+      <img class="gallery-item" src="https://drive.google.com/thumbnail?id=1v_ytlq2g_1cMKybRZ1P6Ifunlx_HPJA7&sz=w600" alt="" onclick="openLightbox(3,'gal')">
+      <img class="gallery-item" src="https://drive.google.com/thumbnail?id=1TkHzWnOc0Jg2jkH8GXhcErkTyB0AZJ9i&sz=w600" alt="" onclick="openLightbox(4,'gal')">
+      <img class="gallery-item" src="https://drive.google.com/thumbnail?id=1uKCLZ9BOgTZz_6nTLRdlh2oK05DUS8ve&sz=w600" alt="" onclick="openLightbox(5,'gal')">
+      <img class="gallery-item" src="https://drive.google.com/thumbnail?id=1sXObsDTrsed61BWH6T90OyygICTZtuOR&sz=w600" alt="" onclick="openLightbox(6,'gal')">
+      <img class="gallery-item" src="https://drive.google.com/thumbnail?id=1GAr5tXyd8HA3gYDOIGxQ6QUEv8OwvKLL&sz=w600" alt="" onclick="openLightbox(7,'gal')">
+    </div>
+  </div>
+</section>
+
+<!-- ENROLLMENT FORM -->
+<section class="enroll-section" id="enroll">
+  <div class="enroll-inner">
+    <div class="enroll-text">
+      <div class="sec-kicker"><span class="ar-text">التسجيل المدرسي</span><span class="en-text" style="display:none">Admissions</span></div>
+      <h2 class="ar-text">ابدأ رحلة طفلك<br>مع الجيوشي اليوم</h2>
+      <h2 class="en-text" style="display:none">Start Your Child's<br>Journey with AlGioshy Today</h2>
+      <p class="sec-sub ar-text">أماكن محدودة للعام الدراسي ٢٠٢٥–٢٠٢٦. قدّم طلب تسجيلك الآن وسنتواصل معك في أقرب وقت.</p>
+      <p class="sec-sub en-text" style="display:none">Limited seats available for the 2025–2026 academic year. Submit your enrollment request now and we'll contact you shortly.</p>
+      <div class="enroll-benefits">
+        <div class="eb-item"><div class="eb-check">✓</div><div class="eb-text ar-text">لا رسوم تسجيل على الطلبات المبكرة</div><div class="eb-text en-text" style="display:none">No registration fees for early applications</div></div>
+        <div class="eb-item"><div class="eb-check">✓</div><div class="eb-text ar-text">جولة مدرسية مجانية لأولياء الأمور</div><div class="eb-text en-text" style="display:none">Free school tour for parents</div></div>
+        <div class="eb-item"><div class="eb-check">✓</div><div class="eb-text ar-text">تقييم مجاني لمستوى الطالب</div><div class="eb-text en-text" style="display:none">Free student level assessment</div></div>
+        <div class="eb-item"><div class="eb-check">✓</div><div class="eb-text ar-text">مقابلة مع مستشار تعليمي متخصص</div><div class="eb-text en-text" style="display:none">Meeting with a specialized educational counselor</div></div>
+      </div>
+    </div>
+    <div class="enroll-form">
+      <div class="form-title ar-text">استمارة التسجيل والاستفسار</div>
+      <div class="form-title en-text" style="display:none">Enrollment & Inquiry Form</div>
+      <div class="form-sub ar-text">يُرجى تعبئة جميع الحقول وسنتواصل معكم خلال ٢٤ ساعة</div>
+      <div class="form-sub en-text" style="display:none">Please fill all fields and we'll contact you within 24 hours</div>
+      <form id="enrollForm" onsubmit="submitForm(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="ar-text">اسم ولي الأمر *</label>
+            <label class="en-text" style="display:none">Parent Name *</label>
+            <input type="text" name="parentName" required placeholder="الاسم الكامل">
+          </div>
+          <div class="form-group">
+            <label class="ar-text">اسم الطالب *</label>
+            <label class="en-text" style="display:none">Student Name *</label>
+            <input type="text" name="studentName" required placeholder="الاسم الكامل">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="ar-text">رقم الهاتف *</label>
+            <label class="en-text" style="display:none">Phone Number *</label>
+            <input type="tel" name="phone" required placeholder="01XXXXXXXXX">
+          </div>
+          <div class="form-group">
+            <label class="ar-text">البريد الإلكتروني</label>
+            <label class="en-text" style="display:none">Email Address</label>
+            <input type="email" name="email" placeholder="example@mail.com">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="ar-text">المرحلة الدراسية *</label>
+            <label class="en-text" style="display:none">Academic Stage *</label>
+            <select name="stage" required>
+              <option value="" disabled selected class="ar-text">اختر المرحلة</option>
+              <option value="kg" class="ar-text">رياض الأطفال (٣-٦ سنوات)</option>
+              <option value="primary" class="ar-text">الابتدائية (٦-١٢ سنة)</option>
+              <option value="prep" class="ar-text">الإعدادية (١٢-١٥ سنة)</option>
+              <option value="secondary" class="ar-text">الثانوية (١٥-١٨ سنة)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="ar-text">عمر الطالب</label>
+            <label class="en-text" style="display:none">Student Age</label>
+            <input type="number" name="age" min="3" max="18" placeholder="العمر بالسنوات">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="ar-text">ملاحظات إضافية</label>
+          <label class="en-text" style="display:none">Additional Notes</label>
+          <textarea name="notes" placeholder="أي استفسارات أو معلومات إضافية..."></textarea>
+        </div>
+        <button type="submit" class="form-submit ar-text">إرسال طلب التسجيل ←</button>
+        <button type="submit" class="form-submit en-text" style="display:none">Submit Enrollment Request →</button>
+      </form>
+      <div class="form-success" id="formSuccess">
+        <div style="font-size:2rem;margin-bottom:.5rem">✅</div>
+        <strong class="ar-text">تم استلام طلبكم بنجاح!</strong>
+        <strong class="en-text" style="display:none">Application Received Successfully!</strong>
+        <p class="ar-text">سيتواصل معكم فريقنا خلال ٢٤ ساعة عمل. شكراً لاختياركم مدرسة الجيوشي.</p>
+        <p class="en-text" style="display:none">Our team will contact you within 24 business hours. Thank you for choosing AlGioshy School.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="section" id="contact">
+  <div class="contact-grid">
+    <div>
+      <div class="sec-kicker"><span class="ar-text">تواصل معنا</span><span class="en-text" style="display:none">Contact Us</span></div>
+      <h2 class="ar-text">نحن هنا للإجابة<br>على استفساراتكم</h2>
+      <h2 class="en-text" style="display:none">We're Here to Answer<br>Your Questions</h2>
+      <p class="sec-sub ar-text">فريقنا متاح لكم من الأحد إلى الخميس، من ٧:٣٠ صباحاً حتى ٣:٠٠ مساءً.</p>
+      <p class="sec-sub en-text" style="display:none">Our team is available Sunday through Thursday, 7:30 AM to 3:00 PM.</p>
+      <div class="contact-item"><div class="ci-icon">📍</div><div><div class="ci-label ar-text">العنوان</div><div class="ci-label en-text" style="display:none">Address</div><div class="ci-val ar-text">مصر — الجيزة، شارع المدارس الرئيسي</div><div class="ci-val en-text" style="display:none">Egypt — Giza, Main Schools Street</div></div></div>
+      <div class="contact-item"><div class="ci-icon">📞</div><div><div class="ci-label ar-text">الهاتف</div><div class="ci-label en-text" style="display:none">Phone</div><div class="ci-val">+20 100 000 0000</div></div></div>
+      <div class="contact-item"><div class="ci-icon">📧</div><div><div class="ci-label ar-text">البريد الإلكتروني</div><div class="ci-label en-text" style="display:none">Email</div><div class="ci-val">info@algioshy.edu.eg</div></div></div>
+      <div class="contact-item"><div class="ci-icon">🕐</div><div><div class="ci-label ar-text">مواعيد الدوام</div><div class="ci-label en-text" style="display:none">Working Hours</div><div class="ci-val ar-text">الأحد – الخميس، ٧:٣٠ ص – ٣:٠٠ م</div><div class="ci-val en-text" style="display:none">Sun–Thu, 7:30 AM – 3:00 PM</div></div></div>
+    </div>
+    <div class="map-placeholder">
+      <iframe
+        src="https://maps.google.com/maps?q=Giza+Egypt+schools&output=embed&z=14"
+        loading="lazy"
+        allowfullscreen
+        title="موقع مدرسة الجيوشي">
+      </iframe>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="nav-name-ar ar-text">مدرسة الجيوشي</div>
+      <div class="nav-name-ar en-text" style="font-family:'Libre Caslon Display',serif;font-size:1rem;font-weight:400;color:#fff">AlGioshy School</div>
+      <div class="nav-name-en ar-text">AlGioshy School</div>
+      <p class="footer-tagline ar-text">منذ عام ١٩٩٨ ونحن نبني جيلاً واعياً قادراً على مواجهة تحديات المستقبل بعلم وقيم وإبداع.</p>
+      <p class="footer-tagline en-text" style="display:none">Since 1998, building a generation equipped with knowledge, values, and creativity to face future challenges.</p>
+      <div class="footer-social" style="margin-top:1rem">
+        <a class="fs-btn" href="#" aria-label="Facebook">f</a>
+        <a class="fs-btn" href="#" aria-label="Instagram">ig</a>
+        <a class="fs-btn" href="#" aria-label="YouTube">yt</a>
+        <a class="fs-btn" href="#" aria-label="WhatsApp">wa</a>
+      </div>
+    </div>
+    <div class="footer-col">
+      <h4 class="ar-text">روابط سريعة</h4>
+      <h4 class="en-text" style="display:none">Quick Links</h4>
+      <ul>
+        <li><a href="#about"><span class="ar-text">عن المدرسة</span><span class="en-text" style="display:none">About</span></a></li>
+        <li><a href="#programs"><span class="ar-text">البرامج الدراسية</span><span class="en-text" style="display:none">Programs</span></a></li>
+        <li><a href="#facilities"><span class="ar-text">المرافق</span><span class="en-text" style="display:none">Facilities</span></a></li>
+        <li><a href="#gallery"><span class="ar-text">معرض الصور</span><span class="en-text" style="display:none">Gallery</span></a></li>
+        <li><a href="#enroll"><span class="ar-text">التسجيل</span><span class="en-text" style="display:none">Admissions</span></a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4 class="ar-text">المراحل الدراسية</h4>
+      <h4 class="en-text" style="display:none">Stages</h4>
+      <ul>
+        <li><a href="#programs"><span class="ar-text">رياض الأطفال</span><span class="en-text" style="display:none">Kindergarten</span></a></li>
+        <li><a href="#programs"><span class="ar-text">الابتدائية</span><span class="en-text" style="display:none">Primary</span></a></li>
+        <li><a href="#programs"><span class="ar-text">الإعدادية</span><span class="en-text" style="display:none">Preparatory</span></a></li>
+        <li><a href="#programs"><span class="ar-text">الثانوية</span><span class="en-text" style="display:none">Secondary</span></a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4 class="ar-text">تواصل معنا</h4>
+      <h4 class="en-text" style="display:none">Contact</h4>
+      <ul>
+        <li><a href="tel:+20100000000">+20 100 000 0000</a></li>
+        <li><a href="mailto:info@algioshy.edu.eg">info@algioshy.edu.eg</a></li>
+        <li><a href="#contact"><span class="ar-text">موقعنا على الخريطة</span><span class="en-text" style="display:none">Find Us</span></a></li>
+        <li><a href="admin.html"><span class="ar-text">البوابة الإدارية</span><span class="en-text" style="display:none">Admin Portal</span></a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span class="ar-text">© 2025 مدرسة الجيوشي — جميع الحقوق محفوظة</span>
+    <span class="en-text" style="display:none">© 2025 AlGioshy School — All Rights Reserved</span>
+    <span style="color:rgba(255,255,255,.2);font-size:.6rem">Powered by <a href="https://nigents.com" style="color:rgba(255,255,255,.3)">Nigents</a></span>
+  </div>
+</footer>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lb-close" onclick="closeLightbox()">×</button>
+  <button class="lb-prev" onclick="lbNav(-1);event.stopPropagation()">&#8249;</button>
+  <img class="lb-img" id="lbImg" src="" alt="">
+  <button class="lb-next" onclick="lbNav(1);event.stopPropagation()">&#8250;</button>
+</div>
+
+<script>
+// ── LANGUAGE TOGGLE ──
+function toggleLang() {
+  const isEn = document.body.classList.toggle('en-mode');
+  document.getElementById('langBtn').textContent = isEn ? 'عربي' : 'English';
+  document.documentElement.setAttribute('lang', isEn ? 'en' : 'ar');
+  document.documentElement.setAttribute('dir', isEn ? 'ltr' : 'rtl');
+  // show/hide text elements
+  document.querySelectorAll('.en-text').forEach(el => el.style.display = isEn ? '' : 'none');
+  document.querySelectorAll('.ar-text').forEach(el => el.style.display = isEn ? 'none' : '');
+}
+
+// ── MOBILE NAV ──
+function toggleMobileNav() {
+  document.getElementById('mobileNav').classList.toggle('open');
+}
+
+// ── HERO SLIDER ──
+let currentSlide = 0;
+const slides = document.querySelectorAll('.hero-slide');
+const dotsContainer = document.getElementById('heroDots');
+
+function buildDots() {
+  slides.forEach((_, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'hero-dot' + (i === 0 ? ' active' : '');
+    btn.onclick = () => goToSlide(i);
+    dotsContainer.appendChild(btn);
+  });
+}
+function goToSlide(n) {
+  currentSlide = (n + slides.length) % slides.length;
+  document.getElementById('heroSlides').style.transform = `translateX(${currentSlide * 100}%)`;
+  document.querySelectorAll('.hero-dot').forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+}
+function moveSlide(dir) { goToSlide(currentSlide + dir); }
+buildDots();
+setInterval(() => moveSlide(-1), 5000);
+
+// ── GALLERY SCROLL ──
+let galPos = 0;
+function scrollGallery(dir) {
+  const track = document.getElementById('galleryTrack');
+  const itemW = track.querySelector('.gallery-item').offsetWidth + 16;
+  galPos = Math.max(0, Math.min(galPos + dir * itemW * 2, track.scrollWidth - track.parentElement.offsetWidth));
+  track.style.transform = `translateX(${document.body.classList.contains('en-mode') ? -galPos : galPos}px)`;
+}
+
+// ── LIGHTBOX ──
+const facImgs = [
+  'https://drive.google.com/thumbnail?id=1b7dny9BGu_eamKSA7cRY2H1FLtyUkS-a&sz=w1600',
+  'https://drive.google.com/thumbnail?id=1UFxlgWJMIf3yVh01peeH6xojH4cleIDc&sz=w1600',
+  'https://drive.google.com/thumbnail?id=1CA8KTFm3FDl7YhF9PvhERyPk3AZz3yde&sz=w1600',
+  'https://drive.google.com/thumbnail?id=1axjSGRvCe-jxBnsuTdpnz4NI0b47Tbit&sz=w1600',
+  'https://drive.google.com/thumbnail?id=1NPT6T0TImxqMLhvyq1Zdnhnq5JD5os-3&sz=w1600',
+  'https://drive.google.com/thumbnail?id=1rbjxmuicWLiTVGgHF_4IVEBmWwV4oGtO&sz=w1600',
+];
+const galImgs = [
+  'https://drive.google.com/thumbnail?id=1f9AwqlenGv-tY4a4w0vnxaRH13fuFHnQ&sz=w1600',
+  'https://drive.google.com/thumbnail?id=1WQVjeVqn5zv3sB9LFGJgxgnVHIWVxs9s&sz=w1600',
+  'https://drive.google.com/thumbnail?id=1PuClfikKCQNmHpyKeg63pgxmdmEQs8DA&sz=w1600',
+  'https://drive.google.com/thumbnail?id=1v_ytlq2g_1cMKybRZ1P6Ifunlx_HPJA7&sz=w1600',
+  'https://drive.google.com/thumbnail?id=1TkHzWnOc0Jg2jkH8GXhcErkTyB0AZJ9i&sz=w1600',
+  'https://drive.google.com/thumbnail?id=1uKCLZ9BOgTZz_6nTLRdlh2oK05DUS8ve&sz=w1600',
+  'https://drive.google.com/thumbnail?id=1sXObsDTrsed61BWH6T90OyygICTZtuOR&sz=w1600',
+  'https://drive.google.com/thumbnail?id=1GAr5tXyd8HA3gYDOIGxQ6QUEv8OwvKLL&sz=w1600',
+];
+let lbImages = [], lbIdx = 0;
+function openLightbox(i, type) {
+  lbImages = type === 'fac' ? facImgs : galImgs;
+  lbIdx = i;
+  document.getElementById('lbImg').src = lbImages[lbIdx];
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function lbNav(dir) {
+  lbIdx = (lbIdx + dir + lbImages.length) % lbImages.length;
+  document.getElementById('lbImg').src = lbImages[lbIdx];
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowLeft') lbNav(1);
+  if (e.key === 'ArrowRight') lbNav(-1);
+});
+
+// ── ENROLLMENT FORM ──
+async function submitForm(e) {
+  e.preventDefault();
+  const form = e.target;
+  const btn = form.querySelector('.form-submit');
+  btn.textContent = document.body.classList.contains('en-mode') ? 'Sending...' : 'جاري الإرسال...';
+  btn.disabled = true;
+  const data = Object.fromEntries(new FormData(form));
+  data.submittedAt = new Date().toISOString();
+  data.lang = document.body.classList.contains('en-mode') ? 'en' : 'ar';
+  try {
+    const res = await fetch('/api/algioshy/contact', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(data)
+    });
+    if (res.ok) {
+      form.style.display = 'none';
+      document.getElementById('formSuccess').style.display = 'block';
+    } else { throw new Error(); }
+  } catch {
+    btn.textContent = document.body.classList.contains('en-mode') ? 'Submit Enrollment Request →' : 'إرسال طلب التسجيل ←';
+    btn.disabled = false;
+    alert(document.body.classList.contains('en-mode') ? 'An error occurred. Please try again.' : 'حدث خطأ. يرجى المحاولة مرة أخرى.');
+  }
+}
+
+// ── SCROLL ACTIVE NAV ──
+const sections = ['about','programs','facilities','gallery','enroll','contact'];
+window.addEventListener('scroll', () => {
+  const pos = window.scrollY + 100;
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const links = document.querySelectorAll(`.nav-menu a[href="#${id}"]`);
+    links.forEach(l => l.classList.toggle('active', pos >= el.offsetTop && pos < el.offsetTop + el.offsetHeight));
+  });
+}, {passive:true});
+</script>
+</body>
+</html>
