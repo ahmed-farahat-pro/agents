@@ -3256,24 +3256,23 @@ app.post('/api/algioshy/contact', (req, res) => {
   }
 });
 
-// GET /api/algioshy/submissions — admin view (session-protected via referer or basic check)
-app.get('/api/algioshy/submissions', (req, res) => {
-  // Simple protection: require X-Admin-Token header or session cookie
-  const token = req.headers['x-admin-token'] || req.cookies?.dashboard_session;
-  // Allow if dashboard session exists OR request comes from localhost
+const ALGIOSHY_ADMIN_PASS = (process.env.ALGIOSHY_ADMIN_PASS || 'algioshy2025').trim();
+function isAlgioshyAdmin(req) {
   const isLocal = req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1';
   const hasSession = req.cookies?.dashboard_session;
-  if (!isLocal && !hasSession) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  const adminToken = (req.headers['x-admin-token'] || '').trim();
+  return isLocal || hasSession || adminToken === ALGIOSHY_ADMIN_PASS;
+}
+
+// GET /api/algioshy/submissions — admin view
+app.get('/api/algioshy/submissions', (req, res) => {
+  if (!isAlgioshyAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
   res.json(readAlgioshyData());
 });
 
 // DELETE /api/algioshy/submissions/:id — admin delete
 app.delete('/api/algioshy/submissions/:id', (req, res) => {
-  const hasSession = req.cookies?.dashboard_session;
-  const isLocal = req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1';
-  if (!isLocal && !hasSession) return res.status(401).json({ error: 'Unauthorized' });
+  if (!isAlgioshyAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
   try {
     const data = readAlgioshyData().filter(r => r.id !== req.params.id);
     writeAlgioshyData(data);
