@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Nigents Crazy apps — experimental macOS menu bar utilities. AirSound, AppJealousy, Battery DNA, and BreathBar." />
+    <meta name="description" content="Nigents Crazy apps — experimental macOS menu bar utilities. AirSound, AppJealousy, Battery DNA, BreathBar, LangFlip, and Break Alarm." />
     <title>Crazy apps — Nigents</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,6 +22,7 @@
             --accent-volt: #2dd4bf;
             --accent-breath: #67e8f9;
             --accent-flip: #818cf8;
+            --accent-alarm: #f5921e;
             --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
             --font-sans: 'Poppins', 'Sakkal Majalla', -apple-system, BlinkMacSystemFont, sans-serif;
         }
@@ -338,6 +339,16 @@
             border-color: rgba(129, 140, 248, 0.35);
         }
 
+        .app-pick.ba::before {
+            background: linear-gradient(90deg, var(--accent-alarm), #fbbf5c);
+        }
+
+        .app-pick.ba .icon {
+            color: var(--accent-alarm);
+            background: rgba(245, 146, 30, 0.1);
+            border-color: rgba(245, 146, 30, 0.35);
+        }
+
         .app-pick h2 {
             font-size: 1.35rem;
             font-weight: 700;
@@ -478,6 +489,15 @@
                 <div class="app-actions">
                     <a class="btn-landing" href="/langflip.html">Open landing</a>
                     <a class="btn-dl" href="/downloads/LangFlip-1.0.dmg" download>Download DMG</a>
+                </div>
+            </article>
+            <article class="app-pick ba">
+                <div class="icon">BA</div>
+                <h2>Break Alarm</h2>
+                <p>Know how long you've been grinding. Dims every screen, plays a chime, and says your coffee is brewing — so you actually stand up.</p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/breakalarm.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/BreakAlarm-1.0.0.dmg" download>Download DMG</a>
                 </div>
             </article>
         </div>

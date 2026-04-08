@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Break Alarm for macOS — desk timer, break reminders, full-screen dim, chime and voice cue. From Nigents Crazy apps." />
+    <title>Break Alarm — Crazy apps · Nigents</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #09080c;
+            --bg-secondary: #141116;
+            --border: #2a2a35;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            --accent-orange: #ff570a;
+            --accent-green: #19d59e;
+            --accent-alarm: #f5921e;
+            --accent-warm: #fbbf5c;
+            --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+            --font-sans: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(245, 146, 30, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(245, 146, 30, 0.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── NAV ── */
+        .nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            padding: 20px 40px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: linear-gradient(to bottom, var(--bg-primary) 0%, transparent 100%);
+        }
+        .nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+        .nav-logo {
+            width: 40px; height: 40px; background: var(--accent-orange);
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 20px; color: var(--bg-primary);
+        }
+        .nav-title { font-size: 22px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px; }
+        .nav-links { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; justify-content: flex-end; }
+        .nav-link { color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+        .nav-link:hover { color: var(--text-primary); }
+        .nav-link.active { color: var(--accent-orange); }
+        .soon-pill {
+            display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 700;
+            letter-spacing: 0.08em; text-transform: uppercase; color: var(--bg-primary);
+            background: var(--accent-orange); padding: 3px 9px; border-radius: 999px; vertical-align: middle;
+        }
+        .nav-cta {
+            padding: 10px 20px; border: 1px solid var(--accent-orange);
+            color: var(--accent-orange); text-decoration: none; font-size: 14px; font-weight: 600; transition: all 0.2s;
+        }
+        .nav-cta:hover { background: var(--accent-orange); color: var(--bg-primary); }
+        .nav-toggle {
+            display: none; width: 44px; height: 44px; align-items: center; justify-content: center;
+            margin-left: auto; background: rgba(255,255,255,.06); border: 1px solid var(--border);
+            border-radius: 10px; color: var(--text-primary); cursor: pointer;
+        }
+        .nav-toggle-icon-close { display: none; font-size: 28px; }
+        body.nav-open .nav-toggle-icon-open { display: none; }
+        body.nav-open .nav-toggle-icon-close { display: block; }
+        .nav-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 998; }
+        body.nav-open .nav-backdrop { display: block; }
+        body.nav-open { overflow: hidden; }
+
+        @media (max-width: 900px) {
+            .nav-toggle { display: flex; }
+            .nav-links {
+                display: none; position: fixed; top: 72px; left: 16px; right: 16px;
+                flex-direction: column; align-items: stretch;
+                background: var(--bg-secondary); border: 1px solid var(--border); padding: 12px; z-index: 999;
+            }
+            body.nav-open .nav-links { display: flex; }
+        }
+
+        /* ── LAYOUT ── */
+        main {
+            position: relative; z-index: 1;
+            max-width: 860px; margin: 0 auto; padding: 120px 32px 80px;
+        }
+
+        /* ── HERO ── */
+        .app-badge {
+            font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+            letter-spacing: 0.14em; text-transform: uppercase;
+            color: var(--accent-alarm); border: 1px solid rgba(245,146,30,.35);
+            padding: 7px 14px; display: inline-block; margin-bottom: 18px;
+        }
+        .back-link {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 13px; color: var(--text-muted); text-decoration: none; margin-bottom: 24px;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: var(--accent-alarm); }
+
+        h1 {
+            font-size: clamp(2.2rem, 5vw, 3.2rem); font-weight: 800;
+            letter-spacing: -0.04em; line-height: 1.1; margin-bottom: 16px;
+        }
+        h1 .hi { color: var(--accent-alarm); }
+        .lead { font-size: 1.05rem; color: var(--text-secondary); max-width: 52ch; margin-bottom: 36px; line-height: 1.7; }
+
+        /* ── CTA ROW ── */
+        .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 64px; }
+        .btn-dl {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 24px; font-size: 14px; font-weight: 700; text-decoration: none;
+            background: var(--accent-alarm); color: var(--bg-primary); transition: opacity .2s;
+        }
+        .btn-dl:hover { opacity: .9; }
+        .btn-sec {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 24px; font-size: 14px; font-weight: 600; text-decoration: none;
+            background: transparent; color: var(--text-primary);
+            border: 1px solid var(--border); transition: border-color .2s, color .2s;
+        }
+        .btn-sec:hover { border-color: var(--accent-alarm); color: var(--accent-alarm); }
+
+        /* ── DIVIDER ── */
+        .divider { height: 1px; background: var(--border); margin: 40px 0; }
+
+        /* ── FEATURE GRID ── */
+        .section-label {
+            font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+            letter-spacing: 0.18em; text-transform: uppercase;
+            color: var(--text-muted); margin-bottom: 20px;
+        }
+        .feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 48px; }
+        .feat-card {
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: 12px; padding: 22px;
+        }
+        .feat-card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .feat-icon {
+            width: 36px; height: 36px; border-radius: 8px;
+            background: rgba(245,146,30,.12); border: 1px solid rgba(245,146,30,.3);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .feat-icon svg { stroke: var(--accent-alarm); }
+        .feat-title { font-size: 15px; font-weight: 700; }
+        .feat-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.55; }
+
+        /* ── FOR WHO ── */
+        .who-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 48px; }
+        .who-item {
+            display: flex; gap: 14px; padding: 16px 18px;
+            background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px;
+            align-items: flex-start;
+        }
+        .who-num {
+            font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+            color: var(--accent-alarm); min-width: 24px; padding-top: 1px;
+        }
+        .who-text { font-size: 14px; color: var(--text-secondary); line-height: 1.55; }
+
+        /* ── SHORTCUT STRIP ── */
+        .shortcut-strip {
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: 12px; padding: 20px 24px;
+            display: flex; align-items: center; gap: 16px; margin-bottom: 48px; flex-wrap: wrap;
+        }
+        .shortcut-strip .label { font-size: 13px; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+        kbd {
+            display: inline-block; font-family: var(--font-mono); font-size: 12px;
+            font-weight: 700; color: var(--accent-warm); background: rgba(251,191,92,.1);
+            border: 1px solid rgba(251,191,92,.25); border-radius: 6px;
+            padding: 4px 10px; letter-spacing: 0.02em;
+        }
+        .shortcut-desc { font-size: 13px; color: var(--text-secondary); }
+
+        /* ── PRIVACY STRIP ── */
+        .privacy {
+            border-top: 1px solid var(--border); padding-top: 28px;
+            display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 48px;
+        }
+        .priv-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+        .priv-item::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent-green); flex-shrink: 0; }
+
+        /* ── FOOTER ── */
+        footer {
+            border-top: 1px solid var(--border); padding-top: 24px;
+            font-size: 13px; color: var(--text-muted);
+            display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+        }
+        footer a { color: var(--accent-alarm); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        @media (max-width: 600px) {
+            main { padding: 100px 20px 60px; }
+            .nav { padding: 16px 20px; }
+            .cta-row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <a href="/" class="nav-brand">
+            <div class="nav-logo">N</div>
+            <span class="nav-title">Nigents</span>
+        </a>
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+            <span class="nav-toggle-icon-open" aria-hidden="true">☰</span>
+            <span class="nav-toggle-icon-close" aria-hidden="true">×</span>
+        </button>
+        <div class="nav-links" id="nav-links" role="navigation" aria-label="Main">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/how-it-works.html" class="nav-link">How it works</a>
+            <a href="/materials.html" class="nav-link">Free Materials</a>
+            <a href="/crazy-apps.html" class="nav-link active">Crazy apps</a>
+            <a href="/opencode-kits.html" class="nav-link">OpenCode kits <span class="soon-pill">Soon</span></a>
+            <a href="/bonyad/" class="nav-link">Bonyad</a>
+            <a href="/login.html" class="nav-cta">Login →</a>
+        </div>
+    </nav>
+    <div class="nav-backdrop" id="nav-backdrop" aria-hidden="true" hidden></div>
+
+    <main>
+        <a href="/crazy-apps.html" class="back-link">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="9,2 4,7 9,12"/></svg>
+            All crazy apps
+        </a>
+
+        <p class="app-badge">macOS · wellness · v1.0.0</p>
+        <h1>Break<br><span class="hi">Alarm</span></h1>
+        <p class="lead">
+            Know how long you've been grinding. When it's time to stop, Break Alarm dims every screen,
+            starts a break countdown, plays a chime, and tells you your <strong style="color:var(--text-primary)">coffee is brewing</strong> —
+            so you actually walk away.
+        </p>
+
+        <div class="cta-row">
+            <a class="btn-dl" href="/downloads/BreakAlarm-1.0.0.dmg" download>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8,2 8,11"/><polyline points="4,7 8,11 12,7"/><line x1="2" y1="14" x2="14" y2="14"/></svg>
+                Download DMG — free
+            </a>
+            <a class="btn-sec" href="/crazy-apps.html">
+                ← Back to all apps
+            </a>
+        </div>
+
+        <div class="section-label">What it does</div>
+        <div class="feat-grid">
+            <div class="feat-card">
+                <div class="feat-card-top">
+                    <div class="feat-icon">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke-width="1.6"><circle cx="9" cy="9" r="7"/><polyline points="9,5 9,9 12,11"/></svg>
+                    </div>
+                    <div class="feat-title">Session & active time</div>
+                </div>
+                <div class="feat-desc">See app-open hours and idle-aware "active" streaks. A gentle banner nudges you after long sessions or a heavy workday.</div>
+            </div>
+            <div class="feat-card">
+                <div class="feat-card-top">
+                    <div class="feat-icon">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke-width="1.6"><rect x="2" y="3" width="14" height="12" rx="2"/><line x1="2" y1="7" x2="16" y2="7"/><circle cx="9" cy="12" r="2"/></svg>
+                    </div>
+                    <div class="feat-title">Full-screen break ritual</div>
+                </div>
+                <div class="feat-desc">Dims all displays at once, starts a break countdown, plays a chime, and speaks a voice reminder — all local, no cloud.</div>
+            </div>
+            <div class="feat-card">
+                <div class="feat-card-top">
+                    <div class="feat-icon">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke-width="1.6"><circle cx="9" cy="9" r="7"/><line x1="9" y1="4" x2="9" y2="9"/><line x1="9" y1="9" x2="13" y2="9"/></svg>
+                    </div>
+                    <div class="feat-title">Your rhythm, your rules</div>
+                </div>
+                <div class="feat-desc">Set work-before-break interval, break length, idle grace period, and when banners appear. Snooze if you need five more minutes.</div>
+            </div>
+            <div class="feat-card">
+                <div class="feat-card-top">
+                    <div class="feat-icon">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke-width="1.6"><rect x="3" y="3" width="12" height="12" rx="2"/><line x1="3" y1="7" x2="15" y2="7"/><line x1="7" y1="7" x2="7" y2="15"/></svg>
+                    </div>
+                    <div class="feat-title">Coffee cue</div>
+                </div>
+                <div class="feat-desc">The spoken reminder says your coffee is brewing — a physical, believable cue that pulls you out of the chair instead of a tiny badge you dismiss.</div>
+            </div>
+        </div>
+
+        <div class="shortcut-strip">
+            <span class="label">Quick break:</span>
+            <span><kbd>⌘</kbd> + <kbd>⇧</kbd> + <kbd>B</kbd></span>
+            <span class="shortcut-desc">— triggers a break instantly from anywhere, anytime.</span>
+        </div>
+
+        <div class="section-label">Who it's for</div>
+        <div class="who-list">
+            <div class="who-item">
+                <span class="who-num">01</span>
+                <span class="who-text">Remote workers who lose track of time in deep focus and only notice hours have passed when their back hurts.</span>
+            </div>
+            <div class="who-item">
+                <span class="who-num">02</span>
+                <span class="who-text">Anyone who wants a <em style="color:var(--text-primary)">physical</em> cue — dim screen + chime + voice — instead of a tiny notification they instantly swipe away.</span>
+            </div>
+            <div class="who-item">
+                <span class="who-num">03</span>
+                <span class="who-text">People pairing strict work blocks with guilt-free coffee breaks — the ritual makes the break feel earned, not stolen.</span>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="privacy">
+            <div class="priv-item">No accounts</div>
+            <div class="priv-item">No analytics</div>
+            <div class="priv-item">No cloud — local speech synthesis</div>
+            <div class="priv-item">No battery or SMC tools</div>
+            <div class="priv-item">macOS 13+ · Apple Silicon & Intel</div>
+        </div>
+
+        <footer>
+            <span>Break Alarm · Part of <a href="/crazy-apps.html">Nigents Crazy apps</a></span>
+            <span>Built with SwiftPM · MacAppsBundle · v1.0.0</span>
+        </footer>
+    </main>
+
+    <script>
+        (function () {
+            var toggle = document.getElementById('nav-toggle');
+            var backdrop = document.getElementById('nav-backdrop');
+            if (!toggle) return;
+            function setOpen(open) {
+                document.body.classList.toggle('nav-open', open);
+                toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                if (backdrop) backdrop.hidden = !open;
+            }
+            toggle.addEventListener('click', function () { setOpen(!document.body.classList.contains('nav-open')); });
+            if (backdrop) backdrop.addEventListener('click', function () { setOpen(false); });
+            document.getElementById('nav-links').querySelectorAll('a').forEach(function (link) {
+                link.addEventListener('click', function () { setOpen(false); });
+            });
+        })();
+    </script>
+</body>
+</html>
