@@ -34,31 +34,50 @@ body {
 
 /* ── RESPONSIVE ── */
 @media (max-width: 900px) {
-  .page { padding: 40px 32px; margin: 20px auto; }
-  .doc-header { flex-direction: column; gap: 20px; }
+  .page { padding: 36px 28px; margin: 16px auto; }
+  .doc-header { flex-direction: column; gap: 16px; }
   .doc-meta { text-align: left; }
   .swatches-row { flex-wrap: wrap; }
-  .swatch { flex: 1 1 calc(50% - 1px); min-width: 140px; }
-  .gradient-grid { grid-template-columns: 1fr 1fr; }
+  .swatch { flex: 1 1 calc(33.33% - 1px); min-width: 120px; }
+  .gradient-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
   .themes-grid { grid-template-columns: 1fr; }
   .comp-grid { grid-template-columns: 1fr 1fr; }
   .type-grid { grid-template-columns: 1fr; }
   .doc-footer { flex-direction: column; gap: 8px; }
   .doc-page-num { position: static; text-align: right; margin-top: 8px; }
+  .ta-nav-links, .tb-nav-links { display: none; }
 }
 
-@media (max-width: 600px) {
-  .page { padding: 28px 18px; margin: 12px; }
+@media (max-width: 640px) {
+  .page { padding: 24px 16px; margin: 10px; }
   .doc-logo img { height: 44px; }
   .doc-logo-text h1 { font-size: 16px; }
+  .swatch { flex: 1 1 calc(50% - 1px); min-width: 100px; }
+  .swatch-color { height: 90px; }
+  .swatch-name { font-size: 10px; }
+  .swatch-usage { font-size: 9px; }
+  .gradient-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .comp-grid { grid-template-columns: 1fr 1fr; }
+  .badge-strip { padding: 14px 16px; gap: 8px; }
+  .print-btn { top: 10px; right: 10px; padding: 8px 14px; font-size: 11px; }
+  .grad-swatch { height: 70px; }
+  .theme-preview { height: auto; min-height: 160px; }
+  .ta-cards, .tb-cards { gap: 5px; }
+  .ta-card, .tb-card { padding: 6px 7px; }
+  .ta-card-n, .tb-card-n { font-size: 13px; }
+  h2.sec-title { font-size: 9px; }
+}
+
+@media (max-width: 400px) {
+  .page { padding: 18px 12px; margin: 6px; }
   .swatch { flex: 1 1 100%; }
-  .swatch-color { height: 80px; }
+  .swatch-color { height: 76px; }
   .gradient-grid { grid-template-columns: 1fr; }
   .comp-grid { grid-template-columns: 1fr; }
-  .badge-strip { gap: 8px; }
-  .print-btn { top: 10px; right: 10px; padding: 8px 14px; font-size: 12px; }
-  .grad-swatch { height: 60px; }
-  .theme-preview { height: auto; min-height: 180px; }
+  .doc-logo-wrap { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .themes-grid { gap: 14px; }
+  .badge-strip { flex-direction: column; }
+  .bdg { text-align: center; }
 }
 
 /* ── HEADER ── */
@@ -668,14 +687,76 @@ body {
   letter-spacing: .1em;
 }
 
-/* ── GRADIENT BAR ── */
+/* ── GRADIENT BAR (animated) ── */
 .grad-hero-bar {
-  height: 8px;
-  background: linear-gradient(90deg, #0e1a40 0%, #1b2e6d 40%, #c1272d 100%);
-  margin-bottom: 0;
+  height: 6px;
   position: absolute;
   top: 0; left: 0; right: 0;
+  overflow: hidden;
 }
+.grad-hero-bar::before {
+  content: '';
+  position: absolute;
+  inset: -200%;
+  background: conic-gradient(
+    from 0deg,
+    #0e1a40, #1b2e6d, #2d4494, #c1272d, #e03540, #c1272d, #1b2e6d, #0e1a40
+  );
+  animation: bar-spin 6s linear infinite;
+}
+@keyframes bar-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── ANIMATED ROTATING GRADIENTS ── */
+/* Each grad-swatch clips a spinning oversized pseudo-element */
+.grad-swatch {
+  position: relative;
+  overflow: hidden;
+}
+.grad-swatch::before {
+  content: '';
+  position: absolute;
+  /* 250% ensures full coverage during rotation */
+  width: 250%; height: 250%;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotate(0deg);
+  animation: grad-spin 6s linear infinite;
+}
+@keyframes grad-spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Each card gets its own gradient on the pseudo-element */
+.grad-card:nth-child(1) .grad-swatch::before {
+  background: linear-gradient(135deg, #0e1a40 0%, #1b2e6d 100%);
+}
+.grad-card:nth-child(2) .grad-swatch::before {
+  background: linear-gradient(135deg, #1b2e6d 0%, #c1272d 100%);
+}
+.grad-card:nth-child(3) .grad-swatch::before {
+  background: linear-gradient(135deg, #0e1a40 0%, #1b2e6d 55%, #c1272d 100%);
+}
+.grad-card:nth-child(4) .grad-swatch::before {
+  background: linear-gradient(135deg, #1b2e6d 0%, #0e1a40 100%);
+}
+.grad-card:nth-child(5) .grad-swatch::before {
+  background: linear-gradient(135deg, #991f24 0%, #c1272d 50%, #e03540 100%);
+}
+.grad-card:nth-child(6) .grad-swatch::before {
+  background: linear-gradient(135deg, #f5f6fa 0%, #c8ccd8 50%, #eef0f8 100%);
+}
+
+/* Stagger each card's animation start so they don't all spin in sync */
+.grad-card:nth-child(1) .grad-swatch::before { animation-delay: 0s; }
+.grad-card:nth-child(2) .grad-swatch::before { animation-delay: -1s; }
+.grad-card:nth-child(3) .grad-swatch::before { animation-delay: -2s; }
+.grad-card:nth-child(4) .grad-swatch::before { animation-delay: -3s; }
+.grad-card:nth-child(5) .grad-swatch::before { animation-delay: -4s; }
+.grad-card:nth-child(6) .grad-swatch::before { animation-delay: -5s; }
+
+/* Pause on hover so user can inspect */
+.grad-card:hover .grad-swatch::before { animation-play-state: paused; }
 
 /* ── PRINT BTN ── */
 .print-btn {
@@ -853,42 +934,42 @@ body {
   <div class="sec-title">03 — Gradient System</div>
   <div class="gradient-grid">
     <div class="grad-card">
-      <div class="grad-swatch" style="background:linear-gradient(135deg,#0e1a40 0%,#1b2e6d 100%)"></div>
+      <div class="grad-swatch"></div>
       <div class="grad-info">
         <div class="grad-name">Navy Depth</div>
         <div class="grad-code">#0E1A40 → #1B2E6D · 135°</div>
       </div>
     </div>
     <div class="grad-card">
-      <div class="grad-swatch" style="background:linear-gradient(135deg,#1b2e6d 0%,#c1272d 100%)"></div>
+      <div class="grad-swatch"></div>
       <div class="grad-info">
         <div class="grad-name">Brand Diagonal</div>
         <div class="grad-code">#1B2E6D → #C1272D · 135°</div>
       </div>
     </div>
     <div class="grad-card">
-      <div class="grad-swatch" style="background:linear-gradient(135deg,#0e1a40 0%,#1b2e6d 55%,#c1272d 100%)"></div>
+      <div class="grad-swatch"></div>
       <div class="grad-info">
         <div class="grad-name">Full Brand Sweep</div>
         <div class="grad-code">#0E1A40 → #1B2E6D → #C1272D</div>
       </div>
     </div>
     <div class="grad-card">
-      <div class="grad-swatch" style="background:linear-gradient(180deg,#1b2e6d 0%,#0e1a40 100%)"></div>
+      <div class="grad-swatch"></div>
       <div class="grad-info">
         <div class="grad-name">Navy Vertical</div>
         <div class="grad-code">#1B2E6D → #0E1A40 · 180°</div>
       </div>
     </div>
     <div class="grad-card">
-      <div class="grad-swatch" style="background:linear-gradient(135deg,#991f24 0%,#c1272d 50%,#e03540 100%)"></div>
+      <div class="grad-swatch"></div>
       <div class="grad-info">
         <div class="grad-name">Crimson Range</div>
         <div class="grad-code">#991F24 → #C1272D → #E03540</div>
       </div>
     </div>
     <div class="grad-card">
-      <div class="grad-swatch" style="background:linear-gradient(135deg,#f5f6fa 0%,#eef0f8 100%)"></div>
+      <div class="grad-swatch"></div>
       <div class="grad-info">
         <div class="grad-name">Light Background</div>
         <div class="grad-code">#F5F6FA → #EEF0F8 · Subtle</div>
