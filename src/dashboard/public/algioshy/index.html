@@ -9,14 +9,18 @@
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --navy:#002147;--navy2:#003366;--navy3:#0d2d52;
-  --gold:#b8841f;--gold-l:#d4a043;--gold-xl:#e8c06a;--gold-d:#8f6315;
-  --white:#fff;--off:#f7f5f1;--cream:#f0ebe2;--warm:#e8e0d4;
-  --border:#d8d0c0;--border2:#e4ddd2;--muted:#5c5045;--dim:#9a8e7e;
-  --ink:#18130e;
+  /* ── Smart College Brand Palette ── */
+  --navy:#1b2e6d;--navy2:#162354;--navy3:#0e1a40;
+  --gold:#c1272d;--gold-l:#d6343a;--gold-xl:#e8565b;--gold-d:#991f24;
+  --white:#fff;--off:#f5f6fa;--cream:#eef0f8;--warm:#e4e7f2;
+  --border:#c8ccd8;--border2:#dde2ee;--muted:#3a3f5c;--dim:#7a7f99;
+  --ink:#0f0f14;
   --font-ar:'Cairo',sans-serif;
   --font-en:'Inter',sans-serif;
   --serif:'Playfair Display',serif;
+  /* ── SC Gradient ── */
+  --grad-brand:linear-gradient(135deg,#0e1a40 0%,#1b2e6d 55%,#c1272d 100%);
+  --grad-navy:linear-gradient(135deg,#0e1a40 0%,#1b2e6d 100%);
 }
 html{scroll-behavior:smooth}
 body{background:var(--off);color:var(--ink);font-family:var(--font-ar);-webkit-font-smoothing:antialiased}
@@ -27,6 +31,8 @@ body.en-mode .ar-text{display:none!important}
 body.en-mode .en-text{display:revert!important}
 .en-text{display:none!important}
 
+/* ── BRAND STRIPE ── */
+.brand-stripe{height:4px;background:var(--grad-brand)}
 /* ── TICKER ── */
 .ticker{background:var(--navy);color:rgba(255,255,255,.55);padding:.4rem 0;overflow:hidden;white-space:nowrap;font-size:.62rem;letter-spacing:.06em}
 .ticker-inner{display:inline-flex;animation:tick 32s linear infinite}
@@ -75,7 +81,7 @@ nav{background:var(--white);border-bottom:1px solid var(--border2);padding:0 3re
 .hero-slide{min-width:100%;position:relative;overflow:hidden}
 .hero-slide img{width:100%;height:100%;object-fit:cover;object-position:center;transition:transform 6s ease}
 .hero-slide.active img{transform:scale(1.06)}
-.hero-slide::after{content:'';position:absolute;inset:0;background:linear-gradient(105deg,rgba(0,21,71,.91) 35%,rgba(0,33,71,.55) 70%,rgba(0,0,0,.2) 100%)}
+.hero-slide::after{content:'';position:absolute;inset:0;background:linear-gradient(105deg,rgba(14,26,64,.93) 35%,rgba(27,46,109,.6) 70%,rgba(0,0,0,.18) 100%)}
 .hero-content{position:relative;z-index:2;display:grid;grid-template-columns:1fr 1fr;min-height:94vh;align-items:center;max-width:1400px;width:100%;margin:0 auto;padding:0 4rem}
 .hero-l{display:flex;flex-direction:column;justify-content:center;padding:5rem 0}
 .h-tag{display:inline-flex;align-items:center;gap:.75rem;margin-bottom:2.2rem}
@@ -93,11 +99,11 @@ body:not(.en-mode) .h-tag{flex-direction:row-reverse}
 .hero-r{display:flex;flex-direction:column;justify-content:center;gap:1.5rem;padding:3rem 0 3rem 3rem;position:relative;z-index:2}
 body:not(.en-mode) .hero-r{padding:3rem 3rem 3rem 0}
 .hero-kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(255,255,255,.08)}
-.hkpi{background:rgba(5,22,60,.6);backdrop-filter:blur(8px);padding:1.5rem 1.2rem;text-align:center;transition:background .2s}
-.hkpi:hover{background:rgba(5,22,60,.8)}
+.hkpi{background:rgba(14,26,64,.65);backdrop-filter:blur(8px);padding:1.5rem 1.2rem;text-align:center;transition:background .2s}
+.hkpi:hover{background:rgba(14,26,64,.85)}
 .hkpi-n{font-size:2rem;font-weight:900;color:var(--gold-xl);font-family:var(--font-ar);line-height:1;letter-spacing:-.02em}
 .hkpi-l{font-size:.6rem;letter-spacing:.1em;color:rgba(255,255,255,.35);margin-top:.35rem;text-transform:uppercase}
-.hero-stages{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(6px);padding:1.4rem}
+.hero-stages{background:rgba(27,46,109,.2);border:1px solid rgba(193,39,45,.18);backdrop-filter:blur(6px);padding:1.4rem}
 .hs-heading{font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:1.1rem;padding-bottom:.75rem;border-bottom:1px solid rgba(255,255,255,.08)}
 .hs-row{display:grid;grid-template-columns:1fr 1fr;gap:.65rem}
 .hs-item{padding:.6rem .75rem;border-right:1px solid rgba(255,255,255,.1)}
@@ -315,6 +321,7 @@ body.en-mode .fb-line{margin-left:0}
 </head>
 <body>
 
+<div class="brand-stripe" aria-hidden="true"></div>
 <!-- Ticker -->
 <div class="ticker" role="marquee" aria-label="أخبار المدرسة">
   <div class="ticker-inner">
@@ -353,12 +360,12 @@ body.en-mode .fb-line{margin-left:0}
 <!-- Nav -->
 <nav id="mainNav">
   <a class="nav-brand" href="#">
-    <div class="nav-monogram"><span class="nav-monogram-letter">ج</span></div>
+    <img src="sc-logo.png" alt="Smart College" style="height:46px;width:auto;object-fit:contain;flex-shrink:0;">
     <div>
       <div class="nav-name-primary ar-text">مدرسة الجيوشي</div>
       <div class="nav-name-primary en-text" style="font-family:'Playfair Display',serif;font-weight:700;font-size:1rem">AlGioshy School</div>
-      <div class="nav-name-secondary ar-text">AlGioshy School · منذ 1998</div>
-      <div class="nav-name-secondary en-text">Est. 1998 · Excellence in Education</div>
+      <div class="nav-name-secondary ar-text">Smart College · منذ 1998</div>
+      <div class="nav-name-secondary en-text">Smart College · Est. 1998</div>
     </div>
   </a>
   <div class="nav-menu">
@@ -781,10 +788,11 @@ body.en-mode .fb-line{margin-left:0}
 <footer>
   <div class="footer-grid">
     <div>
+      <img src="sc-logo.png" alt="Smart College" style="height:52px;width:auto;margin-bottom:.75rem;filter:brightness(0) invert(1);opacity:.85;display:block;">
       <div class="fb-name ar-text">مدرسة الجيوشي</div>
       <div class="fb-name en-text" style="font-family:'Playfair Display',serif;font-weight:700">AlGioshy School</div>
-      <div class="fb-sub ar-text">AlGioshy School · منذ 1998</div>
-      <div class="fb-sub en-text">Est. 1998 · Excellence in Education</div>
+      <div class="fb-sub ar-text">Smart College · منذ 1998</div>
+      <div class="fb-sub en-text">Smart College · Est. 1998</div>
       <div class="fb-line"></div>
       <p class="fb-text ar-text">منذ عام ١٩٩٨ ونحن نبني جيلاً واعياً قادراً على مواجهة تحديات المستقبل بعلم وقيم وإبداع.</p>
       <p class="fb-text en-text">Since 1998, building a generation equipped with knowledge, values, and creativity to face future challenges.</p>

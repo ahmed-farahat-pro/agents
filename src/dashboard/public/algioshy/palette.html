@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart College × AlGioshy — Color Palette Design System</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,700;1,400&family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: #f8f8f8;
+  color: #111;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* ── PRINT / PDF LAYOUT ── */
+@media print {
+  body { background: white; }
+  .page { page-break-after: always; }
+  .no-print { display: none; }
+}
+
+.page {
+  width: 1100px;
+  min-height: 780px;
+  background: white;
+  margin: 40px auto;
+  padding: 64px 72px;
+  box-shadow: 0 4px 40px rgba(0,0,0,.12);
+  position: relative;
+}
+
+/* ── HEADER ── */
+.doc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 52px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid #e0e0e0;
+}
+.doc-logo-wrap {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.doc-logo img {
+  height: 64px;
+  width: auto;
+}
+.doc-logo-text h1 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+  color: #1b2e6d;
+  line-height: 1.1;
+}
+.doc-logo-text p {
+  font-size: 11px;
+  color: #999;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+.doc-meta {
+  text-align: right;
+}
+.doc-meta .doc-tag {
+  display: inline-block;
+  background: #1b2e6d;
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  margin-bottom: 8px;
+}
+.doc-meta p {
+  font-size: 11px;
+  color: #aaa;
+  line-height: 1.6;
+}
+
+/* ── SECTION TITLES ── */
+.sec-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: #bbb;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sec-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e8e8e8;
+}
+
+/* ── COLOR SWATCHES ── */
+.swatches-row {
+  display: flex;
+  gap: 0;
+  margin-bottom: 48px;
+}
+.swatch {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.swatch-color {
+  height: 120px;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  padding: 10px 14px;
+}
+.swatch-hex {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Inter', monospace;
+  letter-spacing: .04em;
+}
+.swatch-info {
+  padding: 12px 14px;
+  background: #fafafa;
+  border: 1px solid #ebebeb;
+  border-top: none;
+}
+.swatch-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 2px;
+}
+.swatch-usage {
+  font-size: 10px;
+  color: #999;
+  line-height: 1.5;
+}
+
+/* PRIMARY PALETTE */
+.sw-navy-deep    { background: #0e1a40; }
+.sw-navy         { background: #1b2e6d; }
+.sw-navy-mid     { background: #2d4494; }
+.sw-crimson-d    { background: #991f24; }
+.sw-crimson      { background: #c1272d; }
+.sw-crimson-l    { background: #e03540; }
+
+/* NEUTRAL PALETTE */
+.sw-ink          { background: #0f0f14; }
+.sw-slate        { background: #3a3f5c; }
+.sw-muted        { background: #7a7f99; }
+.sw-silver       { background: #c8ccd8; }
+.sw-light        { background: #eef0f8; }
+.sw-white        { background: #ffffff; border: 1px solid #e8e8e8; }
+
+/* ── GRADIENTS ── */
+.gradient-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 48px;
+}
+.grad-card {
+  border-radius: 4px;
+  overflow: hidden;
+}
+.grad-swatch {
+  height: 80px;
+}
+.grad-info {
+  background: #fafafa;
+  border: 1px solid #ebebeb;
+  border-top: none;
+  padding: 12px 14px;
+}
+.grad-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 3px;
+}
+.grad-code {
+  font-size: 10px;
+  color: #999;
+  font-family: monospace;
+}
+
+/* ── TYPOGRAPHY ── */
+.type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-bottom: 48px;
+}
+.type-sample {
+  padding: 24px;
+  border: 1px solid #ebebeb;
+  border-radius: 4px;
+  background: #fafafa;
+}
+.type-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: #bbb;
+  margin-bottom: 12px;
+}
+.type-en-h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  color: #1b2e6d;
+  font-weight: 700;
+  line-height: 1.15;
+}
+.type-en-body {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #5c6070;
+  line-height: 1.7;
+  margin-top: 8px;
+}
+.type-ar-h1 {
+  font-family: 'Cairo', sans-serif;
+  font-size: 28px;
+  font-weight: 900;
+  color: #1b2e6d;
+  direction: rtl;
+  line-height: 1.3;
+}
+.type-ar-body {
+  font-family: 'Cairo', sans-serif;
+  font-size: 14px;
+  color: #5c6070;
+  direction: rtl;
+  line-height: 1.9;
+  margin-top: 8px;
+}
+
+/* ── TWO THEMES ── */
+.themes-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 48px;
+}
+.theme-card {
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+}
+.theme-preview {
+  height: 220px;
+  position: relative;
+  overflow: hidden;
+}
+.theme-info {
+  padding: 18px 20px;
+  background: #fafafa;
+  border-top: 1px solid #e0e0e0;
+}
+.theme-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #1b2e6d;
+  margin-bottom: 4px;
+}
+.theme-desc {
+  font-size: 11px;
+  color: #888;
+  line-height: 1.6;
+}
+.theme-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+.theme-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,.1);
+}
+
+/* Theme A — Light Prestige */
+.theme-a-preview {
+  background: #f5f6fa;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ta-nav {
+  background: white;
+  border: 1px solid #e0e5f0;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 4px;
+  box-shadow: 0 1px 6px rgba(27,46,109,.06);
+}
+.ta-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ta-nav-mark {
+  width: 22px;
+  height: 22px;
+  background: #1b2e6d;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ta-nav-mark span {
+  color: white;
+  font-size: 8px;
+  font-weight: 800;
+}
+.ta-nav-title {
+  font-size: 10px;
+  font-weight: 800;
+  color: #1b2e6d;
+}
+.ta-nav-links {
+  display: flex;
+  gap: 10px;
+}
+.ta-nav-links span {
+  font-size: 9px;
+  color: #7a8299;
+}
+.ta-cta {
+  background: #c1272d;
+  color: white;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 2px;
+}
+.ta-hero {
+  background: linear-gradient(135deg, #0e1a40 0%, #1b2e6d 60%, #2d4494 100%);
+  border-radius: 4px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ta-hero-title {
+  font-size: 14px;
+  font-weight: 900;
+  color: white;
+  line-height: 1.2;
+}
+.ta-hero-title em {
+  color: #c1272d;
+  font-style: italic;
+}
+.ta-hero-badge {
+  background: rgba(193,39,45,.2);
+  border: 1px solid rgba(193,39,45,.4);
+  color: #e8565b;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 2px;
+}
+.ta-cards {
+  display: flex;
+  gap: 8px;
+}
+.ta-card {
+  flex: 1;
+  background: white;
+  border: 1px solid #dde2ee;
+  border-top: 3px solid #1b2e6d;
+  border-radius: 3px;
+  padding: 8px 10px;
+}
+.ta-card-n {
+  font-size: 16px;
+  font-weight: 900;
+  color: #1b2e6d;
+  line-height: 1;
+}
+.ta-card-l {
+  font-size: 8px;
+  color: #aaa;
+  margin-top: 2px;
+}
+
+/* Theme B — Dark Prestige */
+.theme-b-preview {
+  background: #0a1225;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tb-nav {
+  background: rgba(27,46,109,.5);
+  border: 1px solid rgba(255,255,255,.08);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 4px;
+}
+.tb-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tb-nav-mark {
+  width: 22px;
+  height: 22px;
+  background: #c1272d;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tb-nav-mark span {
+  color: white;
+  font-size: 8px;
+  font-weight: 800;
+}
+.tb-nav-title {
+  font-size: 10px;
+  font-weight: 800;
+  color: white;
+}
+.tb-nav-links {
+  display: flex;
+  gap: 10px;
+}
+.tb-nav-links span {
+  font-size: 9px;
+  color: rgba(255,255,255,.4);
+}
+.tb-cta {
+  background: #c1272d;
+  color: white;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 2px;
+}
+.tb-hero {
+  background: linear-gradient(135deg, rgba(27,46,109,.9) 0%, rgba(193,39,45,.3) 100%);
+  border: 1px solid rgba(193,39,45,.2);
+  border-radius: 4px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+.tb-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 80% 50%, rgba(193,39,45,.15) 0%, transparent 70%);
+}
+.tb-hero-title {
+  font-size: 14px;
+  font-weight: 900;
+  color: white;
+  line-height: 1.2;
+  position: relative;
+}
+.tb-hero-title em {
+  color: #e8565b;
+  font-style: italic;
+}
+.tb-hero-badge {
+  background: #c1272d;
+  color: white;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 2px;
+  position: relative;
+}
+.tb-cards {
+  display: flex;
+  gap: 8px;
+}
+.tb-card {
+  flex: 1;
+  background: rgba(27,46,109,.3);
+  border: 1px solid rgba(255,255,255,.07);
+  border-top: 2px solid #c1272d;
+  border-radius: 3px;
+  padding: 8px 10px;
+}
+.tb-card-n {
+  font-size: 16px;
+  font-weight: 900;
+  color: #e8565b;
+  line-height: 1;
+}
+.tb-card-l {
+  font-size: 8px;
+  color: rgba(255,255,255,.35);
+  margin-top: 2px;
+}
+
+/* ── UI COMPONENTS ── */
+.comp-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 40px;
+}
+.comp-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+.comp-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #bbb;
+}
+.btn-primary-demo {
+  background: #1b2e6d;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  cursor: default;
+  width: 100%;
+}
+.btn-accent-demo {
+  background: #c1272d;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  cursor: default;
+  width: 100%;
+}
+.btn-outline-demo {
+  background: transparent;
+  color: #1b2e6d;
+  border: 1.5px solid #1b2e6d;
+  padding: 9px 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  cursor: default;
+  width: 100%;
+}
+.btn-ghost-demo {
+  background: transparent;
+  color: #c1272d;
+  border: 1.5px solid #c1272d;
+  padding: 9px 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  cursor: default;
+  width: 100%;
+}
+
+/* ── BADGE STRIP ── */
+.badge-strip {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 40px;
+  padding: 20px 24px;
+  background: #f5f6fa;
+  border: 1px solid #e8eaf0;
+  border-radius: 4px;
+}
+.bdg {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 5px 14px;
+  border-radius: 2px;
+}
+.bdg-navy { background: #1b2e6d; color: white; }
+.bdg-crimson { background: #c1272d; color: white; }
+.bdg-outline-n { background: transparent; color: #1b2e6d; border: 1.5px solid #1b2e6d; }
+.bdg-outline-c { background: transparent; color: #c1272d; border: 1.5px solid #c1272d; }
+.bdg-light { background: #eef0f8; color: #1b2e6d; }
+.bdg-muted { background: #f0f0f5; color: #7a7f99; }
+
+/* ── FOOTER BAR ── */
+.doc-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 24px;
+  border-top: 1px solid #ebebeb;
+  margin-top: 40px;
+}
+.doc-footer-brand {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1b2e6d;
+}
+.doc-footer-meta {
+  font-size: 10px;
+  color: #bbb;
+}
+.doc-page-num {
+  position: absolute;
+  bottom: 28px;
+  right: 72px;
+  font-size: 10px;
+  color: #ccc;
+  letter-spacing: .1em;
+}
+
+/* ── GRADIENT BAR ── */
+.grad-hero-bar {
+  height: 8px;
+  background: linear-gradient(90deg, #0e1a40 0%, #1b2e6d 40%, #c1272d 100%);
+  margin-bottom: 0;
+  position: absolute;
+  top: 0; left: 0; right: 0;
+}
+
+/* ── PRINT BTN ── */
+.print-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #1b2e6d;
+  color: white;
+  border: none;
+  padding: 10px 22px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 4px;
+  z-index: 100;
+  font-family: 'Inter', sans-serif;
+}
+.print-btn:hover { background: #c1272d; }
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">Print / Save PDF</button>
+
+<!-- ═══ PAGE 1 ═══ -->
+<div class="page">
+  <div class="grad-hero-bar"></div>
+
+  <div class="doc-header">
+    <div class="doc-logo-wrap">
+      <div class="doc-logo">
+        <img src="sc-logo.png" alt="Smart College Logo">
+      </div>
+      <div class="doc-logo-text">
+        <h1>Smart College<br>× AlGioshy School</h1>
+        <p>Brand Color System · 2025</p>
+      </div>
+    </div>
+    <div class="doc-meta">
+      <div class="doc-tag">Design System</div>
+      <p>Version 1.0 · April 2025<br>Primary Website Palette</p>
+    </div>
+  </div>
+
+  <!-- PRIMARY PALETTE -->
+  <div class="sec-title">01 — Primary Color Palette</div>
+  <div class="swatches-row" style="margin-bottom:20px">
+    <div class="swatch">
+      <div class="swatch-color sw-navy-deep">
+        <span class="swatch-hex" style="color:rgba(255,255,255,.5)">#0E1A40</span>
+      </div>
+      <div class="swatch-info">
+        <div class="swatch-name">Deep Navy</div>
+        <div class="swatch-usage">Backgrounds · Hero sections · Footer</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color sw-navy">
+        <span class="swatch-hex" style="color:rgba(255,255,255,.6)">#1B2E6D</span>
+      </div>
+      <div class="swatch-info">
+        <div class="swatch-name">SC Navy ★ Primary</div>
+        <div class="swatch-usage">Headings · Nav · Primary CTA</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color sw-navy-mid">
+        <span class="swatch-hex" style="color:rgba(255,255,255,.6)">#2D4494</span>
+      </div>
+      <div class="swatch-info">
+        <div class="swatch-name">Royal Blue</div>
+        <div class="swatch-usage">Hover states · Active links · Cards</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color sw-crimson-d">
+        <span class="swatch-hex" style="color:rgba(255,255,255,.5)">#991F24</span>
+      </div>
+      <div class="swatch-info">
+        <div class="swatch-name">Deep Crimson</div>
+        <div class="swatch-usage">Pressed states · Dark accents</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color sw-crimson">
+        <span class="swatch-hex" style="color:rgba(255,255,255,.7)">#C1272D</span>
+      </div>
+      <div class="swatch-info">
+        <div class="swatch-name">SC Crimson ★ Accent</div>
+        <div class="swatch-usage">Accent CTA · Underlines · Highlights</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color sw-crimson-l">
+        <span class="swatch-hex" style="color:rgba(255,255,255,.7)">#E03540</span>
+      </div>
+      <div class="swatch-info">
+        <div class="swatch-name">Crimson Light</div>
+        <div class="swatch-usage">Hover accents · Inline emphasis</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEUTRAL PALETTE -->
+  <div class="sec-title" style="margin-top:36px">02 — Neutral Palette</div>
+  <div class="swatches-row">
+    <div class="swatch">
+      <div class="swatch-color sw-ink">
+        <span class="swatch-hex" style="color:rgba(255,255,255,.4)">#0F0F14</span>
+      </div>
+      <div class="swatch-info">
+        <div class="swatch-name">Ink Black</div>
+        <div class="swatch-usage">Body text · Icons</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color sw-slate">
+        <span class="swatch-hex" style="color:rgba(255,255,255,.5)">#3A3F5C</span>
+      </div>
+      <div class="swatch-info">
+        <div class="swatch-name">Slate</div>
+        <div class="swatch-usage">Secondary text · Labels</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color sw-muted">
+        <span class="swatch-hex" style="color:rgba(255,255,255,.7)">#7A7F99</span>
+      </div>
+      <div class="swatch-info">
+        <div class="swatch-name">Muted Blue-Gray</div>
+        <div class="swatch-usage">Captions · Placeholders</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color sw-silver">
+        <span class="swatch-hex" style="color:#333">#C8CCD8</span>
+      </div>
+      <div class="swatch-info">
+        <div class="swatch-name">Silver</div>
+        <div class="swatch-usage">Borders · Dividers · Lines</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color sw-light">
+        <span class="swatch-hex" style="color:#555">#EEF0F8</span>
+      </div>
+      <div class="swatch-info">
+        <div class="swatch-name">Light Blue-White</div>
+        <div class="swatch-usage">Section backgrounds · Cards</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color sw-white">
+        <span class="swatch-hex" style="color:#aaa">#FFFFFF</span>
+      </div>
+      <div class="swatch-info">
+        <div class="swatch-name">White</div>
+        <div class="swatch-usage">Nav · Form backgrounds</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="doc-footer">
+    <div class="doc-footer-brand">Smart College × AlGioshy School — Brand System 2025</div>
+    <div class="doc-footer-meta">Confidential · Internal Design Use</div>
+  </div>
+  <div class="doc-page-num">01 / 02</div>
+</div>
+
+<!-- ═══ PAGE 2 ═══ -->
+<div class="page">
+  <div class="grad-hero-bar"></div>
+
+  <!-- GRADIENTS -->
+  <div class="sec-title">03 — Gradient System</div>
+  <div class="gradient-grid">
+    <div class="grad-card">
+      <div class="grad-swatch" style="background:linear-gradient(135deg,#0e1a40 0%,#1b2e6d 100%)"></div>
+      <div class="grad-info">
+        <div class="grad-name">Navy Depth</div>
+        <div class="grad-code">#0E1A40 → #1B2E6D · 135°</div>
+      </div>
+    </div>
+    <div class="grad-card">
+      <div class="grad-swatch" style="background:linear-gradient(135deg,#1b2e6d 0%,#c1272d 100%)"></div>
+      <div class="grad-info">
+        <div class="grad-name">Brand Diagonal</div>
+        <div class="grad-code">#1B2E6D → #C1272D · 135°</div>
+      </div>
+    </div>
+    <div class="grad-card">
+      <div class="grad-swatch" style="background:linear-gradient(135deg,#0e1a40 0%,#1b2e6d 55%,#c1272d 100%)"></div>
+      <div class="grad-info">
+        <div class="grad-name">Full Brand Sweep</div>
+        <div class="grad-code">#0E1A40 → #1B2E6D → #C1272D</div>
+      </div>
+    </div>
+    <div class="grad-card">
+      <div class="grad-swatch" style="background:linear-gradient(180deg,#1b2e6d 0%,#0e1a40 100%)"></div>
+      <div class="grad-info">
+        <div class="grad-name">Navy Vertical</div>
+        <div class="grad-code">#1B2E6D → #0E1A40 · 180°</div>
+      </div>
+    </div>
+    <div class="grad-card">
+      <div class="grad-swatch" style="background:linear-gradient(135deg,#991f24 0%,#c1272d 50%,#e03540 100%)"></div>
+      <div class="grad-info">
+        <div class="grad-name">Crimson Range</div>
+        <div class="grad-code">#991F24 → #C1272D → #E03540</div>
+      </div>
+    </div>
+    <div class="grad-card">
+      <div class="grad-swatch" style="background:linear-gradient(135deg,#f5f6fa 0%,#eef0f8 100%)"></div>
+      <div class="grad-info">
+        <div class="grad-name">Light Background</div>
+        <div class="grad-code">#F5F6FA → #EEF0F8 · Subtle</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TWO THEMES -->
+  <div class="sec-title">04 — Two Theme Concepts</div>
+  <div class="themes-grid">
+    <div class="theme-card">
+      <div class="theme-preview theme-a-preview">
+        <div class="ta-nav">
+          <div class="ta-nav-brand">
+            <div class="ta-nav-mark"><span>SC</span></div>
+            <div class="ta-nav-title">Smart College</div>
+          </div>
+          <div class="ta-nav-links">
+            <span>عن المدرسة</span>
+            <span>البرامج</span>
+            <span>التسجيل</span>
+          </div>
+          <div class="ta-cta">سجّل الآن</div>
+        </div>
+        <div class="ta-hero">
+          <div class="ta-hero-title">حيث يُصنع <em>المستقبل</em><br>بيد الأجيال</div>
+          <div class="ta-hero-badge">منذ 1998</div>
+        </div>
+        <div class="ta-cards">
+          <div class="ta-card"><div class="ta-card-n">2000+</div><div class="ta-card-l">طالب</div></div>
+          <div class="ta-card"><div class="ta-card-n">98%</div><div class="ta-card-l">نجاح</div></div>
+          <div class="ta-card"><div class="ta-card-n">120+</div><div class="ta-card-l">معلم</div></div>
+          <div class="ta-card"><div class="ta-card-n">25+</div><div class="ta-card-l">عام</div></div>
+        </div>
+      </div>
+      <div class="theme-info">
+        <div class="theme-name">Theme A — Light Prestige</div>
+        <div class="theme-desc">Off-white backgrounds with SC Navy headers and Crimson accents. Clean, trustworthy, traditional school feel. Applied to current site.</div>
+        <div class="theme-dots">
+          <div class="theme-dot" style="background:#1b2e6d"></div>
+          <div class="theme-dot" style="background:#c1272d"></div>
+          <div class="theme-dot" style="background:#f5f6fa"></div>
+          <div class="theme-dot" style="background:#ffffff"></div>
+          <div class="theme-dot" style="background:#eef0f8"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-card">
+      <div class="theme-preview theme-b-preview">
+        <div class="tb-nav">
+          <div class="tb-nav-brand">
+            <div class="tb-nav-mark"><span>SC</span></div>
+            <div class="tb-nav-title">Smart College</div>
+          </div>
+          <div class="tb-nav-links">
+            <span>عن المدرسة</span>
+            <span>البرامج</span>
+            <span>التسجيل</span>
+          </div>
+          <div class="tb-cta">سجّل الآن</div>
+        </div>
+        <div class="tb-hero">
+          <div class="tb-hero-title">حيث يُصنع <em>المستقبل</em><br>بيد الأجيال</div>
+          <div class="tb-hero-badge">منذ 1998</div>
+        </div>
+        <div class="tb-cards">
+          <div class="tb-card"><div class="tb-card-n">2000+</div><div class="tb-card-l">طالب</div></div>
+          <div class="tb-card"><div class="tb-card-n">98%</div><div class="tb-card-l">نجاح</div></div>
+          <div class="tb-card"><div class="tb-card-n">120+</div><div class="tb-card-l">معلم</div></div>
+          <div class="tb-card"><div class="tb-card-n">25+</div><div class="tb-card-l">عام</div></div>
+        </div>
+      </div>
+      <div class="theme-info">
+        <div class="theme-name">Theme B — Dark Prestige</div>
+        <div class="theme-desc">Deep navy backgrounds with white text and crimson highlights. Premium, modern, impactful. Best for evening/dark-mode experiences.</div>
+        <div class="theme-dots">
+          <div class="theme-dot" style="background:#0a1225"></div>
+          <div class="theme-dot" style="background:#1b2e6d"></div>
+          <div class="theme-dot" style="background:#c1272d"></div>
+          <div class="theme-dot" style="background:rgba(255,255,255,.9)"></div>
+          <div class="theme-dot" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUTTONS & BADGES -->
+  <div class="sec-title">05 — UI Components</div>
+  <div class="comp-grid">
+    <div class="comp-item">
+      <div class="comp-label">Primary CTA</div>
+      <button class="btn-primary-demo">سجّل الآن</button>
+    </div>
+    <div class="comp-item">
+      <div class="comp-label">Accent CTA</div>
+      <button class="btn-accent-demo">اكتشف المزيد</button>
+    </div>
+    <div class="comp-item">
+      <div class="comp-label">Outline Navy</div>
+      <button class="btn-outline-demo">عن المدرسة</button>
+    </div>
+    <div class="comp-item">
+      <div class="comp-label">Outline Crimson</div>
+      <button class="btn-ghost-demo">تواصل معنا</button>
+    </div>
+  </div>
+
+  <div class="badge-strip">
+    <span class="bdg bdg-navy">مرحلة ابتدائية</span>
+    <span class="bdg bdg-crimson">تسجيل مفتوح</span>
+    <span class="bdg bdg-outline-n">منذ 1998</span>
+    <span class="bdg bdg-outline-c">مقاعد محدودة</span>
+    <span class="bdg bdg-light">KG · Primary · Secondary</span>
+    <span class="bdg bdg-muted">98% Pass Rate</span>
+  </div>
+
+  <div class="doc-footer">
+    <div class="doc-footer-brand">Smart College × AlGioshy School — Brand System 2025</div>
+    <div class="doc-footer-meta">Confidential · Internal Design Use</div>
+  </div>
+  <div class="doc-page-num">02 / 02</div>
+</div>
+
+</body>
+</html>
