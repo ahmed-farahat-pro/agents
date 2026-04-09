@@ -23,6 +23,7 @@
             --accent-breath: #67e8f9;
             --accent-flip: #818cf8;
             --accent-alarm: #f5921e;
+            --accent-mood: #a78bfa;
             --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
             --font-sans: 'Poppins', 'Sakkal Majalla', -apple-system, BlinkMacSystemFont, sans-serif;
         }
@@ -349,6 +350,20 @@
             border-color: rgba(245, 146, 30, 0.35);
         }
 
+        .app-pick.mb::before {
+            background: linear-gradient(90deg, var(--accent-mood), #38bdf8);
+        }
+
+        .app-pick.mb .icon {
+            color: var(--accent-mood);
+            background: rgba(167, 139, 250, 0.1);
+            border-color: rgba(167, 139, 250, 0.35);
+        }
+
+        .app-pick.mb:hover {
+            border-color: rgba(167, 139, 250, 0.45);
+        }
+
         .app-pick h2 {
             font-size: 1.35rem;
             font-weight: 700;
@@ -498,6 +513,15 @@
                 <div class="app-actions">
                     <a class="btn-landing" href="/breakalarm.html">Open landing</a>
                     <a class="btn-dl" href="/downloads/BreakAlarm-1.0.0.dmg" download>Download DMG</a>
+                </div>
+            </article>
+            <article class="app-pick mb">
+                <div class="icon">MB</div>
+                <h2>MoodBoard</h2>
+                <p>Five mood modes — wallpaper shifts on every screen, a phrase streams out, then your media plays with a live wave animation. <span dir="rtl">اسمع دي هتعجبك</span></p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/moodboard.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/MoodBoard-1.0.0.dmg" download>Download DMG</a>
                 </div>
             </article>
         </div>
