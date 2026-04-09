@@ -291,6 +291,108 @@ body.en-mode .fb-line{margin-left:0}
 .footer-bottom a{color:rgba(255,255,255,.2);text-decoration:none;transition:color .2s}
 .footer-bottom a:hover{color:var(--gold-l)}
 
+/* ════════════════════════════════════════
+   THEME B — DARK PRESTIGE
+   Applied when body.dark-mode is present
+   ════════════════════════════════════════ */
+body.dark-mode{
+  --white:#0d1628;
+  --off:#0a1225;
+  --cream:#0e1830;
+  --warm:#111e35;
+  --border:#1e2d50;
+  --border2:#1a2844;
+  --muted:#8b9cc0;
+  --dim:#5c6f99;
+  --ink:#e8ecf8;
+}
+
+/* Dark: body & section backgrounds */
+body.dark-mode{background:var(--off);color:var(--ink)}
+body.dark-mode .section-alt{background:var(--cream)}
+
+/* Dark: nav */
+body.dark-mode nav{
+  background:var(--white);
+  border-bottom-color:var(--border2);
+  box-shadow:0 1px 20px rgba(0,0,0,.4);
+}
+body.dark-mode .nav-menu a{color:var(--muted)}
+body.dark-mode .nav-menu a:hover,
+body.dark-mode .nav-menu a.active{color:#e8ecf8}
+body.dark-mode .mobile-nav{background:var(--white);border-top-color:var(--border2)}
+body.dark-mode .mobile-nav a{color:#e8ecf8;border-bottom-color:var(--border2)}
+body.dark-mode .nav-burger span{background:#e8ecf8}
+
+/* Dark: about float image border */
+body.dark-mode .about-img-float{border-color:var(--off)}
+
+/* Dark: program cards */
+body.dark-mode .prog-card{background:var(--white)}
+body.dark-mode .prog-card{border-left-color:var(--border2)}
+body.dark-mode .prog-card:hover{background:var(--navy)}
+
+/* Dark: enrollment form */
+body.dark-mode .enroll-form-wrap{background:var(--white)}
+body.dark-mode .ef-title{color:#e8ecf8}
+body.dark-mode .ef-sub{color:var(--dim);border-bottom-color:var(--border2)}
+body.dark-mode .fg label{color:#e8ecf8}
+body.dark-mode .fg input,
+body.dark-mode .fg select,
+body.dark-mode .fg textarea{
+  background:var(--off);
+  border-color:var(--border);
+  color:var(--ink);
+}
+body.dark-mode .fg input:focus,
+body.dark-mode .fg select:focus,
+body.dark-mode .fg textarea:focus{
+  border-color:var(--gold);
+  background:var(--cream);
+}
+body.dark-mode .form-ok{border-color:var(--border2)}
+body.dark-mode .form-ok-title{color:#e8ecf8}
+body.dark-mode .form-ok-icon{border-color:#e8ecf8}
+body.dark-mode .form-ok-icon svg{stroke:#e8ecf8}
+
+/* Dark: contact */
+body.dark-mode .ci-mark{border-color:var(--border)}
+body.dark-mode .ci-val{color:var(--ink)}
+body.dark-mode .map-box{border-color:var(--border2)}
+
+/* Dark: gallery & lightbox buttons */
+body.dark-mode .gnav-btn{border-color:var(--border);color:#e8ecf8}
+body.dark-mode .gnav-btn:hover{background:var(--navy);border-color:var(--navy)}
+
+/* Dark: theme toggle icon */
+body.dark-mode .theme-icon-sun{display:none}
+body.dark-mode .theme-icon-moon{display:inline}
+.theme-icon-moon{display:none}
+.theme-icon-sun{display:inline}
+
+/* Dark: smooth transition on everything */
+body,nav,.section,.section-alt,.prog-card,.enroll-form-wrap,
+.mobile-nav,.fg input,.fg select,.fg textarea{
+  transition:background .3s,color .3s,border-color .3s;
+}
+
+/* ── THEME TOGGLE BTN ── */
+.theme-btn{
+  background:none;
+  border:1px solid rgba(255,255,255,.18);
+  color:rgba(255,255,255,.55);
+  padding:.2rem .75rem;
+  font-size:.75rem;
+  cursor:pointer;
+  font-family:inherit;
+  letter-spacing:.06em;
+  transition:all .2s;
+  display:flex;
+  align-items:center;
+  gap:.35rem;
+}
+.theme-btn:hover{border-color:var(--gold);color:var(--gold-l)}
+
 /* ── RESPONSIVE ── */
 @media(max-width:1100px){
   .prog-grid{grid-template-columns:1fr 1fr}
@@ -354,7 +456,13 @@ body.en-mode .fb-line{margin-left:0}
     <a href="#enroll" class="en-text">Admissions</a>
     <a href="#contact" class="en-text">Contact</a>
   </div>
-  <button class="lang-btn" onclick="toggleLang()" id="langBtn">English</button>
+  <div style="display:flex;gap:.6rem;align-items:center">
+    <button class="lang-btn" onclick="toggleLang()" id="langBtn">English</button>
+    <button class="theme-btn" onclick="toggleTheme()" id="themeBtn" aria-label="Toggle dark mode">
+      <span class="theme-icon-sun">☀</span>
+      <span class="theme-icon-moon">☾</span>
+    </button>
+  </div>
 </div>
 
 <!-- Nav -->
@@ -844,6 +952,21 @@ body.en-mode .fb-line{margin-left:0}
 </div>
 
 <script>
+// THEME (dark / light)
+function applyTheme(dark) {
+  document.body.classList.toggle('dark-mode', dark);
+  localStorage.setItem('sc-theme', dark ? 'dark' : 'light');
+}
+function toggleTheme() {
+  applyTheme(!document.body.classList.contains('dark-mode'));
+}
+// Restore saved theme on load
+(function() {
+  const saved = localStorage.getItem('sc-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (saved === 'dark' || (!saved && prefersDark)) applyTheme(true);
+})();
+
 // LANG
 function toggleLang() {
   const en = document.body.classList.toggle('en-mode');
