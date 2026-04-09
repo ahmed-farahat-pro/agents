@@ -296,14 +296,14 @@ body.en-mode .fb-line{margin-left:0}
    Applied when body.dark-mode is present
    ════════════════════════════════════════ */
 body.dark-mode{
-  --white:#0d1628;
-  --off:#0a1225;
-  --cream:#0e1830;
-  --warm:#111e35;
-  --border:#1e2d50;
-  --border2:#1a2844;
-  --muted:#8b9cc0;
-  --dim:#5c6f99;
+  --white:#0f1e45;
+  --off:#091220;
+  --cream:#132248;
+  --warm:#182a55;
+  --border:#243660;
+  --border2:#1c2e55;
+  --muted:#9aaace;
+  --dim:#6070a0;
   --ink:#e8ecf8;
 }
 
@@ -322,6 +322,7 @@ body.dark-mode .nav-menu a:hover,
 body.dark-mode .nav-menu a.active{color:#e8ecf8}
 body.dark-mode .mobile-nav{background:var(--white);border-top-color:var(--border2)}
 body.dark-mode .mobile-nav a{color:#e8ecf8;border-bottom-color:var(--border2)}
+body.dark-mode .mobile-nav button{color:#e8ecf8!important;border-bottom-color:var(--border2)!important}
 body.dark-mode .nav-burger span{background:#e8ecf8}
 
 /* Dark: about float image border */
@@ -377,6 +378,22 @@ body,nav,.section,.section-alt,.prog-card,.enroll-form-wrap,
 }
 
 /* ── THEME TOGGLE BTN ── */
+.theme-btn-nav{display:none} /* shown only on mobile via media query */
+.theme-btn-nav{
+  background:none;
+  border:1px solid var(--border2);
+  color:var(--navy);
+  width:32px;height:32px;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:.85rem;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  transition:all .2s;
+}
+.theme-btn-nav:hover{border-color:var(--gold);color:var(--gold)}
+body.dark-mode .theme-btn-nav{color:#e8ecf8;border-color:var(--border)}
 .theme-btn{
   background:none;
   border:1px solid rgba(255,255,255,.18);
@@ -403,6 +420,7 @@ body,nav,.section,.section-alt,.prog-card,.enroll-form-wrap,
 @media(max-width:768px){
   .topbar,.tb-links,.nav-menu,.nav-cta{display:none}
   .nav-burger{display:flex}
+  .theme-btn-nav{display:flex}
   nav{padding:0 1.5rem}
   .hero-content{grid-template-columns:1fr;padding:0 1.5rem}
   .hero-r{display:none}
@@ -492,9 +510,15 @@ body,nav,.section,.section-alt,.prog-card,.enroll-form-wrap,
   </div>
   <a href="#enroll" class="nav-cta ar-text">سجّل الآن</a>
   <a href="#enroll" class="nav-cta en-text">Apply Now</a>
-  <button class="nav-burger" id="burgerBtn" onclick="toggleMobileNav()" aria-label="Menu">
-    <span></span><span></span><span></span>
-  </button>
+  <div style="display:flex;align-items:center;gap:.5rem">
+    <button class="theme-btn-nav" onclick="toggleTheme()" aria-label="Toggle dark mode">
+      <span class="theme-icon-sun">☀</span>
+      <span class="theme-icon-moon">☾</span>
+    </button>
+    <button class="nav-burger" id="burgerBtn" onclick="toggleMobileNav()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
 </nav>
 <div class="mobile-nav" id="mobileNav">
   <a href="#about" onclick="closeMobileNav()"><span class="ar-text">عن المدرسة</span><span class="en-text">About</span></a>
@@ -503,6 +527,12 @@ body,nav,.section,.section-alt,.prog-card,.enroll-form-wrap,
   <a href="#gallery" onclick="closeMobileNav()"><span class="ar-text">معرض الصور</span><span class="en-text">Gallery</span></a>
   <a href="#enroll" onclick="closeMobileNav()"><span class="ar-text">سجّل الآن</span><span class="en-text">Apply Now</span></a>
   <a href="#contact" onclick="closeMobileNav()"><span class="ar-text">اتصل بنا</span><span class="en-text">Contact</span></a>
+  <button onclick="toggleTheme()" style="padding:.85rem 2rem;font-size:.82rem;font-weight:600;color:var(--navy);background:none;border:none;border-bottom:1px solid var(--border2);text-align:right;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:.5rem;width:100%">
+    <span class="theme-icon-sun" style="font-size:1rem">☀</span>
+    <span class="theme-icon-moon" style="font-size:1rem">☾</span>
+    <span class="ar-text">تبديل المظهر</span>
+    <span class="en-text">Toggle Theme</span>
+  </button>
 </div>
 
 <!-- HERO -->
