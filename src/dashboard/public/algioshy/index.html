@@ -326,8 +326,51 @@ body.dark-mode .mobile-nav button{color:#e8ecf8!important;border-bottom-color:va
 body.dark-mode .lang-btn-nav{color:#e8ecf8!important}
 body.dark-mode .nav-burger span{background:#e8ecf8}
 
-/* Dark: about float image border */
+/* Dark: headings & body text that reference --navy directly */
+body.dark-mode h2{color:#e8ecf8}
+body.dark-mode h2 em{color:var(--gold-l)}
+body.dark-mode .ap-title{color:#e8ecf8}
+body.dark-mode .wi-title{color:#e8ecf8}
+body.dark-mode .prog-title{color:#e8ecf8}
+body.dark-mode .prog-num{color:var(--border)}
+body.dark-mode .hkpi-n{color:var(--gold-xl)}
+body.dark-mode .kicker{color:var(--gold)}
+
+/* Dark: nav brand */
+body.dark-mode .nav-name-primary{color:#e8ecf8}
+body.dark-mode .nav-monogram{border-color:var(--border2)}
+body.dark-mode .nav-monogram-letter{color:#e8ecf8}
+body.dark-mode .nav-cta{background:var(--gold);color:var(--off)}
+
+/* Dark: about section */
 body.dark-mode .about-img-float{border-color:var(--off)}
+body.dark-mode .about-points{border-top-color:var(--border)}
+body.dark-mode .ap{border-bottom-color:var(--border)}
+
+/* Dark: sections & cards */
+body.dark-mode .section{background:var(--off)}
+body.dark-mode .ef-title{color:#e8ecf8}
+body.dark-mode .prog-badge{border-color:var(--border2);color:var(--muted)}
+body.dark-mode .wi{border-bottom-color:var(--border)}
+
+/* Dark: contact icons */
+body.dark-mode .ci-mark svg{stroke:var(--gold)}
+body.dark-mode .ci-label{color:var(--dim)}
+
+/* Dark: form success state */
+body.dark-mode .form-ok-title{color:#e8ecf8}
+body.dark-mode .form-ok-icon{border-color:var(--gold)}
+body.dark-mode .form-ok-icon svg{stroke:var(--gold)}
+body.dark-mode .form-btn{background:var(--gold);color:var(--off)}
+body.dark-mode .form-btn:hover{background:var(--gold-l)}
+
+/* Dark: gallery nav */
+body.dark-mode .gnav-btn{color:#e8ecf8}
+
+/* Dark: photos — subtle overlay lift so images don't look flat */
+body.dark-mode .about-img-main,
+body.dark-mode .about-img-float,
+body.dark-mode .why-img{filter:brightness(.92) contrast(1.04)}
 
 /* Dark: program cards */
 body.dark-mode .prog-card{background:var(--white)}
@@ -374,8 +417,10 @@ body.dark-mode .theme-icon-moon{display:inline}
 
 /* Dark: smooth transition on everything */
 body,nav,.section,.section-alt,.prog-card,.enroll-form-wrap,
-.mobile-nav,.fg input,.fg select,.fg textarea{
-  transition:background .3s,color .3s,border-color .3s;
+.mobile-nav,.fg input,.fg select,.fg textarea,
+h2,.ap-title,.wi-title,.prog-title,.nav-name-primary,.kicker,
+.ci-mark,.ci-label,.ap,.about-points,.wi,.prog-badge,.form-btn{
+  transition:background .3s,color .3s,border-color .3s,filter .3s;
 }
 
 /* ── THEME TOGGLE BTN ── */
