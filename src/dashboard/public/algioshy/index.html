@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="مدرسة سمارت كوليدج - بيئة تعليمية متميزة تجمع بين الأصالة والحداثة. نقدم تعليماً متكاملاً من رياض الأطفال حتى الثانوية العامة.">
-<title>مدرسة سمارت كوليدج | Smart College School</title>
+<meta name="description" content="Smart College School — A complete educational environment blending rigorous curriculum with modern technology. KG through Secondary.">
+<title>Smart College School</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Playfair+Display:ital,wght@0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -1046,9 +1046,11 @@ function applyLang(en) {
 function toggleLang() {
   applyLang(!document.body.classList.contains('en-mode'));
 }
-// Restore saved lang on load
+// Default to English; restore saved lang on load
 (function() {
-  if (localStorage.getItem('sc-lang') === 'en') applyLang(true);
+  const saved = localStorage.getItem('sc-lang');
+  if (saved === 'ar') applyLang(false);
+  else applyLang(true);
 })();
 
 // MOBILE NAV
