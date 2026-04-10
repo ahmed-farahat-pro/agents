@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Nigents Crazy apps — experimental macOS menu bar utilities. AirSound, AppJealousy, Battery DNA, BreathBar, LangFlip, and Break Alarm." />
+    <meta name="description" content="Nigents Crazy apps — experimental macOS utilities. AirSound, AppJealousy, Battery DNA, BreathBar, LangFlip, Break Alarm, MoodBoard, and TiltDJ." />
     <title>Crazy apps — Nigents</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,6 +24,7 @@
             --accent-flip: #818cf8;
             --accent-alarm: #f5921e;
             --accent-mood: #a78bfa;
+            --accent-dj: #e879f9;
             --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
             --font-sans: 'Poppins', 'Sakkal Majalla', -apple-system, BlinkMacSystemFont, sans-serif;
         }
@@ -364,6 +365,20 @@
             border-color: rgba(167, 139, 250, 0.45);
         }
 
+        .app-pick.td::before {
+            background: linear-gradient(90deg, var(--accent-dj), #a78bfa);
+        }
+
+        .app-pick.td .icon {
+            color: var(--accent-dj);
+            background: rgba(232, 121, 249, 0.1);
+            border-color: rgba(232, 121, 249, 0.35);
+        }
+
+        .app-pick.td:hover {
+            border-color: rgba(232, 121, 249, 0.45);
+        }
+
         .app-pick h2 {
             font-size: 1.35rem;
             font-weight: 700;
@@ -522,6 +537,15 @@
                 <div class="app-actions">
                     <a class="btn-landing" href="/moodboard.html">Open landing</a>
                     <a class="btn-dl" href="/downloads/MoodBoard-1.0.0.dmg" download>Download DMG</a>
+                </div>
+            </article>
+            <article class="app-pick td">
+                <div class="icon">DJ</div>
+                <h2>TiltDJ</h2>
+                <p>Eight synth pads, stereo pan, 16-step pattern grid, audio import remix, waveform hot cues and voice drops — a groove box for your Mac desktop while you study.</p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/tiltdj.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/TiltDJ-1.0.0.dmg" download>Download DMG</a>
                 </div>
             </article>
         </div>
