@@ -323,6 +323,7 @@ body.dark-mode .nav-menu a.active{color:#e8ecf8}
 body.dark-mode .mobile-nav{background:var(--white);border-top-color:var(--border2)}
 body.dark-mode .mobile-nav a{color:#e8ecf8;border-bottom-color:var(--border2)}
 body.dark-mode .mobile-nav button{color:#e8ecf8!important;border-bottom-color:var(--border2)!important}
+body.dark-mode .lang-btn-nav{color:#e8ecf8!important}
 body.dark-mode .nav-burger span{background:#e8ecf8}
 
 /* Dark: about float image border */
@@ -378,22 +379,27 @@ body,nav,.section,.section-alt,.prog-card,.enroll-form-wrap,
 }
 
 /* ── THEME TOGGLE BTN ── */
-.theme-btn-nav{display:none} /* shown only on mobile via media query */
-.theme-btn-nav{
+.theme-btn-nav,.lang-btn-nav{display:none} /* shown only on mobile via media query */
+.theme-btn-nav,.lang-btn-nav{
   background:none;
   border:1px solid var(--border2);
   color:var(--navy);
-  width:32px;height:32px;
+  height:32px;
   border-radius:6px;
   cursor:pointer;
-  font-size:.85rem;
+  font-size:.72rem;
+  font-weight:700;
+  font-family:inherit;
+  letter-spacing:.04em;
   display:none;
   align-items:center;
   justify-content:center;
+  padding:0 .7rem;
   transition:all .2s;
 }
-.theme-btn-nav:hover{border-color:var(--gold);color:var(--gold)}
-body.dark-mode .theme-btn-nav{color:#e8ecf8;border-color:var(--border)}
+.theme-btn-nav{width:32px;padding:0}
+.theme-btn-nav:hover,.lang-btn-nav:hover{border-color:var(--gold);color:var(--gold)}
+body.dark-mode .theme-btn-nav,body.dark-mode .lang-btn-nav{color:#e8ecf8;border-color:var(--border)}
 .theme-btn{
   background:none;
   border:1px solid rgba(255,255,255,.18);
@@ -420,7 +426,7 @@ body.dark-mode .theme-btn-nav{color:#e8ecf8;border-color:var(--border)}
 @media(max-width:768px){
   .topbar,.tb-links,.nav-menu,.nav-cta{display:none}
   .nav-burger{display:flex}
-  .theme-btn-nav{display:flex}
+  .theme-btn-nav,.lang-btn-nav{display:flex}
   nav{padding:0 1.5rem}
   .hero-content{grid-template-columns:1fr;padding:0 1.5rem}
   .hero-r{display:none}
@@ -511,6 +517,7 @@ body.dark-mode .theme-btn-nav{color:#e8ecf8;border-color:var(--border)}
   <a href="#enroll" class="nav-cta ar-text">سجّل الآن</a>
   <a href="#enroll" class="nav-cta en-text">Apply Now</a>
   <div style="display:flex;align-items:center;gap:.5rem">
+    <button class="lang-btn-nav" id="langBtnNav" onclick="toggleLang()" aria-label="Toggle language">EN</button>
     <button class="theme-btn-nav" onclick="toggleTheme()" aria-label="Toggle dark mode">
       <span class="theme-icon-sun">☀</span>
       <span class="theme-icon-moon">☾</span>
@@ -527,6 +534,11 @@ body.dark-mode .theme-btn-nav{color:#e8ecf8;border-color:var(--border)}
   <a href="#gallery" onclick="closeMobileNav()"><span class="ar-text">معرض الصور</span><span class="en-text">Gallery</span></a>
   <a href="#enroll" onclick="closeMobileNav()"><span class="ar-text">سجّل الآن</span><span class="en-text">Apply Now</span></a>
   <a href="#contact" onclick="closeMobileNav()"><span class="ar-text">اتصل بنا</span><span class="en-text">Contact</span></a>
+  <button onclick="toggleLang();closeMobileNav()" id="langBtnDrawer" style="padding:.85rem 2rem;font-size:.82rem;font-weight:600;color:var(--navy);background:none;border:none;border-bottom:1px solid var(--border2);text-align:right;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:.5rem;width:100%">
+    <span style="font-size:.8rem;font-weight:800;font-family:var(--font-en)">EN</span>
+    <span class="ar-text">تغيير اللغة — English</span>
+    <span class="en-text">Switch Language — عربي</span>
+  </button>
   <button onclick="toggleTheme()" style="padding:.85rem 2rem;font-size:.82rem;font-weight:600;color:var(--navy);background:none;border:none;border-bottom:1px solid var(--border2);text-align:right;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:.5rem;width:100%">
     <span class="theme-icon-sun" style="font-size:1rem">☀</span>
     <span class="theme-icon-moon" style="font-size:1rem">☾</span>
@@ -998,12 +1010,22 @@ function toggleTheme() {
 })();
 
 // LANG
-function toggleLang() {
-  const en = document.body.classList.toggle('en-mode');
+function applyLang(en) {
+  document.body.classList.toggle('en-mode', en);
   document.getElementById('langBtn').textContent = en ? 'عربي' : 'English';
+  const navBtn = document.getElementById('langBtnNav');
+  if (navBtn) navBtn.textContent = en ? 'ع' : 'EN';
   document.documentElement.lang = en ? 'en' : 'ar';
   document.documentElement.dir = en ? 'ltr' : 'rtl';
+  localStorage.setItem('sc-lang', en ? 'en' : 'ar');
 }
+function toggleLang() {
+  applyLang(!document.body.classList.contains('en-mode'));
+}
+// Restore saved lang on load
+(function() {
+  if (localStorage.getItem('sc-lang') === 'en') applyLang(true);
+})();
 
 // MOBILE NAV
 function toggleMobileNav() {
