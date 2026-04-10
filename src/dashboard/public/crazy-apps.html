@@ -290,75 +290,23 @@
         }
 
         .app-pick .icon {
-            width: 56px;
-            height: 56px;
-            border-radius: 12px;
+            width: 64px;
+            height: 64px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: var(--font-mono);
-            font-size: 13px;
-            font-weight: 700;
             margin-bottom: 16px;
-            border: 1px solid var(--border);
+            overflow: hidden;
+            flex-shrink: 0;
         }
 
-        .app-pick.as .icon {
-            color: var(--accent-orange);
-            background: rgba(255, 87, 10, 0.1);
-            border-color: rgba(255, 87, 10, 0.35);
-        }
-
-        .app-pick.aj .icon {
-            color: var(--accent-heat);
-            background: rgba(255, 61, 92, 0.1);
-            border-color: rgba(255, 61, 92, 0.35);
-        }
-
-        .app-pick.bd .icon {
-            color: var(--accent-volt);
-            background: rgba(45, 212, 191, 0.1);
-            border-color: rgba(45, 212, 191, 0.4);
-        }
-
-        .app-pick.bb::before {
-            background: linear-gradient(90deg, var(--accent-orange), var(--accent-breath));
-        }
-
-        .app-pick.bb .icon {
-            color: var(--accent-breath);
-            background: rgba(103, 232, 249, 0.1);
-            border-color: rgba(103, 232, 249, 0.4);
-        }
-
-        .app-pick.lf::before {
-            background: linear-gradient(90deg, var(--accent-flip), var(--accent-green));
-        }
-
-        .app-pick.lf .icon {
-            color: var(--accent-flip);
-            background: rgba(129, 140, 248, 0.1);
-            border-color: rgba(129, 140, 248, 0.35);
-        }
-
-        .app-pick.ba::before {
-            background: linear-gradient(90deg, var(--accent-alarm), #fbbf5c);
-        }
-
-        .app-pick.ba .icon {
-            color: var(--accent-alarm);
-            background: rgba(245, 146, 30, 0.1);
-            border-color: rgba(245, 146, 30, 0.35);
-        }
-
-        .app-pick.mb::before {
-            background: linear-gradient(90deg, var(--accent-mood), #38bdf8);
-        }
-
-        .app-pick.mb .icon {
-            color: var(--accent-mood);
-            background: rgba(167, 139, 250, 0.1);
-            border-color: rgba(167, 139, 250, 0.35);
+        .app-pick .icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            border-radius: 14px;
         }
 
         .app-pick.mb:hover {
@@ -477,7 +425,7 @@
 
         <div class="app-grid">
             <article class="app-pick as">
-                <div class="icon">AS</div>
+                <div class="icon"><img src="/icons/airsound.png" alt="AirSound icon" loading="lazy"></div>
                 <h2>AirSound</h2>
                 <p>Tilt your MacBook and stereo pans with the motion sensor. Tight bounce loop and a silent center dead zone — best on headphones.</p>
                 <div class="app-actions">
@@ -486,7 +434,7 @@
                 </div>
             </article>
             <article class="app-pick aj">
-                <div class="icon">AJ</div>
+                <div class="icon"><img src="/icons/appjealousy.png" alt="AppJealousy icon" loading="lazy"></div>
                 <h2>AppJealousy</h2>
                 <p>Dock apps react when you ignore them. Adjustable jealousy timer, moods, and optional notifications — playful dock drama.</p>
                 <div class="app-actions">
@@ -495,7 +443,7 @@
                 </div>
             </article>
             <article class="app-pick bd">
-                <div class="icon">BD</div>
+                <div class="icon"><img src="/icons/batterydna.png" alt="Battery DNA icon" loading="lazy"></div>
                 <h2>Battery DNA</h2>
                 <p>Menu bar battery clarity — charge state, cycles, and health context without diving into System Settings.</p>
                 <div class="app-actions">
@@ -504,7 +452,7 @@
                 </div>
             </article>
             <article class="app-pick bb">
-                <div class="icon">BB</div>
+                <div class="icon"><img src="/icons/breathbar.png" alt="BreathBar icon" loading="lazy"></div>
                 <h2>BreathBar</h2>
                 <p>Guided breathing in the menu bar — box, 4-7-8, session rings, streaks, optional focus overlay and break reminders.</p>
                 <div class="app-actions">
@@ -513,7 +461,7 @@
                 </div>
             </article>
             <article class="app-pick lf">
-                <div class="icon">LF</div>
+                <div class="icon"><img src="/icons/langflip.png" alt="LangFlip icon" loading="lazy"></div>
                 <h2>LangFlip</h2>
                 <p>Typed in the wrong keyboard layout? Triple-tap ⌘ to flip mistyped Arabic ↔ English text in-place — no retyping, clipboard untouched.</p>
                 <div class="app-actions">
@@ -522,7 +470,7 @@
                 </div>
             </article>
             <article class="app-pick ba">
-                <div class="icon">BA</div>
+                <div class="icon"><img src="/icons/breakalarm.png" alt="Break Alarm icon" loading="lazy"></div>
                 <h2>Break Alarm</h2>
                 <p>Know how long you've been grinding. Dims every screen, plays a chime, and says your coffee is brewing — so you actually stand up.</p>
                 <div class="app-actions">
@@ -531,7 +479,7 @@
                 </div>
             </article>
             <article class="app-pick mb">
-                <div class="icon">MB</div>
+                <div class="icon"><img src="/icons/moodboard.png" alt="MoodBoard icon" loading="lazy"></div>
                 <h2>MoodBoard</h2>
                 <p>Five mood modes — wallpaper shifts on every screen, a phrase streams out, then your media plays with a live wave animation. <span dir="rtl">اسمع دي هتعجبك</span></p>
                 <div class="app-actions">
@@ -540,7 +488,7 @@
                 </div>
             </article>
             <article class="app-pick td">
-                <div class="icon">DJ</div>
+                <div class="icon"><img src="/icons/tiltdj.png" alt="TiltDJ icon" loading="lazy"></div>
                 <h2>TiltDJ</h2>
                 <p>Eight synth pads, stereo pan, 16-step pattern grid, audio import remix, waveform hot cues and voice drops — a groove box for your Mac desktop while you study.</p>
                 <div class="app-actions">
