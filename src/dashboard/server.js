@@ -96,6 +96,18 @@ app.get('/downloads/:file', (req, res, next) => {
   });
 });
 
+// GLB model files — serve with explicit streaming headers so the Nginx
+// reverse proxy doesn't time out on these large (~10 MB) binary files.
+app.get('/algioshy/models/:file.glb', (req, res) => {
+  const filePath = path.join(__dirname, 'public', 'algioshy', 'models', req.params.file + '.glb');
+  res.setHeader('Content-Type', 'model/gltf-binary');
+  res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
+  res.setHeader('Accept-Ranges', 'bytes');
+  res.sendFile(filePath, (err) => {
+    if (err && !res.headersSent) res.status(404).end();
+  });
+});
+
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.md')) res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
