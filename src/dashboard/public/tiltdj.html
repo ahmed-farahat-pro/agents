@@ -3,301 +3,403 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="TiltDJ — 8 synth pads, stereo pan, 16-step pattern grid, audio import remix, waveform hot cues and voice drops. A groove box for your Mac desktop." />
-    <title>TiltDJ — pads, patterns &amp; remix on Mac · Nigents</title>
+    <meta name="description" content="TiltDJ PRO — 8 synth pads, FX rack, 16-step pattern grid, audio import remix, waveform hot cues and voice drops. A groove box for your Mac desktop." />
+    <title>TiltDJ PRO — pads, FX &amp; remix on Mac · Nigents</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-primary: #09080c;
-            --bg-secondary: #141116;
-            --border: #2a2a35;
-            --text-primary: #ffffff;
-            --text-secondary: #a0a0a0;
-            --text-muted: #666666;
-            --accent-orange: #ff570a;
-            --accent-dj: #e879f9;
-            --accent-dj2: #a78bfa;
-            --accent-green: #19d59e;
-            --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
-            --font-sans: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+            --bg:       #09080c;
+            --bg2:      #111018;
+            --bg3:      #17141f;
+            --border:   #252230;
+            --border2:  #312d3f;
+            --txt:      #ffffff;
+            --txt2:     #9d9ab0;
+            --txt3:     #5a5770;
+            --orange:   #ff570a;
+            --dj:       #e879f9;
+            --dj2:      #a78bfa;
+            --green:    #19d59e;
+            --cyan:     #38bdf8;
+            --mono:     'IBM Plex Mono', ui-monospace, monospace;
+            --sans:     'Poppins', -apple-system, sans-serif;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
         html { scroll-behavior: smooth; }
         body {
-            font-family: var(--font-sans);
-            background: var(--bg-primary);
-            color: var(--text-primary);
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--txt);
             line-height: 1.6;
             min-height: 100vh;
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
         }
 
-        /* grid */
+        /* ── GRID BG ── */
         body::before {
             content: '';
             position: fixed; inset: 0;
             background-image:
-                linear-gradient(rgba(232, 121, 249, 0.04) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(232, 121, 249, 0.04) 1px, transparent 1px);
-            background-size: 60px 60px;
+                linear-gradient(rgba(232,121,249,0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(232,121,249,0.035) 1px, transparent 1px);
+            background-size: 56px 56px;
             pointer-events: none; z-index: 0;
         }
 
-        /* ambient */
+        /* ── AMBIENT ── */
         .ambient {
             position: fixed; inset: 0; pointer-events: none; z-index: 0;
             background:
-                radial-gradient(ellipse 70% 50% at 15% -10%, rgba(232, 121, 249, 0.2) 0%, transparent 70%),
-                radial-gradient(ellipse 55% 45% at 90% 55%, rgba(167, 139, 250, 0.14) 0%, transparent 70%),
-                radial-gradient(ellipse 40% 30% at 50% 115%, rgba(255, 87, 10, 0.08) 0%, transparent 70%);
-            animation: ambientPulse 10s ease-in-out infinite alternate;
+                radial-gradient(ellipse 65% 50% at 10% -5%,  rgba(232,121,249,0.18) 0%, transparent 68%),
+                radial-gradient(ellipse 50% 45% at 92% 55%,  rgba(167,139,250,0.13) 0%, transparent 68%),
+                radial-gradient(ellipse 40% 30% at 50% 110%,  rgba(255,87,10,0.07) 0%, transparent 65%);
+            animation: ambPulse 11s ease-in-out infinite alternate;
         }
-        @keyframes ambientPulse {
-            0%   { opacity: 1; }
-            50%  { opacity: 0.65; }
-            100% { opacity: 1; }
-        }
+        @keyframes ambPulse { from{opacity:1} 55%{opacity:.6} to{opacity:1} }
 
         /* ── NAV ── */
         .nav {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-            padding: 20px 40px;
+            position: fixed; top:0; left:0; right:0; z-index:1000;
+            padding: 18px 40px;
             display: flex; justify-content: space-between; align-items: center;
-            background: linear-gradient(to bottom, var(--bg-primary) 0%, transparent 100%);
+            background: linear-gradient(to bottom, rgba(9,8,12,0.98) 0%, transparent 100%);
+            backdrop-filter: blur(8px);
         }
-        .nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+        .nav-brand { display:flex; align-items:center; gap:12px; text-decoration:none; }
         .nav-logo {
-            width: 40px; height: 40px; background: var(--accent-orange); border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 700; font-size: 20px; color: var(--bg-primary);
+            width:38px; height:38px; background:var(--orange); border-radius:8px;
+            display:flex; align-items:center; justify-content:center;
+            font-weight:800; font-size:19px; color:var(--bg); flex-shrink:0;
         }
-        .nav-title { font-size: 22px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px; }
-        .nav-links { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; justify-content: flex-end; }
-        .nav-link { color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
-        .nav-link:hover { color: var(--text-primary); }
-        .nav-link.active { color: var(--accent-orange); }
+        .nav-title { font-size:21px; font-weight:700; color:var(--txt); letter-spacing:-.5px; }
+        .nav-links { display:flex; align-items:center; gap:22px; flex-wrap:wrap; justify-content:flex-end; }
+        .nav-link { color:var(--txt2); text-decoration:none; font-size:14px; font-weight:500; transition:color .2s; }
+        .nav-link:hover { color:var(--txt); }
+        .nav-link.active { color:var(--orange); }
         .soon-pill {
-            display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 700;
-            letter-spacing: 0.08em; text-transform: uppercase; color: var(--bg-primary);
-            background: var(--accent-orange); padding: 3px 9px; border-radius: 999px; vertical-align: middle;
+            display:inline-block; margin-left:5px; font-size:10px; font-weight:700;
+            letter-spacing:.08em; text-transform:uppercase; color:var(--bg);
+            background:var(--orange); padding:2px 8px; border-radius:999px; vertical-align:middle;
         }
         .nav-cta {
-            padding: 10px 20px; border: 1px solid var(--accent-orange);
-            color: var(--accent-orange); text-decoration: none; font-size: 14px; font-weight: 600; transition: all 0.2s;
+            padding:9px 18px; border:1px solid var(--orange);
+            color:var(--orange); text-decoration:none; font-size:13px; font-weight:600; transition:all .2s;
         }
-        .nav-cta:hover { background: var(--accent-orange); color: var(--bg-primary); }
+        .nav-cta:hover { background:var(--orange); color:var(--bg); }
         .nav-toggle {
-            display: none; width: 44px; height: 44px; align-items: center; justify-content: center;
-            margin-left: auto; background: rgba(255,255,255,0.06); border: 1px solid var(--border);
-            border-radius: 10px; color: var(--text-primary); cursor: pointer;
+            display:none; width:42px; height:42px; align-items:center; justify-content:center;
+            margin-left:auto; background:rgba(255,255,255,.05); border:1px solid var(--border);
+            border-radius:10px; color:var(--txt); cursor:pointer; font-size:22px; flex-shrink:0;
         }
-        .nav-toggle-icon-close { display: none; font-size: 28px; }
-        body.nav-open .nav-toggle-icon-open { display: none; }
-        body.nav-open .nav-toggle-icon-close { display: block; }
-        .nav-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 998; }
-        body.nav-open .nav-backdrop { display: block; }
-        body.nav-open { overflow: hidden; }
-        @media (max-width: 900px) {
-            .nav-toggle { display: flex; }
+        .ntc { display:none; }
+        body.nav-open .nto { display:none; }
+        body.nav-open .ntc { display:block; }
+        .nav-bd { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:998; }
+        body.nav-open .nav-bd { display:block; }
+        body.nav-open { overflow:hidden; }
+
+        @media(max-width:900px){
+            .nav { padding:16px 18px; }
+            .nav-toggle { display:flex; }
             .nav-links {
-                display: none; position: fixed; top: 72px; left: 16px; right: 16px;
-                flex-direction: column; align-items: stretch;
-                background: var(--bg-secondary); border: 1px solid var(--border); padding: 12px; z-index: 999;
+                display:none; position:fixed; top:68px; left:14px; right:14px;
+                flex-direction:column; align-items:stretch;
+                background:var(--bg2); border:1px solid var(--border); padding:12px; z-index:999;
+                border-radius:12px;
             }
-            body.nav-open .nav-links { display: flex; }
-            .nav { padding: 20px 20px; }
+            body.nav-open .nav-links { display:flex; }
         }
 
-        /* ── CONTENT ── */
+        /* ── LAYOUT ── */
         .wrap {
-            position: relative; z-index: 1;
-            max-width: 1040px; margin: 0 auto; padding: 100px 32px 80px;
+            position:relative; z-index:1;
+            max-width:1060px; margin:0 auto; padding:100px 28px 80px;
         }
+        @media(max-width:600px){ .wrap { padding:88px 16px 60px; } }
 
         /* ── HERO ── */
         .hero {
-            display: grid; grid-template-columns: 1fr 1fr;
-            gap: 48px; align-items: center;
-            margin-bottom: 80px;
+            display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center;
+            margin-bottom:80px;
         }
-        @media (max-width: 860px) { .hero { grid-template-columns: 1fr; } }
+        @media(max-width:860px){ .hero { grid-template-columns:1fr; gap:36px; } }
 
-        .hero-left {}
-
-        .hub-badge {
-            font-family: var(--font-mono);
-            font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
-            text-transform: uppercase; color: var(--accent-dj);
-            border: 1px solid rgba(232, 121, 249, 0.35);
-            padding: 8px 14px; display: inline-block; margin-bottom: 20px;
+        .badge {
+            display:inline-flex; align-items:center; gap:8px;
+            font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.13em;
+            text-transform:uppercase; color:var(--dj);
+            border:1px solid rgba(232,121,249,.3); padding:7px 13px;
+            margin-bottom:20px;
         }
+        .badge-dot { width:6px; height:6px; border-radius:50%; background:var(--dj); animation:blink 1.4s ease-in-out infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
 
         h1 {
-            font-size: clamp(2.2rem, 4.5vw, 3.2rem);
-            font-weight: 800; letter-spacing: -0.04em; line-height: 1.08; margin-bottom: 18px;
+            font-size: clamp(2.1rem, 4.5vw, 3.1rem);
+            font-weight:800; letter-spacing:-.04em; line-height:1.07; margin-bottom:18px;
         }
         h1 .grad {
-            background: linear-gradient(90deg, var(--accent-dj) 0%, var(--accent-dj2) 60%, var(--accent-orange) 100%);
-            -webkit-background-clip: text; background-clip: text; color: transparent;
+            background: linear-gradient(100deg, var(--dj) 0%, var(--dj2) 55%, var(--orange) 100%);
+            -webkit-background-clip:text; background-clip:text; color:transparent;
         }
 
         .hero-desc {
-            font-size: 1.05rem; color: var(--text-secondary);
-            max-width: 44ch; margin-bottom: 32px; line-height: 1.7;
+            font-size:1.02rem; color:var(--txt2); max-width:42ch;
+            margin-bottom:30px; line-height:1.75;
         }
 
-        .hero-ctas { display: flex; flex-wrap: wrap; gap: 14px; }
-        .btn-primary {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 14px 28px; background: var(--accent-dj);
-            color: var(--bg-primary); font-size: 14px; font-weight: 700;
-            text-decoration: none; border: none; cursor: pointer;
-            transition: opacity 0.2s, transform 0.15s;
+        .hero-ctas { display:flex; flex-wrap:wrap; gap:12px; }
+        .btn-dl {
+            display:inline-flex; align-items:center; gap:8px;
+            padding:13px 26px; background:var(--dj); color:var(--bg);
+            font-size:14px; font-weight:700; text-decoration:none;
+            transition:opacity .2s, transform .15s; border-radius:2px;
         }
-        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-        .btn-secondary {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 14px 28px; background: transparent;
-            border: 1px solid var(--border); color: var(--text-primary);
-            font-size: 14px; font-weight: 600; text-decoration: none;
-            transition: border-color 0.2s, color 0.2s;
+        .btn-dl:hover { opacity:.88; transform:translateY(-2px); }
+        .btn-dl svg { flex-shrink:0; }
+        .btn-ghost {
+            display:inline-flex; align-items:center; gap:8px;
+            padding:13px 26px; background:transparent;
+            border:1px solid var(--border2); color:var(--txt);
+            font-size:14px; font-weight:600; text-decoration:none;
+            transition:border-color .2s, color .2s; border-radius:2px;
         }
-        .btn-secondary:hover { border-color: var(--accent-dj); color: var(--accent-dj); }
+        .btn-ghost:hover { border-color:var(--dj); color:var(--dj); }
 
-        /* ── LAPTOP MOCKUP ── */
+        .version-tag {
+            margin-top:16px; display:flex; align-items:center; gap:8px;
+            font-size:12px; color:var(--txt3); font-family:var(--mono);
+        }
+        .v-pill {
+            background:rgba(232,121,249,.12); border:1px solid rgba(232,121,249,.3);
+            color:var(--dj); font-size:10px; font-weight:700; letter-spacing:.08em;
+            padding:2px 8px; border-radius:999px; text-transform:uppercase;
+        }
+
+        /* ── LAPTOP ── */
         .laptop-wrap {
-            position: relative;
-            display: flex; align-items: center; justify-content: center;
+            position:relative; display:flex; align-items:center; justify-content:center;
         }
         .laptop-glow {
-            position: absolute; inset: -30px;
-            background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(232, 121, 249, 0.18), transparent 70%);
-            pointer-events: none;
+            position:absolute; inset:-40px;
+            background:radial-gradient(ellipse 75% 60% at 50% 50%, rgba(232,121,249,.16), transparent 70%);
+            pointer-events:none;
         }
-        .laptop-svg { width: 100%; max-width: 520px; filter: drop-shadow(0 24px 48px rgba(232, 121, 249, 0.2)); }
+        .laptop-svg {
+            width:100%; max-width:500px;
+            filter:drop-shadow(0 20px 44px rgba(232,121,249,.18));
+        }
+        @media(max-width:860px){
+            .laptop-wrap { max-width:420px; margin:0 auto; }
+        }
 
-        /* ── FEATURES ── */
-        .section-label {
-            font-family: var(--font-mono); font-size: 11px; font-weight: 700;
-            letter-spacing: 0.14em; text-transform: uppercase;
-            color: var(--accent-dj); margin-bottom: 12px; display: block;
+        /* ── DIVIDER ── */
+        .divider {
+            height:1px; background:linear-gradient(90deg, transparent, var(--border2), transparent);
+            margin:64px 0;
         }
-        .section-title {
-            font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 800;
-            letter-spacing: -0.03em; margin-bottom: 10px;
-        }
-        .section-sub { color: var(--text-secondary); font-size: 1rem; margin-bottom: 40px; }
 
-        .features-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px; margin-bottom: 72px;
+        /* ── SECTION HEADER ── */
+        .sec-label {
+            font-family:var(--mono); font-size:11px; font-weight:700;
+            letter-spacing:.14em; text-transform:uppercase;
+            color:var(--dj); margin-bottom:10px; display:block;
         }
+        .sec-title {
+            font-size:clamp(1.5rem, 2.8vw, 2.1rem); font-weight:800;
+            letter-spacing:-.03em; margin-bottom:8px;
+        }
+        .sec-sub { color:var(--txt2); font-size:.97rem; margin-bottom:38px; }
+
+        /* ── FEATURES GRID ── */
+        .feat-grid {
+            display:grid; grid-template-columns:repeat(auto-fit, minmax(268px, 1fr));
+            gap:18px; margin-bottom:64px;
+        }
+        @media(max-width:600px){ .feat-grid { grid-template-columns:1fr; } }
 
         .feat {
-            background: var(--bg-secondary); border: 1px solid var(--border);
-            border-radius: 14px; padding: 26px;
-            position: relative; overflow: hidden;
-            transition: border-color 0.25s, transform 0.25s;
+            background:var(--bg2); border:1px solid var(--border);
+            border-radius:14px; padding:24px;
+            position:relative; overflow:hidden;
+            transition:border-color .25s, transform .25s;
         }
-        .feat::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-            background: linear-gradient(90deg, var(--accent-dj), var(--accent-dj2));
-            opacity: 0; transition: opacity 0.25s;
+        .feat::after {
+            content:''; position:absolute; top:0; left:0; right:0; height:2px;
+            background:linear-gradient(90deg, var(--dj), var(--dj2));
+            opacity:0; transition:opacity .25s;
         }
-        .feat:hover { transform: translateY(-3px); border-color: rgba(232, 121, 249, 0.4); }
-        .feat:hover::before { opacity: 1; }
+        .feat:hover { transform:translateY(-3px); border-color:rgba(232,121,249,.35); }
+        .feat:hover::after { opacity:1; }
 
         .feat-icon {
-            width: 44px; height: 44px; border-radius: 10px;
-            background: rgba(232, 121, 249, 0.1); border: 1px solid rgba(232, 121, 249, 0.3);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 20px; margin-bottom: 16px;
+            width:42px; height:42px; border-radius:10px;
+            background:rgba(232,121,249,.08); border:1px solid rgba(232,121,249,.25);
+            display:flex; align-items:center; justify-content:center;
+            font-family:var(--mono); font-size:11px; font-weight:800;
+            color:var(--dj); letter-spacing:.04em;
+            margin-bottom:14px; flex-shrink:0;
         }
-        .feat h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
-        .feat p { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; }
+        .feat h3 { font-size:.97rem; font-weight:700; margin-bottom:7px; }
+        .feat p { font-size:.85rem; color:var(--txt2); line-height:1.62; }
 
-        /* kbd */
+        /* accent variants */
+        .feat.v-purple .feat-icon { background:rgba(167,139,250,.08); border-color:rgba(167,139,250,.25); color:var(--dj2); }
+        .feat.v-green  .feat-icon { background:rgba(25,213,158,.08);  border-color:rgba(25,213,158,.25);  color:var(--green); }
+        .feat.v-orange .feat-icon { background:rgba(255,87,10,.08);   border-color:rgba(255,87,10,.25);   color:var(--orange); }
+        .feat.v-cyan   .feat-icon { background:rgba(56,189,248,.08);  border-color:rgba(56,189,248,.25);  color:var(--cyan); }
+        .feat.v-red    .feat-icon { background:rgba(248,113,113,.08); border-color:rgba(248,113,113,.25); color:#f87171; }
+
         .kbd {
-            display: inline-block; font-size: 0.72rem; font-weight: 600;
-            padding: 2px 7px; border-radius: 5px; background: #1e1a2a;
-            border: 1px solid var(--border); color: var(--text-primary);
-            font-family: ui-monospace, monospace;
+            display:inline-block; font-size:.7rem; font-weight:600;
+            padding:1px 6px; border-radius:5px; background:#1a1626;
+            border:1px solid var(--border2); color:var(--txt); font-family:ui-monospace,monospace;
         }
 
-        /* ── WAVE VIZ SECTION ── */
-        .viz-section {
-            background: var(--bg-secondary); border: 1px solid var(--border);
-            border-radius: 16px; padding: 36px; margin-bottom: 72px; overflow: hidden; position: relative;
+        /* ── WAVE VIZ ── */
+        .viz-box {
+            background:var(--bg2); border:1px solid var(--border);
+            border-radius:16px; padding:32px; margin-bottom:64px;
+            position:relative; overflow:hidden;
         }
-        .viz-section::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-            background: linear-gradient(90deg, var(--accent-dj), var(--accent-dj2), var(--accent-orange));
+        .viz-box::before {
+            content:''; position:absolute; top:0; left:0; right:0; height:2px;
+            background:linear-gradient(90deg, var(--dj), var(--dj2), var(--orange));
         }
-        #wave-canvas { width: 100%; height: 80px; display: block; }
+        #wave-canvas { width:100%; height:72px; display:block; border-radius:6px; }
 
-        /* ── PAD GRID ── */
+        /* pads demo */
         .pads-demo {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
-            margin-top: 24px; max-width: 360px;
+            display:grid; grid-template-columns:repeat(4,1fr); gap:7px;
+            margin-top:22px;
         }
+        @media(max-width:400px){ .pads-demo { grid-template-columns:repeat(4,1fr); gap:5px; } }
         .pad {
-            aspect-ratio: 1; border-radius: 8px;
-            border: 1px solid var(--border);
-            background: rgba(232, 121, 249, 0.06);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: 4px; font-size: 11px; font-weight: 600; color: var(--text-secondary);
-            cursor: pointer; transition: background 0.1s, border-color 0.1s, transform 0.08s;
-            user-select: none;
+            aspect-ratio:1; border-radius:8px;
+            border:1px solid var(--border);
+            background:rgba(232,121,249,.05);
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            gap:3px; font-family:var(--mono); font-size:9px; font-weight:700; color:var(--txt2);
+            cursor:pointer; transition:background .1s, border-color .1s, transform .08s;
+            user-select:none; padding:4px;
         }
-        .pad:hover { background: rgba(232, 121, 249, 0.15); border-color: rgba(232, 121, 249, 0.5); }
-        .pad.hit { background: rgba(232, 121, 249, 0.35) !important; border-color: var(--accent-dj) !important; transform: scale(0.95); }
-        .pad-emoji { font-size: 18px; }
+        .pad:hover { background:rgba(232,121,249,.15); border-color:rgba(232,121,249,.5); color:var(--dj); }
+        .pad.hit { background:rgba(232,121,249,.32)!important; border-color:var(--dj)!important; transform:scale(.93); color:var(--dj); }
+        .pad-lbl { font-size:8px; line-height:1; }
 
-        /* ── INSTALL ── */
+        /* step sequencer */
+        .seq-row { display:flex; gap:4px; flex-wrap:wrap; margin-top:18px; }
+        .stp {
+            width:20px; height:20px; border-radius:4px; flex-shrink:0;
+            border:1px solid var(--border); background:rgba(255,255,255,.02);
+            transition:background .1s;
+        }
+        .stp.on  { background:var(--dj); border-color:var(--dj); box-shadow:0 0 7px rgba(232,121,249,.5); }
+        .stp.cur { background:rgba(232,121,249,.25); border-color:var(--dj); }
+        @media(max-width:400px){ .stp { width:17px; height:17px; } }
+
+        /* FX knobs strip */
+        .fx-strip {
+            display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-top:22px;
+        }
+        @media(max-width:560px){ .fx-strip { grid-template-columns:repeat(3,1fr); } }
+        @media(max-width:340px){ .fx-strip { grid-template-columns:repeat(2,1fr); } }
+
+        .fx-knob {
+            display:flex; flex-direction:column; align-items:center; gap:6px;
+        }
+        .knob {
+            width:42px; height:42px; border-radius:50%;
+            border:2px solid var(--border2);
+            background:var(--bg3);
+            position:relative;
+            cursor:pointer;
+            transition:border-color .2s;
+        }
+        .knob::after {
+            content:''; position:absolute;
+            top:50%; left:50%;
+            width:3px; height:14px;
+            background:var(--dj); border-radius:2px;
+            transform-origin:bottom center;
+            transform:translateX(-50%) rotate(-135deg);
+            transition:transform .3s, background .2s;
+        }
+        .knob[data-color="blue"]   { border-color:rgba(56,189,248,.5); }
+        .knob[data-color="blue"]::after   { background:var(--cyan); }
+        .knob[data-color="green"]  { border-color:rgba(25,213,158,.5); }
+        .knob[data-color="green"]::after  { background:var(--green); }
+        .knob[data-color="purple"] { border-color:rgba(167,139,250,.5); }
+        .knob[data-color="purple"]::after { background:var(--dj2); }
+        .knob[data-color="red"]    { border-color:rgba(248,113,113,.5); }
+        .knob[data-color="red"]::after    { background:#f87171; }
+        .knob[data-color="yellow"] { border-color:rgba(251,191,36,.5); }
+        .knob[data-color="yellow"]::after { background:#fbbf24; }
+        .knob[data-color="cyan"]   { border-color:rgba(103,232,249,.5); }
+        .knob[data-color="cyan"]::after   { background:#67e8f9; }
+
+        .fx-knob span {
+            font-family:var(--mono); font-size:9px; font-weight:700;
+            color:var(--txt3); letter-spacing:.06em; text-transform:uppercase; text-align:center;
+        }
+        .fx-val {
+            font-size:10px; font-weight:600; font-family:var(--mono);
+        }
+
+        /* ── INSTALL BOX ── */
         .install-box {
-            background: var(--bg-secondary); border: 1px solid var(--border);
-            border-radius: 14px; padding: 32px; margin-bottom: 72px;
+            background:var(--bg2); border:1px solid var(--border);
+            border-radius:16px; padding:36px; margin-bottom:64px;
+            position:relative; overflow:hidden;
+        }
+        .install-box::before {
+            content:''; position:absolute; top:0; left:0; right:0; height:2px;
+            background:linear-gradient(90deg, var(--dj2), var(--dj));
         }
         .install-box pre {
-            background: #08070c; border: 1px solid var(--border); border-radius: 10px;
-            padding: 16px 20px; font-size: 0.82rem; color: #e879f9;
-            font-family: ui-monospace, monospace; overflow-x: auto; margin: 16px 0;
+            background:#07060b; border:1px solid var(--border); border-radius:10px;
+            padding:16px 20px; font-size:.78rem; color:var(--dj);
+            font-family:ui-monospace,monospace; overflow-x:auto; margin:18px 0; line-height:1.7;
         }
-        .install-box p { color: var(--text-secondary); font-size: 0.9rem; margin-top: 12px; }
-        .install-box code { color: var(--accent-dj2); font-size: 0.85em; font-family: ui-monospace, monospace; }
+        .install-box p { color:var(--txt2); font-size:.88rem; }
+        .install-box code { color:var(--dj2); font-size:.84em; font-family:ui-monospace,monospace; }
 
-        /* ── STEP GRID ── */
-        .steps-row {
-            display: flex; gap: 4px; flex-wrap: wrap; margin-top: 16px; align-items: center;
+        .install-meta {
+            display:flex; flex-wrap:wrap; gap:20px; margin-top:20px;
         }
-        .step {
-            width: 22px; height: 22px; border-radius: 4px;
-            border: 1px solid var(--border); background: rgba(255,255,255,0.03);
-            transition: background 0.1s;
+        .im-item {
+            display:flex; flex-direction:column; gap:3px;
         }
-        .step.on { background: var(--accent-dj); border-color: var(--accent-dj); box-shadow: 0 0 8px rgba(232,121,249,0.5); }
-        .step.play { background: rgba(232,121,249,0.3); border-color: var(--accent-dj); }
+        .im-label { font-size:10px; font-family:var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--txt3); }
+        .im-value { font-size:13px; font-weight:600; color:var(--txt); }
 
         /* ── FOOT ── */
         .foot {
-            border-top: 1px solid var(--border); padding-top: 28px;
-            font-size: 0.85rem; color: var(--text-muted);
+            border-top:1px solid var(--border); padding-top:24px;
+            font-size:.82rem; color:var(--txt3);
         }
-        .foot a { color: var(--accent-orange); text-decoration: none; }
-        .foot a:hover { text-decoration: underline; }
+        .foot a { color:var(--orange); text-decoration:none; }
+        .foot a:hover { text-decoration:underline; }
 
-        /* ── SCROLL REVEAL ── */
-        .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
-        .reveal.visible { opacity: 1; transform: none; }
+        /* ── REVEAL ── */
+        .reveal { opacity:0; transform:translateY(22px); transition:opacity .6s ease, transform .6s ease; }
+        .reveal.visible { opacity:1; transform:none; }
 
-        @media (max-width: 600px) {
-            .wrap { padding: 90px 20px 60px; }
-            .hero { gap: 36px; }
+        /* viz wrapper flex on desktop */
+        .viz-bottom {
+            display:grid; grid-template-columns:1fr 1fr; gap:28px; margin-top:22px;
         }
+        @media(max-width:640px){ .viz-bottom { grid-template-columns:1fr; } }
+
+        .seq-meta {
+            font-size:11px; color:var(--txt3); margin-top:8px;
+            font-family:var(--mono);
+        }
+        .seq-meta .hl { color:var(--dj); font-weight:700; }
     </style>
 </head>
 <body>
@@ -309,9 +411,9 @@
             <div class="nav-logo">N</div>
             <span class="nav-title">Nigents</span>
         </a>
-        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu">
-            <span class="nav-toggle-icon-open">☰</span>
-            <span class="nav-toggle-icon-close">×</span>
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false">
+            <span class="nto">&#9776;</span>
+            <span class="ntc">&#10005;</span>
         </button>
         <div class="nav-links" id="nav-links">
             <a href="/" class="nav-link">Home</a>
@@ -320,305 +422,334 @@
             <a href="/crazy-apps.html" class="nav-link active">Crazy apps</a>
             <a href="/opencode-kits.html" class="nav-link">OpenCode kits <span class="soon-pill">Soon</span></a>
             <a href="/bonyad/" class="nav-link">Bonyad</a>
-            <a href="/login.html" class="nav-cta">Login →</a>
+            <a href="/login.html" class="nav-cta">Login &rarr;</a>
         </div>
     </nav>
-    <div class="nav-backdrop" id="nav-backdrop" hidden></div>
+    <div class="nav-bd" id="nav-bd"></div>
 
     <div class="wrap">
 
         <!-- HERO -->
         <section class="hero">
-            <div class="hero-left reveal">
-                <span class="hub-badge">macOS · Crazy apps · v1.0</span>
+            <div class="reveal">
+                <div class="badge"><span class="badge-dot"></span>macOS &middot; Crazy apps</div>
                 <h1>Make beats.<br><span class="grad">While you study.</span></h1>
-                <p class="hero-desc">Eight synth pads, stereo pan, a 16-step song grid, audio import with speed remix, waveform hot cues, and voice drops — all in one desktop window.</p>
+                <p class="hero-desc">Eight synth pads, a full FX rack with 6 real-time effects, 16-step pattern grid, audio import with remix controls, waveform hot cues, and voice drops — all in one Mac window.</p>
                 <div class="hero-ctas">
-                    <a class="btn-primary" href="/downloads/TiltDJ-1.0.0.dmg" download>
-                        ↓ Download DMG &nbsp;<small style="opacity:.7;font-weight:400">macOS 14+</small>
+                    <a class="btn-dl" href="/downloads/TiltDJ-Remix-Edition.dmg" download>
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M3.5 6l3.5 4 3.5-4M1 11h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        Download DMG &nbsp;<small style="opacity:.65;font-weight:400">macOS 14+</small>
                     </a>
-                    <a class="btn-secondary" href="/crazy-apps.html">← All Crazy apps</a>
+                    <a class="btn-ghost" href="/crazy-apps.html">
+                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8 2L4 6.5 8 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        All Crazy apps
+                    </a>
+                </div>
+                <div class="version-tag">
+                    <span class="v-pill">PRO v2.0</span>
+                    Remix Edition &middot; 816 KB &middot; Unsigned DMG
                 </div>
             </div>
 
             <!-- LAPTOP MOCKUP -->
             <div class="laptop-wrap reveal">
                 <div class="laptop-glow"></div>
-                <svg class="laptop-svg" viewBox="0 0 540 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <!-- laptop base -->
-                    <rect x="40" y="30" width="460" height="290" rx="14" fill="#141116" stroke="#2a2a35" stroke-width="1.5"/>
-                    <!-- screen bezel -->
-                    <rect x="52" y="42" width="436" height="266" rx="8" fill="#09080c"/>
-                    <!-- camera dot -->
-                    <circle cx="270" cy="38" r="3" fill="#2a2a35"/>
-                    <!-- laptop hinge / base -->
-                    <rect x="0" y="322" width="540" height="18" rx="4" fill="#1a1820" stroke="#2a2a35" stroke-width="1"/>
-                    <rect x="180" y="322" width="180" height="8" rx="4" fill="#141116"/>
+                <svg class="laptop-svg" viewBox="0 0 540 388" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <!-- chassis -->
+                    <rect x="36" y="28" width="468" height="296" rx="14" fill="#141116" stroke="#252230" stroke-width="1.5"/>
+                    <rect x="48" y="40" width="444" height="272" rx="8" fill="#09080c"/>
+                    <circle cx="270" cy="36" r="3" fill="#252230"/>
+                    <!-- base -->
+                    <rect x="0" y="326" width="540" height="16" rx="4" fill="#1a1720" stroke="#252230" stroke-width="1"/>
+                    <rect x="185" y="326" width="170" height="7" rx="3.5" fill="#141116"/>
 
-                    <!-- ── SCREEN CONTENT ── -->
-                    <!-- header bar in app -->
-                    <rect x="52" y="42" width="436" height="24" rx="0" fill="#0f0d14"/>
-                    <circle cx="70" cy="54" r="4" fill="#ff5f57"/>
-                    <circle cx="84" cy="54" r="4" fill="#ffbd2e"/>
-                    <circle cx="98" cy="54" r="4" fill="#28c840"/>
-                    <text x="270" y="58" text-anchor="middle" font-size="9" fill="#666" font-family="ui-monospace,monospace" font-weight="600">TiltDJ  v1.0</text>
+                    <!-- title bar -->
+                    <rect x="48" y="40" width="444" height="22" fill="#0d0b13"/>
+                    <circle cx="64" cy="51" r="4" fill="#ff5f57"/>
+                    <circle cx="78" cy="51" r="4" fill="#ffbd2e"/>
+                    <circle cx="92" cy="51" r="4" fill="#28c840"/>
+                    <text x="270" y="55" text-anchor="middle" font-size="8" fill="#5a5770" font-family="ui-monospace,monospace" font-weight="600">TiltDJ PRO  v2.0  Remix Edition</text>
 
-                    <!-- ── PAD GRID (left) ── -->
-                    <!-- 8 pads in 2×4 -->
-                    <g id="pads">
-                        <!-- row 1 -->
-                        <rect x="64"  y="78" width="44" height="38" rx="5" fill="#1e1a2a" stroke="#3a3450" stroke-width="1" class="lpad"/>
-                        <rect x="114" y="78" width="44" height="38" rx="5" fill="#1e1a2a" stroke="#3a3450" stroke-width="1" class="lpad"/>
-                        <rect x="164" y="78" width="44" height="38" rx="5" fill="#1e1a2a" stroke="#3a3450" stroke-width="1" class="lpad"/>
-                        <rect x="214" y="78" width="44" height="38" rx="5" fill="#1e1a2a" stroke="#3a3450" stroke-width="1" class="lpad"/>
-                        <!-- row 2 -->
-                        <rect x="64"  y="122" width="44" height="38" rx="5" fill="#1e1a2a" stroke="#3a3450" stroke-width="1" class="lpad"/>
-                        <rect x="114" y="122" width="44" height="38" rx="5" fill="#1e1a2a" stroke="#3a3450" stroke-width="1" class="lpad"/>
-                        <rect x="164" y="122" width="44" height="38" rx="5" fill="#1e1a2a" stroke="#3a3450" stroke-width="1" class="lpad"/>
-                        <rect x="214" y="122" width="44" height="38" rx="5" fill="#1e1a2a" stroke="#3a3450" stroke-width="1" class="lpad"/>
-                        <!-- labels -->
-                        <text x="86"  y="101" text-anchor="middle" font-size="7" fill="#a78bfa" font-family="ui-monospace,monospace">KICK</text>
-                        <text x="136" y="101" text-anchor="middle" font-size="7" fill="#a78bfa" font-family="ui-monospace,monospace">SNARE</text>
-                        <text x="186" y="101" text-anchor="middle" font-size="7" fill="#a78bfa" font-family="ui-monospace,monospace">HAT</text>
-                        <text x="236" y="101" text-anchor="middle" font-size="7" fill="#a78bfa" font-family="ui-monospace,monospace">CLAP</text>
-                        <text x="86"  y="145" text-anchor="middle" font-size="7" fill="#a78bfa" font-family="ui-monospace,monospace">BASS</text>
-                        <text x="136" y="145" text-anchor="middle" font-size="7" fill="#a78bfa" font-family="ui-monospace,monospace">RISER</text>
-                        <text x="186" y="145" text-anchor="middle" font-size="7" fill="#a78bfa" font-family="ui-monospace,monospace">CHOP</text>
-                        <text x="236" y="145" text-anchor="middle" font-size="7" fill="#a78bfa" font-family="ui-monospace,monospace">HORN</text>
+                    <!-- ── PAD GRID ── -->
+                    <g id="svgPads">
+                        <rect x="58"  y="74" width="42" height="36" rx="5" fill="#1e1a2a" stroke="#312d3f" stroke-width="1"/>
+                        <rect x="105" y="74" width="42" height="36" rx="5" fill="#1e1a2a" stroke="#312d3f" stroke-width="1"/>
+                        <rect x="152" y="74" width="42" height="36" rx="5" fill="#1e1a2a" stroke="#312d3f" stroke-width="1"/>
+                        <rect x="199" y="74" width="42" height="36" rx="5" fill="#1e1a2a" stroke="#312d3f" stroke-width="1"/>
+                        <rect x="58"  y="116" width="42" height="36" rx="5" fill="#1e1a2a" stroke="#312d3f" stroke-width="1"/>
+                        <rect x="105" y="116" width="42" height="36" rx="5" fill="#1e1a2a" stroke="#312d3f" stroke-width="1"/>
+                        <rect x="152" y="116" width="42" height="36" rx="5" fill="#1e1a2a" stroke="#312d3f" stroke-width="1"/>
+                        <rect x="199" y="116" width="42" height="36" rx="5" fill="#1e1a2a" stroke="#312d3f" stroke-width="1"/>
+                        <text x="79"  y="95"  text-anchor="middle" font-size="6.5" fill="#a78bfa" font-family="ui-monospace,monospace">KICK</text>
+                        <text x="126" y="95"  text-anchor="middle" font-size="6.5" fill="#a78bfa" font-family="ui-monospace,monospace">SNARE</text>
+                        <text x="173" y="95"  text-anchor="middle" font-size="6.5" fill="#a78bfa" font-family="ui-monospace,monospace">HAT</text>
+                        <text x="220" y="95"  text-anchor="middle" font-size="6.5" fill="#a78bfa" font-family="ui-monospace,monospace">CLAP</text>
+                        <text x="79"  y="137" text-anchor="middle" font-size="6.5" fill="#a78bfa" font-family="ui-monospace,monospace">BASS</text>
+                        <text x="126" y="137" text-anchor="middle" font-size="6.5" fill="#a78bfa" font-family="ui-monospace,monospace">RISER</text>
+                        <text x="173" y="137" text-anchor="middle" font-size="6.5" fill="#a78bfa" font-family="ui-monospace,monospace">CHOP</text>
+                        <text x="220" y="137" text-anchor="middle" font-size="6.5" fill="#a78bfa" font-family="ui-monospace,monospace">HORN</text>
                     </g>
 
+                    <!-- ── FX KNOBS (6 mini circles) ── -->
+                    <text x="58" y="167" font-size="6" fill="#5a5770" font-family="ui-monospace,monospace" font-weight="700">FX RACK</text>
+                    <circle cx="70"  cy="183" r="8" fill="#0f0d14" stroke="#38bdf8" stroke-width="1.2"/>
+                    <line x1="70" y1="176" x2="70" y2="181" stroke="#38bdf8" stroke-width="1.5" stroke-linecap="round"/>
+                    <circle cx="92"  cy="183" r="8" fill="#0f0d14" stroke="#19d59e" stroke-width="1.2"/>
+                    <line x1="92" y1="176" x2="94" y2="180" stroke="#19d59e" stroke-width="1.5" stroke-linecap="round"/>
+                    <circle cx="114" cy="183" r="8" fill="#0f0d14" stroke="#a78bfa" stroke-width="1.2"/>
+                    <line x1="114" y1="176" x2="111" y2="180" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/>
+                    <circle cx="136" cy="183" r="8" fill="#0f0d14" stroke="#f87171" stroke-width="1.2"/>
+                    <line x1="136" y1="176" x2="139" y2="180" stroke="#f87171" stroke-width="1.5" stroke-linecap="round"/>
+                    <circle cx="158" cy="183" r="8" fill="#0f0d14" stroke="#fbbf24" stroke-width="1.2"/>
+                    <line x1="158" y1="176" x2="155" y2="180" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"/>
+                    <circle cx="180" cy="183" r="8" fill="#0f0d14" stroke="#67e8f9" stroke-width="1.2"/>
+                    <line x1="180" y1="176" x2="180" y2="181" stroke="#67e8f9" stroke-width="1.5" stroke-linecap="round"/>
+                    <text x="70"  y="197" text-anchor="middle" font-size="5" fill="#5a5770" font-family="ui-monospace,monospace">RVB</text>
+                    <text x="92"  y="197" text-anchor="middle" font-size="5" fill="#5a5770" font-family="ui-monospace,monospace">DLY</text>
+                    <text x="114" y="197" text-anchor="middle" font-size="5" fill="#5a5770" font-family="ui-monospace,monospace">FLT</text>
+                    <text x="136" y="197" text-anchor="middle" font-size="5" fill="#5a5770" font-family="ui-monospace,monospace">DST</text>
+                    <text x="158" y="197" text-anchor="middle" font-size="5" fill="#5a5770" font-family="ui-monospace,monospace">PCH</text>
+                    <text x="180" y="197" text-anchor="middle" font-size="5" fill="#5a5770" font-family="ui-monospace,monospace">SPD</text>
+
                     <!-- ── STEP SEQUENCER ── -->
-                    <text x="64" y="175" font-size="7" fill="#666" font-family="ui-monospace,monospace">16-STEP PATTERN</text>
-                    <g id="seq">
-                        <!-- 16 step buttons, 2 rows of 8 -->
-                        <!-- top row (beat steps) -->
-                        <rect x="64"  y="180" width="12" height="10" rx="2" fill="#e879f9" opacity="0.9"/>
-                        <rect x="79"  y="180" width="12" height="10" rx="2" fill="#1e1a2a" stroke="#3a3450" stroke-width="0.5"/>
-                        <rect x="94"  y="180" width="12" height="10" rx="2" fill="#1e1a2a" stroke="#3a3450" stroke-width="0.5"/>
-                        <rect x="109" y="180" width="12" height="10" rx="2" fill="#e879f9" opacity="0.9"/>
-                        <rect x="124" y="180" width="12" height="10" rx="2" fill="#1e1a2a" stroke="#3a3450" stroke-width="0.5"/>
-                        <rect x="139" y="180" width="12" height="10" rx="2" fill="#1e1a2a" stroke="#3a3450" stroke-width="0.5"/>
-                        <rect x="154" y="180" width="12" height="10" rx="2" fill="#e879f9" opacity="0.9"/>
-                        <rect x="169" y="180" width="12" height="10" rx="2" fill="#1e1a2a" stroke="#3a3450" stroke-width="0.5"/>
-                        <rect x="184" y="180" width="12" height="10" rx="2" fill="#e879f9" opacity="0.9"/>
-                        <rect x="199" y="180" width="12" height="10" rx="2" fill="#1e1a2a" stroke="#3a3450" stroke-width="0.5"/>
-                        <rect x="214" y="180" width="12" height="10" rx="2" fill="#1e1a2a" stroke="#3a3450" stroke-width="0.5"/>
-                        <rect x="229" y="180" width="12" height="10" rx="2" fill="#e879f9" opacity="0.9"/>
-                        <rect x="244" y="180" width="12" height="10" rx="2" fill="#1e1a2a" stroke="#3a3450" stroke-width="0.5"/>
-                        <rect x="259" y="180" width="12" height="10" rx="2" fill="#e879f9" opacity="0.5"/>
-                        <rect x="274" y="180" width="12" height="10" rx="2" fill="#1e1a2a" stroke="#3a3450" stroke-width="0.5"/>
-                        <rect x="289" y="180" width="12" height="10" rx="2" fill="#e879f9" opacity="0.9"/>
-                        <!-- playhead -->
-                        <rect x="64" y="178" width="12" height="14" rx="2" fill="none" stroke="#e879f9" stroke-width="1.5" opacity="0.9"/>
+                    <text x="58" y="212" font-size="6" fill="#5a5770" font-family="ui-monospace,monospace" font-weight="700">16-STEP PATTERN</text>
+                    <g id="svgSeq">
+                        <rect x="58"  y="216" width="11" height="9" rx="2" fill="#e879f9" opacity=".9"/>
+                        <rect x="72"  y="216" width="11" height="9" rx="2" fill="#1e1a2a" stroke="#312d3f" stroke-width=".5"/>
+                        <rect x="86"  y="216" width="11" height="9" rx="2" fill="#1e1a2a" stroke="#312d3f" stroke-width=".5"/>
+                        <rect x="100" y="216" width="11" height="9" rx="2" fill="#e879f9" opacity=".9"/>
+                        <rect x="114" y="216" width="11" height="9" rx="2" fill="#1e1a2a" stroke="#312d3f" stroke-width=".5"/>
+                        <rect x="128" y="216" width="11" height="9" rx="2" fill="#1e1a2a" stroke="#312d3f" stroke-width=".5"/>
+                        <rect x="142" y="216" width="11" height="9" rx="2" fill="#e879f9" opacity=".9"/>
+                        <rect x="156" y="216" width="11" height="9" rx="2" fill="#1e1a2a" stroke="#312d3f" stroke-width=".5"/>
+                        <rect x="170" y="216" width="11" height="9" rx="2" fill="#e879f9" opacity=".9"/>
+                        <rect x="184" y="216" width="11" height="9" rx="2" fill="#1e1a2a" stroke="#312d3f" stroke-width=".5"/>
+                        <rect x="198" y="216" width="11" height="9" rx="2" fill="#1e1a2a" stroke="#312d3f" stroke-width=".5"/>
+                        <rect x="212" y="216" width="11" height="9" rx="2" fill="#e879f9" opacity=".9"/>
+                        <rect x="226" y="216" width="11" height="9" rx="2" fill="#1e1a2a" stroke="#312d3f" stroke-width=".5"/>
+                        <rect x="240" y="216" width="11" height="9" rx="2" fill="#e879f9" opacity=".5"/>
+                        <rect x="254" y="216" width="11" height="9" rx="2" fill="#1e1a2a" stroke="#312d3f" stroke-width=".5"/>
+                        <rect x="268" y="216" width="11" height="9" rx="2" fill="#e879f9" opacity=".9"/>
+                        <rect x="56" y="214" width="15" height="13" rx="2" fill="none" stroke="#e879f9" stroke-width="1.2" opacity=".8"/>
                     </g>
 
                     <!-- ── WAVEFORM ── -->
-                    <text x="64" y="208" font-size="7" fill="#666" font-family="ui-monospace,monospace">WAVEFORM &amp; CUE</text>
-                    <rect x="64" y="213" width="240" height="32" rx="4" fill="#0f0d14" stroke="#2a2a35" stroke-width="0.5"/>
-                    <!-- waveform bars -->
-                    <g id="wf" opacity="0.8"></g>
-                    <!-- cue marker -->
-                    <line x1="140" y1="213" x2="140" y2="245" stroke="#e879f9" stroke-width="1.5"/>
-                    <polygon points="138,213 142,213 140,217" fill="#e879f9"/>
+                    <text x="58" y="242" font-size="6" fill="#5a5770" font-family="ui-monospace,monospace" font-weight="700">WAVEFORM + HOT CUES</text>
+                    <rect x="58" y="246" width="228" height="28" rx="4" fill="#0d0b13" stroke="#252230" stroke-width=".5"/>
+                    <g id="svgWf" opacity=".75"></g>
+                    <line x1="130" y1="246" x2="130" y2="274" stroke="#e879f9" stroke-width="1.3"/>
+                    <polygon points="128,246 132,246 130,250" fill="#e879f9"/>
+                    <line x1="175" y1="246" x2="175" y2="274" stroke="#38bdf8" stroke-width="1"/>
+                    <polygon points="173,246 177,246 175,250" fill="#38bdf8"/>
 
-                    <!-- ── RIGHT PANEL: mix strip ── -->
+                    <!-- ── RIGHT PANEL ── -->
                     <!-- master vol -->
-                    <text x="320" y="80" font-size="7" fill="#666" font-family="ui-monospace,monospace">MASTER</text>
-                    <rect x="320" y="85" width="8" height="80" rx="4" fill="#1e1a2a" stroke="#3a3450" stroke-width="0.5"/>
-                    <rect x="320" y="115" width="8" height="50" rx="4" fill="#e879f9" opacity="0.7"/>
-                    <rect x="318" y="112" width="12" height="6" rx="3" fill="#fff" opacity="0.9"/>
+                    <text x="308" y="78" font-size="6" fill="#5a5770" font-family="ui-monospace,monospace">MASTER</text>
+                    <rect x="308" y="82" width="7" height="72" rx="3.5" fill="#1e1a2a" stroke="#312d3f" stroke-width=".5"/>
+                    <rect x="308" y="107" width="7" height="47" rx="3.5" fill="#e879f9" opacity=".65"/>
+                    <rect x="306" y="104" width="11" height="5" rx="2.5" fill="#fff" opacity=".85"/>
 
-                    <!-- pad pan -->
-                    <text x="344" y="80" font-size="7" fill="#666" font-family="ui-monospace,monospace">PAD PAN</text>
-                    <rect x="344" y="85" width="70" height="6" rx="3" fill="#1e1a2a" stroke="#3a3450" stroke-width="0.5"/>
-                    <rect x="344" y="85" width="35" height="6" rx="3" fill="#a78bfa" opacity="0.7"/>
-                    <circle cx="379" cy="88" r="5" fill="#fff" stroke="#a78bfa" stroke-width="1.5"/>
+                    <!-- sliders -->
+                    <text x="330" y="78" font-size="6" fill="#5a5770" font-family="ui-monospace,monospace">PAN</text>
+                    <rect x="330" y="82" width="66" height="5" rx="2.5" fill="#1e1a2a" stroke="#312d3f" stroke-width=".5"/>
+                    <rect x="330" y="82" width="33" height="5" rx="2.5" fill="#a78bfa" opacity=".65"/>
+                    <circle cx="363" cy="84.5" r="4.5" fill="#fff" stroke="#a78bfa" stroke-width="1.2"/>
 
-                    <!-- import vol -->
-                    <text x="344" y="110" font-size="7" fill="#666" font-family="ui-monospace,monospace">IMPORT VOL</text>
-                    <rect x="344" y="115" width="70" height="6" rx="3" fill="#1e1a2a" stroke="#3a3450" stroke-width="0.5"/>
-                    <rect x="344" y="115" width="55" height="6" rx="3" fill="#19d59e" opacity="0.6"/>
-                    <circle cx="399" cy="118" r="5" fill="#fff" stroke="#19d59e" stroke-width="1.5"/>
+                    <text x="330" y="103" font-size="6" fill="#5a5770" font-family="ui-monospace,monospace">IMPORT VOL</text>
+                    <rect x="330" y="107" width="66" height="5" rx="2.5" fill="#1e1a2a" stroke="#312d3f" stroke-width=".5"/>
+                    <rect x="330" y="107" width="50" height="5" rx="2.5" fill="#19d59e" opacity=".6"/>
+                    <circle cx="380" cy="109.5" r="4.5" fill="#fff" stroke="#19d59e" stroke-width="1.2"/>
 
-                    <!-- speed -->
-                    <text x="344" y="140" font-size="7" fill="#666" font-family="ui-monospace,monospace">SPEED</text>
-                    <rect x="344" y="145" width="70" height="6" rx="3" fill="#1e1a2a" stroke="#3a3450" stroke-width="0.5"/>
-                    <rect x="344" y="145" width="40" height="6" rx="3" fill="#f59e0b" opacity="0.6"/>
-                    <circle cx="384" cy="148" r="5" fill="#fff" stroke="#f59e0b" stroke-width="1.5"/>
+                    <text x="330" y="128" font-size="6" fill="#5a5770" font-family="ui-monospace,monospace">SPEED</text>
+                    <rect x="330" y="132" width="66" height="5" rx="2.5" fill="#1e1a2a" stroke="#312d3f" stroke-width=".5"/>
+                    <rect x="330" y="132" width="38" height="5" rx="2.5" fill="#fbbf24" opacity=".6"/>
+                    <circle cx="368" cy="134.5" r="4.5" fill="#fff" stroke="#fbbf24" stroke-width="1.2"/>
 
-                    <!-- voice drop label -->
-                    <rect x="344" y="168" width="100" height="20" rx="4" fill="rgba(232,121,249,0.12)" stroke="rgba(232,121,249,0.4)" stroke-width="0.8"/>
-                    <text x="394" y="181" text-anchor="middle" font-size="7.5" fill="#e879f9" font-weight="700" font-family="ui-monospace,monospace">🎤 VOICE DROP</text>
+                    <!-- voice drop -->
+                    <rect x="330" y="152" width="114" height="18" rx="4" fill="rgba(232,121,249,.1)" stroke="rgba(232,121,249,.35)" stroke-width=".7"/>
+                    <text x="387" y="164" text-anchor="middle" font-size="7" fill="#e879f9" font-weight="700" font-family="ui-monospace,monospace">MIC  VOICE DROP</text>
 
-                    <!-- BPM display -->
-                    <rect x="344" y="200" width="48" height="26" rx="4" fill="#0f0d14" stroke="#3a3450" stroke-width="0.5"/>
-                    <text x="368" y="210" text-anchor="middle" font-size="6" fill="#666" font-family="ui-monospace,monospace">BPM</text>
-                    <text x="368" y="221" text-anchor="middle" font-size="10" font-weight="700" fill="#e879f9" font-family="ui-monospace,monospace">128</text>
+                    <!-- BPM + play -->
+                    <rect x="330" y="184" width="44" height="24" rx="4" fill="#0d0b13" stroke="#312d3f" stroke-width=".5"/>
+                    <text x="352" y="193" text-anchor="middle" font-size="5.5" fill="#5a5770" font-family="ui-monospace,monospace">BPM</text>
+                    <text x="352" y="204" text-anchor="middle" font-size="10" font-weight="700" fill="#e879f9" font-family="ui-monospace,monospace">128</text>
 
-                    <!-- play button -->
-                    <circle cx="430" cy="213" r="14" fill="rgba(232,121,249,0.15)" stroke="#e879f9" stroke-width="1"/>
-                    <polygon points="425,207 425,219 437,213" fill="#e879f9"/>
+                    <circle cx="408" cy="196" r="13" fill="rgba(232,121,249,.12)" stroke="#e879f9" stroke-width=".9"/>
+                    <polygon points="403,190 403,202 415,196" fill="#e879f9"/>
 
-                    <!-- bottom big waveform decoration -->
-                    <rect x="64" y="260" width="416" height="36" rx="4" fill="#0f0d14" stroke="#2a2a35" stroke-width="0.5"/>
-                    <text x="76" y="283" font-size="7" fill="#555" font-family="ui-monospace,monospace">import.mp3 ————————————————————————————</text>
+                    <!-- import track row -->
+                    <rect x="58" y="284" width="418" height="26" rx="4" fill="#0d0b13" stroke="#252230" stroke-width=".5"/>
+                    <rect x="66" y="291" width="8" height="12" rx="2" fill="#19d59e" opacity=".7"/>
+                    <text x="82" y="300" font-size="6.5" fill="#5a5770" font-family="ui-monospace,monospace">import.mp3  &#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;</text>
                 </svg>
             </div>
         </section>
 
-        <!-- LIVE WAVE VISUALIZER -->
-        <section class="viz-section reveal">
-            <span class="section-label">Live preview</span>
-            <p style="font-size:.9rem;color:var(--text-secondary);margin-bottom:16px;">Click the pads below — or let the sequencer breathe on its own.</p>
-            <canvas id="wave-canvas" height="80"></canvas>
-            <div style="margin-top:20px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+        <!-- LIVE WAVE VIZ -->
+        <section class="viz-box reveal">
+            <span class="sec-label">Interactive preview</span>
+            <p style="font-size:.88rem;color:var(--txt2);margin-bottom:14px;">Tap the pads or watch the 128 BPM sequencer play on its own.</p>
+            <canvas id="wave-canvas" height="72"></canvas>
+
+            <div class="viz-bottom">
                 <div>
-                    <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px;font-family:var(--font-mono);letter-spacing:.1em;">TAP PADS</p>
+                    <p style="font-size:10px;color:var(--txt3);margin-bottom:10px;font-family:var(--mono);letter-spacing:.1em;">TAP PADS</p>
                     <div class="pads-demo" id="demo-pads">
-                        <div class="pad" data-idx="0"><span class="pad-emoji">🥁</span>KICK</div>
-                        <div class="pad" data-idx="1"><span class="pad-emoji">🪘</span>SNARE</div>
-                        <div class="pad" data-idx="2"><span class="pad-emoji">🎩</span>HAT</div>
-                        <div class="pad" data-idx="3"><span class="pad-emoji">👏</span>CLAP</div>
-                        <div class="pad" data-idx="4"><span class="pad-emoji">🎸</span>BASS</div>
-                        <div class="pad" data-idx="5"><span class="pad-emoji">🚀</span>RISER</div>
-                        <div class="pad" data-idx="6"><span class="pad-emoji">✂️</span>CHOP</div>
-                        <div class="pad" data-idx="7"><span class="pad-emoji">📯</span>HORN</div>
+                        <div class="pad" data-idx="0"><span style="font-family:var(--mono);font-size:10px;font-weight:800;color:var(--dj)">KCK</span><span class="pad-lbl">KICK</span></div>
+                        <div class="pad" data-idx="1"><span style="font-family:var(--mono);font-size:10px;font-weight:800;color:var(--dj2)">SNR</span><span class="pad-lbl">SNARE</span></div>
+                        <div class="pad" data-idx="2"><span style="font-family:var(--mono);font-size:10px;font-weight:800;color:var(--cyan)">HAT</span><span class="pad-lbl">HI-HAT</span></div>
+                        <div class="pad" data-idx="3"><span style="font-family:var(--mono);font-size:10px;font-weight:800;color:var(--green)">CLP</span><span class="pad-lbl">CLAP</span></div>
+                        <div class="pad" data-idx="4"><span style="font-family:var(--mono);font-size:10px;font-weight:800;color:#fbbf24">BAS</span><span class="pad-lbl">BASS</span></div>
+                        <div class="pad" data-idx="5"><span style="font-family:var(--mono);font-size:10px;font-weight:800;color:#f87171">RSR</span><span class="pad-lbl">RISER</span></div>
+                        <div class="pad" data-idx="6"><span style="font-family:var(--mono);font-size:10px;font-weight:800;color:#67e8f9">CHP</span><span class="pad-lbl">CHOP</span></div>
+                        <div class="pad" data-idx="7"><span style="font-family:var(--mono);font-size:10px;font-weight:800;color:var(--orange)">HRN</span><span class="pad-lbl">HORN</span></div>
                     </div>
                 </div>
-                <div style="flex:1;min-width:240px;">
-                    <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px;font-family:var(--font-mono);letter-spacing:.1em;">16-STEP PATTERN</p>
-                    <div class="steps-row" id="step-row"></div>
-                    <p style="font-size:11px;color:var(--text-muted);margin-top:10px;">
-                        <span id="bpm-label" style="color:var(--accent-dj);font-weight:700;">128 BPM</span>
-                        &nbsp;·&nbsp; step <span id="step-num">1</span> / 16
-                    </p>
+                <div>
+                    <p style="font-size:10px;color:var(--txt3);margin-bottom:10px;font-family:var(--mono);letter-spacing:.1em;">16-STEP PATTERN</p>
+                    <div class="seq-row" id="step-row"></div>
+                    <p class="seq-meta"><span class="hl" id="bpm-label">128 BPM</span> &nbsp;&middot;&nbsp; step <span id="step-num">1</span>/16</p>
+
+                    <p style="font-size:10px;color:var(--txt3);margin-top:18px;margin-bottom:10px;font-family:var(--mono);letter-spacing:.1em;">FX RACK</p>
+                    <div class="fx-strip" id="fx-strip">
+                        <div class="fx-knob"><div class="knob" data-color="blue" id="k0"></div><span>Reverb</span><span class="fx-val" id="fv0" style="color:var(--cyan)">42%</span></div>
+                        <div class="fx-knob"><div class="knob" data-color="green" id="k1"></div><span>Delay</span><span class="fx-val" id="fv1" style="color:var(--green)">28%</span></div>
+                        <div class="fx-knob"><div class="knob" data-color="purple" id="k2"></div><span>Filter</span><span class="fx-val" id="fv2" style="color:var(--dj2)">65%</span></div>
+                        <div class="fx-knob"><div class="knob" data-color="red" id="k3"></div><span>Dist</span><span class="fx-val" id="fv3" style="color:#f87171">12%</span></div>
+                        <div class="fx-knob"><div class="knob" data-color="yellow" id="k4"></div><span>Pitch</span><span class="fx-val" id="fv4" style="color:#fbbf24">0st</span></div>
+                        <div class="fx-knob"><div class="knob" data-color="cyan" id="k5"></div><span>Speed</span><span class="fx-val" id="fv5" style="color:#67e8f9">1.0x</span></div>
+                    </div>
                 </div>
             </div>
         </section>
 
         <!-- FEATURES -->
         <section class="reveal" style="margin-bottom:64px;">
-            <span class="section-label">What's inside</span>
-            <h2 class="section-title">One window. Full groove box.</h2>
-            <p class="section-sub">No DAW needed — TiltDJ runs standalone on your Mac desktop.</p>
+            <span class="sec-label">What's inside PRO v2.0</span>
+            <h2 class="sec-title">One window. Full groove box.</h2>
+            <p class="sec-sub">No DAW needed — TiltDJ runs standalone on your Mac desktop.</p>
 
-            <div class="features-grid">
+            <div class="feat-grid">
                 <div class="feat">
-                    <div class="feat-icon">🥁</div>
+                    <div class="feat-icon">PAD</div>
                     <h3>8 Pads + keyboard shortcuts</h3>
-                    <p>Kick, Snare, Hat, Clap, Bass, Riser, Chop, Horn. Click or use <span class="kbd">1</span>–<span class="kbd">8</span> and <span class="kbd">Q W E R T Y U I</span> while you work. Toggle keyboard mode off when typing.</p>
+                    <p>Kick, Snare, Hat, Clap, Bass, Riser, Chop, Horn. Click or use <span class="kbd">1</span>–<span class="kbd">8</span> or <span class="kbd">Q W E R T Y U I</span> while you work.</p>
                 </div>
-                <div class="feat">
-                    <div class="feat-icon">🎛️</div>
-                    <h3>Stereo pan + master vol</h3>
-                    <p>Separate pan sliders for pads and imported audio. 0% = full left, 50% = center, 100% = full right. Master sets the overall output level.</p>
+                <div class="feat v-purple">
+                    <div class="feat-icon">FX</div>
+                    <h3>6-effect FX rack</h3>
+                    <p>Reverb, Delay, Filter, Distortion, Pitch (&plusmn;12 semitones), Speed (0.5&times;&ndash;2.0&times;) — all with interactive sliders and real-time visual feedback.</p>
                 </div>
-                <div class="feat">
-                    <div class="feat-icon">🔢</div>
-                    <h3>16-step pattern grid</h3>
-                    <p>An 8×16 grid — one row per pad. Toggle steps, set BPM, hit Play pattern and get a one-bar loop you can jam against your import track.</p>
-                </div>
-                <div class="feat">
-                    <div class="feat-icon">🎵</div>
+                <div class="feat v-green">
+                    <div class="feat-icon">IMP</div>
                     <h3>Import &amp; remix</h3>
-                    <p>Drop in MP3, WAV, AIFF, M4A. Loop it, twist the speed (0.5×–1.5× time-stretch) and volume while you fire pads on top — desk-side remixing.</p>
+                    <p>Add MP3, WAV, AIFF, M4A files. Each track shows waveform analysis, volume slider, and play/stop control. Delete when done.</p>
                 </div>
                 <div class="feat">
-                    <div class="feat-icon">〰️</div>
+                    <div class="feat-icon">SEQ</div>
+                    <h3>16-step pattern grid</h3>
+                    <p>8&times;16 grid — one row per pad. Toggle steps, set BPM, hit play and get a one-bar loop to jam over your import track.</p>
+                </div>
+                <div class="feat v-orange">
+                    <div class="feat-icon">CUE</div>
                     <h3>Waveform + hot cues</h3>
-                    <p>Live playhead on the import waveform. Tap to place hot cue markers and jump to any point — quick arrangement in a single click.</p>
+                    <p>Live playhead on the import waveform. Tap to drop hot cue markers and jump to any moment — quick arrangement in a single click.</p>
                 </div>
-                <div class="feat">
-                    <div class="feat-icon">🎤</div>
-                    <h3>Voice drops (macOS speech)</h3>
-                    <p>Type a line or pick a preset and the app reads it aloud using native macOS speech — zero cloud, instant shout-out drops over your beat.</p>
+                <div class="feat v-cyan">
+                    <div class="feat-icon">MIC</div>
+                    <h3>Voice drops</h3>
+                    <p>Type a line or pick a preset — the app reads it aloud via native macOS speech. Zero cloud, instant shout-out over your beat.</p>
                 </div>
             </div>
         </section>
 
+        <div class="divider"></div>
+
         <!-- INSTALL -->
         <section class="install-box reveal">
-            <span class="section-label">Install</span>
-            <h2 class="section-title" style="font-size:1.5rem;margin-bottom:12px;">Download &amp; run in 30 seconds</h2>
-            <p style="color:var(--text-secondary);font-size:.9rem;">TiltDJ ships as an unsigned DMG for local use. macOS 14 (Sonoma) or later required.</p>
-            <pre><code># Download from this page, then:
-hdiutil attach TiltDJ-1.0.0.dmg
+            <span class="sec-label">Install</span>
+            <h2 class="sec-title" style="font-size:1.45rem;margin-bottom:10px;">Download &amp; run in 30 seconds</h2>
+            <p>TiltDJ ships as an unsigned DMG — macOS 14 (Sonoma) or later required.</p>
+            <pre><code># Mount the DMG, then:
 # Drag TiltDJ.app → Applications
-# First launch: right-click → Open (Gatekeeper bypass for unsigned build)</code></pre>
-            <p>Or just <strong>double-click the DMG</strong>, drag <code>TiltDJ.app</code> to Applications, and right-click → Open on first launch.</p>
-            <div style="margin-top:24px;">
-                <a class="btn-primary" href="/downloads/TiltDJ-1.0.0.dmg" download>↓ Download TiltDJ-1.0.0.dmg</a>
+# First launch: right-click → Open   (Gatekeeper bypass)</code></pre>
+            <div class="install-meta">
+                <div class="im-item"><span class="im-label">Version</span><span class="im-value">PRO v2.0 Remix Edition</span></div>
+                <div class="im-item"><span class="im-label">Size</span><span class="im-value">816 KB</span></div>
+                <div class="im-item"><span class="im-label">Requires</span><span class="im-value">macOS 14+</span></div>
+                <div class="im-item"><span class="im-label">Signed</span><span class="im-value">Unsigned (local use)</span></div>
+            </div>
+            <div style="margin-top:28px;">
+                <a class="btn-dl" href="/downloads/TiltDJ-Remix-Edition.dmg" download>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M3.5 6l3.5 4 3.5-4M1 11h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Download TiltDJ-Remix-Edition.dmg
+                </a>
             </div>
         </section>
 
         <!-- FOOT -->
         <p class="foot reveal">
-            <strong>TiltDJ</strong> is part of the <a href="/crazy-apps.html">Nigents Crazy apps</a> collection — experimental Mac utilities built for fun and focus.
-            &nbsp;·&nbsp; <a href="/">nigents.com</a>
+            <strong>TiltDJ</strong> is part of the <a href="/crazy-apps.html">Nigents Crazy apps</a> collection &mdash; experimental Mac utilities built for fun and focus.
+            &nbsp;&middot;&nbsp; <a href="/">nigents.com</a>
         </p>
     </div>
 
     <script>
     (function () {
-        /* ── NAV ── */
+        /* NAV */
         var toggle = document.getElementById('nav-toggle');
-        var backdrop = document.getElementById('nav-backdrop');
+        var bd = document.getElementById('nav-bd');
+        function setOpen(o) {
+            document.body.classList.toggle('nav-open', o);
+            toggle.setAttribute('aria-expanded', o ? 'true' : 'false');
+            if (bd) bd.style.display = o ? 'block' : 'none';
+        }
         if (toggle) {
-            function setOpen(open) {
-                document.body.classList.toggle('nav-open', open);
-                toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-                if (backdrop) backdrop.hidden = !open;
-            }
             toggle.addEventListener('click', function () { setOpen(!document.body.classList.contains('nav-open')); });
-            if (backdrop) backdrop.addEventListener('click', function () { setOpen(false); });
+            if (bd) bd.addEventListener('click', function () { setOpen(false); });
             document.getElementById('nav-links').querySelectorAll('a').forEach(function (l) {
                 l.addEventListener('click', function () { setOpen(false); });
             });
         }
 
-        /* ── SCROLL REVEAL ── */
-        var reveals = document.querySelectorAll('.reveal');
+        /* SCROLL REVEAL */
+        var revEls = document.querySelectorAll('.reveal');
         var io = new IntersectionObserver(function (entries) {
             entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
-        }, { threshold: 0.1 });
-        reveals.forEach(function (el) { io.observe(el); });
+        }, { threshold: 0.08 });
+        revEls.forEach(function (el) { io.observe(el); });
 
-        /* ── WAVE CANVAS ── */
+        /* WAVE CANVAS */
         var canvas = document.getElementById('wave-canvas');
         var ctx = canvas.getContext('2d');
         var W, H;
-        var COLORS = ['#e879f9','#a78bfa','#19d59e','#ff570a','#38bdf8','#fbbf24','#f472b6','#67e8f9'];
-        var waves = Array.from({length: 8}, function (_, i) {
-            return { amp: 6 + Math.random() * 10, freq: 0.012 + i * 0.003, phase: Math.random() * Math.PI * 2, speed: 0.02 + Math.random() * 0.02, active: false, decay: 0 };
+        var COLORS = ['#e879f9','#a78bfa','#19d59e','#ff570a','#38bdf8','#fbbf24','#f87171','#67e8f9'];
+        var waves = COLORS.map(function (c, i) {
+            return { amp: 5 + Math.random() * 9, freq: 0.011 + i * 0.003, phase: Math.random() * Math.PI * 2, speed: 0.018 + Math.random() * 0.018, decay: 0 };
         });
-
         function resize() {
             W = canvas.offsetWidth; H = canvas.offsetHeight;
-            canvas.width = W * window.devicePixelRatio;
-            canvas.height = H * window.devicePixelRatio;
-            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            canvas.width = W * (window.devicePixelRatio || 1);
+            canvas.height = H * (window.devicePixelRatio || 1);
+            ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
         }
         window.addEventListener('resize', resize); resize();
-
         var t = 0;
         function draw() {
             ctx.clearRect(0, 0, W, H);
             waves.forEach(function (w, i) {
-                if (w.decay > 0) w.decay -= 0.015;
-                var boost = w.active ? 1 : Math.max(0, w.decay);
-                var amp = w.amp + boost * 22;
+                if (w.decay > 0) w.decay -= 0.012;
+                var boost = Math.max(0, w.decay);
+                var amp = w.amp + boost * 20;
                 ctx.beginPath();
                 for (var x = 0; x <= W; x += 2) {
                     var y = H / 2 + Math.sin(x * w.freq + t * w.speed * 60 + w.phase) * amp
-                                   + Math.sin(x * w.freq * 2.3 + t * w.speed * 40) * amp * 0.35;
+                                   + Math.sin(x * w.freq * 2.1 + t * w.speed * 38) * amp * 0.3;
                     if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
                 }
-                var alpha = 0.18 + boost * 0.55;
-                ctx.strokeStyle = COLORS[i % COLORS.length].replace(')', ',' + alpha + ')').replace('rgb', 'rgba').replace('#', '');
-                // use hex with opacity via globalAlpha instead
-                ctx.globalAlpha = 0.22 + boost * 0.6;
-                ctx.strokeStyle = COLORS[i % COLORS.length];
-                ctx.lineWidth = 1.5 + boost * 1.5;
+                ctx.globalAlpha = 0.18 + boost * 0.55;
+                ctx.strokeStyle = COLORS[i];
+                ctx.lineWidth = 1.4 + boost * 1.4;
                 ctx.stroke();
                 ctx.globalAlpha = 1;
                 w.phase += 0.004;
@@ -628,74 +759,108 @@ hdiutil attach TiltDJ-1.0.0.dmg
         }
         draw();
 
-        /* ── DEMO PADS ── */
+        /* DEMO PADS */
         document.querySelectorAll('#demo-pads .pad').forEach(function (pad) {
             function hit() {
                 pad.classList.add('hit');
                 var idx = parseInt(pad.dataset.idx);
-                waves[idx].active = true; waves[idx].decay = 1;
-                setTimeout(function () { pad.classList.remove('hit'); waves[idx].active = false; }, 180);
+                waves[idx].decay = 1;
+                setTimeout(function () { pad.classList.remove('hit'); }, 180);
             }
             pad.addEventListener('mousedown', hit);
             pad.addEventListener('touchstart', function (e) { e.preventDefault(); hit(); }, { passive: false });
         });
 
-        /* ── STEP SEQUENCER DEMO ── */
+        /* STEP SEQUENCER */
         var stepRow = document.getElementById('step-row');
         var PATTERN = [1,0,0,1, 0,0,1,0, 1,0,0,1, 0,1,0,1];
         var stepEls = [];
         for (var s = 0; s < 16; s++) {
             var el = document.createElement('div');
-            el.className = 'step' + (PATTERN[s] ? ' on' : '');
+            el.className = 'stp' + (PATTERN[s] ? ' on' : '');
             stepRow.appendChild(el); stepEls.push(el);
         }
-        var cur = 0;
-        var bpmLabel = document.getElementById('bpm-label');
+        var cur = 0, BPM = 128;
         var stepNum = document.getElementById('step-num');
-        var BPM = 128;
         function tick() {
-            stepEls.forEach(function (e, i) {
-                e.classList.toggle('play', i === cur);
-            });
-            if (PATTERN[cur]) {
-                var idx = [0,2,4,6,1,3,5,7][cur % 8];
-                waves[idx].decay = 1;
-            }
+            stepEls.forEach(function (e, i) { e.classList.toggle('cur', i === cur); });
+            if (PATTERN[cur]) { waves[[0,2,4,6,1,3,5,7][cur % 8]].decay = 1; }
             stepNum.textContent = cur + 1;
             cur = (cur + 1) % 16;
             setTimeout(tick, (60 / BPM / 4) * 1000);
         }
         tick();
 
-        /* ── SVG WAVEFORM BARS ── */
-        var wfGroup = document.getElementById('wf');
-        if (wfGroup) {
-            for (var b = 0; b < 48; b++) {
+        /* SVG WAVEFORM BARS */
+        var wfG = document.getElementById('svgWf');
+        if (wfG) {
+            for (var b = 0; b < 44; b++) {
                 var bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                var barH = 4 + Math.random() * 20;
-                bar.setAttribute('x', 66 + b * 5);
-                bar.setAttribute('y', 229 - barH / 2);
-                bar.setAttribute('width', '3');
-                bar.setAttribute('height', barH);
+                var bh = 3 + Math.random() * 16;
+                bar.setAttribute('x', 60 + b * 5.2);
+                bar.setAttribute('y', 260 - bh / 2);
+                bar.setAttribute('width', '3.5');
+                bar.setAttribute('height', bh);
                 bar.setAttribute('rx', '1');
                 bar.setAttribute('fill', '#a78bfa');
-                bar.setAttribute('opacity', '0.5');
-                wfGroup.appendChild(bar);
+                bar.setAttribute('opacity', '0.45');
+                wfG.appendChild(bar);
             }
         }
 
-        /* ── SVG PAD FLASH ── */
-        var lPads = document.querySelectorAll('.lpad');
-        var padIdx = 0;
-        var padOrder = [0,2,4,6,1,3,5,7];
+        /* SVG PAD FLASH */
+        var svgPads = document.querySelectorAll('#svgPads rect');
+        var padIdx = 0, padOrder = [0,2,4,6,1,3,5,7];
         function flashPad() {
-            lPads.forEach(function(p){ p.setAttribute('fill','#1e1a2a'); p.setAttribute('stroke','#3a3450'); });
-            var p = lPads[padOrder[padIdx % 8]];
-            if (p) { p.setAttribute('fill','rgba(232,121,249,0.35)'); p.setAttribute('stroke','#e879f9'); }
+            svgPads.forEach(function (p) { p.setAttribute('fill','#1e1a2a'); p.setAttribute('stroke','#312d3f'); });
+            var p = svgPads[padOrder[padIdx % 8]];
+            if (p) { p.setAttribute('fill','rgba(232,121,249,.32)'); p.setAttribute('stroke','#e879f9'); }
             padIdx++;
             setTimeout(flashPad, (60 / BPM / 4) * 1000 * 2);
         }
         setTimeout(flashPad, 300);
+
+        /* FX KNOB ANIMATION */
+        var knobAngles = [-135, -80, 20, -120, -135, -90];
+        var knobVals = [42, 28, 65, 12, 0, 100];
+        var knobColors = ['var(--cyan)','var(--green)','var(--dj2)','#f87171','#fbbf24','#67e8f9'];
+        var knobUnits = ['%','%','%','%','st','x'];
+        var knobMults = [1, 1, 1, 1, 0.12, 0.015];
+        var knobOffsets = [0, 0, 0, 0, 0, 0.5];
+        function updateKnob(i, angle) {
+            var knob = document.getElementById('k' + i);
+            if (knob) knob.style.setProperty('--ka', angle + 'deg');
+            var raw = ((angle + 135) / 270);
+            var val;
+            if (i === 4) val = Math.round((raw - 0.5) * 24) + 'st';
+            else if (i === 5) val = (0.5 + raw * 1.5).toFixed(1) + 'x';
+            else val = Math.round(raw * 100) + '%';
+            var fv = document.getElementById('fv' + i);
+            if (fv) fv.textContent = val;
+        }
+        // Animate knobs gently
+        (function animateKnobs() {
+            knobAngles = knobAngles.map(function (a, i) {
+                return a + (Math.random() - 0.5) * 0.8;
+            });
+            knobAngles.forEach(function (a, i) {
+                var knob = document.getElementById('k' + i);
+                if (knob) knob.querySelector
+                // just set the ::after rotate via inline style trick
+                // use CSS custom prop approach
+                ;
+                updateKnob(i, a);
+            });
+            requestAnimationFrame(animateKnobs);
+        })();
+
+        // Apply CSS custom property for knob rotation
+        var style = document.createElement('style');
+        for (var ki = 0; ki < 6; ki++) {
+            style.textContent += '#k'+ki+'::after{transform:translateX(-50%) rotate(var(--ka,-135deg));}';
+        }
+        document.head.appendChild(style);
+
     })();
     </script>
 </body>
