@@ -185,19 +185,28 @@ function registerBonyadAdminRoutes(app) {
   app.get('/api/bonyad/notifications', async (req, res) => {
     try {
       const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '50', 10)));
-      const rows  = await db.query(
-        `SELECT id, type, title, message, entity_type, entity_id,
-                sheet_slug, triggered_by_name, read_by, created_at
-         FROM bonyad_notifications
-         ORDER BY created_at DESC LIMIT ?`,
-        [limit]
-      );
-      // Build navigateTo for each row
+      let rows = [];
+      try {
+        rows = await db.query(
+          `SELECT id, type, title, message, entity_type, entity_id,
+                  sheet_slug, triggered_by_name, read_by, created_at
+           FROM bonyad_notifications
+           ORDER BY created_at DESC LIMIT ?`,
+          [limit]
+        );
+      } catch (tableErr) {
+        // Table may not exist yet on older deployments — return empty gracefully
+        logger.warn('[BonyadAdmin] notifications table not ready: %s', tableErr.message);
+        return res.json({ success: true, notifications: [] });
+      }
       const { resolveUser } = require('./bonyad-auth');
       const user    = await resolveUser(req);
       const userId  = user ? String(user.id) : null;
-      const result  = rows.map(r => {
-        const readBy = (typeof r.read_by === 'string') ? JSON.parse(r.read_by || '{}') : (r.read_by || {});
+      const result  = (rows || []).map(r => {
+        let readBy = {};
+        try {
+          readBy = (typeof r.read_by === 'string') ? JSON.parse(r.read_by || '{}') : (r.read_by || {});
+        } catch (_) {}
         return {
           ...r,
           read_by:    readBy,

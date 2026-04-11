@@ -236,7 +236,6 @@
       </div>
       <iframe id="figma-iframe" title="Figma Design"
         allow="fullscreen; clipboard-write; clipboard-read"
-        allowfullscreen
         onload="document.getElementById('figma-loading').style.display='none'"></iframe>
     </div>
   </div>
@@ -363,12 +362,19 @@
         [d.platform, d.version ? 'v' + d.version : ''].filter(Boolean).join(' · ');
       document.getElementById('modal-open-link').href    = d.figma_url;
 
-      // Build Figma embed URL
+      // Show modal first (paint frame), then load iframe after a tick to avoid freezing
       const embedUrl = buildFigmaEmbed(d.figma_url);
+      const iframe   = document.getElementById('figma-iframe');
+      iframe.src     = '';   // clear any previous
       document.getElementById('figma-loading').style.display = 'flex';
-      document.getElementById('figma-iframe').src = embedUrl;
       document.getElementById('figma-modal').classList.add('open');
       document.body.style.overflow = 'hidden';
+      // Defer src to let the modal render first, then start loading Figma
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          iframe.src = embedUrl;
+        });
+      });
     }
 
     function buildFigmaEmbed(url) {
