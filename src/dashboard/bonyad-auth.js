@@ -13,8 +13,9 @@ const crypto = require('crypto');
 const db = require('../database/connection');
 const logger = require('../utils/logger');
 
-const ADMIN_KEY   = (process.env.BONYAD_ADMIN_KEY   || '').trim();
-const LEGACY_KEY  = (process.env.BONYAD_EDIT_SECRET || '').trim();
+/** Read key env vars fresh each call — handles late dotenv loading and avoids stale cached values */
+function getAdminKey()  { return (process.env.BONYAD_ADMIN_KEY  || '').trim().replace(/^["']|["']$/g, ''); }
+function getLegacyKey() { return (process.env.BONYAD_EDIT_SECRET || '').trim().replace(/^["']|["']$/g, ''); }
 
 /** Extract the raw key string from header / query / body */
 function extractKey(req) {
@@ -40,6 +41,9 @@ async function resolveUser(req) {
   }
 
   // 1. Env-var admin key (works even with empty DB)
+  const ADMIN_KEY  = getAdminKey();
+  const LEGACY_KEY = getLegacyKey();
+
   if (ADMIN_KEY && key === ADMIN_KEY) {
     req.bonyadUser = { id: 0, name: 'Admin', role: 'admin', api_key: '[env]' };
     return req.bonyadUser;
@@ -73,8 +77,7 @@ async function resolveUser(req) {
 async function requireUser(req, res, next) {
   const user = await resolveUser(req);
   if (!user) {
-    // If no auth system is configured at all, allow (open mode)
-    if (!ADMIN_KEY && !LEGACY_KEY) return next();
+    if (!getAdminKey() && !getLegacyKey()) return next(); // open mode — no keys configured
     return res.status(403).json({ success: false, error: 'Invalid or missing Bonyad key.' });
   }
   next();
@@ -84,7 +87,7 @@ async function requireUser(req, res, next) {
 async function requireAdmin(req, res, next) {
   const user = await resolveUser(req);
   if (!user) {
-    if (!ADMIN_KEY && !LEGACY_KEY) return next(); // open mode
+    if (!getAdminKey() && !getLegacyKey()) return next(); // open mode
     return res.status(403).json({ success: false, error: 'Invalid or missing Bonyad key.' });
   }
   if (user.role !== 'admin') {
