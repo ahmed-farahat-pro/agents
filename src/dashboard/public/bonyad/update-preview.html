@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bonyad — What's New</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #08070b;
+      --bg-card: #110f17;
+      --bg-elevated: #16131f;
+      --border: rgba(255,255,255,.08);
+      --orange: #ff6b1a;
+      --green: #2ee6b8;
+      --blue: #5eb3ff;
+      --purple: #a78bfa;
+      --text: #f4f3f7;
+      --muted: #8a8799;
+      --dim: rgba(255,107,26,.12);
+    }
+
+    body {
+      background: var(--bg);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0;
+    }
+
+    .canvas {
+      width: 1200px;
+      padding: 60px 64px 72px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Glow blobs */
+    .canvas::before {
+      content: '';
+      position: absolute;
+      top: -160px; left: -120px;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(255,107,26,.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .canvas::after {
+      content: '';
+      position: absolute;
+      bottom: -200px; right: -100px;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(46,230,184,.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Top bar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 56px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .orb {
+      width: 44px; height: 44px;
+      background: var(--orange);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 20px; color: #08070b;
+    }
+    .brand-name {
+      font-size: 22px; font-weight: 800; letter-spacing: -0.04em;
+    }
+    .brand-sep {
+      color: var(--muted); font-size: 18px; margin: 0 4px;
+    }
+    .brand-sub {
+      font-size: 13px; font-weight: 600; color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+    }
+    .date-pill {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--muted);
+    }
+
+    /* Hero */
+    .hero {
+      margin-bottom: 52px;
+    }
+    .hero-eyebrow {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--orange);
+      font-family: 'IBM Plex Mono', monospace;
+      margin-bottom: 14px;
+    }
+    .hero-title {
+      font-size: 52px;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+    .hero-title span {
+      color: var(--orange);
+    }
+    .hero-sub {
+      font-size: 17px;
+      color: var(--muted);
+      max-width: 620px;
+      line-height: 1.6;
+    }
+
+    /* Features grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+
+    .feat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .feat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent-top, var(--orange));
+      opacity: .6;
+    }
+    .feat-card.green { --accent-top: var(--green); }
+    .feat-card.blue  { --accent-top: var(--blue); }
+    .feat-card.purple{ --accent-top: var(--purple); }
+    .feat-card.orange{ --accent-top: var(--orange); }
+
+    .feat-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px;
+      background: var(--icon-bg, rgba(255,107,26,.12));
+    }
+    .feat-icon svg { opacity: .9; }
+    .feat-card.green .feat-icon { --icon-bg: rgba(46,230,184,.12); }
+    .feat-card.blue  .feat-icon { --icon-bg: rgba(94,179,255,.12); }
+    .feat-card.purple .feat-icon { --icon-bg: rgba(167,139,250,.12); }
+
+    .feat-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+    .feat-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .feat-tag {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      font-family: 'IBM Plex Mono', monospace;
+      background: var(--tag-bg, rgba(255,107,26,.12));
+      color: var(--tag-color, var(--orange));
+    }
+    .feat-card.green .feat-tag { --tag-bg: rgba(46,230,184,.12); --tag-color: var(--green); }
+    .feat-card.blue  .feat-tag { --tag-bg: rgba(94,179,255,.12);  --tag-color: var(--blue); }
+    .feat-card.purple .feat-tag{ --tag-bg: rgba(167,139,250,.12); --tag-color: var(--purple); }
+
+    /* Bottom strip */
+    .strip {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      padding: 24px 28px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+    .strip-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .strip-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+    .strip-label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .strip-label strong {
+      color: var(--text);
+      font-weight: 700;
+    }
+    .strip-divider {
+      width: 1px; height: 28px;
+      background: var(--border);
+    }
+    .strip-note {
+      margin-left: auto;
+      font-size: 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="topbar">
+      <div class="brand">
+        <div class="orb">B</div>
+        <span class="brand-name">Bonyad</span>
+        <span class="brand-sep">×</span>
+        <div class="orb" style="background:#1a1720;border:1px solid rgba(255,255,255,.1);font-size:16px;color:#f4f3f7;">N</div>
+        <span class="brand-name" style="font-size:16px;color:var(--muted);">Nigents</span>
+      </div>
+      <div class="date-pill">Update · April 2026</div>
+    </div>
+
+    <div class="hero">
+      <div class="hero-eyebrow">What's New in Bonyad</div>
+      <div class="hero-title">Built for the <span>whole team</span>,<br>not just the admin.</div>
+      <div class="hero-sub">Per-developer API keys, real-time notifications, build distribution, Figma design viewer, and a full audit trail — all inside Nigents.</div>
+    </div>
+
+    <div class="grid">
+      <!-- 1 -->
+      <div class="feat-card orange">
+        <div class="feat-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff6b1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <div class="feat-title">Per-Developer API Keys</div>
+        <div class="feat-desc">Admin creates named accounts for each team member. Each developer, designer, and tester gets their own scoped key — rotatable anytime.</div>
+        <span class="feat-tag">Admin</span>
+      </div>
+
+      <!-- 2 -->
+      <div class="feat-card green">
+        <div class="feat-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2ee6b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        </div>
+        <div class="feat-title">Real-Time Notifications</div>
+        <div class="feat-desc">Every create, update, status change, and delete is instantly pushed to all open tabs via Socket.io. Clickable alerts navigate directly to the issue.</div>
+        <span class="feat-tag">Live</span>
+      </div>
+
+      <!-- 3 -->
+      <div class="feat-card blue">
+        <div class="feat-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5eb3ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        </div>
+        <div class="feat-title">Activity Log &amp; Audit Trail</div>
+        <div class="feat-desc">Full immutable log of who did what and when — filterable by user, sheet, action type, and date range. Indispensable for sprint reviews.</div>
+        <span class="feat-tag">Admin</span>
+      </div>
+
+      <!-- 4 -->
+      <div class="feat-card orange">
+        <div class="feat-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff6b1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div class="feat-title">Build Distribution</div>
+        <div class="feat-desc">Upload APK, IPA, or ZIP builds per environment (dev / staging / production). Includes QR code modal for instant mobile download and a download counter.</div>
+        <span class="feat-tag">New Page</span>
+      </div>
+
+      <!-- 5 -->
+      <div class="feat-card purple">
+        <div class="feat-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+        </div>
+        <div class="feat-title">Figma Design Viewer</div>
+        <div class="feat-desc">Link Figma screens by platform. Click any card to open a fullscreen iframe embed — no switching apps. Designers add links; everyone views live designs.</div>
+        <span class="feat-tag">New Page</span>
+      </div>
+
+      <!-- 6 -->
+      <div class="feat-card green">
+        <div class="feat-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2ee6b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <div class="feat-title">Drag-and-Drop Attachments</div>
+        <div class="feat-desc">Every issue now shows a visible drop zone — drag images directly onto any card. Or paste a Google Drive / direct URL. Delete attachments individually.</div>
+        <span class="feat-tag">Enhanced</span>
+      </div>
+    </div>
+
+    <div class="strip">
+      <div class="strip-item">
+        <div class="strip-dot" style="background:#ff6b1a;"></div>
+        <div class="strip-label"><strong>Zero new ports</strong> — runs on existing 4000</div>
+      </div>
+      <div class="strip-divider"></div>
+      <div class="strip-item">
+        <div class="strip-dot" style="background:#2ee6b8;"></div>
+        <div class="strip-label"><strong>Backwards compatible</strong> — old key still works</div>
+      </div>
+      <div class="strip-divider"></div>
+      <div class="strip-item">
+        <div class="strip-dot" style="background:#5eb3ff;"></div>
+        <div class="strip-label"><strong>5 new DB tables</strong> — users, logs, notifications, builds, designs</div>
+      </div>
+      <div class="strip-divider"></div>
+      <div class="strip-item">
+        <div class="strip-dot" style="background:#a78bfa;"></div>
+        <div class="strip-label"><strong>3 new pages</strong> — Admin · Builds · Designs</div>
+      </div>
+      <div class="strip-note">Bonyad × Nigents · 2026</div>
+    </div>
+  </div>
+</body>
+</html>
