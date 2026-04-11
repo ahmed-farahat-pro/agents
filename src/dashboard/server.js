@@ -96,7 +96,34 @@ app.get('/downloads/:file', (req, res, next) => {
   });
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
+// GLB model files — serve with explicit streaming headers so the Nginx
+// reverse proxy doesn't time out on these large (~10 MB) binary files.
+app.get('/algioshy/models/:file.glb', (req, res) => {
+  const filePath = path.join(__dirname, 'public', 'algioshy', 'models', req.params.file + '.glb');
+  res.setHeader('Content-Type', 'model/gltf-binary');
+  res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
+  res.setHeader('Accept-Ranges', 'bytes');
+  res.sendFile(filePath, (err) => {
+    if (err && !res.headersSent) res.status(404).end();
+  });
+});
+
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.md')) res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+    // Never cache index.html so React SPA updates are picked up immediately
+    if (filePath.endsWith('index.html')) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Surrogate-Control', 'no-store');
+    }
+    // Long-term cache for hashed assets (JS/CSS bundles)
+    if (/\/assets\/index-[A-Za-z0-9_-]+\.(js|css)$/.test(filePath)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  }
+}));
 
 // CORS: allow any origin for public materials API (subscribe / download) – no auth required
 const materialsPublicPaths = ['/api/materials/subscribe', '/api/materials/download'];
@@ -108,8 +135,8 @@ function isMaterialsPublicPath(p) {
 app.use((req, res, next) => {
   if (!isMaterialsPublicPath(req.path)) return next();
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Admin-Token');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
@@ -120,6 +147,7 @@ const publicApiPaths = new Set([
   '/api/auth/check',
   '/api/materials/subscribe',
   '/api/materials/download',
+  '/api/algioshy/contact', // public form submission — no login needed
 ]);
 function isPublicApiPath(p) {
   const raw = (p || '').trim();
@@ -132,6 +160,8 @@ function isPublicApiPath(p) {
   if ((pathNorm.includes('/api/materials/subscribe') && !pathNorm.includes('subscribers')) ||
       pathNorm.includes('/api/materials/download')) return true;
   if (pathNorm.startsWith('/api/bonyad')) return true;
+  // AlGioshy routes do their own token-based auth in the route handler
+  if (pathNorm.startsWith('/api/algioshy/')) return true;
   return false;
 }
 
@@ -2109,7 +2139,7 @@ async function sendRoadmapEmail(subscriber, roadmap) {
     to: email,
     subject: `Your ${roadmapTitle} Developer Roadmap`,
     html: `
-      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="font-family: 'Poppins', 'Sakkal Majalla', -apple-system, BlinkMacSystemFont, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #141116; padding: 28px 30px; text-align: center; border-radius: 12px 12px 0 0; border: 1px solid #2a2a35; border-bottom: none;">
           <div style="display: inline-block; width: 44px; height: 44px; background: #ff570a; border-radius: 10px; line-height: 44px; font-size: 22px; font-weight: 700; color: #09080c;">N</div>
           <h1 style="color: #ffffff; margin: 12px 0 0 0; font-size: 22px; font-weight: 700; letter-spacing: -0.5px;">Nigents</h1>
@@ -2960,6 +2990,119 @@ app.post('/api/meeting/roundtable', async (req, res) => {
 });
 
 // ============================================================================
+// Skills Management API
+// ============================================================================
+
+const skillsRegistry = require('../utils/skills-registry');
+
+/** List all skills, optionally filtered by category or search query */
+app.get('/api/skills', (req, res) => {
+  try {
+    const q = (req.query.q || '').trim();
+    const category = (req.query.category || '').trim();
+    let skills;
+    if (q) {
+      skills = skillsRegistry.searchSkills(q);
+    } else if (category) {
+      const grouped = skillsRegistry.getSkillsByCategory();
+      skills = grouped[category] || [];
+    } else {
+      skills = [...skillsRegistry.getAllSkills().values()];
+    }
+    const grouped = skillsRegistry.getSkillsByCategory();
+    res.json({
+      success: true,
+      total: skills.length,
+      categories: Object.keys(grouped).sort(),
+      skills: skills.map(s => ({
+        slug: s.slug,
+        name: s.name,
+        description: s.description,
+        category: s.category,
+        version: s.version,
+        domain: s.domain,
+        hasScripts: s.hasScripts,
+        hasTemplates: s.hasTemplates,
+      })),
+    });
+  } catch (e) {
+    logger.error('[Skills] API list error:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/** Get full skill content (SKILL.md body) */
+app.get('/api/skills/:slug', (req, res) => {
+  try {
+    const content = skillsRegistry.getSkillContent(req.params.slug);
+    if (!content) return res.status(404).json({ success: false, error: 'Skill not found' });
+    const allSkills = skillsRegistry.getAllSkills();
+    const meta = allSkills.get(req.params.slug);
+    res.json({ success: true, skill: meta, content });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/** Activate a skill for an agent */
+app.post('/api/skills/activate', (req, res) => {
+  try {
+    const { agent, skill } = req.body;
+    if (!agent || !skill) return res.status(400).json({ success: false, error: 'agent and skill required' });
+    const allSkills = skillsRegistry.getAllSkills();
+    if (!allSkills.has(skill)) return res.status(404).json({ success: false, error: `Skill "${skill}" not found` });
+    skillsRegistry.activateSkill(agent, skill);
+    res.json({ success: true, message: `Activated ${skill} for ${agent}` });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/** Deactivate a skill for an agent */
+app.post('/api/skills/deactivate', (req, res) => {
+  try {
+    const { agent, skill } = req.body;
+    if (!agent || !skill) return res.status(400).json({ success: false, error: 'agent and skill required' });
+    skillsRegistry.deactivateSkill(agent, skill);
+    res.json({ success: true, message: `Deactivated ${skill} for ${agent}` });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/** Activate all skills in a category for an agent */
+app.post('/api/skills/activate-category', (req, res) => {
+  try {
+    const { agent, category } = req.body;
+    if (!agent || !category) return res.status(400).json({ success: false, error: 'agent and category required' });
+    const count = skillsRegistry.activateCategory(agent, category);
+    res.json({ success: true, message: `Activated ${count} skills from ${category} for ${agent}`, count });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/** Get all agent skill assignments */
+app.get('/api/skills/assignments', (req, res) => {
+  try {
+    const assignments = skillsRegistry.getAssignmentsSummary();
+    res.json({ success: true, assignments });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+/** Get skills for a specific agent */
+app.get('/api/skills/agent/:name', (req, res) => {
+  try {
+    const skills = skillsRegistry.getAgentSkills(req.params.name);
+    res.json({ success: true, agent: req.params.name, skills });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// ============================================================================
 // Socket.IO
 // ============================================================================
 
@@ -3085,6 +3228,80 @@ io.on('connection', async (socket) => {
 });
 
 // ============================================================================
+// AlGioshy School — Form submissions API (file-backed, no DB required)
+// ============================================================================
+const ALGIOSHY_FILE = path.join(__dirname, '..', '..', 'data', 'algioshy-submissions.json');
+
+function readAlgioshyData() {
+  try {
+    if (!fs.existsSync(ALGIOSHY_FILE)) return [];
+    return JSON.parse(fs.readFileSync(ALGIOSHY_FILE, 'utf8'));
+  } catch { return []; }
+}
+function writeAlgioshyData(data) {
+  const dir = path.dirname(ALGIOSHY_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(ALGIOSHY_FILE, JSON.stringify(data, null, 2), 'utf8');
+}
+
+// POST /api/algioshy/contact — public form submission
+app.post('/api/algioshy/contact', (req, res) => {
+  try {
+    const { parentName, studentName, phone, email, stage, age, notes, lang } = req.body;
+    if (!parentName || !studentName || !phone || !stage) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    const data = readAlgioshyData();
+    const entry = {
+      id: crypto.randomUUID(),
+      parentName: String(parentName).trim(),
+      studentName: String(studentName).trim(),
+      phone: String(phone).trim(),
+      email: String(email || '').trim(),
+      stage: String(stage).trim(),
+      age: age ? String(age).trim() : '',
+      notes: String(notes || '').trim(),
+      lang: lang || 'ar',
+      submittedAt: new Date().toISOString(),
+      ip: req.ip,
+    };
+    data.unshift(entry);
+    writeAlgioshyData(data);
+    logger.info(`[AlGioshy] New submission: ${entry.studentName} (${entry.stage})`);
+    res.json({ ok: true, id: entry.id });
+  } catch (err) {
+    logger.error('[AlGioshy] Submit error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+const ALGIOSHY_ADMIN_PASS = (process.env.ALGIOSHY_ADMIN_PASS || 'algioshy2025').trim();
+function isAlgioshyAdmin(req) {
+  const isLocal = req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1';
+  const hasSession = req.cookies?.dashboard_session;
+  const adminToken = (req.headers['x-admin-token'] || '').trim();
+  return isLocal || hasSession || adminToken === ALGIOSHY_ADMIN_PASS;
+}
+
+// GET /api/algioshy/submissions — admin view
+app.get('/api/algioshy/submissions', (req, res) => {
+  if (!isAlgioshyAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
+  res.json(readAlgioshyData());
+});
+
+// DELETE /api/algioshy/submissions/:id — admin delete
+app.delete('/api/algioshy/submissions/:id', (req, res) => {
+  if (!isAlgioshyAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const data = readAlgioshyData().filter(r => r.id !== req.params.id);
+    writeAlgioshyData(data);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ============================================================================
 // Bonyad fix briefs (MySQL-backed, public API; Nigents-themed UI)
 // ============================================================================
 if (useDatabase) {
@@ -3129,6 +3346,10 @@ app.get('*', (req, res) => {
   // Don't interfere with API routes
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ success: false, error: 'API endpoint not found' });
+  }
+  // Don't catch-all static asset requests — let them 404 naturally
+  if (/\.\w{1,5}$/.test(req.path) && !req.path.endsWith('.html')) {
+    return res.status(404).send('Not found');
   }
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

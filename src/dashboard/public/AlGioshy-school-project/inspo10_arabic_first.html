@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مدرسة سمارت كوليدج الدولية</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --green:#1c4a30;--green2:#2a6642;--green3:#0f3320;
+  --gold:#d4a843;--gold-l:#f0c96a;--gold-pale:#fffbf0;
+  --cream:#faf7f0;--white:#fff;--border:#e0d8c0;
+  --ink:#1a1408;--mid:#4a3c28;--dim:#8a7a5a;
+}
+html{scroll-behavior:smooth}
+body{background:var(--cream);color:var(--ink);font-family:'Cairo',sans-serif;direction:rtl}
+
+/* TOPBAR */
+.topbar{background:var(--green3);padding:.5rem 3rem;display:flex;justify-content:space-between;align-items:center}
+.tb-ar{font-size:.75rem;color:rgba(255,255,255,.5);font-family:'Tajawal',sans-serif}
+.tb-soc{display:flex;gap:.75rem;direction:ltr}
+.tb-soc a{font-size:.62rem;color:rgba(255,255,255,.4);text-decoration:none;padding:.15rem .5rem;border:1px solid rgba(255,255,255,.12);transition:all .2s}
+.tb-soc a:hover{color:var(--gold);border-color:var(--gold)}
+.tb-en{font-size:.62rem;color:rgba(255,255,255,.3);direction:ltr}
+
+/* NAV */
+nav{background:var(--white);border-bottom:3px solid var(--green);padding:0 3rem;display:flex;align-items:center;justify-content:space-between;height:74px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.nav-logo{display:flex;align-items:center;gap:1rem}
+.nav-seal{width:50px;height:50px;border-radius:50%;border:2px solid var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.nav-ar{font-size:1rem;font-weight:900;color:var(--green);line-height:1.15}
+.nav-en{font-size:.55rem;color:var(--dim);font-family:'Cairo',sans-serif;direction:ltr;margin-top:.1rem;letter-spacing:.06em}
+.nav-links{display:flex;gap:.25rem;direction:rtl}
+.nav-links a{text-decoration:none;font-size:.75rem;font-weight:700;color:var(--mid);padding:.5rem 1rem;border-radius:6px;transition:all .2s}
+.nav-links a:hover{background:rgba(28,74,48,.06);color:var(--green)}
+.nav-cta{display:flex;gap:.75rem;align-items:center}
+.nav-phone{font-size:.7rem;font-weight:700;color:var(--mid);direction:ltr}
+.btn-apply{background:var(--gold);color:var(--ink);padding:.6rem 1.8rem;font-size:.75rem;font-weight:900;border:none;cursor:pointer;font-family:'Cairo',sans-serif;border-radius:4px;transition:background .2s;text-decoration:none}
+.btn-apply:hover{background:var(--gold-l)}
+
+/* HERO */
+.hero{background:var(--green);min-height:88vh;display:grid;grid-template-columns:1fr 420px;position:relative;overflow:hidden}
+.hero-pattern{position:absolute;inset:0;pointer-events:none;opacity:.06}
+.hero-pattern svg{width:100%;height:100%}
+.hero-l{padding:5rem 3rem;display:flex;flex-direction:column;justify-content:center;position:relative;z-index:2}
+.hero-chip{display:inline-flex;align-items:center;gap:.75rem;background:rgba(212,168,67,.15);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:.4rem 1.2rem;border-radius:100px;font-size:.72rem;font-weight:700;margin-bottom:2rem;width:fit-content}
+.hero-slogan{font-size:1.1rem;color:rgba(255,255,255,.5);font-family:'Tajawal',sans-serif;font-weight:300;margin-bottom:.5rem}
+h1{font-family:'Tajawal',sans-serif;font-size:3.8rem;font-weight:900;line-height:1.1;color:#fff;margin-bottom:.5rem}
+h1 span{color:var(--gold)}
+.hero-en-title{font-size:1.1rem;color:rgba(255,255,255,.25);font-family:'Cairo',sans-serif;direction:ltr;font-weight:300;margin-bottom:2.5rem}
+.hero-p{font-size:.95rem;line-height:1.9;color:rgba(255,255,255,.65);max-width:520px;margin-bottom:3rem;font-family:'Tajawal',sans-serif;font-weight:400}
+.hero-btns{display:flex;gap:1rem;flex-wrap:wrap}
+.btn-gold{background:var(--gold);color:var(--ink);padding:.9rem 2.2rem;font-size:.78rem;font-weight:900;border:none;cursor:pointer;font-family:'Cairo',sans-serif;border-radius:4px;transition:all .2s;text-decoration:none;display:inline-block}
+.btn-gold:hover{background:var(--gold-l)}
+.btn-out-w{background:transparent;color:rgba(255,255,255,.7);padding:.9rem 2.2rem;font-size:.78rem;font-weight:700;border:1px solid rgba(255,255,255,.25);cursor:pointer;font-family:'Cairo',sans-serif;border-radius:4px;transition:all .2s;text-decoration:none;display:inline-block}
+.btn-out-w:hover{border-color:var(--gold);color:var(--gold)}
+.hero-r{background:rgba(255,255,255,.04);border-right:1px solid rgba(255,255,255,.08);padding:2.5rem;display:flex;flex-direction:column;gap:1.5rem;position:relative;z-index:2;justify-content:center}
+.hero-img{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;height:220px;display:flex;align-items:center;justify-content:center;font-size:.65rem;color:rgba(255,255,255,.25);letter-spacing:.1em}
+.hero-info-title{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.25);margin-bottom:1rem;direction:ltr;font-family:'Cairo',sans-serif}
+.hinfo-row{display:flex;align-items:flex-start;gap:.75rem;padding:.85rem 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.hinfo-row:last-child{border-bottom:none}
+.hinfo-icon{width:32px;height:32px;background:rgba(212,168,67,.12);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hinfo-label{font-size:.6rem;color:rgba(255,255,255,.3);margin-bottom:.15rem;font-family:'Tajawal',sans-serif}
+.hinfo-val{font-size:.82rem;color:#fff;font-weight:700;font-family:'Tajawal',sans-serif}
+
+/* STATS */
+.stats{background:var(--gold);display:grid;grid-template-columns:repeat(4,1fr)}
+.stat{padding:1.8rem;text-align:center;border-left:1px solid rgba(255,255,255,.2)}
+.stat:last-child{border-left:none}
+.stat-n{font-family:'Tajawal',sans-serif;font-size:2.5rem;font-weight:900;color:var(--ink)}
+.stat-ar{font-family:'Tajawal',sans-serif;font-size:.75rem;color:rgba(26,20,8,.6);margin-top:.15rem}
+.stat-en{font-size:.58rem;color:rgba(26,20,8,.4);font-family:'Cairo',sans-serif;direction:ltr;letter-spacing:.1em;text-transform:uppercase}
+
+/* SECTION */
+.section{padding:5rem 3rem}
+.sec-kicker{font-size:.65rem;font-weight:700;letter-spacing:.15em;color:var(--gold);margin-bottom:.5rem;display:flex;align-items:center;gap:.75rem;font-family:'Tajawal',sans-serif}
+.sec-kicker::before{content:'';display:block;width:24px;height:2px;background:var(--gold)}
+h2{font-family:'Tajawal',sans-serif;font-size:2.8rem;font-weight:900;color:var(--green);line-height:1.1;margin-bottom:2.5rem}
+
+/* WHY */
+.why-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border)}
+.why-card{background:var(--white);padding:2.5rem;transition:background .2s}
+.why-card:hover{background:var(--gold-pale)}
+.wn{font-family:'Tajawal',sans-serif;font-size:3.5rem;font-weight:900;color:rgba(28,74,48,.08);line-height:1;margin-bottom:.75rem}
+.wt{font-family:'Tajawal',sans-serif;font-size:1rem;font-weight:700;color:var(--green);margin-bottom:.5rem}
+.wd{font-family:'Tajawal',sans-serif;font-size:.82rem;line-height:1.8;color:var(--mid);font-weight:400}
+
+/* PROGRAMS */
+.prog-section{background:var(--green)}
+.prog-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:2.5rem}
+.prog-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:2.5rem;transition:all .3s;cursor:pointer}
+.prog-card:hover{background:rgba(212,168,67,.12);border-color:rgba(212,168,67,.3)}
+.pg-n{font-family:'Tajawal',sans-serif;font-size:4rem;font-weight:900;color:rgba(212,168,67,.12);line-height:1;margin-bottom:.5rem;direction:ltr}
+.pg-ar{font-family:'Tajawal',sans-serif;font-size:1rem;font-weight:700;color:#fff;margin-bottom:.25rem}
+.pg-en{font-size:.7rem;color:rgba(255,255,255,.3);direction:ltr;font-family:'Cairo',sans-serif;margin-bottom.75rem}
+.pg-tag{display:inline-block;background:rgba(212,168,67,.15);color:var(--gold);padding:.25rem .75rem;border-radius:100px;font-size:.62rem;font-weight:700;margin:.75rem 0}
+.pg-desc{font-family:'Tajawal',sans-serif;font-size:.8rem;line-height:1.75;color:rgba(255,255,255,.45);font-weight:400}
+
+/* FACILITIES */
+.fac-section{background:var(--cream);padding:5rem 3rem}
+.fac-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-top:2.5rem}
+.fac-card{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:1.5rem 1rem;text-align:center;transition:all .3s;border-top:3px solid transparent}
+.fac-card:hover{border-top-color:var(--gold)}
+.fac-ar{font-family:'Tajawal',sans-serif;font-size:.75rem;font-weight:700;color:var(--green)}
+.fac-en{font-size:.6rem;color:var(--dim);font-family:'Cairo',sans-serif;direction:ltr;margin-top:.15rem}
+
+/* ADMISSION */
+.adm-section{background:var(--white);padding:5rem 3rem}
+.adm-inner{display:grid;grid-template-columns:1fr 480px;gap:5rem}
+.adm-l h3{font-family:'Tajawal',sans-serif;font-size:2rem;font-weight:900;color:var(--green);line-height:1.15;margin-bottom:.25rem}
+.adm-en-sub{font-size:.68rem;color:var(--dim);font-family:'Cairo',sans-serif;direction:ltr;margin-bottom:.75rem}
+.adm-ar-sub{font-family:'Tajawal',sans-serif;font-size:.85rem;color:var(--mid);margin-bottom:2rem;line-height:1.7;font-weight:400}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem}
+.fg{margin-bottom:.75rem}
+.fl{display:block;font-size:.65rem;font-weight:700;color:var(--mid);margin-bottom:.4rem;font-family:'Tajawal',sans-serif}
+.fi{width:100%;background:var(--cream);border:1.5px solid var(--border);color:var(--ink);padding:.75rem 1rem;font-family:'Cairo',sans-serif;font-size:.82rem;border-radius:4px;outline:none;transition:border-color .2s;direction:rtl}
+.fi:focus{border-color:var(--green)}
+.fi::placeholder{color:var(--border)}
+.prog-btns{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem}
+.pb{border:1.5px solid var(--border);border-radius:6px;padding:1rem;cursor:pointer;background:var(--cream);transition:all .2s;font-family:'Cairo',sans-serif;text-align:right}
+.pb:hover{border-color:var(--green)}
+.pb.active{border-color:var(--green);background:rgba(28,74,48,.05);border-width:2px}
+.pb-ar{font-family:'Tajawal',sans-serif;font-size:.85rem;font-weight:700;color:var(--ink)}
+.pb.active .pb-ar{color:var(--green)}
+.pb-en{font-size:.62rem;color:var(--dim);font-family:'Cairo',sans-serif;direction:ltr;margin-top:.15rem}
+.fsub{width:100%;background:var(--green);color:#fff;padding:1rem;font-family:'Cairo',sans-serif;font-size:.82rem;font-weight:900;border:none;cursor:pointer;border-radius:4px;transition:background .2s;margin-top:.5rem}
+.fsub:hover{background:var(--green2)}
+.adm-r{background:var(--green);border-radius:12px;padding:3rem;color:#fff}
+.ar-logo-ar{font-family:'Tajawal',sans-serif;font-size:1.3rem;font-weight:900;color:var(--gold);margin-bottom:.25rem}
+.ar-logo-en{font-size:.68rem;color:rgba(255,255,255,.3);font-family:'Cairo',sans-serif;direction:ltr;margin-bottom:2rem}
+.ar-row{padding:.9rem 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.ar-row:last-child{border-bottom:none}
+.ar-l{font-family:'Tajawal',sans-serif;font-size:.65rem;color:rgba(255,255,255,.3);margin-bottom:.25rem;font-weight:400}
+.ar-v{font-family:'Tajawal',sans-serif;font-size:.88rem;color:rgba(255,255,255,.8);line-height:1.5}
+.soc-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem;direction:ltr}
+.soc-a{padding:.3rem .85rem;background:rgba(255,255,255,.08);border-radius:100px;font-size:.62rem;color:rgba(255,255,255,.45);text-decoration:none;font-weight:600;transition:all .2s;font-family:'Cairo',sans-serif}
+.soc-a:hover{background:rgba(212,168,67,.2);color:var(--gold)}
+
+/* FOOTER */
+footer{background:var(--ink);padding:4rem 3rem 0}
+.ft-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:3rem;margin-bottom:3rem}
+.ft-ar{font-family:'Tajawal',sans-serif;font-size:1.1rem;font-weight:900;color:var(--gold);margin-bottom:.15rem}
+.ft-en{font-size:.6rem;color:rgba(255,255,255,.2);font-family:'Cairo',sans-serif;direction:ltr;margin-bottom:.75rem;letter-spacing:.06em}
+.ft-p{font-family:'Tajawal',sans-serif;font-size:.8rem;line-height:1.8;color:rgba(255,255,255,.3);max-width:280px;font-weight:400}
+.ft-soc{display:flex;gap:.5rem;margin-top:1.2rem;direction:ltr}
+.ft-s{padding:.3rem .75rem;background:rgba(255,255,255,.06);border-radius:100px;font-size:.6rem;color:rgba(255,255,255,.3);text-decoration:none;font-weight:600;font-family:'Cairo',sans-serif;transition:all .2s}
+.ft-s:hover{background:rgba(212,168,67,.2);color:var(--gold)}
+.ft-ct{font-family:'Tajawal',sans-serif;font-size:.65rem;font-weight:700;color:rgba(255,255,255,.25);margin-bottom:1rem}
+.ft-it{font-family:'Tajawal',sans-serif;font-size:.82rem;color:rgba(255,255,255,.45);margin-bottom:.45rem}
+.ft-bot{border-top:1px solid rgba(255,255,255,.06);padding:1.2rem 0;display:flex;justify-content:space-between;align-items:center}
+.ft-copy{font-family:'Tajawal',sans-serif;font-size:.65rem;color:rgba(255,255,255,.18)}
+.ft-copy-en{font-family:'Cairo',sans-serif;font-size:.6rem;color:rgba(255,255,255,.12);direction:ltr}
+
+@media(max-width:900px){
+  nav{padding:0 1.5rem}.nav-links{display:none}
+  .hero{grid-template-columns:1fr}.hero-r{display:none}
+  .hero-l{padding:3rem 1.5rem}
+  h1{font-size:2.5rem}.stats{grid-template-columns:1fr 1fr}
+  .why-grid,.prog-grid,.fac-grid,.adm-inner{grid-template-columns:1fr}
+  .fac-grid{grid-template-columns:repeat(2,1fr)}.ft-grid{grid-template-columns:1fr}
+  .section{padding:3rem 1.5rem}
+}
+
+
+/* ══ ANIMATION LAYER ════════════════════════════════════════════════════ */
+/* Scroll-reveal base */
+.anim-reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.anim-reveal.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+/* Stagger classes */
+.anim-d1 { transition-delay: 0.06s; }
+.anim-d2 { transition-delay: 0.12s; }
+.anim-d3 { transition-delay: 0.18s; }
+.anim-d4 { transition-delay: 0.24s; }
+.anim-d5 { transition-delay: 0.30s; }
+.anim-d6 { transition-delay: 0.36s; }
+.anim-d7 { transition-delay: 0.42s; }
+
+/* Hero entrance */
+.hero-left, .hero-l, .hero-r, .hero-right {
+  opacity: 0;
+}
+.hero-left, .hero-l {
+  transform: translateX(-36px);
+  animation: heroSlideRight 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+}
+.hero-right, .hero-r {
+  transform: translateX(36px);
+  animation: heroSlideLeft 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.35s forwards;
+}
+@keyframes heroSlideRight {
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes heroSlideLeft {
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Hero badge pop-in */
+.hero-badge, .h-eyebrow, .hero-badge-text {
+  opacity: 0;
+  transform: translateY(12px) scale(0.95);
+  animation: badgeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+}
+@keyframes badgeIn {
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Hero title cascade */
+.hero-h1, h1 {
+  opacity: 0;
+  transform: translateY(24px);
+  animation: titleIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+}
+@keyframes titleIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Hero description + buttons */
+.hero-desc, .hero-p, .hero-slogan-ar, .hero-slogan-en, .hero-ar, .hero-ar-tag {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.55s forwards;
+}
+.hero-btns {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.7s forwards;
+}
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Campus frame / hero image float */
+.campus-frame, .hero-card, .hero-img-box, .hero-prog {
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.4s ease;
+}
+.campus-frame:hover, .hero-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+}
+
+/* Stat numbers — count pulse */
+.stat-n, .hs-n, .sb-n, .qf-num {
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.stat-n.in-view, .hs-n.in-view, .sb-n.in-view, .qf-num.in-view {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Stat label — slide up */
+.stat-l, .hs-l, .sb-l, .qf-label {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.4s ease 0.15s, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.15s;
+}
+.stat-l.in-view, .hs-l.in-view, .sb-l.in-view, .qf-label.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Section titles */
+.sec-label, .kicker, .sec-title {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sec-label.in-view, .kicker.in-view, .sec-title.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Cards — hover lift + glow sweep */
+.prog-card, .why-card, .feature-card, .feat-card, .fac-item, .fac-card {
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1),
+              box-shadow 0.35s ease,
+              border-color 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.prog-card::after, .why-card::after, .feature-card::after, .feat-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%);
+  transition: left 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+.prog-card:hover::after, .why-card:hover::after, .feature-card:hover::after, .feat-card:hover::after {
+  left: 140%;
+}
+.prog-card:hover, .why-card:hover, .feature-card:hover, .feat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 14px 44px rgba(0,0,0,0.12);
+}
+
+/* Facility items — scale pop */
+.fac-item, .fac-card {
+  opacity: 0;
+  transform: scale(0.88);
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fac-item.in-view, .fac-card.in-view {
+  opacity: 1;
+  transform: scale(1);
+}
+.fac-item:hover, .fac-card:hover {
+  transform: scale(1.05);
+}
+
+/* Buttons — lift + glow */
+.btn-gold, .btn-blue, .btn-outline, .btn-ghost, .btn-ghost-w, .nav-cta, .nav-apply {
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1),
+              box-shadow 0.2s ease,
+              background 0.2s ease,
+              color 0.2s ease,
+              border-color 0.2s ease !important;
+}
+.btn-gold:hover, .btn-blue:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2) !important;
+}
+.btn-outline:hover, .btn-ghost:hover, .btn-ghost-w:hover {
+  transform: translateY(-2px) !important;
+}
+
+/* Nav links — underline sweep */
+.nav-links a, .nav-menu a {
+  position: relative;
+}
+.nav-links a::after, .nav-menu a::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  right: 50%;
+  height: 2px;
+  background: currentColor;
+  transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              right 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0.6;
+}
+.nav-links a:hover::after, .nav-menu a:hover::after {
+  left: 0;
+  right: 0;
+}
+
+/* Gold divider — shimmer */
+.gold-div {
+  position: relative;
+  overflow: hidden;
+}
+.gold-div::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+  animation: shimmerDiv 3.5s ease-in-out infinite;
+}
+@keyframes shimmerDiv {
+  0% { left: -100%; }
+  100% { left: 200%; }
+}
+
+/* Quick facts — stagger in */
+.qf-item {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.qf-item.in-view { opacity: 1; transform: translateY(0); }
+
+/* Form — smooth focus */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(21,80,240,0.15);
+  transition: box-shadow 0.2s ease;
+}
+
+/* Scroll progress indicator at the top */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, currentColor, currentColor);
+  z-index: 99999;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 0.1s linear;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Parallax-like float on hero shapes */
+@keyframes gentleFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+.arch-outer, .arch-inner, .hero-bg-shape {
+  animation: gentleFloat 6s ease-in-out infinite;
+}
+.arch-inner { animation-delay: 0.8s; }
+
+/* Reduce motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .anim-reveal, .hero-left, .hero-l, .hero-right, .hero-r,
+  .hero-badge, .h-eyebrow, .hero-h1, h1,
+  .hero-desc, .hero-p, .hero-btns,
+  .stat-n, .hs-n, .sb-n, .qf-num,
+  .stat-l, .hs-l, .sb-l, .qf-label,
+  .sec-label, .kicker, .sec-title,
+  .fac-item, .fac-card, .qf-item {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+}
+/* ══ END ANIMATION LAYER ════════════════════════════════════════════════ */
+
+/* ══ RESPONSIVE PATCH ══════════════════════════════════════════════════ */
+/* Tablet (≤900px already partially handled; we strengthen it)           */
+@media (max-width: 900px) {
+  nav, .nav { padding: 1rem 1.5rem !important; }
+  .topbar   { padding: .5rem 1.5rem !important; }
+  h1        { font-size: clamp(1.8rem, 6vw, 3rem) !important; letter-spacing: -.02em !important; }
+  .hero, .hero-l, .hero-left { padding: 3rem 2rem !important; }
+  .hero-r, .hero-right       { padding: 2rem !important; }
+  .fac-grid   { grid-template-columns: repeat(3, 1fr) !important; }
+  .why-grid, .feat-grid, .campus-fac-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .stats, .stats-bar { grid-template-columns: repeat(2, 1fr) !important; gap: 1rem !important; }
+  .adm-inner, .adm-grid, .why-inner { grid-template-columns: 1fr !important; }
+  .prog-grid  { grid-template-columns: repeat(2, 1fr) !important; }
+  .scope-grid, .inspo-grid, .req-grid, .sig-grid { grid-template-columns: 1fr !important; }
+  .cover-meta { grid-template-columns: repeat(2, 1fr) !important; }
+  .qbox-grid  { grid-template-columns: repeat(2, 1fr) !important; }
+  .form-row, .form-2col { grid-template-columns: 1fr !important; }
+}
+
+/* Phone (≤600px) ─ new breakpoint */
+@media (max-width: 600px) {
+  nav, .nav { padding: .75rem 1rem !important; height: auto !important; }
+  .topbar   { padding: .4rem 1rem !important; font-size: .6rem !important; }
+
+  h1        { font-size: clamp(1.6rem, 7vw, 2.4rem) !important; }
+  h2        { font-size: clamp(1.2rem, 5vw, 1.8rem) !important; }
+  h3        { font-size: 1rem !important; }
+
+  /* Hero */
+  .hero, section, .section { padding: 2rem 1rem !important; }
+  .hero-l, .hero-left, .hero-r, .hero-right { padding: 1.5rem 1rem !important; }
+  .hero-spine { display: none !important; }
+  .hero-bg-shape { display: none !important; }
+  .cover-badge { font-size: .55rem !important; }
+
+  /* Grids → 1 col */
+  .fac-grid   { grid-template-columns: repeat(2, 1fr) !important; gap: .6rem !important; }
+  .why-grid, .feat-grid, .campus-fac-grid,
+  .prog-grid, .scope-grid, .inspo-grid,
+  .req-grid, .sig-grid,
+  .adm-inner, .adm-grid, .why-inner,
+  .stats, .stats-bar { grid-template-columns: 1fr !important; gap: .75rem !important; }
+
+  /* Covers / proposal */
+  .cover { padding: 2.5rem 1.2rem !important; min-height: auto !important; }
+  .cover-h1 { font-size: clamp(1.6rem, 7vw, 2.6rem) !important; }
+  .cover-meta { grid-template-columns: repeat(2, 1fr) !important; gap: .6rem !important; }
+  .cover-bottom { flex-direction: column !important; gap: 1rem !important; }
+  .cb-right { text-align: left !important; }
+  .wrap     { padding: 2rem 1rem !important; }
+
+  /* Quote box */
+  .qbox         { padding: 1.5rem 1rem !important; }
+  .qbox-total   { font-size: 2.4rem !important; }
+  .qbox-grid    { grid-template-columns: 1fr !important; gap: 1rem !important; }
+
+  /* Tables — horizontal scroll */
+  table         { display: block !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; white-space: nowrap !important; }
+
+  /* Timeline */
+  .tl-row       { grid-template-columns: 1fr !important; gap: .4rem !important; }
+
+  /* Inspo grid cards */
+  .inspo-grid   { grid-template-columns: 1fr !important; }
+
+  /* Nav links in mobile panels */
+  .nav-links    { padding: 1rem !important; }
+  .nav-links a  { font-size: .9rem !important; padding: .6rem .8rem !important; }
+
+  /* Forms */
+  .form-row, .form-2col    { grid-template-columns: 1fr !important; }
+  input, select, textarea  { font-size: 16px !important; } /* prevent iOS zoom */
+
+  /* Admission panel */
+  .adm-info-panel, .adm-form-wrap { padding: 1.2rem !important; }
+
+  /* Step bar */
+  .step-bar, .prog-steps { flex-direction: column !important; gap: .5rem !important; }
+  .step-connector { display: none !important; }
+
+  /* Marquee — disable animation on small screens */
+  .marquee-wrap { overflow: hidden !important; }
+  .marquee-track { animation-play-state: paused !important; }
+
+  /* Why / features */
+  .why-row, .why-inner { flex-direction: column !important; }
+  .why-img-col, .why-list { width: 100% !important; max-width: 100% !important; }
+
+  /* Trust/stats bars */
+  .trust-bar { flex-wrap: wrap !important; gap: .75rem !important; justify-content: center !important; }
+  .trust-item { min-width: 120px !important; }
+
+  /* Cards */
+  .card, .icard, .feature-card, .prog-card { padding: 1.2rem !important; }
+  .ibtn { display: block !important; text-align: center !important; }
+
+  /* Footer */
+  .foot { padding: 2rem 1rem !important; }
+  .foot-logo-row { flex-wrap: wrap !important; justify-content: center !important; }
+
+  /* Nigents host bar */
+  [style*="AlGioshy"] { flex-wrap: wrap !important; gap: 6px !important; font-size: 10px !important; }
+}
+/* ══ END RESPONSIVE PATCH ═══════════════════════════════════════════════ */
+
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="tb-ar">مدرسة سمارت كوليدج الدولية · مصر الجديدة، القاهرة</div>
+  <div class="tb-soc">
+    <a href="https://instagram.com/smartcollege.sc">Instagram</a>
+    <a href="#">Facebook</a>
+    <a href="#">TikTok</a>
+  </div>
+  <div class="tb-en"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="7910171f16390a14180b0d1a1615151c1e1c0a1a11161615571a1614">[email&#160;protected]</a></div>
+</div>
+
+<nav>
+  <div class="nav-logo">
+    <div class="nav-seal">
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+        <polygon points="13,3 16.5,10 24,10 18,15 20.5,22 13,18 5.5,22 8,15 2,10 9.5,10" fill="none" stroke="#1c4a30" stroke-width="1.2"/>
+      </svg>
+    </div>
+    <div>
+      <div class="nav-ar">مدرسة سمارت كوليدج الدولية</div>
+      <div class="nav-en">Smart College International Schools · Heliopolis · Cairo</div>
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="#about">عن المدرسة</a>
+    <a href="#programs">البرامج</a>
+    <a href="#campus">الحرم الجامعي</a>
+    <a href="#admissions">القبول</a>
+    <a href="#contact">تواصل معنا</a>
+  </div>
+  <div class="nav-cta">
+    <span class="nav-phone">📞 01036323222</span>
+    <a href="#admissions" class="btn-apply">سجّل الآن</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-pattern">
+    <svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+      <defs><pattern id="geom" width="60" height="60" patternUnits="userSpaceOnUse"><polygon points="30,5 55,20 55,40 30,55 5,40 5,20" fill="none" stroke="white" stroke-width="0.5"/></pattern></defs>
+      <rect width="800" height="600" fill="url(#geom)"/>
+    </svg>
+  </div>
+  <div class="hero-l">
+    <div class="hero-chip">القبول مفتوح · العام الدراسي 2025–2026</div>
+    <div class="hero-slogan">نصنع العقول ونبني المستقبل</div>
+    <h1>مدرسة سمارت<br><span>كوليدج</span> الدولية</h1>
+    <div class="hero-en-title">Smart College International Schools</div>
+    <p class="hero-p">وجهة تعليمية مرموقة في قلب مصر الجديدة بالقاهرة — نقدم برامج الـ IG والدبلوم الأمريكي للصفوف العاشر والحادي عشر والثاني عشر، في حرم جامعي يجمع بين الأصالة والحداثة.</p>
+    <div class="hero-btns">
+      <a href="#admissions" class="btn-gold">التقديم للقبول</a>
+      <a href="#about" class="btn-out-w">اعرف المزيد</a>
+    </div>
+  </div>
+  <div class="hero-r">
+    <div class="hero-img">صور الحرم الجامعي قريباً</div>
+    <div class="hero-info-title">Quick Facts · نظرة سريعة</div>
+    <div class="hinfo-row">
+      <div class="hinfo-icon"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#d4a843" stroke-width="1"/></svg></div>
+      <div><div class="hinfo-label">البرامج</div><div class="hinfo-val">IG · الدبلوم الأمريكي</div></div>
+    </div>
+    <div class="hinfo-row">
+      <div class="hinfo-icon"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="10" height="10" stroke="#d4a843" stroke-width="1"/></svg></div>
+      <div><div class="hinfo-label">الصفوف</div><div class="hinfo-val">العاشر · الحادي عشر · الثاني عشر</div></div>
+    </div>
+    <div class="hinfo-row">
+      <div class="hinfo-icon"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><polygon points="7,2 12,11 2,11" fill="none" stroke="#d4a843" stroke-width="1"/></svg></div>
+      <div><div class="hinfo-label">الموقع</div><div class="hinfo-val">مصر الجديدة، القاهرة</div></div>
+    </div>
+    <div class="hinfo-row">
+      <div class="hinfo-icon"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2 L10.5 8 L14 8 L10.5 11 L12 14 L7 11.5 L2 14 L3.5 11 L0 8 L3.5 8Z" fill="none" stroke="#d4a843" stroke-width="0.75"/></svg></div>
+      <div><div class="hinfo-label">الطاقة الاستيعابية</div><div class="hinfo-val">٣٦٠ طالب · ١٨ فصلاً</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="stats">
+  <div class="stat"><div class="stat-n">360</div><div class="stat-ar">طالب</div><div class="stat-en">Capacity</div></div>
+  <div class="stat"><div class="stat-n">18</div><div class="stat-ar">فصلاً دراسياً</div><div class="stat-en">Classes</div></div>
+  <div class="stat"><div class="stat-n">20</div><div class="stat-ar">طالب في الفصل</div><div class="stat-en">Per Class</div></div>
+  <div class="stat"><div class="stat-n">5+</div><div class="stat-ar">معامل متخصصة</div><div class="stat-en">Labs</div></div>
+</div>
+
+<section class="section" id="about">
+  <div class="sec-kicker">عن المدرسة</div>
+  <h2>لماذا سمارت كوليدج؟</h2>
+  <div class="why-grid">
+    <div class="why-card"><div class="wn">١</div><div class="wt">موقع مرموق</div><div class="wd">في قلب مصر الجديدة، أحد أرقى أحياء القاهرة — حرم جامعي في مبنى تراثي يجمع بين الأناقة والحداثة.</div></div>
+    <div class="why-card"><div class="wn">٢</div><div class="wt">التميز الأكاديمي</div><div class="wd">مناهج دولية معتمدة بمنظور عالمي — تؤهل الطلاب للقبول في أرقى الجامعات حول العالم.</div></div>
+    <div class="why-card"><div class="wn">٣</div><div class="wt">كادر تعليمي متميز</div><div class="wd">معلمون ومرشدون مختارون بعناية — ٢٠ طالباً فقط في كل فصل لضمان الاهتمام الفردي الكامل.</div></div>
+    <div class="why-card"><div class="wn">٤</div><div class="wt">مرافق عالمية</div><div class="wd">معامل متطورة، مسرح، حمام سباحة، صالة رياضية، ملاعب بادل، منطقة كروسفت، مسجد وكافيتيريا.</div></div>
+    <div class="why-card"><div class="wn">٥</div><div class="wt">رعاية شاملة</div><div class="wd">أعلى معايير النظافة والأمان والصحة الجسدية والنفسية — بيئة آمنة وداعمة لكل طالب.</div></div>
+    <div class="why-card"><div class="wn">٦</div><div class="wt">شراكات دولية</div><div class="wd">تعاون استراتيجي مع مؤسسات تعليمية دولية رائدة لإثراء البرامج وفتح آفاق عالمية للطلاب.</div></div>
+  </div>
+</section>
+
+<section class="prog-section section" id="programs">
+  <div class="sec-kicker" style="color:rgba(212,168,67,.7)">البرامج الأكاديمية</div>
+  <h2 style="color:#fff">مسارك نحو المستقبل</h2>
+  <div class="prog-grid">
+    <div class="prog-card">
+      <div class="pg-n">10</div>
+      <div class="pg-ar">برنامج الـ IG — الصف العاشر</div>
+      <div class="pg-en">IG Program — Grade 10</div>
+      <div class="pg-tag">شهادة IG الدولية</div>
+      <div class="pg-desc">بداية رحلة شهادة الـ IG الدولية — بناء أسس التفكير التحليلي والمعرفة الأكاديمية على المستوى العالمي.</div>
+    </div>
+    <div class="prog-card">
+      <div class="pg-n">11</div>
+      <div class="pg-ar">برنامج الـ IG — الصف الحادي عشر</div>
+      <div class="pg-en">IG Program — Grade 11</div>
+      <div class="pg-tag">شهادة IG الدولية</div>
+      <div class="pg-desc">تخصص متقدم وتحضير مكثف لامتحانات الـ IG النهائية — العام الحاسم في المسيرة الأكاديمية.</div>
+    </div>
+    <div class="prog-card">
+      <div class="pg-n">12</div>
+      <div class="pg-ar">الدبلوم الأمريكي — الصف الثاني عشر</div>
+      <div class="pg-en">American Diploma — Grade 12</div>
+      <div class="pg-tag">الدبلوم الأمريكي</div>
+      <div class="pg-desc">المنهج الأمريكي المعتمد المؤهل للقبول في الجامعات الأمريكية والأوروبية والعربية الكبرى.</div>
+    </div>
+  </div>
+</section>
+
+<section class="fac-section" id="campus">
+  <div class="sec-kicker">مرافق الحرم الجامعي</div>
+  <h2>مرافق عالمية المستوى</h2>
+  <div class="fac-grid">
+    <div class="fac-card"><div class="fac-ar">معمل تقنية</div><div class="fac-en">ICT Lab</div></div>
+    <div class="fac-card"><div class="fac-ar">معمل كيمياء</div><div class="fac-en">Chemistry Lab</div></div>
+    <div class="fac-card"><div class="fac-ar">معمل أحياء</div><div class="fac-en">Biology Lab</div></div>
+    <div class="fac-card"><div class="fac-ar">معمل فيزياء</div><div class="fac-en">Physics Lab</div></div>
+    <div class="fac-card"><div class="fac-ar">استوديو فنون</div><div class="fac-en">Art Studio</div></div>
+    <div class="fac-card"><div class="fac-ar">غرفة موسيقى</div><div class="fac-en">Music Room</div></div>
+    <div class="fac-card"><div class="fac-ar">مسرح أنيق</div><div class="fac-en">Theater</div></div>
+    <div class="fac-card"><div class="fac-ar">مسرح خارجي</div><div class="fac-en">Outdoor Stage</div></div>
+    <div class="fac-card"><div class="fac-ar">حمام سباحة</div><div class="fac-en">Swimming Pool</div></div>
+    <div class="fac-card"><div class="fac-ar">صالة رياضية</div><div class="fac-en">Gymnasium</div></div>
+    <div class="fac-card"><div class="fac-ar">ملاعب بادل</div><div class="fac-en">Padel Courts</div></div>
+    <div class="fac-card"><div class="fac-ar">منطقة كروسفت</div><div class="fac-en">CrossFit Area</div></div>
+    <div class="fac-card"><div class="fac-ar">مسجد</div><div class="fac-en">Mosque</div></div>
+    <div class="fac-card"><div class="fac-ar">كافيتيريا</div><div class="fac-en">Cafeteria</div></div>
+    <div class="fac-card"><div class="fac-ar">ملعب</div><div class="fac-en">Playground</div></div>
+  </div>
+</section>
+
+<section class="adm-section" id="admissions">
+  <div class="adm-inner">
+    <div class="adm-l">
+      <div class="sec-kicker">التقديم والقبول</div>
+      <h3>قدِّم طلبك الآن</h3>
+      <div class="adm-en-sub">Apply for Admission — Academic Year 2025–2026</div>
+      <div class="adm-ar-sub">أملأ النموذج وسيتواصل معك فريق القبول خلال ٤٨ ساعة. نرحب بك في مجتمع يُعرَّف بالتميز.</div>
+      <form onsubmit="sub10(event)">
+        <div class="frow">
+          <div><label class="fl">الاسم الأول</label><input type="text" class="fi" placeholder="أحمد" required></div>
+          <div><label class="fl">اسم العائلة</label><input type="text" class="fi" placeholder="حسن" required></div>
+        </div>
+        <div class="frow">
+          <div><label class="fl">تاريخ الميلاد</label><input type="date" class="fi" required></div>
+          <div><label class="fl">الجنسية</label><select class="fi"><option value="">اختر</option><option>مصري</option><option>سعودي</option><option>أخرى</option></select></div>
+        </div>
+        <div class="frow">
+          <div><label class="fl">الصف الدراسي</label><select class="fi" required><option value="">اختر الصف</option><option>الصف العاشر</option><option>الصف الحادي عشر</option><option>الصف الثاني عشر</option></select></div>
+          <div><label class="fl">رقم الهوية / الجواز</label><input type="text" class="fi" placeholder="رقم الهوية"></div>
+        </div>
+        <div class="fg"><label class="fl">البرنامج</label>
+          <div class="prog-btns">
+            <button type="button" class="pb active" onclick="sel10(this)"><div class="pb-ar">برنامج الـ IG</div><div class="pb-en">IG Certificate</div></button>
+            <button type="button" class="pb" onclick="sel10(this)"><div class="pb-ar">الدبلوم الأمريكي</div><div class="pb-en">American Diploma</div></button>
+          </div>
+        </div>
+        <div class="frow">
+          <div><label class="fl">اسم ولي الأمر</label><input type="text" class="fi" placeholder="الاسم الكامل" required></div>
+          <div><label class="fl">رقم الهاتف</label><input type="tel" class="fi" placeholder="01XXXXXXXXX" required></div>
+        </div>
+        <div class="fg"><label class="fl">البريد الإلكتروني</label><input type="email" class="fi" placeholder="your@email.com" required></div>
+        <div class="fg"><label class="fl">ملاحظات إضافية</label><textarea class="fi" rows="3" style="resize:vertical" placeholder="أي استفسار أو ملاحظات..."></textarea></div>
+        <button type="submit" class="fsub" id="sb10">إرسال طلب التقديم</button>
+        <div id="ok10" style="display:none;margin-top:1rem;padding:1rem;background:rgba(28,74,48,.06);border-right:3px solid var(--green);color:var(--green);font-size:.82rem;font-family:'Tajawal',sans-serif">تم استلام طلبك! سيتواصل معك فريقنا خلال ٤٨ ساعة.</div>
+      </form>
+    </div>
+    <div class="adm-r">
+      <div class="ar-logo-ar">مدرسة سمارت كوليدج الدولية</div>
+      <div class="ar-logo-en">Smart College International Schools</div>
+      <div class="ar-row"><div class="ar-l">العنوان</div><div class="ar-v">٢٢ ش عثمان ابن عفان، البستان، مصر الجديدة، القاهرة</div></div>
+      <div class="ar-row"><div class="ar-l">الهاتف</div><div class="ar-v">01036323222 · 01035533221</div></div>
+      <div class="ar-row"><div class="ar-l">البريد الإلكتروني</div><div class="ar-v"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="e1888f878ea1928c809395828e8d8d8486849282898e8e8dcf828e8c">[email&#160;protected]</a></div></div>
+      <div class="ar-row"><div class="ar-l">البرامج</div><div class="ar-v">شهادة IG · الدبلوم الأمريكي</div></div>
+      <div class="ar-row"><div class="ar-l">الصفوف</div><div class="ar-v">الصف العاشر · الحادي عشر · الثاني عشر</div></div>
+      <div class="ar-row"><div class="ar-l">المواصلات</div><div class="ar-v">خدمة باصات شاملة لجميع الطلاب</div></div>
+      <div class="ar-row"><div class="ar-l">تابعنا</div>
+        <div class="soc-row">
+          <a href="https://instagram.com/smartcollege.sc" class="soc-a">Instagram</a>
+          <a href="#" class="soc-a">Facebook</a>
+          <a href="#" class="soc-a">TikTok</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer id="contact">
+  <div class="ft-grid">
+    <div>
+      <div class="ft-ar">مدرسة سمارت كوليدج الدولية</div>
+      <div class="ft-en">Smart College International Schools</div>
+      <p class="ft-p">حيث التراث يلتقي الابتكار، والتميز ليس مجرد هدف بل أسلوب حياة — في قلب مصر الجديدة، القاهرة.</p>
+      <div class="ft-soc">
+        <a href="https://instagram.com/smartcollege.sc" class="ft-s">Instagram</a>
+        <a href="#" class="ft-s">Facebook</a>
+        <a href="#" class="ft-s">TikTok</a>
+      </div>
+    </div>
+    <div>
+      <div class="ft-ct">تواصل معنا</div>
+      <div class="ft-it">📞 01036323222</div>
+      <div class="ft-it">📞 01035533221</div>
+      <div class="ft-it">✉️ <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="21484f474e61524c405355424e4d4d4446445242494e4e4d0f424e4c">[email&#160;protected]</a></div>
+    </div>
+    <div>
+      <div class="ft-ct">العنوان</div>
+      <div class="ft-it">٢٢ ش عثمان ابن عفان<br>البستان، مصر الجديدة<br>القاهرة، مصر</div>
+    </div>
+  </div>
+  <div class="ft-bot">
+    <div class="ft-copy">© 2025 مدرسة سمارت كوليدج الدولية. جميع الحقوق محفوظة.</div>
+    <div class="ft-copy-en">Shaping Futures. Empowering Minds.</div>
+  </div>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+function sel10(el){document.querySelectorAll('.pb').forEach(b=>b.classList.remove('act

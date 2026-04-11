@@ -1,5 +1,5 @@
 /* Bonyad — Nigents orange / black theme (responsive, touch-friendly) */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
 :root {
   --bg-primary: #08070b;
@@ -28,7 +28,7 @@
   --shadow-sm: 0 4px 20px rgba(0, 0, 0, 0.28);
   --content-max: 56rem;
   --gutter: clamp(16px, 4.5vw, 36px);
-  --font: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font: 'Poppins', 'Sakkal Majalla', -apple-system, BlinkMacSystemFont, sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, monospace;
   --tap-min: 44px;
 }

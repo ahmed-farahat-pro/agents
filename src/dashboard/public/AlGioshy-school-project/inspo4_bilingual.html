@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="ar" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart College International — Bilingual Arabic/English</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Playfair+Display:ital,wght@0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --green: #1c3d2e;
+    --green2: #2a5c42;
+    --gold: #d4a843;
+    --gold-light: #f0c96a;
+    --cream: #fdf8ef;
+    --white: #fff;
+    --ink: #1a1a14;
+    --muted: #5a5040;
+    --dim: #a09070;
+    --border: #e0d8c8;
+  }
+  html { scroll-behavior: smooth; }
+  body { background: var(--cream); color: var(--ink); font-family: 'Inter', sans-serif; }
+
+  /* TOPBAR */
+  .topbar { background: var(--green); display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 3rem; }
+  .topbar-en { font-size: 0.62rem; letter-spacing: 0.1em; color: rgba(255,255,255,0.55); }
+  .topbar-ar { font-family: 'Tajawal', sans-serif; font-size: 0.85rem; color: rgba(255,255,255,0.55); direction: rtl; }
+  .topbar-social { display: flex; gap: 0.75rem; }
+  .topbar-social a { font-size: 0.6rem; letter-spacing: 0.1em; color: rgba(255,255,255,0.4); text-decoration: none; padding: 0.2rem 0.5rem; border: 1px solid rgba(255,255,255,0.12); transition: all 0.2s; }
+  .topbar-social a:hover { color: var(--gold); border-color: var(--gold); }
+
+  /* NAV */
+  nav { background: var(--white); border-bottom: 3px solid var(--green); padding: 0 3rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .nav-logo { padding: 1.2rem 0; }
+  .nav-logo-en { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.1rem; color: var(--green); letter-spacing: -0.01em; }
+  .nav-logo-ar { font-family: 'Tajawal', sans-serif; font-size: 0.9rem; color: var(--gold); direction: rtl; margin-top: 0.1rem; }
+  .nav-links { display: flex; gap: 0; }
+  .nav-links a { text-decoration: none; font-size: 0.7rem; font-weight: 500; color: var(--muted); padding: 1.5rem 1.2rem; transition: color 0.2s; border-bottom: 3px solid transparent; margin-bottom: -3px; }
+  .nav-links a:hover { color: var(--green); border-color: var(--green); }
+  .nav-cta { background: var(--gold); color: var(--ink); padding: 0.65rem 1.8rem; font-size: 0.7rem; font-weight: 700; border: none; cursor: pointer; font-family: 'Inter', sans-serif; transition: background 0.2s; text-decoration: none; }
+  .nav-cta:hover { background: var(--gold-light); }
+
+  /* HERO */
+  .hero { display: grid; grid-template-columns: 1fr 420px; min-height: 88vh; }
+  .hero-left { padding: 5rem 3rem; background: var(--cream); display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; }
+  .hero-pattern { position: absolute; right: 0; top: 0; bottom: 0; width: 120px; background-image: repeating-linear-gradient(45deg, var(--green) 0, var(--green) 1px, transparent 0, transparent 50%); background-size: 12px 12px; opacity: 0.04; }
+  .hero-ar-slogan { font-family: 'Tajawal', sans-serif; font-size: 1.4rem; color: var(--muted); direction: rtl; margin-bottom: 0.3rem; font-weight: 400; }
+  .hero-en-slogan { font-size: 0.62rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); margin-bottom: 2rem; display: flex; align-items: center; gap: 0.75rem; }
+  .hero-en-slogan::before { content: ''; width: 24px; height: 2px; background: var(--gold); display: block; }
+  .hero-h1 { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 3.5rem; line-height: 1.05; letter-spacing: -0.025em; margin-bottom: 0.5rem; color: var(--green); }
+  .hero-h1-gold { color: var(--gold); font-style: italic; font-family: 'Playfair Display', serif; }
+  .hero-h2-ar { font-family: 'Tajawal', sans-serif; font-size: 2rem; font-weight: 700; color: rgba(28,61,46,0.2); direction: rtl; margin-bottom: 2rem; }
+  .hero-desc { font-size: 0.88rem; line-height: 1.8; color: var(--muted); max-width: 500px; margin-bottom: 2.5rem; }
+  .hero-btns { display: flex; gap: 1rem; }
+  .btn-green { background: var(--green); color: var(--white); padding: 0.85rem 2rem; font-size: 0.72rem; font-weight: 600; border: none; cursor: pointer; font-family: 'Inter', sans-serif; transition: background 0.2s; text-decoration: none; display: inline-block; }
+  .btn-green:hover { background: var(--green2); }
+  .btn-border-green { background: transparent; color: var(--green); padding: 0.85rem 2rem; font-size: 0.72rem; font-weight: 600; border: 2px solid var(--green); cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; text-decoration: none; display: inline-block; }
+  .btn-border-green:hover { background: var(--green); color: var(--white); }
+  .hero-right { background: var(--green); padding: 3rem 2.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
+  .hero-info-title { font-family: 'Tajawal', sans-serif; font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 1rem; }
+  .info-row { display: flex; gap: 1rem; align-items: flex-start; padding: 1rem 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .info-row:last-child { border-bottom: none; }
+  .info-icon { width: 36px; height: 36px; background: rgba(212,168,67,0.15); border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .info-label { font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.35); }
+  .info-val-en { font-size: 0.82rem; color: var(--white); font-weight: 500; margin-top: 0.2rem; }
+  .info-val-ar { font-family: 'Tajawal', sans-serif; font-size: 0.78rem; color: rgba(255,255,255,0.45); direction: rtl; margin-top: 0.1rem; }
+  .hero-img-placeholder { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); height: 160px; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; color: rgba(255,255,255,0.2); letter-spacing: 0.1em; }
+
+  /* BILINGUAL STATS */
+  .stats { display: grid; grid-template-columns: repeat(4,1fr); background: var(--gold); }
+  .stat { padding: 2rem; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); }
+  .stat:last-child { border-right: none; }
+  .stat-n { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 2.5rem; color: var(--ink); }
+  .stat-en { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(26,26,20,0.6); margin-top: 0.2rem; }
+  .stat-ar { font-family: 'Tajawal', sans-serif; font-size: 0.75rem; color: rgba(26,26,20,0.5); direction: rtl; margin-top: 0.1rem; }
+
+  /* SECTION */
+  .section { padding: 5rem 3rem; }
+  .sec-head { display: flex; align-items: flex-end; gap: 2rem; margin-bottom: 3rem; border-bottom: 2px solid var(--border); padding-bottom: 1.5rem; }
+  .sec-en { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 2.2rem; letter-spacing: -0.02em; color: var(--green); }
+  .sec-ar { font-family: 'Tajawal', sans-serif; font-size: 1.6rem; color: rgba(28,61,46,0.25); direction: rtl; margin-bottom: 0.2rem; }
+
+  /* PROGRAMS */
+  .prog-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 1.5rem; }
+  .prog-card { border: 2px solid var(--border); padding: 2rem; background: var(--white); transition: all 0.3s; position: relative; overflow: hidden; }
+  .prog-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--green); transform: scaleY(0); transition: transform 0.3s; transform-origin: bottom; }
+  .prog-card:hover { border-color: var(--green); }
+  .prog-card:hover::before { transform: scaleY(1); }
+  .prog-grade { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 3rem; color: rgba(28,61,46,0.1); line-height: 1; margin-bottom: 0.5rem; }
+  .prog-title-en { font-weight: 700; font-size: 1rem; color: var(--green); }
+  .prog-title-ar { font-family: 'Tajawal', sans-serif; font-size: 0.85rem; color: var(--dim); direction: rtl; margin-bottom: 0.75rem; }
+  .prog-desc { font-size: 0.78rem; line-height: 1.7; color: var(--muted); }
+  .prog-tag { display: inline-block; background: rgba(28,61,46,0.07); color: var(--green); padding: 0.25rem 0.75rem; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 1rem; }
+
+  /* WHY */
+  .why-section { background: var(--green); padding: 5rem 3rem; }
+  .why-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: rgba(255,255,255,0.08); }
+  .why-item { background: var(--green); padding: 2.5rem 2rem; transition: background 0.3s; }
+  .why-item:hover { background: var(--green2); }
+  .why-n { font-family: 'Tajawal', sans-serif; font-size: 2.5rem; color: rgba(212,168,67,0.15); line-height: 1; direction: rtl; margin-bottom: 0.75rem; }
+  .why-title-en { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em; color: var(--gold); text-transform: uppercase; margin-bottom: 0.25rem; }
+  .why-title-ar { font-family: 'Tajawal', sans-serif; font-size: 0.9rem; color: rgba(255,255,255,0.7); direction: rtl; margin-bottom: 0.75rem; }
+  .why-desc { font-size: 0.75rem; line-height: 1.7; color: rgba(255,255,255,0.45); }
+
+  /* FACILITIES */
+  .fac-section { padding: 5rem 3rem; background: var(--cream); }
+  .fac-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 1rem; }
+  .fac-item { background: var(--white); border: 1px solid var(--border); padding: 1.5rem 1rem; text-align: center; transition: all 0.3s; border-top: 3px solid transparent; }
+  .fac-item:hover { border-top-color: var(--gold); }
+  .fac-en { font-size: 0.65rem; font-weight: 600; color: var(--green); margin-bottom: 0.2rem; }
+  .fac-ar { font-family: 'Tajawal', sans-serif; font-size: 0.72rem; color: var(--dim); direction: rtl; }
+
+  /* ADMISSION */
+  .adm-section { padding: 5rem 3rem; background: var(--white); }
+  .adm-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; }
+  .adm-form-title { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.5rem; color: var(--green); margin-bottom: 0.25rem; }
+  .adm-form-title-ar { font-family: 'Tajawal', sans-serif; font-size: 1.1rem; color: var(--dim); direction: rtl; margin-bottom: 1.5rem; }
+  .frow { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  .fgr { margin-bottom: 1rem; }
+  .flbl { display: block; font-size: 0.6rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem; }
+  .flbl span { font-family: 'Tajawal', sans-serif; font-size: 0.75rem; direction: rtl; font-weight: 400; color: var(--dim); margin-right: 0.5rem; }
+  .finp { width: 100%; background: var(--cream); border: 1.5px solid var(--border); color: var(--ink); padding: 0.75rem 1rem; font-family: 'Inter', sans-serif; font-size: 0.8rem; outline: none; transition: border-color 0.2s; }
+  .finp:focus { border-color: var(--green); }
+  .prog-sel { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
+  .ps-btn { border: 2px solid var(--border); padding: 1rem; cursor: pointer; background: var(--cream); transition: all 0.2s; font-family: 'Inter', sans-serif; text-align: left; }
+  .ps-btn:hover { border-color: var(--green); }
+  .ps-btn.active { border-color: var(--green); background: rgba(28,61,46,0.05); }
+  .ps-en { font-size: 0.8rem; font-weight: 600; color: var(--ink); }
+  .ps-btn.active .ps-en { color: var(--green); }
+  .ps-ar { font-family: 'Tajawal', sans-serif; font-size: 0.72rem; color: var(--dim); direction: rtl; margin-top: 0.2rem; }
+  .fsub { width: 100%; background: var(--green); color: var(--white); padding: 1rem; font-family: 'Inter', sans-serif; font-size: 0.78rem; font-weight: 700; border: none; cursor: pointer; transition: background 0.2s; margin-top: 0.5rem; }
+  .fsub:hover { background: var(--green2); }
+  .adm-right { background: var(--green); padding: 3rem; color: var(--white); }
+  .ar-title { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.4rem; line-height: 1.2; margin-bottom: 0.5rem; }
+  .ar-title-ar { font-family: 'Tajawal', sans-serif; font-size: 1.1rem; color: var(--gold); direction: rtl; margin-bottom: 2rem; }
+  .ar-item { padding: 1rem 0; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .ar-label { font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 0.25rem; }
+  .ar-label-ar { font-family: 'Tajawal', sans-serif; font-size: 0.7rem; color: rgba(255,255,255,0.2); direction: rtl; }
+  .ar-val { font-size: 0.82rem; color: rgba(255,255,255,0.75); line-height: 1.5; }
+
+  /* CONTACT */
+  footer { background: var(--ink); padding: 4rem 3rem 2rem; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 3rem; }
+  .ft-en { font-weight: 700; font-size: 1rem; color: var(--white); margin-bottom: 0.25rem; }
+  .ft-ar { font-family: 'Tajawal', sans-serif; font-size: 0.9rem; color: var(--gold); direction: rtl; margin-bottom: 1rem; }
+  .ft-p { font-size: 0.75rem; line-height: 1.7; color: rgba(255,255,255,0.35); max-width: 280px; }
+  .ft-soc { display: flex; gap: 0.5rem; margin-top: 1.5rem; }
+  .ft-s { padding: 0.35rem 0.9rem; border: 1px solid rgba(255,255,255,0.12); font-size: 0.6rem; color: rgba(255,255,255,0.4); text-decoration: none; transition: all 0.2s; }
+  .ft-s:hover { border-color: var(--gold); color: var(--gold); }
+  .ft-col { }
+  .ft-col-title { font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 1rem; }
+  .ft-item { font-size: 0.78rem; color: rgba(255,255,255,0.55); margin-bottom: 0.5rem; line-height: 1.5; }
+  .ft-bottom { border-top: 1px solid rgba(255,255,255,0.07); padding: 1.5rem 3rem; display: flex; justify-content: space-between; background: var(--ink); }
+  .ft-copy { font-size: 0.6rem; color: rgba(255,255,255,0.2); }
+
+  @media (max-width: 900px) {
+    nav { padding: 0 1.5rem; }
+    .nav-links { display: none; }
+    .hero { grid-template-columns: 1fr; }
+    .hero-right { display: none; }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .prog-grid { grid-template-columns: 1fr; }
+    .why-grid { grid-template-columns: 1fr; }
+    .fac-grid { grid-template-columns: repeat(2,1fr); }
+    .adm-inner { grid-template-columns: 1fr; }
+    footer { grid-template-columns: 1fr; }
+    .hero-left { padding: 3rem 1.5rem; }
+    .hero-h1 { font-size: 2.5rem; }
+    .section { padding: 3rem 1.5rem; }
+  }
+
+
+/* ══ ANIMATION LAYER ════════════════════════════════════════════════════ */
+/* Scroll-reveal base */
+.anim-reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.anim-reveal.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+/* Stagger classes */
+.anim-d1 { transition-delay: 0.06s; }
+.anim-d2 { transition-delay: 0.12s; }
+.anim-d3 { transition-delay: 0.18s; }
+.anim-d4 { transition-delay: 0.24s; }
+.anim-d5 { transition-delay: 0.30s; }
+.anim-d6 { transition-delay: 0.36s; }
+.anim-d7 { transition-delay: 0.42s; }
+
+/* Hero entrance */
+.hero-left, .hero-l, .hero-r, .hero-right {
+  opacity: 0;
+}
+.hero-left, .hero-l {
+  transform: translateX(-36px);
+  animation: heroSlideRight 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+}
+.hero-right, .hero-r {
+  transform: translateX(36px);
+  animation: heroSlideLeft 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.35s forwards;
+}
+@keyframes heroSlideRight {
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes heroSlideLeft {
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Hero badge pop-in */
+.hero-badge, .h-eyebrow, .hero-badge-text {
+  opacity: 0;
+  transform: translateY(12px) scale(0.95);
+  animation: badgeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+}
+@keyframes badgeIn {
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Hero title cascade */
+.hero-h1, h1 {
+  opacity: 0;
+  transform: translateY(24px);
+  animation: titleIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+}
+@keyframes titleIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Hero description + buttons */
+.hero-desc, .hero-p, .hero-slogan-ar, .hero-slogan-en, .hero-ar, .hero-ar-tag {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.55s forwards;
+}
+.hero-btns {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.7s forwards;
+}
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Campus frame / hero image float */
+.campus-frame, .hero-card, .hero-img-box, .hero-prog {
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.4s ease;
+}
+.campus-frame:hover, .hero-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+}
+
+/* Stat numbers — count pulse */
+.stat-n, .hs-n, .sb-n, .qf-num {
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.stat-n.in-view, .hs-n.in-view, .sb-n.in-view, .qf-num.in-view {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Stat label — slide up */
+.stat-l, .hs-l, .sb-l, .qf-label {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.4s ease 0.15s, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.15s;
+}
+.stat-l.in-view, .hs-l.in-view, .sb-l.in-view, .qf-label.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Section titles */
+.sec-label, .kicker, .sec-title {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sec-label.in-view, .kicker.in-view, .sec-title.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Cards — hover lift + glow sweep */
+.prog-card, .why-card, .feature-card, .feat-card, .fac-item, .fac-card {
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1),
+              box-shadow 0.35s ease,
+              border-color 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.prog-card::after, .why-card::after, .feature-card::after, .feat-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%);
+  transition: left 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+.prog-card:hover::after, .why-card:hover::after, .feature-card:hover::after, .feat-card:hover::after {
+  left: 140%;
+}
+.prog-card:hover, .why-card:hover, .feature-card:hover, .feat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 14px 44px rgba(0,0,0,0.12);
+}
+
+/* Facility items — scale pop */
+.fac-item, .fac-card {
+  opacity: 0;
+  transform: scale(0.88);
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fac-item.in-view, .fac-card.in-view {
+  opacity: 1;
+  transform: scale(1);
+}
+.fac-item:hover, .fac-card:hover {
+  transform: scale(1.05);
+}
+
+/* Buttons — lift + glow */
+.btn-gold, .btn-blue, .btn-outline, .btn-ghost, .btn-ghost-w, .nav-cta, .nav-apply {
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1),
+              box-shadow 0.2s ease,
+              background 0.2s ease,
+              color 0.2s ease,
+              border-color 0.2s ease !important;
+}
+.btn-gold:hover, .btn-blue:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2) !important;
+}
+.btn-outline:hover, .btn-ghost:hover, .btn-ghost-w:hover {
+  transform: translateY(-2px) !important;
+}
+
+/* Nav links — underline sweep */
+.nav-links a, .nav-menu a {
+  position: relative;
+}
+.nav-links a::after, .nav-menu a::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  right: 50%;
+  height: 2px;
+  background: currentColor;
+  transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              right 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0.6;
+}
+.nav-links a:hover::after, .nav-menu a:hover::after {
+  left: 0;
+  right: 0;
+}
+
+/* Gold divider — shimmer */
+.gold-div {
+  position: relative;
+  overflow: hidden;
+}
+.gold-div::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+  animation: shimmerDiv 3.5s ease-in-out infinite;
+}
+@keyframes shimmerDiv {
+  0% { left: -100%; }
+  100% { left: 200%; }
+}
+
+/* Quick facts — stagger in */
+.qf-item {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.qf-item.in-view { opacity: 1; transform: translateY(0); }
+
+/* Form — smooth focus */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(21,80,240,0.15);
+  transition: box-shadow 0.2s ease;
+}
+
+/* Scroll progress indicator at the top */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, currentColor, currentColor);
+  z-index: 99999;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 0.1s linear;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Parallax-like float on hero shapes */
+@keyframes gentleFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+.arch-outer, .arch-inner, .hero-bg-shape {
+  animation: gentleFloat 6s ease-in-out infinite;
+}
+.arch-inner { animation-delay: 0.8s; }
+
+/* Reduce motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .anim-reveal, .hero-left, .hero-l, .hero-right, .hero-r,
+  .hero-badge, .h-eyebrow, .hero-h1, h1,
+  .hero-desc, .hero-p, .hero-btns,
+  .stat-n, .hs-n, .sb-n, .qf-num,
+  .stat-l, .hs-l, .sb-l, .qf-label,
+  .sec-label, .kicker, .sec-title,
+  .fac-item, .fac-card, .qf-item {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+}
+/* ══ END ANIMATION LAYER ════════════════════════════════════════════════ */
+
+/* ══ RESPONSIVE PATCH ══════════════════════════════════════════════════ */
+/* Tablet (≤900px already partially handled; we strengthen it)           */
+@media (max-width: 900px) {
+  nav, .nav { padding: 1rem 1.5rem !important; }
+  .topbar   { padding: .5rem 1.5rem !important; }
+  h1        { font-size: clamp(1.8rem, 6vw, 3rem) !important; letter-spacing: -.02em !important; }
+  .hero, .hero-l, .hero-left { padding: 3rem 2rem !important; }
+  .hero-r, .hero-right       { padding: 2rem !important; }
+  .fac-grid   { grid-template-columns: repeat(3, 1fr) !important; }
+  .why-grid, .feat-grid, .campus-fac-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .stats, .stats-bar { grid-template-columns: repeat(2, 1fr) !important; gap: 1rem !important; }
+  .adm-inner, .adm-grid, .why-inner { grid-template-columns: 1fr !important; }
+  .prog-grid  { grid-template-columns: repeat(2, 1fr) !important; }
+  .scope-grid, .inspo-grid, .req-grid, .sig-grid { grid-template-columns: 1fr !important; }
+  .cover-meta { grid-template-columns: repeat(2, 1fr) !important; }
+  .qbox-grid  { grid-template-columns: repeat(2, 1fr) !important; }
+  .form-row, .form-2col { grid-template-columns: 1fr !important; }
+}
+
+/* Phone (≤600px) ─ new breakpoint */
+@media (max-width: 600px) {
+  nav, .nav { padding: .75rem 1rem !important; height: auto !important; }
+  .topbar   { padding: .4rem 1rem !important; font-size: .6rem !important; }
+
+  h1        { font-size: clamp(1.6rem, 7vw, 2.4rem) !important; }
+  h2        { font-size: clamp(1.2rem, 5vw, 1.8rem) !important; }
+  h3        { font-size: 1rem !important; }
+
+  /* Hero */
+  .hero, section, .section { padding: 2rem 1rem !important; }
+  .hero-l, .hero-left, .hero-r, .hero-right { padding: 1.5rem 1rem !important; }
+  .hero-spine { display: none !important; }
+  .hero-bg-shape { display: none !important; }
+  .cover-badge { font-size: .55rem !important; }
+
+  /* Grids → 1 col */
+  .fac-grid   { grid-template-columns: repeat(2, 1fr) !important; gap: .6rem !important; }
+  .why-grid, .feat-grid, .campus-fac-grid,
+  .prog-grid, .scope-grid, .inspo-grid,
+  .req-grid, .sig-grid,
+  .adm-inner, .adm-grid, .why-inner,
+  .stats, .stats-bar { grid-template-columns: 1fr !important; gap: .75rem !important; }
+
+  /* Covers / proposal */
+  .cover { padding: 2.5rem 1.2rem !important; min-height: auto !important; }
+  .cover-h1 { font-size: clamp(1.6rem, 7vw, 2.6rem) !important; }
+  .cover-meta { grid-template-columns: repeat(2, 1fr) !important; gap: .6rem !important; }
+  .cover-bottom { flex-direction: column !important; gap: 1rem !important; }
+  .cb-right { text-align: left !important; }
+  .wrap     { padding: 2rem 1rem !important; }
+
+  /* Quote box */
+  .qbox         { padding: 1.5rem 1rem !important; }
+  .qbox-total   { font-size: 2.4rem !important; }
+  .qbox-grid    { grid-template-columns: 1fr !important; gap: 1rem !important; }
+
+  /* Tables — horizontal scroll */
+  table         { display: block !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; white-space: nowrap !important; }
+
+  /* Timeline */
+  .tl-row       { grid-template-columns: 1fr !important; gap: .4rem !important; }
+
+  /* Inspo grid cards */
+  .inspo-grid   { grid-template-columns: 1fr !important; }
+
+  /* Nav links in mobile panels */
+  .nav-links    { padding: 1rem !important; }
+  .nav-links a  { font-size: .9rem !important; padding: .6rem .8rem !important; }
+
+  /* Forms */
+  .form-row, .form-2col    { grid-template-columns: 1fr !important; }
+  input, select, textarea  { font-size: 16px !important; } /* prevent iOS zoom */
+
+  /* Admission panel */
+  .adm-info-panel, .adm-form-wrap { padding: 1.2rem !important; }
+
+  /* Step bar */
+  .step-bar, .prog-steps { flex-direction: column !important; gap: .5rem !important; }
+  .step-connector { display: none !important; }
+
+  /* Marquee — disable animation on small screens */
+  .marquee-wrap { overflow: hidden !important; }
+  .marquee-track { animation-play-state: paused !important; }
+
+  /* Why / features */
+  .why-row, .why-inner { flex-direction: column !important; }
+  .why-img-col, .why-list { width: 100% !important; max-width: 100% !important; }
+
+  /* Trust/stats bars */
+  .trust-bar { flex-wrap: wrap !important; gap: .75rem !important; justify-content: center !important; }
+  .trust-item { min-width: 120px !important; }
+
+  /* Cards */
+  .card, .icard, .feature-card, .prog-card { padding: 1.2rem !important; }
+  .ibtn { display: block !important; text-align: center !important; }
+
+  /* Footer */
+  .foot { padding: 2rem 1rem !important; }
+  .foot-logo-row { flex-wrap: wrap !important; justify-content: center !important; }
+
+  /* Nigents host bar */
+  [style*="AlGioshy"] { flex-wrap: wrap !important; gap: 6px !important; font-size: 10px !important; }
+}
+/* ══ END RESPONSIVE PATCH ═══════════════════════════════════════════════ */
+
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-en">📞 01036323222 · 01035533221 · <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="c2abaca4ad82b1afa3b0b6a1adaeaea7a5a7b1a1aaadadaeeca1adaf">[email&#160;protected]</a></div>
+  <div class="topbar-social">
+    <a href="#">Instagram</a><a href="#">Facebook</a><a href="#">TikTok</a>
+  </div>
+  <div class="topbar-ar">مدرسة سمارت كوليدج الدولية</div>
+</div>
+
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-en">Smart College International Schools</div>
+    <div class="nav-logo-ar">مصر الجديدة، القاهرة</div>
+  </div>
+  <div class="nav-links">
+    <a href="#programs">Programs</a>
+    <a href="#why">Why Us</a>
+    <a href="#campus">Campus</a>
+    <a href="#admissions">Admissions</a>
+    <a href="#contact">Contact</a>
+  </div>
+  <a href="#admissions" class="nav-cta">Apply — سجّل الآن</a>
+</nav>
+
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-pattern"></div>
+    <div class="hero-ar-slogan">نصنع العقول ونبني المستقبل</div>
+    <div class="hero-en-slogan">Shaping Futures. Empowering Minds.</div>
+    <h1 class="hero-h1">Smart College<br><span class="hero-h1-gold">International</span><br>Schools</h1>
+    <div class="hero-h2-ar">مدرسة سمارت كوليدج</div>
+    <p class="hero-desc">A prestigious high school set within a heritage landmark in Heliopolis, Cairo — offering IG and American Diploma programs for Grades 10, 11 and 12. Where academic distinction, creativity, and character are seamlessly nurtured.</p>
+    <div class="hero-btns">
+      <a href="#admissions" class="btn-green">Apply for Admission</a>
+      <a href="#programs" class="btn-border-green">Our Programs</a>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="hero-img-placeholder">Campus Photography Coming Soon</div>
+    <div class="hero-info-title">School at a Glance — نظرة سريعة</div>
+    <div class="info-row">
+      <div class="info-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5" stroke="#d4a843" stroke-width="1"/></svg></div>
+      <div><div class="info-label">Programs</div><div class="info-val-en">IG Certificate · American Diploma</div><div class="info-val-ar">شهادة الـ IG · الدبلوم الأمريكي</div></div>
+    </div>
+    <div class="info-row">
+      <div class="info-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="3" y="3" width="10" height="10" stroke="#d4a843" stroke-width="1"/></svg></div>
+      <div><div class="info-label">Grades</div><div class="info-val-en">Grade 10, 11 & 12</div><div class="info-val-ar">الصف العاشر والحادي عشر والثاني عشر</div></div>
+    </div>
+    <div class="info-row">
+      <div class="info-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2 L14 8 L8 14 L2 8 Z" stroke="#d4a843" stroke-width="1" fill="none"/></svg></div>
+      <div><div class="info-label">Location</div><div class="info-val-en">Heliopolis, Cairo</div><div class="info-val-ar">مصر الجديدة، القاهرة</div></div>
+    </div>
+    <div class="info-row">
+      <div class="info-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polygon points="8,2 14,13 2,13" stroke="#d4a843" stroke-width="1" fill="none"/></svg></div>
+      <div><div class="info-label">Capacity</div><div class="info-val-en">360 students · 18 classes</div><div class="info-val-ar">٣٦٠ طالب · ١٨ فصلاً</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="stats">
+  <div class="stat"><div class="stat-n">360</div><div class="stat-en">Student Capacity</div><div class="stat-ar">الطاقة الاستيعابية</div></div>
+  <div class="stat"><div class="stat-n">18</div><div class="stat-en">Curated Classes</div><div class="stat-ar">فصول دراسية</div></div>
+  <div class="stat"><div class="stat-n">20</div><div class="stat-en">Students Per Class</div><div class="stat-ar">طالب في الفصل</div></div>
+  <div class="stat"><div class="stat-n">5+</div><div class="stat-en">Specialised Labs</div><div class="stat-ar">مختبرات متخصصة</div></div>
+</div>
+
+<section class="section" id="programs">
+  <div class="sec-head">
+    <div class="sec-en">Academic Programs</div>
+    <div class="sec-ar">البرامج الأكاديمية</div>
+  </div>
+  <div class="prog-grid">
+    <div class="prog-card">
+      <div class="prog-grade">10</div>
+      <div class="prog-title-en">IG Program — Grade 10</div>
+      <div class="prog-title-ar">برنامج الـ IG — الصف العاشر</div>
+      <div class="prog-desc">The International General Certificate of Secondary Education — a globally recognised qualification and the foundation for academic distinction.</div>
+      <div class="prog-tag">IG Certificate</div>
+    </div>
+    <div class="prog-card">
+      <div class="prog-grade">11</div>
+      <div class="prog-title-en">IG Program — Grade 11</div>
+      <div class="prog-title-ar">برنامج الـ IG — الصف الحادي عشر</div>
+      <div class="prog-desc">Advanced subject specialisation and intensive preparation for final IG examinations — the pivotal year of academic achievement.</div>
+      <div class="prog-tag">IG Certificate</div>
+    </div>
+    <div class="prog-card">
+      <div class="prog-grade">12</div>
+      <div class="prog-title-en">American Diploma — Grade 12</div>
+      <div class="prog-title-ar">الدبلوم الأمريكي — الصف الثاني عشر</div>
+      <div class="prog-desc">US curriculum meeting entry requirements for leading universities across North America, Europe, and the Middle East.</div>
+      <div class="prog-tag">American Diploma</div>
+    </div>
+    <div class="prog-card" style="background:var(--green);border-color:var(--green);">
+      <div class="prog-grade" style="color:rgba(212,168,67,0.2)">+</div>
+      <div class="prog-title-en" style="color:var(--gold)">Transportation Service</div>
+      <div class="prog-title-ar" style="color:rgba(255,255,255,0.5)">خدمة المواصلات</div>
+      <div class="prog-desc" style="color:rgba(255,255,255,0.5)">Comprehensive transportation services available for all students — ensuring a seamless and secure journey to and from campus.</div>
+      <div class="prog-tag" style="background:rgba(212,168,67,0.2);color:var(--gold)">Available for all students</div>
+    </div>
+  </div>
+</section>
+
+<section class="why-section" id="why">
+  <div style="padding:0 0 3rem;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:0">
+    <div style="font-size:0.62rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--gold);margin-bottom:0.5rem;display:flex;align-items:center;gap:0.75rem"><span style="display:block;width:24px;height:1px;background:var(--gold)"></span>Why Choose Us</div>
+    <div style="display:flex;align-items:baseline;gap:2rem">
+      <div style="font-family:'Inter',sans-serif;font-weight:700;font-size:2.2rem;color:#fff">5 Reasons to Join Us</div>
+      <div style="font-family:'Tajawal',sans-serif;font-size:1.5rem;color:rgba(255,255,255,0.2);direction:rtl">لماذا تختار سمارت كوليدج</div>
+    </div>
+  </div>
+  <div class="why-grid">
+    <div class="why-item">
+      <div class="why-n">١</div>
+      <div class="why-title-en">Prestigious Location</div>
+      <div class="why-title-ar">موقع مرموق</div>
+      <div class="why-desc">Heart of Heliopolis — one of Cairo's most distinguished landmarks offering prominence, heritage, and convenience.</div>
+    </div>
+    <div class="why-item">
+      <div class="why-n">٢</div>
+      <div class="why-title-en">Academic Excellence</div>
+      <div class="why-title-ar">التميز الأكاديمي</div>
+      <div class="why-desc">IG and American Diploma programs delivered with precision, depth, and global perspective — opening doors to the world's finest universities.</div>
+    </div>
+    <div class="why-item">
+      <div class="why-n">٣</div>
+      <div class="why-title-en">Distinguished Faculty</div>
+      <div class="why-title-ar">كادر تعليمي متميز</div>
+      <div class="why-desc">Handpicked educators providing personalised guidance to every student — average class size of just 20 students for focused attention.</div>
+    </div>
+    <div class="why-item">
+      <div class="why-n">٤</div>
+      <div class="why-title-en">Future-Ready Facilities</div>
+      <div class="why-title-ar">مرافق متطورة</div>
+      <div class="why-desc">ICT labs, science labs, theater, pool, gymnasium, padel courts, CrossFit area, mosque, and a dedicated cafeteria floor.</div>
+    </div>
+    <div class="why-item">
+      <div class="why-n">٥</div>
+      <div class="why-title-en">Holistic Wellbeing</div>
+      <div class="why-title-ar">رعاية شاملة</div>
+      <div class="why-desc">Highest standards of hygiene, safety, physical health, and mental wellbeing — every student feels secure, supported, and inspired.</div>
+    </div>
+    <div class="why-item">
+      <div class="why-n">٦</div>
+      <div class="why-title-en">Global Partnerships</div>
+      <div class="why-title-ar">شراكات دولية</div>
+      <div class="why-desc">Strategic collaborations with leading international educational institutions enriching our programmes and expanding student horizons worldwide.</div>
+    </div>
+  </div>
+</section>
+
+<section class="fac-section" id="campus">
+  <div class="sec-head">
+    <div class="sec-en">Campus Facilities</div>
+    <div class="sec-ar">مرافق الحرم الجامعي</div>
+  </div>
+  <div class="fac-grid">
+    <div class="fac-item"><div class="fac-en">ICT Lab</div><div class="fac-ar">معمل تكنولوجيا</div></div>
+    <div class="fac-item"><div class="fac-en">Chemistry Lab</div><div class="fac-ar">معمل كيمياء</div></div>
+    <div class="fac-item"><div class="fac-en">Biology Lab</div><div class="fac-ar">معمل أحياء</div></div>
+    <div class="fac-item"><div class="fac-en">Physics Lab</div><div class="fac-ar">معمل فيزياء</div></div>
+    <div class="fac-item"><div class="fac-en">Art Studio</div><div class="fac-ar">استوديو فنون</div></div>
+    <div class="fac-item"><div class="fac-en">Music Room</div><div class="fac-ar">غرفة موسيقى</div></div>
+    <div class="fac-item"><div class="fac-en">Theater</div><div class="fac-ar">مسرح أنيق</div></div>
+    <div class="fac-item"><div class="fac-en">Outdoor Stage</div><div class="fac-ar">مسرح خارجي</div></div>
+    <div class="fac-item"><div class="fac-en">Swimming Pool</div><div class="fac-ar">حمام سباحة</div></div>
+    <div class="fac-item"><div class="fac-en">Gymnasium</div><div class="fac-ar">صالة رياضية</div></div>
+    <div class="fac-item"><div class="fac-en">Padel Courts</div><div class="fac-ar">ملاعب بادل</div></div>
+    <div class="fac-item"><div class="fac-en">CrossFit Area</div><div class="fac-ar">منطقة كروسفت</div></div>
+    <div class="fac-item"><div class="fac-en">Mosque</div><div class="fac-ar">مسجد</div></div>
+    <div class="fac-item"><div class="fac-en">Cafeteria</div><div class="fac-ar">طابق كافيتيريا</div></div>
+    <div class="fac-item"><div class="fac-en">Playground</div><div class="fac-ar">ملعب</div></div>
+  </div>
+</section>
+
+<section class="adm-section" id="admissions">
+  <div class="sec-head">
+    <div class="sec-en">Apply for Admission</div>
+    <div class="sec-ar">التقديم للقبول</div>
+  </div>
+  <div class="adm-inner">
+    <form onsubmit="sub(event)">
+      <div class="adm-form-title">Student Application Form</div>
+      <div class="adm-form-title-ar">استمارة تسجيل الطالب</div>
+      <div class="frow">
+        <div><label class="flbl">First Name <span>الاسم الأول</span></label><input type="text" class="finp" placeholder="Ahmed" required></div>
+        <div><label class="flbl">Last Name <span>اسم العائلة</span></label><input type="text" class="finp" placeholder="Hassan" required></div>
+      </div>
+      <div class="frow">
+        <div><label class="flbl">Date of Birth <span>تاريخ الميلاد</span></label><input type="date" class="finp" required></div>
+        <div><label class="flbl">Nationality <span>الجنسية</span></label><select class="finp"><option value="">Select / اختر</option><option>Egyptian / مصري</option><option>Saudi / سعودي</option><option>Other / أخرى</option></select></div>
+      </div>
+      <div class="frow">
+        <div><label class="flbl">Grade <span>الصف</span></label><select class="finp" required><option value="">Select grade</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option></select></div>
+        <div><label class="flbl">National ID / Passport <span>رقم الهوية</span></label><input type="text" class="finp" placeholder="ID"></div>
+      </div>
+      <div class="fgr"><label class="flbl">Program <span>البرنامج</span></label></div>
+      <div class="prog-sel">
+        <button type="button" class="ps-btn active" onclick="selP(this)"><div class="ps-en">IG Program</div><div class="ps-ar">برنامج الـ IG</div></button>
+        <button type="button" class="ps-btn" onclick="selP(this)"><div class="ps-en">American Diploma</div><div class="ps-ar">الدبلوم الأمريكي</div></button>
+      </div>
+      <div class="frow">
+        <div><label class="flbl">Parent Name <span>اسم ولي الأمر</span></label><input type="text" class="finp" placeholder="Full name" required></div>
+        <div><label class="flbl">Phone <span>رقم الهاتف</span></label><input type="tel" class="finp" placeholder="01XXXXXXXXX" required></div>
+      </div>
+      <div class="fgr"><label class="flbl">Email <span>البريد الإلكتروني</span></label><input type="email" class="finp" placeholder="your@email.com" required></div>
+      <div class="fgr"><label class="flbl">Message <span>رسالة</span></label><textarea class="finp" rows="3" style="resize:vertical" placeholder="Any questions / أي استفسار..."></textarea></div>
+      <button type="submit" class="fsub" id="fsub">Submit Application — إرسال الطلب</button>
+      <div id="suc" style="display:none;margin-top:1rem;padding:1rem;background:rgba(28,61,46,0.08);border:2px solid var(--green);color:var(--green);font-size:0.78rem;text-align:center">Application received! We'll contact you within 48 hours. · تم استلام طلبك، سنتواصل معك خلال ٤٨ ساعة.</div>
+    </form>
+    <div class="adm-right">
+      <div class="ar-title">Join Our Community</div>
+      <div class="ar-title-ar">انضم إلى مجتمعنا المتميز</div>
+      <div class="ar-item"><div class="ar-label">Location <span class="ar-label-ar">الموقع</span></div><div class="ar-val">22 Othman Ibn Affan, El-Bostan, Heliopolis, Cairo</div></div>
+      <div class="ar-item"><div class="ar-label">Phone <span class="ar-label-ar">الهاتف</span></div><div class="ar-val">01036323222 · 01035533221</div></div>
+      <div class="ar-item"><div class="ar-label">Email <span class="ar-label-ar">البريد الإلكتروني</span></div><div class="ar-val"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="462f28202906352b27343225292a2a23212335252e29292a6825292b">[email&#160;protected]</a></div></div>
+      <div class="ar-item"><div class="ar-label">Programs <span class="ar-label-ar">البرامج</span></div><div class="ar-val">IG Certificate · American Diploma · Grades 10–12</div></div>
+      <div class="ar-item"><div class="ar-label">Transportation <span class="ar-label-ar">المواصلات</span></div><div class="ar-val">Full bus service available for all students</div></div>
+    </div>
+  </div>
+</section>
+
+<footer id="contact">
+  <div>
+    <div class="ft-en">Smart College International Schools</div>
+    <div class="ft-ar">مدرسة سمارت كوليدج الدولية</div>
+    <p class="ft-p">Where heritage meets innovation, and excellence is not just pursued, but defined — in the heart of Heliopolis, Cairo.</p>
+    <div class="ft-soc">
+      <a href="https://instagram.com/smartcollege.sc" class="ft-s">Instagram</a>
+      <a href="#" class="ft-s">Facebook</a>
+      <a href="#" class="ft-s">TikTok</a>
+    </div>
+  </div>
+  <div class="ft-col">
+    <div class="ft-col-title">Contact</div>
+    <div class="ft-item">📞 01036323222</div>
+    <div class="ft-item">📞 01035533221</div>
+    <div class="ft-item">✉️ <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="1e777078715e6d737f6c6a7d7172727b797b6d7d76717172307d7173">[email&#160;protected]</a></div>
+  </div>
+  <div class="ft-col">
+    <div class="ft-col-title">Address</div>
+    <div class="ft-item">22 Othman Ibn Affan<br>El-Bostan, Heliopolis<br>Cairo, Egypt</div>
+    <div class="ft-item" style="direction:rtl;font-family:'Tajawal',sans-serif;margin-top:0.75rem">٢٢ ش عثمان ابن عفان<br>البستان، مصر الجديدة</div>
+  </div>
+</footer>
+<div class="ft-bottom">
+  <div class="ft-copy">© 2025 Smart College International Schools. All Rights Reserved.</div>
+  <div class="ft-copy" style="font-family:'Tajawal',sans-serif;direction:rtl">جميع الحقوق محفوظة · ٢٠٢٥</div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+  function selP(el) { document.querySelectorAll('.ps-btn').forEach(b=>b.classList.remove('active')); el.classLi

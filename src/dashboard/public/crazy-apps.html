@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Nigents Crazy apps — experimental macOS menu bar utilities. AirSound, AppJealousy, Battery DNA, and BreathBar." />
+    <meta name="description" content="Nigents Crazy apps — experimental macOS utilities. AirSound, AppJealousy, Battery DNA, BreathBar, LangFlip, Break Alarm, MoodBoard, and TiltDJ." />
     <title>Crazy apps — Nigents</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-primary: #09080c;
@@ -21,8 +21,12 @@
             --accent-heat: #ff3d5c;
             --accent-volt: #2dd4bf;
             --accent-breath: #67e8f9;
-            --font-mono: 'IBM Plex Mono', monospace;
-            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --accent-flip: #818cf8;
+            --accent-alarm: #f5921e;
+            --accent-mood: #a78bfa;
+            --accent-dj: #e879f9;
+            --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+            --font-sans: 'Poppins', 'Sakkal Majalla', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -286,45 +290,41 @@
         }
 
         .app-pick .icon {
-            width: 56px;
-            height: 56px;
-            border-radius: 12px;
+            width: 64px;
+            height: 64px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: var(--font-mono);
-            font-size: 13px;
-            font-weight: 700;
             margin-bottom: 16px;
-            border: 1px solid var(--border);
+            overflow: hidden;
+            flex-shrink: 0;
         }
 
-        .app-pick.as .icon {
-            color: var(--accent-orange);
-            background: rgba(255, 87, 10, 0.1);
-            border-color: rgba(255, 87, 10, 0.35);
+        .app-pick .icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            border-radius: 14px;
         }
 
-        .app-pick.aj .icon {
-            color: var(--accent-heat);
-            background: rgba(255, 61, 92, 0.1);
-            border-color: rgba(255, 61, 92, 0.35);
+        .app-pick.mb:hover {
+            border-color: rgba(167, 139, 250, 0.45);
         }
 
-        .app-pick.bd .icon {
-            color: var(--accent-volt);
-            background: rgba(45, 212, 191, 0.1);
-            border-color: rgba(45, 212, 191, 0.4);
+        .app-pick.td::before {
+            background: linear-gradient(90deg, var(--accent-dj), #a78bfa);
         }
 
-        .app-pick.bb::before {
-            background: linear-gradient(90deg, var(--accent-orange), var(--accent-breath));
+        .app-pick.td .icon {
+            color: var(--accent-dj);
+            background: rgba(232, 121, 249, 0.1);
+            border-color: rgba(232, 121, 249, 0.35);
         }
 
-        .app-pick.bb .icon {
-            color: var(--accent-breath);
-            background: rgba(103, 232, 249, 0.1);
-            border-color: rgba(103, 232, 249, 0.4);
+        .app-pick.td:hover {
+            border-color: rgba(232, 121, 249, 0.45);
         }
 
         .app-pick h2 {
@@ -412,6 +412,7 @@
             <a href="/materials.html" class="nav-link">Free Materials</a>
             <a href="/crazy-apps.html" class="nav-link active">Crazy apps</a>
             <a href="/opencode-kits.html" class="nav-link">OpenCode kits <span class="soon-pill">Soon</span></a>
+            <a href="/bonyad/" class="nav-link">Bonyad</a>
             <a href="/login.html" class="nav-cta">Login →</a>
         </div>
     </nav>
@@ -424,7 +425,7 @@
 
         <div class="app-grid">
             <article class="app-pick as">
-                <div class="icon">AS</div>
+                <div class="icon"><img src="/icons/airsound.png" alt="AirSound icon" loading="lazy"></div>
                 <h2>AirSound</h2>
                 <p>Tilt your MacBook and stereo pans with the motion sensor. Tight bounce loop and a silent center dead zone — best on headphones.</p>
                 <div class="app-actions">
@@ -433,7 +434,7 @@
                 </div>
             </article>
             <article class="app-pick aj">
-                <div class="icon">AJ</div>
+                <div class="icon"><img src="/icons/appjealousy.png" alt="AppJealousy icon" loading="lazy"></div>
                 <h2>AppJealousy</h2>
                 <p>Dock apps react when you ignore them. Adjustable jealousy timer, moods, and optional notifications — playful dock drama.</p>
                 <div class="app-actions">
@@ -442,7 +443,7 @@
                 </div>
             </article>
             <article class="app-pick bd">
-                <div class="icon">BD</div>
+                <div class="icon"><img src="/icons/batterydna.png" alt="Battery DNA icon" loading="lazy"></div>
                 <h2>Battery DNA</h2>
                 <p>Menu bar battery clarity — charge state, cycles, and health context without diving into System Settings.</p>
                 <div class="app-actions">
@@ -451,12 +452,48 @@
                 </div>
             </article>
             <article class="app-pick bb">
-                <div class="icon">BB</div>
+                <div class="icon"><img src="/icons/breathbar.png" alt="BreathBar icon" loading="lazy"></div>
                 <h2>BreathBar</h2>
                 <p>Guided breathing in the menu bar — box, 4-7-8, session rings, streaks, optional focus overlay and break reminders.</p>
                 <div class="app-actions">
                     <a class="btn-landing" href="/breathbar.html">Open landing</a>
                     <a class="btn-dl" href="/downloads/BreathBar-1.0.0.dmg" download>Download DMG</a>
+                </div>
+            </article>
+            <article class="app-pick lf">
+                <div class="icon"><img src="/icons/langflip.png" alt="LangFlip icon" loading="lazy"></div>
+                <h2>LangFlip</h2>
+                <p>Typed in the wrong keyboard layout? Triple-tap ⌘ to flip mistyped Arabic ↔ English text in-place — no retyping, clipboard untouched.</p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/langflip.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/LangFlip-1.0.dmg" download>Download DMG</a>
+                </div>
+            </article>
+            <article class="app-pick ba">
+                <div class="icon"><img src="/icons/breakalarm.png" alt="Break Alarm icon" loading="lazy"></div>
+                <h2>Break Alarm</h2>
+                <p>Know how long you've been grinding. Dims every screen, plays a chime, and says your coffee is brewing — so you actually stand up.</p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/breakalarm.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/BreakAlarm-1.0.0.dmg" download>Download DMG</a>
+                </div>
+            </article>
+            <article class="app-pick mb">
+                <div class="icon"><img src="/icons/moodboard.png" alt="MoodBoard icon" loading="lazy"></div>
+                <h2>MoodBoard</h2>
+                <p>Five mood modes — wallpaper shifts on every screen, a phrase streams out, then your media plays with a live wave animation. <span dir="rtl">اسمع دي هتعجبك</span></p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/moodboard.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/MoodBoard-1.0.0.dmg" download>Download DMG</a>
+                </div>
+            </article>
+            <article class="app-pick td">
+                <div class="icon"><img src="/icons/tiltdj.png" alt="TiltDJ icon" loading="lazy"></div>
+                <h2>TiltDJ</h2>
+                <p>Eight synth pads, stereo pan, 16-step pattern grid, audio import remix, waveform hot cues and voice drops — a groove box for your Mac desktop while you study.</p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/tiltdj.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/TiltDJ-Pro.dmg" download>Download DMG</a>
                 </div>
             </article>
         </div>

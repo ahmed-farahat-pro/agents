@@ -5,9 +5,12 @@
 (function () {
   const AGENTS = [
     { type: 'orchestrator', label: 'Orch' },
+    { type: 'architect', label: 'Arch' },
     { type: 'planner', label: 'Plan' },
     { type: 'backend-dev', label: 'Back' },
     { type: 'frontend-dev', label: 'Front' },
+    { type: 'devops', label: 'DevOps' },
+    { type: 'security', label: 'Sec' },
     { type: 'qa-tester', label: 'QA' },
     { type: 'code-reviewer', label: 'Review' },
     { type: 'reporter', label: 'Report' },

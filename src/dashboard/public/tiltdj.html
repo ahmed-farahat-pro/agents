@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TiltDJ PRO — 8 pads, 6-effect FX rack, YouTube downloader, multi-track mixer, waveform hot cues, 16-step sequencer and voice drops for macOS." />
+    <title>TiltDJ PRO — groove box for Mac · Nigents</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:     #09080c;
+            --bg2:    #111018;
+            --bg3:    #18151f;
+            --bdr:    #222030;
+            --bdr2:   #302c3e;
+            --txt:    #ffffff;
+            --txt2:   #9d9ab0;
+            --txt3:   #565370;
+            --orange: #ff570a;
+            --dj:     #e879f9;
+            --dj2:    #a78bfa;
+            --green:  #19d59e;
+            --cyan:   #38bdf8;
+            --yellow: #fbbf24;
+            --red:    #f87171;
+            --teal:   #67e8f9;
+            --mono:   'IBM Plex Mono', ui-monospace, monospace;
+            --sans:   'Poppins', -apple-system, sans-serif;
+        }
+
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--txt);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* grid bg */
+        body::before {
+            content:''; position:fixed; inset:0;
+            background-image:
+                linear-gradient(rgba(232,121,249,.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(232,121,249,.03) 1px, transparent 1px);
+            background-size:56px 56px;
+            pointer-events:none; z-index:0;
+        }
+
+        /* ambient glow */
+        .ambient {
+            position:fixed; inset:0; pointer-events:none; z-index:0;
+            background:
+                radial-gradient(ellipse 65% 55% at 8% -8%,  rgba(232,121,249,.17) 0%, transparent 65%),
+                radial-gradient(ellipse 50% 45% at 94% 52%,  rgba(167,139,250,.12) 0%, transparent 65%),
+                radial-gradient(ellipse 38% 28% at 50% 108%, rgba(255,87,10,.06)  0%, transparent 62%);
+            animation: ambPulse 12s ease-in-out infinite alternate;
+        }
+        @keyframes ambPulse { from{opacity:1} 55%{opacity:.55} to{opacity:1} }
+
+        /* scanline overlay */
+        body::after {
+            content:''; position:fixed; inset:0; pointer-events:none; z-index:1;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.04) 2px, rgba(0,0,0,.04) 4px);
+        }
+
+        /* NAV */
+        .nav {
+            position:fixed; top:0; left:0; right:0; z-index:1000;
+            padding:18px 40px;
+            display:flex; justify-content:space-between; align-items:center;
+            background:linear-gradient(to bottom, rgba(9,8,12,.97) 0%, transparent 100%);
+            backdrop-filter:blur(10px);
+        }
+        .nav-brand { display:flex; align-items:center; gap:12px; text-decoration:none; }
+        .nav-logo {
+            width:38px; height:38px; background:var(--orange); border-radius:8px;
+            display:flex; align-items:center; justify-content:center;
+            font-weight:800; font-size:19px; color:var(--bg); flex-shrink:0;
+        }
+        .nav-title { font-size:21px; font-weight:700; color:var(--txt); letter-spacing:-.5px; }
+        .nav-links { display:flex; align-items:center; gap:22px; flex-wrap:wrap; justify-content:flex-end; }
+        .nav-link { color:var(--txt2); text-decoration:none; font-size:14px; font-weight:500; transition:color .2s; }
+        .nav-link:hover { color:var(--txt); }
+        .nav-link.active { color:var(--orange); }
+        .soon-pill {
+            display:inline-block; margin-left:5px; font-size:10px; font-weight:700;
+            letter-spacing:.08em; text-transform:uppercase; color:var(--bg);
+            background:var(--orange); padding:2px 8px; border-radius:999px; vertical-align:middle;
+        }
+        .nav-cta {
+            padding:9px 18px; border:1px solid var(--orange);
+            color:var(--orange); text-decoration:none; font-size:13px; font-weight:600; transition:all .2s;
+        }
+        .nav-cta:hover { background:var(--orange); color:var(--bg); }
+        .nav-toggle {
+            display:none; width:42px; height:42px; align-items:center; justify-content:center;
+            margin-left:auto; background:rgba(255,255,255,.05); border:1px solid var(--bdr);
+            border-radius:10px; color:var(--txt); cursor:pointer; font-size:22px; flex-shrink:0;
+        }
+        .ntc { display:none; }
+        body.nav-open .nto { display:none; }
+        body.nav-open .ntc { display:block; }
+        .nav-bd { display:none; position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:998; }
+        body.nav-open .nav-bd { display:block; }
+        body.nav-open { overflow:hidden; }
+
+        @media(max-width:900px){
+            .nav { padding:16px 18px; }
+            .nav-toggle { display:flex; }
+            .nav-links {
+                display:none; position:fixed; top:68px; left:14px; right:14px;
+                flex-direction:column; align-items:stretch;
+                background:var(--bg2); border:1px solid var(--bdr); padding:12px; z-index:999;
+                border-radius:12px;
+            }
+            body.nav-open .nav-links { display:flex; }
+        }
+
+        /* LAYOUT */
+        .wrap { position:relative; z-index:2; max-width:1060px; margin:0 auto; padding:104px 28px 80px; }
+        @media(max-width:600px){ .wrap { padding:90px 16px 60px; } }
+
+        /* HERO */
+        .hero { display:grid; grid-template-columns:1fr 1fr; gap:52px; align-items:center; margin-bottom:88px; }
+        @media(max-width:860px){ .hero { grid-template-columns:1fr; gap:36px; } }
+
+        .badge {
+            display:inline-flex; align-items:center; gap:8px;
+            font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.13em;
+            text-transform:uppercase; color:var(--dj);
+            border:1px solid rgba(232,121,249,.28); padding:7px 13px;
+            margin-bottom:22px;
+        }
+        .badge-dot { width:6px; height:6px; border-radius:50%; background:var(--dj); flex-shrink:0; animation:blink 1.4s ease-in-out infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+        h1 { font-size:clamp(2.2rem,4.5vw,3.3rem); font-weight:800; letter-spacing:-.04em; line-height:1.06; margin-bottom:18px; }
+        h1 .grad {
+            background:linear-gradient(100deg, var(--dj) 0%, var(--dj2) 50%, var(--orange) 100%);
+            -webkit-background-clip:text; background-clip:text; color:transparent;
+        }
+
+        .hero-desc { font-size:1rem; color:var(--txt2); max-width:44ch; margin-bottom:30px; line-height:1.78; }
+
+        .hero-ctas { display:flex; flex-wrap:wrap; gap:12px; }
+        .btn-dl {
+            display:inline-flex; align-items:center; gap:8px;
+            padding:13px 26px; background:var(--dj); color:var(--bg);
+            font-size:14px; font-weight:700; text-decoration:none;
+            transition:opacity .2s, transform .15s; border-radius:3px; flex-shrink:0;
+        }
+        .btn-dl:hover { opacity:.86; transform:translateY(-2px); }
+        .btn-ghost {
+            display:inline-flex; align-items:center; gap:8px;
+            padding:13px 26px; background:transparent;
+            border:1px solid var(--bdr2); color:var(--txt);
+            font-size:14px; font-weight:600; text-decoration:none;
+            transition:border-color .2s, color .2s; border-radius:3px;
+        }
+        .btn-ghost:hover { border-color:var(--dj); color:var(--dj); }
+
+        .version-row {
+            margin-top:16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+            font-size:12px; color:var(--txt3); font-family:var(--mono);
+        }
+        .v-pill {
+            background:rgba(232,121,249,.12); border:1px solid rgba(232,121,249,.28);
+            color:var(--dj); font-size:10px; font-weight:700; letter-spacing:.08em;
+            padding:2px 8px; border-radius:999px; text-transform:uppercase;
+        }
+        .v-pill.green { background:rgba(25,213,158,.1); border-color:rgba(25,213,158,.3); color:var(--green); }
+
+        .gk-notice {
+            margin-top:14px; display:flex; align-items:flex-start; gap:8px;
+            background:rgba(245,158,11,.07); border:1px solid rgba(245,158,11,.25);
+            border-radius:6px; padding:10px 14px;
+            font-size:12px; color:var(--txt2); line-height:1.6; max-width:480px;
+        }
+        .gk-notice strong { color:#f59e0b; }
+        .gk-notice code {
+            background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.1);
+            border-radius:3px; padding:1px 5px; font-family:var(--mono); font-size:11px;
+        }
+
+        /* LAPTOP MOCKUP */
+        .laptop-wrap { position:relative; display:flex; align-items:center; justify-content:center; }
+        .laptop-glow {
+            position:absolute; inset:-44px;
+            background:radial-gradient(ellipse 78% 62% at 50% 50%, rgba(232,121,249,.14), transparent 70%);
+            pointer-events:none; animation:glowPulse 5s ease-in-out infinite alternate;
+        }
+        @keyframes glowPulse { from{opacity:.7} to{opacity:1} }
+        .laptop-svg { width:100%; max-width:500px; filter:drop-shadow(0 18px 40px rgba(232,121,249,.18)); }
+        @media(max-width:860px){ .laptop-wrap { max-width:400px; margin:0 auto; } }
+
+        /* DIVIDER */
+        .divider { height:1px; background:linear-gradient(90deg, transparent, var(--bdr2), transparent); margin:60px 0; }
+
+        /* SECTION LABELS */
+        .sec-lbl {
+            font-family:var(--mono); font-size:11px; font-weight:700;
+            letter-spacing:.14em; text-transform:uppercase; color:var(--dj); margin-bottom:10px; display:block;
+        }
+        .sec-title { font-size:clamp(1.5rem,2.8vw,2.1rem); font-weight:800; letter-spacing:-.03em; margin-bottom:8px; }
+        .sec-sub { color:var(--txt2); font-size:.96rem; margin-bottom:36px; }
+
+        /* STATUS PILL */
+        .status-live {
+            display:inline-flex; align-items:center; gap:6px;
+            background:rgba(25,213,158,.1); border:1px solid rgba(25,213,158,.3);
+            color:var(--green); font-size:11px; font-weight:700; letter-spacing:.07em;
+            text-transform:uppercase; padding:4px 12px; border-radius:999px;
+            font-family:var(--mono); margin-left:12px; vertical-align:middle;
+        }
+        .status-live::before { content:''; width:6px; height:6px; border-radius:50%; background:var(--green); animation:blink 1.2s ease-in-out infinite; }
+        .status-soon {
+            display:inline-flex; align-items:center; gap:6px;
+            background:rgba(251,191,36,.08); border:1px solid rgba(251,191,36,.28);
+            color:var(--yellow); font-size:11px; font-weight:700; letter-spacing:.07em;
+            text-transform:uppercase; padding:4px 12px; border-radius:999px;
+            font-family:var(--mono); margin-left:12px; vertical-align:middle;
+        }
+
+        /* FEATURE GRID */
+        .feat-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:16px; margin-bottom:56px; }
+        @media(max-width:540px){ .feat-grid { grid-template-columns:1fr; } }
+
+        .feat {
+            background:var(--bg2); border:1px solid var(--bdr); border-radius:14px; padding:22px;
+            position:relative; overflow:hidden; transition:border-color .25s, transform .25s;
+        }
+        .feat::after {
+            content:''; position:absolute; top:0; left:0; right:0; height:2px;
+            background:linear-gradient(90deg, var(--dj), var(--dj2)); opacity:0; transition:opacity .25s;
+        }
+        .feat:hover { transform:translateY(-3px); border-color:rgba(232,121,249,.32); }
+        .feat:hover::after { opacity:1; }
+        .feat.soon { border-color:rgba(251,191,36,.18); }
+        .feat.soon::after { background:linear-gradient(90deg, var(--yellow), var(--orange)); }
+        .feat.soon:hover { border-color:rgba(251,191,36,.4); }
+
+        .feat-tok {
+            display:inline-flex; align-items:center; justify-content:center;
+            height:36px; min-width:48px; padding:0 10px; border-radius:8px;
+            font-family:var(--mono); font-size:11px; font-weight:800; letter-spacing:.06em;
+            margin-bottom:14px;
+        }
+        .feat-tok.dj   { background:rgba(232,121,249,.1); border:1px solid rgba(232,121,249,.25); color:var(--dj); }
+        .feat-tok.pur  { background:rgba(167,139,250,.1); border:1px solid rgba(167,139,250,.25); color:var(--dj2); }
+        .feat-tok.grn  { background:rgba(25,213,158,.1);  border:1px solid rgba(25,213,158,.25);  color:var(--green); }
+        .feat-tok.cyn  { background:rgba(56,189,248,.1);  border:1px solid rgba(56,189,248,.25);  color:var(--cyan); }
+        .feat-tok.org  { background:rgba(255,87,10,.1);   border:1px solid rgba(255,87,10,.25);   color:var(--orange); }
+        .feat-tok.yel  { background:rgba(251,191,36,.1);  border:1px solid rgba(251,191,36,.25);  color:var(--yellow); }
+        .feat-tok.tel  { background:rgba(103,232,249,.1); border:1px solid rgba(103,232,249,.25); color:var(--teal); }
+        .feat-tok.red  { background:rgba(248,113,113,.1); border:1px solid rgba(248,113,113,.25); color:var(--red); }
+
+        .feat h3 { font-size:.95rem; font-weight:700; margin-bottom:7px; }
+        .feat p  { font-size:.83rem; color:var(--txt2); line-height:1.64; }
+
+        /* WAVE VIZ */
+        .viz-box {
+            background:var(--bg2); border:1px solid var(--bdr); border-radius:16px; padding:30px;
+            margin-bottom:60px; position:relative; overflow:hidden;
+        }
+        .viz-box::before {
+            content:''; position:absolute; top:0; left:0; right:0; height:2px;
+            background:linear-gradient(90deg, var(--dj), var(--dj2), var(--orange));
+        }
+        #waveCanvas { width:100%; height:64px; display:block; border-radius:6px; }
+        .viz-bottom { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:20px; }
+        @media(max-width:620px){ .viz-bottom { grid-template-columns:1fr; } }
+
+        /* pads */
+        .pads-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+        .pad {
+            aspect-ratio:1; border-radius:8px; border:1px solid var(--bdr);
+            background:rgba(232,121,249,.05);
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            gap:3px; cursor:pointer; transition:background .08s, border-color .08s, transform .06s;
+            user-select:none; padding:3px;
+        }
+        .pad:hover { background:rgba(232,121,249,.14); border-color:rgba(232,121,249,.45); }
+        .pad.hit { background:rgba(232,121,249,.3)!important; border-color:var(--dj)!important; transform:scale(.92); }
+        .pad-id { font-family:var(--mono); font-size:10px; font-weight:800; }
+        .pad-nm { font-family:var(--mono); font-size:7px; color:var(--txt3); }
+
+        /* step seq */
+        .seq-row { display:flex; gap:3px; flex-wrap:wrap; }
+        .stp {
+            width:19px; height:19px; border-radius:3px; flex-shrink:0;
+            border:1px solid var(--bdr); background:rgba(255,255,255,.02); transition:background .08s;
+        }
+        .stp.on  { background:var(--dj); border-color:var(--dj); box-shadow:0 0 6px rgba(232,121,249,.5); }
+        .stp.cur { background:rgba(232,121,249,.22); border-color:var(--dj); }
+        .seq-meta { font-size:11px; color:var(--txt3); margin-top:8px; font-family:var(--mono); }
+        .seq-meta .hl { color:var(--dj); font-weight:700; }
+
+        /* SHORTCUTS */
+        .shortcuts-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(210px,1fr)); gap:10px; }
+        @media(max-width:500px){ .shortcuts-grid { grid-template-columns:1fr 1fr; } }
+
+        .sc {
+            display:flex; align-items:center; gap:12px; padding:11px 14px;
+            background:var(--bg2); border:1px solid var(--bdr); border-radius:10px;
+            transition:border-color .2s;
+        }
+        .sc:hover { border-color:rgba(232,121,249,.28); }
+        .sc-key {
+            display:inline-flex; align-items:center; justify-content:center;
+            min-width:38px; height:30px; padding:0 8px;
+            background:var(--bg3); border:1px solid var(--bdr2); border-bottom:2px solid rgba(255,255,255,.12);
+            border-radius:6px; font-family:var(--mono); font-size:11px; font-weight:700;
+            color:var(--txt); flex-shrink:0;
+        }
+        .sc-desc { font-size:.82rem; color:var(--txt2); }
+
+        /* HOW-TO */
+        .howto-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:16px; margin-bottom:56px; }
+        @media(max-width:500px){ .howto-grid { grid-template-columns:1fr; } }
+
+        .howto-block {
+            background:var(--bg2); border:1px solid var(--bdr); border-radius:14px; padding:22px;
+            position:relative; overflow:hidden;
+        }
+        .howto-block::before {
+            content:''; position:absolute; top:0; left:0; right:0; height:2px;
+            background:linear-gradient(90deg, var(--dj2), var(--dj));
+        }
+        .howto-num {
+            font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.1em;
+            color:var(--dj); text-transform:uppercase; margin-bottom:10px; display:block;
+        }
+        .howto-block h3 { font-size:.95rem; font-weight:700; margin-bottom:12px; }
+        .howto-block ul { list-style:none; }
+        .howto-block li {
+            font-size:.82rem; color:var(--txt2); padding:5px 0 5px 18px; position:relative;
+            border-bottom:1px solid rgba(255,255,255,.04);
+        }
+        .howto-block li:last-child { border-bottom:none; }
+        .howto-block li::before { content:'—'; position:absolute; left:0; color:var(--dj); font-weight:700; font-size:.7rem; top:7px; }
+
+        /* STORAGE / REQUIREMENTS */
+        .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:56px; }
+        @media(max-width:600px){ .info-grid { grid-template-columns:1fr; } }
+
+        .info-box {
+            background:var(--bg2); border:1px solid var(--bdr); border-radius:14px; padding:24px;
+            position:relative; overflow:hidden;
+        }
+        .info-box::before {
+            content:''; position:absolute; top:0; left:0; right:0; height:2px;
+            background:linear-gradient(90deg, var(--dj2), var(--cyan));
+        }
+        .info-box h3 { font-size:.95rem; font-weight:700; margin-bottom:14px; font-family:var(--mono); letter-spacing:.04em; color:var(--dj2); }
+        .info-row {
+            display:flex; align-items:flex-start; gap:10px;
+            padding:7px 0; border-bottom:1px solid rgba(255,255,255,.05);
+        }
+        .info-row:last-child { border-bottom:none; }
+        .info-row-label { font-size:.78rem; color:var(--txt3); font-family:var(--mono); min-width:80px; padding-top:1px; }
+        .info-row-val { font-size:.82rem; color:var(--txt2); flex:1; }
+        .info-row-val code { font-family:var(--mono); color:var(--dj2); font-size:.78em; }
+
+        /* INSTALL BOX */
+        .install-box {
+            background:var(--bg2); border:1px solid var(--bdr); border-radius:16px; padding:36px;
+            margin-bottom:60px; position:relative; overflow:hidden;
+        }
+        .install-box::before {
+            content:''; position:absolute; top:0; left:0; right:0; height:2px;
+            background:linear-gradient(90deg, var(--dj), var(--dj2));
+        }
+        .install-box p { color:var(--txt2); font-size:.9rem; margin-bottom:8px; }
+        .install-box pre {
+            background:#07060b; border:1px solid var(--bdr); border-radius:10px;
+            padding:16px 20px; font-size:.78rem; color:var(--dj);
+            font-family:ui-monospace,monospace; overflow-x:auto; margin:18px 0; line-height:1.75;
+        }
+        .install-meta { display:flex; flex-wrap:wrap; gap:24px; margin-top:20px; }
+        .im { display:flex; flex-direction:column; gap:3px; }
+        .im-lbl { font-size:10px; font-family:var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--txt3); }
+        .im-val { font-size:13px; font-weight:600; }
+
+        /* FOOT */
+        .foot { border-top:1px solid var(--bdr); padding-top:24px; font-size:.82rem; color:var(--txt3); }
+        .foot a { color:var(--orange); text-decoration:none; }
+        .foot a:hover { text-decoration:underline; }
+
+        /* REVEAL */
+        .reveal { opacity:0; transform:translateY(22px); transition:opacity .6s ease, transform .6s ease; }
+        .reveal.visible { opacity:1; transform:none; }
+
+        /* SPEC PILLS */
+        .spec-pills { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+        .spec-pill {
+            display:inline-flex; align-items:center;
+            font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.04em;
+            padding:3px 9px; border-radius:999px;
+            background:rgba(232,121,249,.08); border:1px solid rgba(232,121,249,.2); color:var(--dj);
+        }
+        .spec-pill.grn { background:rgba(25,213,158,.08); border-color:rgba(25,213,158,.2); color:var(--green); }
+        .spec-pill.cyn { background:rgba(56,189,248,.08); border-color:rgba(56,189,248,.2); color:var(--cyan); }
+        .spec-pill.org { background:rgba(255,87,10,.08);  border-color:rgba(255,87,10,.2);  color:var(--orange); }
+        .spec-pill.yel { background:rgba(251,191,36,.08); border-color:rgba(251,191,36,.2); color:var(--yellow); }
+        .spec-pill.red { background:rgba(248,113,113,.08);border-color:rgba(248,113,113,.2);color:var(--red); }
+        .spec-pill.pur { background:rgba(167,139,250,.08);border-color:rgba(167,139,250,.2);color:var(--dj2); }
+        .spec-pill.tel { background:rgba(103,232,249,.08);border-color:rgba(103,232,249,.2);color:var(--teal); }
+
+        /* STAGGER */
+        .feat { transition-delay: var(--delay, 0ms); }
+
+        /* MIXER DEMO */
+        .mixer-demo {
+            background:var(--bg2); border:1px solid var(--bdr); border-radius:18px;
+            padding:28px; margin-bottom:60px; position:relative; overflow:hidden;
+        }
+        .mixer-demo::before {
+            content:''; position:absolute; top:0; left:0; right:0; height:2px;
+            background:linear-gradient(90deg, var(--green), var(--dj), var(--cyan));
+        }
+        .mixer-header {
+            display:flex; align-items:center; justify-content:space-between;
+            margin-bottom:20px; flex-wrap:wrap; gap:12px;
+        }
+        .mixer-title { font-size:.82rem; font-family:var(--mono); font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--green); }
+        .mixer-meta { font-size:11px; font-family:var(--mono); color:var(--txt3); }
+        .mixer-meta span { color:var(--dj); font-weight:700; }
+
+        .track-list { display:flex; flex-direction:column; gap:10px; }
+        .track {
+            display:grid; align-items:center;
+            grid-template-columns: 110px 1fr 60px 80px 32px;
+            gap:12px;
+            background:var(--bg3); border:1px solid var(--bdr); border-radius:10px;
+            padding:10px 14px;
+            transition:border-color .25s;
+        }
+        .track:hover { border-color:rgba(25,213,158,.3); }
+        .track.playing { border-color:rgba(25,213,158,.4); }
+        @media(max-width:600px){
+            .track { grid-template-columns:1fr 80px 32px; }
+            .track-name { display:none; }
+            .track-vol { display:none; }
+        }
+        .track-name { display:flex; flex-direction:column; gap:2px; }
+        .track-nm { font-family:var(--mono); font-size:11px; font-weight:700; color:var(--txt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .track-fmt { font-size:9px; font-family:var(--mono); color:var(--txt3); }
+        .track-wave { height:32px; display:flex; align-items:center; gap:1px; overflow:hidden; }
+        .tw-bar { width:3px; border-radius:2px; background:var(--green); opacity:.5; flex-shrink:0; transition:height .3s; }
+        .track.playing .tw-bar { opacity:.85; animation:waveAnim var(--dur,.4s) ease-in-out infinite alternate; }
+        @keyframes waveAnim { from{transform:scaleY(.3)} to{transform:scaleY(1)} }
+        .track-vol { display:flex; align-items:center; gap:8px; }
+        .vol-lbl { font-size:9px; font-family:var(--mono); color:var(--txt3); white-space:nowrap; }
+        .vol-slider { -webkit-appearance:none; appearance:none; height:3px; border-radius:2px; background:var(--bdr2); flex:1; outline:none; cursor:pointer; }
+        .vol-slider::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:var(--green); cursor:pointer; border:2px solid var(--bg3); }
+        .track-status {
+            display:flex; align-items:center; justify-content:center;
+            font-family:var(--mono); font-size:9px; font-weight:700; letter-spacing:.06em;
+            padding:3px 7px; border-radius:999px; white-space:nowrap;
+        }
+        .track-status.live { background:rgba(25,213,158,.12); border:1px solid rgba(25,213,158,.3); color:var(--green); }
+        .track-status.live::before { content:''; display:inline-block; width:5px; height:5px; border-radius:50%; background:var(--green); margin-right:4px; animation:blink 1s ease-in-out infinite; }
+        .track-status.idle { background:rgba(255,255,255,.04); border:1px solid var(--bdr); color:var(--txt3); }
+        .track-play {
+            width:32px; height:32px; border-radius:50%; border:1px solid var(--bdr2);
+            background:rgba(25,213,158,.08); color:var(--green);
+            display:flex; align-items:center; justify-content:center;
+            cursor:pointer; transition:background .2s, border-color .2s; flex-shrink:0;
+        }
+        .track-play:hover { background:rgba(25,213,158,.2); border-color:var(--green); }
+        .track-play svg { width:10px; height:10px; }
+
+        /* FX strip in mixer */
+        .fx-demo-strip {
+            display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; align-items:flex-end;
+            padding-top:18px; border-top:1px solid var(--bdr);
+        }
+        .fxd {
+            display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; min-width:60px;
+        }
+        .fxd-label { font-family:var(--mono); font-size:9px; color:var(--txt3); letter-spacing:.06em; text-transform:uppercase; }
+        .fxd-bar { width:100%; height:4px; border-radius:2px; background:var(--bdr2); position:relative; overflow:hidden; }
+        .fxd-fill { height:100%; border-radius:2px; transition:width .8s cubic-bezier(.4,0,.2,1); }
+        .fxd-val { font-family:var(--mono); font-size:10px; font-weight:700; }
+    </style>
+</head>
+<body>
+<div class="ambient"></div>
+
+<!-- NAV -->
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <div class="nav-logo">N</div>
+        <span class="nav-title">Nigents</span>
+    </a>
+    <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false">
+        <span class="nto">&#9776;</span>
+        <span class="ntc">&#10005;</span>
+    </button>
+    <div class="nav-links" id="nav-links">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/how-it-works.html" class="nav-link">How it works</a>
+        <a href="/materials.html" class="nav-link">Free Materials</a>
+        <a href="/crazy-apps.html" class="nav-link active">Crazy apps</a>
+        <a href="/opencode-kits.html" class="nav-link">OpenCode kits <span class="soon-pill">Soon</span></a>
+        <a href="/bonyad/" class="nav-link">Bonyad</a>
+        <a href="/login.html" class="nav-cta">Login &rarr;</a>
+    </div>
+</nav>
+<div class="nav-bd" id="nav-bd"></div>
+
+<div class="wrap">
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="reveal">
+            <div class="badge"><span class="badge-dot"></span>macOS &middot; Crazy apps &middot; PRO v2.0</div>
+            <h1>Make beats.<br><span class="grad">While you study.</span></h1>
+            <p class="hero-desc">Eight synth pads, a 6-effect FX rack, YouTube downloader, multi-track mixer, waveform hot cues, 16-step sequencer and voice drops — all inside one Mac window.</p>
+            <div class="hero-ctas">
+                <a class="btn-dl" href="/downloads/TiltDJ-Pro.dmg" download>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 1v8M3.5 6l3.5 4 3.5-4M1 11h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Download DMG
+                    <small style="opacity:.6;font-weight:400">macOS 14+</small>
+                </a>
+                <a class="btn-ghost" href="/crazy-apps.html">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M8 2L4 6 8 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    All Crazy apps
+                </a>
+            </div>
+            <div class="version-row">
+                <span class="v-pill">PRO v2.0</span>
+                <span class="v-pill green">Remix Edition</span>
+                <span>920 KB &middot; Apple Silicon &middot; Unsigned</span>
+            </div>
+            <div class="gk-notice">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true" style="flex-shrink:0;margin-top:1px"><circle cx="6.5" cy="6.5" r="5.75" stroke="#f59e0b" stroke-width="1.3"/><path d="M6.5 4v3M6.5 8.8v.4" stroke="#f59e0b" stroke-width="1.4" stroke-linecap="round"/></svg>
+                <span><strong>macOS says "damaged"?</strong> Right-click the app → <em>Open</em> → click <em>Open</em> again. Or in Terminal: <code>xattr -cr /Applications/TiltDJ.app</code></span>
+            </div>
+        </div>
+
+        <!-- LAPTOP MOCKUP -->
+        <div class="laptop-wrap reveal">
+            <div class="laptop-glow"></div>
+            <svg class="laptop-svg" viewBox="0 0 540 390" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <!-- chassis -->
+                <rect x="34" y="26" width="472" height="300" rx="14" fill="#141116" stroke="#222030" stroke-width="1.5"/>
+                <rect x="46" y="38" width="448" height="276" rx="8" fill="#09080c"/>
+                <circle cx="270" cy="34" r="3" fill="#222030"/>
+                <!-- base -->
+                <rect x="0" y="328" width="540" height="16" rx="4" fill="#18151f" stroke="#222030" stroke-width="1"/>
+                <rect x="188" y="328" width="164" height="7" rx="3.5" fill="#141116"/>
+
+                <!-- title bar -->
+                <rect x="46" y="38" width="448" height="22" fill="#0d0b13"/>
+                <circle cx="62" cy="49" r="4" fill="#ff5f57"/>
+                <circle cx="76" cy="49" r="4" fill="#ffbd2e"/>
+                <circle cx="90" cy="49" r="4" fill="#28c840"/>
+                <text x="270" y="53" text-anchor="middle" font-size="8" fill="#565370" font-family="ui-monospace,monospace" font-weight="600">TiltDJ PRO  v2.0  Remix Edition</text>
+
+                <!-- PAD GRID -->
+                <g id="svgPads">
+                    <rect x="56"  y="72" width="40" height="34" rx="5" fill="#1e1a2a" stroke="#302c3e" stroke-width="1"/>
+                    <rect x="101" y="72" width="40" height="34" rx="5" fill="#1e1a2a" stroke="#302c3e" stroke-width="1"/>
+                    <rect x="146" y="72" width="40" height="34" rx="5" fill="#1e1a2a" stroke="#302c3e" stroke-width="1"/>
+                    <rect x="191" y="72" width="40" height="34" rx="5" fill="#1e1a2a" stroke="#302c3e" stroke-width="1"/>
+                    <rect x="56"  y="112" width="40" height="34" rx="5" fill="#1e1a2a" stroke="#302c3e" stroke-width="1"/>
+                    <rect x="101" y="112" width="40" height="34" rx="5" fill="#1e1a2a" stroke="#302c3e" stroke-width="1"/>
+                    <rect x="146" y="112" width="40" height="34" rx="5" fill="#1e1a2a" stroke="#302c3e" stroke-width="1"/>
+                    <rect x="191" y="112" width="40" height="34" rx="5" fill="#1e1a2a" stroke="#302c3e" stroke-width="1"/>
+                    <text x="76"  y="92"  text-anchor="middle" font-size="6" fill="#a78bfa" font-family="ui-monospace,monospace">KICK</text>
+                    <text x="121" y="92"  text-anchor="middle" font-size="6" fill="#a78bfa" font-family="ui-monospace,monospace">SNARE</text>
+                    <text x="166" y="92"  text-anchor="middle" font-size="6" fill="#a78bfa" font-family="ui-monospace,monospace">HAT</text>
+                    <text x="211" y="92"  text-anchor="middle" font-size="6" fill="#a78bfa" font-family="ui-monospace,monospace">CLAP</text>
+                    <text x="76"  y="132" text-anchor="middle" font-size="6" fill="#a78bfa" font-family="ui-monospace,monospace">BASS</text>
+                    <text x="121" y="132" text-anchor="middle" font-size="6" fill="#a78bfa" font-family="ui-monospace,monospace">RISER</text>
+                    <text x="166" y="132" text-anchor="middle" font-size="6" fill="#a78bfa" font-family="ui-monospace,monospace">CHOP</text>
+                    <text x="211" y="132" text-anchor="middle" font-size="6" fill="#a78bfa" font-family="ui-monospace,monospace">HORN</text>
+                </g>
+
+                <!-- FX RACK label + 6 knobs -->
+                <text x="56" y="162" font-size="5.5" fill="#565370" font-family="ui-monospace,monospace" font-weight="700" letter-spacing="1">FX RACK</text>
+                <g id="fxKnobs">
+                    <circle cx="68"  cy="178" r="9" fill="#0d0b13" stroke="#38bdf8" stroke-width="1.3"/>
+                    <line x1="68"  y1="170" x2="68"  y2="174" stroke="#38bdf8" stroke-width="1.6" stroke-linecap="round"/>
+                    <text x="68"  y="193" text-anchor="middle" font-size="5" fill="#565370" font-family="ui-monospace,monospace">RVB</text>
+
+                    <circle cx="92"  cy="178" r="9" fill="#0d0b13" stroke="#19d59e" stroke-width="1.3"/>
+                    <line x1="92"  y1="170" x2="94"  y2="174" stroke="#19d59e" stroke-width="1.6" stroke-linecap="round"/>
+                    <text x="92"  y="193" text-anchor="middle" font-size="5" fill="#565370" font-family="ui-monospace,monospace">DLY</text>
+
+                    <circle cx="116" cy="178" r="9" fill="#0d0b13" stroke="#a78bfa" stroke-width="1.3"/>
+                    <line x1="116" y1="170" x2="113" y2="174" stroke="#a78bfa" stroke-width="1.6" stroke-linecap="round"/>
+                    <text x="116" y="193" text-anchor="middle" font-size="5" fill="#565370" font-family="ui-monospace,monospace">FLT</text>
+
+                    <circle cx="140" cy="178" r="9" fill="#0d0b13" stroke="#f87171" stroke-width="1.3"/>
+                    <line x1="140" y1="170" x2="143" y2="174" stroke="#f87171" stroke-width="1.6" stroke-linecap="round"/>
+                    <text x="140" y="193" text-anchor="middle" font-size="5" fill="#565370" font-family="ui-monospace,monospace">DST</text>
+
+                    <circle cx="164" cy="178" r="9" fill="#0d0b13" stroke="#fbbf24" stroke-width="1.3"/>
+                    <line x1="164" y1="170" x2="161" y2="174" stroke="#fbbf24" stroke-width="1.6" stroke-linecap="round"/>
+                    <text x="164" y="193" text-anchor="middle" font-size="5" fill="#565370" font-family="ui-monospace,monospace">PCH</text>
+
+                    <circle cx="188" cy="178" r="9" fill="#0d0b13" stroke="#67e8f9" stroke-width="1.3"/>
+                    <line x1="188" y1="170" x2="188" y2="174" stroke="#67e8f9" stroke-width="1.6" stroke-linecap="round"/>
+                    <text x="188" y="193" text-anchor="middle" font-size="5" fill="#565370" font-family="ui-monospace,monospace">SPD</text>
+                </g>
+
+                <!-- STEP SEQUENCER -->
+                <text x="56" y="208" font-size="5.5" fill="#565370" font-family="ui-monospace,monospace" font-weight="700" letter-spacing="1">16-STEP PATTERN</text>
+                <g id="svgSeq">
+                    <rect x="56"  y="212" width="10" height="8" rx="2" fill="#e879f9" opacity=".9"/>
+                    <rect x="69"  y="212" width="10" height="8" rx="2" fill="#1e1a2a" stroke="#302c3e" stroke-width=".5"/>
+                    <rect x="82"  y="212" width="10" height="8" rx="2" fill="#1e1a2a" stroke="#302c3e" stroke-width=".5"/>
+                    <rect x="95"  y="212" width="10" height="8" rx="2" fill="#e879f9" opacity=".9"/>
+                    <rect x="108" y="212" width="10" height="8" rx="2" fill="#1e1a2a" stroke="#302c3e" stroke-width=".5"/>
+                    <rect x="121" y="212" width="10" height="8" rx="2" fill="#1e1a2a" stroke="#302c3e" stroke-width=".5"/>
+                    <rect x="134" y="212" width="10" height="8" rx="2" fill="#e879f9" opacity=".9"/>
+                    <rect x="147" y="212" width="10" height="8" rx="2" fill="#1e1a2a" stroke="#302c3e" stroke-width=".5"/>
+                    <rect x="160" y="212" width="10" height="8" rx="2" fill="#e879f9" opacity=".9"/>
+                    <rect x="173" y="212" width="10" height="8" rx="2" fill="#1e1a2a" stroke="#302c3e" stroke-width=".5"/>
+                    <rect x="186" y="212" width="10" height="8" rx="2" fill="#1e1a2a" stroke="#302c3e" stroke-width=".5"/>
+                    <rect x="199" y="212" width="10" height="8" rx="2" fill="#e879f9" opacity=".9"/>
+                    <rect x="212" y="212" width="10" height="8" rx="2" fill="#1e1a2a" stroke="#302c3e" stroke-width=".5"/>
+                    <rect x="225" y="212" width="10" height="8" rx="2" fill="#e879f9" opacity=".5"/>
+                    <rect x="238" y="212" width="10" height="8" rx="2" fill="#1e1a2a" stroke="#302c3e" stroke-width=".5"/>
+                    <rect x="251" y="212" width="10" height="8" rx="2" fill="#e879f9" opacity=".9"/>
+                    <rect x="54" y="210" width="14" height="12" rx="2" fill="none" stroke="#e879f9" stroke-width="1.2" opacity=".8"/>
+                </g>
+
+                <!-- WAVEFORM -->
+                <text x="56" y="234" font-size="5.5" fill="#565370" font-family="ui-monospace,monospace" font-weight="700" letter-spacing="1">WAVEFORM + HOT CUES</text>
+                <rect x="56" y="238" width="220" height="26" rx="4" fill="#0d0b13" stroke="#222030" stroke-width=".5"/>
+                <g id="svgWf" opacity=".7"></g>
+                <line x1="126" y1="238" x2="126" y2="264" stroke="#e879f9" stroke-width="1.2"/>
+                <polygon points="124,238 128,238 126,242" fill="#e879f9"/>
+                <line x1="168" y1="238" x2="168" y2="264" stroke="#38bdf8" stroke-width="1"/>
+                <polygon points="166,238 170,238 168,242" fill="#38bdf8"/>
+
+                <!-- RIGHT PANEL -->
+                <text x="298" y="76" font-size="5.5" fill="#565370" font-family="ui-monospace,monospace">MASTER</text>
+                <rect x="298" y="80" width="7" height="68" rx="3.5" fill="#1e1a2a" stroke="#302c3e" stroke-width=".5"/>
+                <rect x="298" y="104" width="7" height="44" rx="3.5" fill="#e879f9" opacity=".6"/>
+                <rect x="296" y="101" width="11" height="5" rx="2.5" fill="#fff" opacity=".85"/>
+
+                <text x="320" y="76" font-size="5.5" fill="#565370" font-family="ui-monospace,monospace">PAN</text>
+                <rect x="320" y="80" width="64" height="5" rx="2.5" fill="#1e1a2a" stroke="#302c3e" stroke-width=".5"/>
+                <rect x="320" y="80" width="32" height="5" rx="2.5" fill="#a78bfa" opacity=".6"/>
+                <circle cx="352" cy="82.5" r="4.5" fill="#fff" stroke="#a78bfa" stroke-width="1.2"/>
+
+                <text x="320" y="101" font-size="5.5" fill="#565370" font-family="ui-monospace,monospace">IMPORT VOL</text>
+                <rect x="320" y="105" width="64" height="5" rx="2.5" fill="#1e1a2a" stroke="#302c3e" stroke-width=".5"/>
+                <rect x="320" y="105" width="48" height="5" rx="2.5" fill="#19d59e" opacity=".6"/>
+                <circle cx="368" cy="107.5" r="4.5" fill="#fff" stroke="#19d59e" stroke-width="1.2"/>
+
+                <text x="320" y="126" font-size="5.5" fill="#565370" font-family="ui-monospace,monospace">SPEED</text>
+                <rect x="320" y="130" width="64" height="5" rx="2.5" fill="#1e1a2a" stroke="#302c3e" stroke-width=".5"/>
+                <rect x="320" y="130" width="36" height="5" rx="2.5" fill="#fbbf24" opacity=".6"/>
+                <circle cx="356" cy="132.5" r="4.5" fill="#fff" stroke="#fbbf24" stroke-width="1.2"/>
+
+                <rect x="320" y="148" width="128" height="17" rx="4" fill="rgba(232,121,249,.1)" stroke="rgba(232,121,249,.32)" stroke-width=".7"/>
+                <text x="384" y="159.5" text-anchor="middle" font-size="6.5" fill="#e879f9" font-weight="700" font-family="ui-monospace,monospace">MIC  VOICE DROP</text>
+
+                <!-- YouTube downloader tag -->
+                <rect x="320" y="178" width="128" height="17" rx="4" fill="rgba(248,113,113,.08)" stroke="rgba(248,113,113,.28)" stroke-width=".7"/>
+                <text x="384" y="189.5" text-anchor="middle" font-size="6.5" fill="#f87171" font-weight="700" font-family="ui-monospace,monospace">YT  DOWNLOADER</text>
+
+                <!-- BPM + play -->
+                <rect x="320" y="206" width="42" height="22" rx="4" fill="#0d0b13" stroke="#302c3e" stroke-width=".5"/>
+                <text x="341" y="214" text-anchor="middle" font-size="5" fill="#565370" font-family="ui-monospace,monospace">BPM</text>
+                <text x="341" y="224" text-anchor="middle" font-size="9" font-weight="700" fill="#e879f9" font-family="ui-monospace,monospace">128</text>
+                <circle cx="400" cy="217" r="13" fill="rgba(232,121,249,.12)" stroke="#e879f9" stroke-width=".9"/>
+                <polygon points="395,211 395,223 407,217" fill="#e879f9"/>
+
+                <!-- import track row -->
+                <rect x="56" y="275" width="424" height="22" rx="4" fill="#0d0b13" stroke="#222030" stroke-width=".5"/>
+                <rect x="64" y="281" width="7" height="10" rx="2" fill="#19d59e" opacity=".7"/>
+                <text x="78" y="289" font-size="6" fill="#565370" font-family="ui-monospace,monospace">import.mp3  &#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;&#9646;</text>
+            </svg>
+        </div>
+    </section>
+
+    <!-- LIVE WAVE -->
+    <section class="viz-box reveal">
+        <span class="sec-lbl">Interactive preview</span>
+        <p style="font-size:.86rem;color:var(--txt2);margin-bottom:14px;">Tap pads or let the 128 BPM sequencer run. Each pad fires its own wave colour.</p>
+        <canvas id="waveCanvas" height="64"></canvas>
+        <div class="viz-bottom">
+            <div>
+                <p style="font-size:10px;color:var(--txt3);font-family:var(--mono);letter-spacing:.1em;margin-bottom:10px;">TAP PADS</p>
+                <div class="pads-grid" id="demoPads">
+                    <div class="pad" data-i="0"><span class="pad-id" style="color:var(--dj)">KCK</span><span class="pad-nm">KICK</span></div>
+                    <div class="pad" data-i="1"><span class="pad-id" style="color:var(--dj2)">SNR</span><span class="pad-nm">SNARE</span></div>
+                    <div class="pad" data-i="2"><span class="pad-id" style="color:var(--cyan)">HAT</span><span class="pad-nm">HI-HAT</span></div>
+                    <div class="pad" data-i="3"><span class="pad-id" style="color:var(--green)">CLP</span><span class="pad-nm">CLAP</span></div>
+                    <div class="pad" data-i="4"><span class="pad-id" style="color:var(--yellow)">BAS</span><span class="pad-nm">BASS</span></div>
+                    <div class="pad" data-i="5"><span class="pad-id" style="color:var(--red)">RSR</span><span class="pad-nm">RISER</span></div>
+                    <div class="pad" data-i="6"><span class="pad-id" style="color:var(--teal)">CHP</span><span class="pad-nm">CHOP</span></div>
+                    <div class="pad" data-i="7"><span class="pad-id" style="color:var(--orange)">HRN</span><span class="pad-nm">HORN</span></div>
+                </div>
+            </div>
+            <div>
+                <p style="font-size:10px;color:var(--txt3);font-family:var(--mono);letter-spacing:.1em;margin-bottom:10px;">16-STEP SEQUENCER</p>
+                <div class="seq-row" id="seqRow"></div>
+                <p class="seq-meta"><span class="hl" id="bpmLabel">128 BPM</span> &middot; step <span id="stepNum">1</span>/16</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ANIMATED MIXER DEMO -->
+    <section class="mixer-demo reveal" style="margin-bottom:60px;">
+        <div class="mixer-header">
+            <span class="mixer-title">Multi-Track Mixer — Live</span>
+            <span class="mixer-meta">Master vol <span id="masterVal">78%</span> &nbsp;&middot;&nbsp; <span id="trackCount">3</span> tracks loaded &nbsp;&middot;&nbsp; <span id="bpmDisp">128</span> BPM</span>
+        </div>
+
+        <div class="track-list" id="trackList">
+            <div class="track playing" id="tr0">
+                <div class="track-name">
+                    <span class="track-nm">lofi_beat_01.mp3</span>
+                    <span class="track-fmt">MP3 &middot; 128kbps &middot; 3:42</span>
+                </div>
+                <div class="track-wave" id="tw0"></div>
+                <div class="track-vol">
+                    <span class="vol-lbl">VOL</span>
+                    <input type="range" class="vol-slider" min="0" max="100" value="82">
+                </div>
+                <div class="track-status live">LIVE</div>
+                <button class="track-play" aria-label="Stop track">
+                    <svg viewBox="0 0 10 10" fill="currentColor"><rect x="1" y="1" width="3" height="8" rx="1"/><rect x="6" y="1" width="3" height="8" rx="1"/></svg>
+                </button>
+            </div>
+            <div class="track playing" id="tr1">
+                <div class="track-name">
+                    <span class="track-nm">youtube_download.mp3</span>
+                    <span class="track-fmt">MP3 &middot; from YouTube &middot; 4:15</span>
+                </div>
+                <div class="track-wave" id="tw1"></div>
+                <div class="track-vol">
+                    <span class="vol-lbl">VOL</span>
+                    <input type="range" class="vol-slider" min="0" max="100" value="65">
+                </div>
+                <div class="track-status live">LIVE</div>
+                <button class="track-play" aria-label="Stop track">
+                    <svg viewBox="0 0 10 10" fill="currentColor"><rect x="1" y="1" width="3" height="8" rx="1"/><rect x="6" y="1" width="3" height="8" rx="1"/></svg>
+                </button>
+            </div>
+            <div class="track" id="tr2">
+                <div class="track-name">
+                    <span class="track-nm">ambient_pad.wav</span>
+                    <span class="track-fmt">WAV &middot; 44.1kHz &middot; 2:58</span>
+                </div>
+                <div class="track-wave" id="tw2"></div>
+                <div class="track-vol">
+                    <span class="vol-lbl">VOL</span>
+                    <input type="range" class="vol-slider" min="0" max="100" value="50">
+                </div>
+                <div class="track-status idle">READY</div>
+                <button class="track-play" aria-label="Play track">
+                    <svg viewBox="0 0 10 10" fill="currentColor"><polygon points="2,1 9,5 2,9"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- FX strip -->
+        <div class="fx-demo-strip">
+            <div class="fxd">
+                <span class="fxd-label">Reverb</span>
+                <div class="fxd-bar"><div class="fxd-fill" id="fx0" style="width:42%;background:var(--cyan)"></div></div>
+                <span class="fxd-val" id="fxv0" style="color:var(--cyan)">42%</span>
+            </div>
+            <div class="fxd">
+                <span class="fxd-label">Delay</span>
+                <div class="fxd-bar"><div class="fxd-fill" id="fx1" style="width:28%;background:var(--green)"></div></div>
+                <span class="fxd-val" id="fxv1" style="color:var(--green)">28%</span>
+            </div>
+            <div class="fxd">
+                <span class="fxd-label">Filter</span>
+                <div class="fxd-bar"><div class="fxd-fill" id="fx2" style="width:65%;background:var(--dj2)"></div></div>
+                <span class="fxd-val" id="fxv2" style="color:var(--dj2)">65%</span>
+            </div>
+            <div class="fxd">
+                <span class="fxd-label">Distortion</span>
+                <div class="fxd-bar"><div class="fxd-fill" id="fx3" style="width:12%;background:var(--red)"></div></div>
+                <span class="fxd-val" id="fxv3" style="color:var(--red)">12%</span>
+            </div>
+            <div class="fxd">
+                <span class="fxd-label">Pitch</span>
+                <div class="fxd-bar"><div class="fxd-fill" id="fx4" style="width:50%;background:var(--yellow)"></div></div>
+                <span class="fxd-val" id="fxv4" style="color:var(--yellow)">0 st</span>
+            </div>
+            <div class="fxd">
+                <span class="fxd-label">Speed</span>
+                <div class="fxd-bar"><div class="fxd-fill" id="fx5" style="width:33%;background:var(--teal)"></div></div>
+                <span class="fxd-val" id="fxv5" style="color:var(--teal)">1.0×</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- CURRENT FEATURES -->
+    <section style="margin-bottom:60px;">
+        <span class="sec-lbl">What's inside</span>
+        <h2 class="sec-title">
+            Current features
+            <span class="status-live">Available now</span>
+        </h2>
+        <p class="sec-sub">Everything below ships in the downloaded build — ready on first launch.</p>
+
+        <div class="feat-grid">
+            <div class="feat reveal" style="--delay:0ms">
+                <div class="feat-tok dj">PAD</div>
+                <h3>8 Performance Pads</h3>
+                <p>Eight sounds ready to trigger live — Kick, Snare, Hi-Hat, Clap, Bass, Riser, Chop and Horn. Use the number row or the top keyboard row, no mouse needed. Toggle keyboard mode off to type normally.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill">Keys 1–8</span>
+                    <span class="spec-pill">Q W E R T Y U I</span>
+                    <span class="spec-pill pur">8 sounds</span>
+                    <span class="spec-pill grn">Instant trigger</span>
+                </div>
+            </div>
+            <div class="feat reveal" style="--delay:60ms">
+                <div class="feat-tok pur">FX</div>
+                <h3>6-Effect FX Rack</h3>
+                <p>A full effects chain applied in real-time to any audio — pads, imports, or the sequencer. Every knob has a precision slider beneath it with a live value readout. Drag or click to adjust while the music plays.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill cyn">Reverb 0–100%</span>
+                    <span class="spec-pill grn">Delay 0–100%</span>
+                    <span class="spec-pill pur">Filter 0–100%</span>
+                    <span class="spec-pill red">Distortion 0–100%</span>
+                    <span class="spec-pill yel">Pitch ±12 st</span>
+                    <span class="spec-pill tel">Speed 0.5×–2×</span>
+                </div>
+            </div>
+            <div class="feat reveal" style="--delay:120ms">
+                <div class="feat-tok red">YT</div>
+                <h3>YouTube Downloader</h3>
+                <p>Paste any YouTube URL, hit Download. TiltDJ fetches the audio as MP3 using yt-dlp (auto-installed on first use), runs waveform analysis, and drops the track straight into your mixer — no browser, no manual steps.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill red">Paste URL → MP3</span>
+                    <span class="spec-pill grn">Auto waveform scan</span>
+                    <span class="spec-pill">Saves to ~/Documents/TiltDJ Downloads</span>
+                </div>
+            </div>
+            <div class="feat reveal" style="--delay:180ms">
+                <div class="feat-tok grn">MIX</div>
+                <h3>Multi-Track Mixer</h3>
+                <p>Load as many audio files as you want and play them all at the same time. Each track gets its own volume fader, a live waveform strip, a green checkmark once analysis is done, and a play/stop button — full desk-side mixing without a DAW.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill">MP3</span>
+                    <span class="spec-pill">WAV</span>
+                    <span class="spec-pill">AIFF</span>
+                    <span class="spec-pill">M4A</span>
+                    <span class="spec-pill grn">Simultaneous playback</span>
+                    <span class="spec-pill grn">Per-track faders</span>
+                </div>
+            </div>
+            <div class="feat reveal" style="--delay:240ms">
+                <div class="feat-tok cyn">WAV</div>
+                <h3>Waveform Visualizer</h3>
+                <p>See your import as a waveform with a live moving playhead. Tap anywhere on the waveform to set a hot cue marker in that colour and jump back to it instantly — great for verse/chorus navigation without scrubbing.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill cyn">Live playhead</span>
+                    <span class="spec-pill">Hot cue markers</span>
+                    <span class="spec-pill pur">Instant jump</span>
+                </div>
+            </div>
+            <div class="feat reveal" style="--delay:300ms">
+                <div class="feat-tok dj">SEQ</div>
+                <h3>16-Step Sequencer</h3>
+                <p>An 8-row × 16-column grid — one row per pad sound. Toggle steps on/off to build a one-bar pattern, set your BPM, hit Play and the loop fires in sync with whatever tracks are running in the mixer.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill">8 × 16 grid</span>
+                    <span class="spec-pill dj">One bar loop</span>
+                    <span class="spec-pill yel">BPM control</span>
+                    <span class="spec-pill grn">Mixer sync</span>
+                </div>
+            </div>
+            <div class="feat reveal" style="--delay:360ms">
+                <div class="feat-tok org">VOC</div>
+                <h3>Voice FX &amp; Drops</h3>
+                <p>Type any phrase or pick from built-in presets and press <strong>P</strong>. macOS native speech engine reads it aloud over your mix in real-time — no cloud, no latency. Use it for shout-outs, intros, or live commentary over your beats.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill org">Native macOS speech</span>
+                    <span class="spec-pill grn">Zero cloud</span>
+                    <span class="spec-pill">Key P to fire</span>
+                    <span class="spec-pill pur">Custom phrases</span>
+                </div>
+            </div>
+            <div class="feat reveal" style="--delay:420ms">
+                <div class="feat-tok tel">KB</div>
+                <h3>Full Keyboard Control</h3>
+                <p>Every major action has a key binding. Fire pads, tweak BPM up or down one click at a time, raise or lower master volume, trigger a voice drop — all without touching the mouse. Perfect for heads-down study sessions.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill tel">10 shortcuts</span>
+                    <span class="spec-pill">No mouse needed</span>
+                    <span class="spec-pill dj">Toggle on/off</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- COMING SOON -->
+    <section style="margin-bottom:60px;">
+        <span class="sec-lbl">On the roadmap</span>
+        <h2 class="sec-title">
+            Upcoming features
+            <span class="status-soon">Coming soon</span>
+        </h2>
+        <p class="sec-sub">In active development — land in the next major update.</p>
+
+        <div class="feat-grid">
+            <div class="feat soon reveal" style="--delay:0ms">
+                <div class="feat-tok yel">SYS</div>
+                <h3>System Audio Capture</h3>
+                <p>Route Chrome, Spotify or any running app through TiltDJ's FX rack in real-time using the BlackHole virtual audio driver. Slap reverb on a YouTube video, pitch-shift a podcast, add delay to Spotify — remix anything playing on your Mac.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill yel">BlackHole driver</span>
+                    <span class="spec-pill">Chrome / Spotify</span>
+                    <span class="spec-pill org">Real-time FX</span>
+                </div>
+            </div>
+            <div class="feat soon reveal" style="--delay:80ms">
+                <div class="feat-tok yel">REC</div>
+                <h3>Record Output</h3>
+                <p>Capture your entire live performance — pads, mixer tracks, sequencer loop and voice drops — directly to MP3 or WAV with one click. Save full sessions or short clips.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill yel">MP3 export</span>
+                    <span class="spec-pill">WAV export</span>
+                    <span class="spec-pill grn">One-click capture</span>
+                </div>
+            </div>
+            <div class="feat soon reveal" style="--delay:160ms">
+                <div class="feat-tok yel">THM</div>
+                <h3>More Visual Themes</h3>
+                <p>Additional dark cyberpunk, neon and minimal UI themes so you can switch the look of your entire DJ station in one tap — from deep purple to acid green to monochrome.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill yel">Cyberpunk</span>
+                    <span class="spec-pill">Neon</span>
+                    <span class="spec-pill">Minimal</span>
+                </div>
+            </div>
+            <div class="feat soon reveal" style="--delay:240ms">
+                <div class="feat-tok yel">iOS</div>
+                <h3>iOS / iPad Version</h3>
+                <p>Bring the full TiltDJ experience to iPhone and iPad — same pads, same FX rack, same sequencer, optimised for touch with haptic pad feedback and an AirDrop session bridge to your Mac.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill yel">iPhone + iPad</span>
+                    <span class="spec-pill">Haptic pads</span>
+                    <span class="spec-pill pur">AirDrop sync</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- KEYBOARD SHORTCUTS -->
+    <section class="reveal" style="margin-bottom:60px;">
+        <span class="sec-lbl">Reference</span>
+        <h2 class="sec-title">Keyboard shortcuts</h2>
+        <p class="sec-sub">Full keyboard control — no mouse needed once you know these.</p>
+
+        <div class="shortcuts-grid">
+            <div class="sc"><span class="sc-key">1 – 8</span><span class="sc-desc">Trigger drum pads</span></div>
+            <div class="sc"><span class="sc-key">Q – I</span><span class="sc-desc">Alternate pad triggers</span></div>
+            <div class="sc"><span class="sc-key">Space</span><span class="sc-desc">Play / Pause transport</span></div>
+            <div class="sc"><span class="sc-key">S</span><span class="sc-desc">Stop all playback</span></div>
+            <div class="sc"><span class="sc-key">[</span><span class="sc-desc">Decrease BPM &minus;1</span></div>
+            <div class="sc"><span class="sc-key">]</span><span class="sc-desc">Increase BPM +1</span></div>
+            <div class="sc"><span class="sc-key">&minus;</span><span class="sc-desc">Master volume down</span></div>
+            <div class="sc"><span class="sc-key">=</span><span class="sc-desc">Master volume up</span></div>
+            <div class="sc"><span class="sc-key">P</span><span class="sc-desc">Fire voice drop</span></div>
+            <div class="sc"><span class="sc-key">&#8984;R</span><span class="sc-desc">Reset all effects</span></div>
+        </div>
+    </section>
+
+    <!-- HOW TO USE -->
+    <section class="reveal" style="margin-bottom:60px;">
+        <span class="sec-lbl">Guide</span>
+        <h2 class="sec-title">How to use</h2>
+        <p class="sec-sub">Four sections — pick your starting point.</p>
+
+        <div class="howto-grid">
+            <div class="howto-block">
+                <span class="howto-num">01 — Getting started</span>
+                <h3>First launch</h3>
+                <ul>
+                    <li>Open TiltDJ from the Applications folder</li>
+                    <li>Right-click &rarr; Open on first launch to bypass Gatekeeper</li>
+                    <li>Use pads 1–8 or Q–I to trigger sounds immediately</li>
+                    <li>Adjust FX knobs to shape the sound in real-time</li>
+                    <li>Hit Play to start the transport and step sequencer</li>
+                </ul>
+            </div>
+            <div class="howto-block">
+                <span class="howto-num">02 — Importing audio</span>
+                <h3>Add tracks to the mixer</h3>
+                <ul>
+                    <li>Click ADD AUDIO and pick MP3, WAV, AIFF or M4A</li>
+                    <li>Waveform analysis runs automatically on import</li>
+                    <li>Press play on any track to add it to the live mix</li>
+                    <li>Multiple tracks can play together — use the individual faders</li>
+                    <li>Files are saved to <code>~/Documents/TiltDJ Downloads</code></li>
+                </ul>
+            </div>
+            <div class="howto-block">
+                <span class="howto-num">03 — YouTube downloader</span>
+                <h3>Get audio from YouTube</h3>
+                <ul>
+                    <li>Paste any YouTube URL into the downloader field</li>
+                    <li>Click DOWNLOAD and watch the progress bar</li>
+                    <li>The MP3 is saved and added to your track list automatically</li>
+                    <li>Waveform analysis starts immediately after download</li>
+                    <li>Requires an internet connection (yt-dlp auto-installed)</li>
+                </ul>
+            </div>
+            <div class="howto-block">
+                <span class="howto-num">04 — Using FX</span>
+                <h3>Shape sound with effects</h3>
+                <ul>
+                    <li>Drag FX knobs or use the sliders beneath each one</li>
+                    <li>Reverb — add space and depth</li>
+                    <li>Delay — create echo and rhythmic repeats</li>
+                    <li>Filter — cut highs for that underwater feel</li>
+                    <li>Distortion — add grit and saturation</li>
+                    <li>Pitch — shift semitones up or down</li>
+                    <li>Speed — slow down or double-time playback</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- STORAGE + REQUIREMENTS -->
+    <section class="reveal" style="margin-bottom:60px;">
+        <div class="info-grid">
+            <div class="info-box">
+                <h3>STORAGE</h3>
+                <div class="info-row">
+                    <span class="info-row-label">Downloads</span>
+                    <span class="info-row-val"><code>~/Documents/TiltDJ Downloads/</code></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-row-label">Manifests</span>
+                    <span class="info-row-val">Saved automatically for track persistence across sessions</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-row-label">Waveforms</span>
+                    <span class="info-row-val">Generated on first load and cached for fast re-open</span>
+                </div>
+            </div>
+            <div class="info-box">
+                <h3>REQUIREMENTS</h3>
+                <div class="info-row">
+                    <span class="info-row-label">macOS</span>
+                    <span class="info-row-val">14.0 Sonoma or later</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-row-label">Chip</span>
+                    <span class="info-row-val">Apple Silicon (M1 / M2 / M3 / M4)</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-row-label">YT downloads</span>
+                    <span class="info-row-val">Internet + yt-dlp (auto-installed on first use)</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-row-label">Signed</span>
+                    <span class="info-row-val">Unsigned — right-click &rarr; Open to bypass Gatekeeper</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- INSTALL -->
+    <section class="install-box reveal">
+        <span class="sec-lbl">Install</span>
+        <h2 class="sec-title" style="font-size:1.45rem;margin-bottom:10px;">Download &amp; run in 30 seconds</h2>
+        <p>Mount the DMG, drag TiltDJ.app to Applications, then right-click &rarr; Open on first launch.</p>
+        <pre><code>hdiutil attach TiltDJ-Pro.dmg
+# Drag TiltDJ.app → /Applications
+# Right-click → Open  (Gatekeeper bypass for unsigned build)</code></pre>
+        <div class="install-meta">
+            <div class="im"><span class="im-lbl">Version</span><span class="im-val">PRO v2.0</span></div>
+            <div class="im"><span class="im-lbl">Size</span><span class="im-val" style="color:var(--dj)">1.0 MB</span></div>
+            <div class="im"><span class="im-lbl">Requires</span><span class="im-val">macOS 14+ &middot; Apple Silicon</span></div>
+            <div class="im"><span class="im-lbl">Framework</span><span class="im-val">SwiftUI &amp; AVFoundation</span></div>
+        </div>
+        <div style="margin-top:28px;">
+            <a class="btn-dl" href="/downloads/TiltDJ-Pro.dmg" download>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 1v8M3.5 6l3.5 4 3.5-4M1 11h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Download TiltDJ-Pro.dmg
+            </a>
+            <div class="gk-notice" style="max-width:360px;margin-top:16px;">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true" style="flex-shrink:0;margin-top:1px"><circle cx="6.5" cy="6.5" r="5.75" stroke="#f59e0b" stroke-width="1.3"/><path d="M6.5 4v3M6.5 8.8v.4" stroke="#f59e0b" stroke-width="1.4" stroke-linecap="round"/></svg>
+                <span><strong>macOS says "damaged"?</strong> Right-click app → <em>Open</em> → <em>Open</em> again. Or: <code>xattr -cr /Applications/TiltDJ.app</code></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- YOUTUBE SETUP -->
+    <section class="reveal" style="margin-bottom:60px;">
+        <span class="sec-lbl">YouTube Downloader Setup</span>
+        <h2 class="sec-title" style="font-size:1.45rem;margin-bottom:10px;">Enable YouTube downloads</h2>
+        <p style="color:var(--txt2);font-size:.92rem;margin-bottom:28px;">TiltDJ downloads audio from YouTube using <strong style="color:var(--txt)">yt-dlp</strong> — a free open-source tool. Run the one-line command below in Terminal and it installs everything automatically.</p>
+
+        <!-- Step cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:28px;">
+            <div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:12px;padding:20px;position:relative;overflow:hidden;">
+                <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--dj),var(--dj2));"></div>
+                <div style="font-family:var(--mono);font-size:10px;font-weight:800;color:var(--dj);letter-spacing:.1em;margin-bottom:10px;">STEP 01</div>
+                <div style="font-size:.9rem;font-weight:700;margin-bottom:6px;">Open Terminal</div>
+                <div style="font-size:.8rem;color:var(--txt2);">Press <span style="background:var(--bg3);border:1px solid var(--bdr2);border-radius:4px;padding:1px 6px;font-family:var(--mono);font-size:.75em;">&#8984; Space</span> → type <span style="color:var(--dj);font-family:var(--mono);font-size:.82em;">Terminal</span> → Enter</div>
+            </div>
+            <div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:12px;padding:20px;position:relative;overflow:hidden;">
+                <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--dj2),var(--cyan));"></div>
+                <div style="font-family:var(--mono);font-size:10px;font-weight:800;color:var(--dj2);letter-spacing:.1em;margin-bottom:10px;">STEP 02</div>
+                <div style="font-size:.9rem;font-weight:700;margin-bottom:6px;">Paste &amp; Run</div>
+                <div style="font-size:.8rem;color:var(--txt2);">Copy the command below, paste into Terminal and press <span style="background:var(--bg3);border:1px solid var(--bdr2);border-radius:4px;padding:1px 6px;font-family:var(--mono);font-size:.75em;">Enter</span></div>
+            </div>
+            <div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:12px;padding:20px;position:relative;overflow:hidden;">
+                <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--cyan),var(--green));"></div>
+                <div style="font-family:var(--mono);font-size:10px;font-weight:800;color:var(--green);letter-spacing:.1em;margin-bottom:10px;">STEP 03</div>
+                <div style="font-size:.9rem;font-weight:700;margin-bottom:6px;">Restart TiltDJ</div>
+                <div style="font-size:.8rem;color:var(--txt2);">Once done, quit and reopen TiltDJ. YouTube downloads will work immediately.</div>
+            </div>
+        </div>
+
+        <!-- Copy command box -->
+        <div style="background:#07060b;border:1px solid var(--bdr2);border-radius:12px;overflow:hidden;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--bdr);background:var(--bg3);">
+                <span style="font-family:var(--mono);font-size:11px;color:var(--txt3);letter-spacing:.08em;">TERMINAL — one command, does everything</span>
+                <button id="copyYtCmd" onclick="copyYT()" style="display:inline-flex;align-items:center;gap:6px;background:rgba(232,121,249,.12);border:1px solid rgba(232,121,249,.3);color:var(--dj);font-family:var(--mono);font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;cursor:pointer;transition:background .2s;">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="4" y="1" width="7" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="3" width="7" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/></svg>
+                    Copy
+                </button>
+            </div>
+            <pre id="ytCmd" style="margin:0;padding:18px 20px;font-size:.82rem;color:var(--dj);font-family:ui-monospace,monospace;line-height:1.7;overflow-x:auto;white-space:pre-wrap;word-break:break-all;">curl -fsSL https://nigents.com/downloads/setup-tiltdj-yt.sh | bash</pre>
+        </div>
+
+        <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+            <span style="font-size:.8rem;color:var(--txt3);">What the script does:</span>
+            <span style="font-family:var(--mono);font-size:10px;background:rgba(25,213,158,.08);border:1px solid rgba(25,213,158,.2);color:var(--green);padding:3px 9px;border-radius:999px;">Checks if already installed</span>
+            <span style="font-family:var(--mono);font-size:10px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.2);color:var(--cyan);padding:3px 9px;border-radius:999px;">Installs Homebrew if missing</span>
+            <span style="font-family:var(--mono);font-size:10px;background:rgba(232,121,249,.08);border:1px solid rgba(232,121,249,.2);color:var(--dj);padding:3px 9px;border-radius:999px;">Installs yt-dlp</span>
+            <span style="font-family:var(--mono);font-size:10px;background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);color:var(--dj2);padding:3px 9px;border-radius:999px;">M1/M2/M3/M4 + Intel</span>
+        </div>
+
+        <!-- Manual fallback -->
+        <details style="margin-top:24px;background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;overflow:hidden;">
+            <summary style="padding:14px 18px;cursor:pointer;font-size:.85rem;font-weight:600;color:var(--txt2);list-style:none;display:flex;align-items:center;gap:8px;">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="flex-shrink:0"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Already have Homebrew? Install manually in one line
+            </summary>
+            <div style="padding:0 18px 18px;">
+                <div style="background:#07060b;border:1px solid var(--bdr);border-radius:8px;padding:14px 18px;font-family:ui-monospace,monospace;font-size:.8rem;color:var(--green);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                    <span id="brewCmd">brew install yt-dlp</span>
+                    <button onclick="copyBrew()" style="background:rgba(25,213,158,.1);border:1px solid rgba(25,213,158,.3);color:var(--green);font-family:var(--mono);font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;">Copy</button>
+                </div>
+            </div>
+        </details>
+    </section>
+
+    <!-- FOOT -->
+    <p class="foot reveal">
+        <strong>TiltDJ PRO</strong> is part of the <a href="/crazy-apps.html">Nigents Crazy apps</a> collection &mdash; experimental Mac utilities built for fun and focus.
+        &nbsp;&middot;&nbsp; <a href="/">nigents.com</a>
+    </p>
+</div>
+
+<script>
+(function () {
+    /* COPY BUTTONS */
+    window.copyYT = function () {
+        var cmd = document.getElementById('ytCmd').textContent.trim();
+        navigator.clipboard.writeText(cmd).then(function () {
+            var btn = document.getElementById('copyYtCmd');
+            if (!btn) return;
+            btn.textContent = 'Copied!';
+            btn.style.background = 'rgba(25,213,158,.2)';
+            btn.style.borderColor = 'rgba(25,213,158,.5)';
+            btn.style.color = 'var(--green)';
+            setTimeout(function () {
+                btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="4" y="1" width="7" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="3" width="7" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/></svg> Copy';
+                btn.style.background = 'rgba(232,121,249,.12)';
+                btn.style.borderColor = 'rgba(232,121,249,.3)';
+                btn.style.color = 'var(--dj)';
+            }, 2000);
+        });
+    };
+    window.copyBrew = function () {
+        navigator.clipboard.writeText('brew install yt-dlp').then(function () {
+            var btns = document.querySelectorAll('button[onclick="copyBrew()"]');
+            btns.forEach(function(b){ b.textContent = 'Copied!'; setTimeout(function(){ b.textContent = 'Copy'; }, 2000); });
+        });
+    };
+
+    /* NAV */
+    var toggle = document.getElementById('nav-toggle');
+    var bd = document.getElementById('nav-bd');
+    function setOpen(o) {
+        document.body.classList.toggle('nav-open', o);
+        toggle.setAttribute('aria-expanded', o ? 'true' : 'false');
+        if (bd) bd.style.display = o ? 'block' : 'none';
+    }
+    if (toggle) {
+        toggle.addEventListener('click', function () { setOpen(!document.body.classList.contains('nav-open')); });
+        if (bd) bd.addEventListener('click', function () { setOpen(false); });
+        document.getElementById('nav-links').querySelectorAll('a').forEach(function (l) { l.addEventListener('click', function () { setOpen(false); }); });
+    }
+
+    /* SCROLL REVEAL */
+    var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+    }, { threshold: 0.07 });
+    document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+
+    /* WAVE CANVAS */
+    var canvas = document.getElementById('waveCanvas');
+    var ctx = canvas.getContext('2d');
+    var W, H, dpr;
+    var COLS = ['#e879f9','#a78bfa','#38bdf8','#19d59e','#fbbf24','#f87171','#67e8f9','#ff570a'];
+    var waves = COLS.map(function (c, i) {
+        return { amp: 5 + Math.random() * 8, freq: 0.011 + i * 0.0028, phase: Math.random() * Math.PI * 2, speed: 0.016 + Math.random() * 0.016, decay: 0 };
+    });
+    function resize() {
+        dpr = window.devicePixelRatio || 1;
+        W = canvas.offsetWidth; H = canvas.offsetHeight;
+        canvas.width = W * dpr; canvas.height = H * dpr;
+        ctx.scale(dpr, dpr);
+    }
+    window.addEventListener('resize', resize); resize();
+    var t = 0;
+    function drawWave() {
+        ctx.clearRect(0, 0, W, H);
+        waves.forEach(function (w, i) {
+            if (w.decay > 0) w.decay -= 0.01;
+            var boost = Math.max(0, w.decay);
+            var amp = w.amp + boost * 18;
+            ctx.beginPath();
+            for (var x = 0; x <= W; x += 2) {
+                var y = H / 2 + Math.sin(x * w.freq + t * w.speed * 60 + w.phase) * amp
+                               + Math.sin(x * w.freq * 2.2 + t * w.speed * 38) * amp * 0.28;
+                if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.globalAlpha = 0.16 + boost * 0.52;
+            ctx.strokeStyle = COLS[i]; ctx.lineWidth = 1.3 + boost * 1.4; ctx.stroke();
+            ctx.globalAlpha = 1; w.phase += 0.004;
+        });
+        t += 0.016; requestAnimationFrame(drawWave);
+    }
+    drawWave();
+
+    /* PADS */
+    document.querySelectorAll('#demoPads .pad').forEach(function (pad) {
+        function hit() {
+            pad.classList.add('hit');
+            waves[parseInt(pad.dataset.i)].decay = 1;
+            setTimeout(function () { pad.classList.remove('hit'); }, 170);
+        }
+        pad.addEventListener('mousedown', hit);
+        pad.addEventListener('touchstart', function (e) { e.preventDefault(); hit(); }, { passive: false });
+    });
+
+    /* STEP SEQUENCER */
+    var seqRow = document.getElementById('seqRow');
+    var PAT = [1,0,0,1,0,0,1,0,1,0,0,1,0,1,0,1];
+    var stepEls = [];
+    for (var s = 0; s < 16; s++) {
+        var el = document.createElement('div');
+        el.className = 'stp' + (PAT[s] ? ' on' : '');
+        seqRow.appendChild(el); stepEls.push(el);
+    }
+    var cur = 0, BPM = 128;
+    function tick() {
+        stepEls.forEach(function (e, i) { e.classList.toggle('cur', i === cur); });
+        if (PAT[cur]) waves[[0,2,4,6,1,3,5,7][cur % 8]].decay = 1;
+        document.getElementById('stepNum').textContent = cur + 1;
+        cur = (cur + 1) % 16;
+        setTimeout(tick, (60 / BPM / 4) * 1000);
+    }
+    tick();
+
+    /* SVG WAVEFORM BARS */
+    var wfG = document.getElementById('svgWf');
+    if (wfG) {
+        for (var b = 0; b < 42; b++) {
+            var bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            var bh = 3 + Math.random() * 14;
+            bar.setAttribute('x', 58 + b * 5.2); bar.setAttribute('y', 251 - bh / 2);
+            bar.setAttribute('width', '3.5'); bar.setAttribute('height', bh);
+            bar.setAttribute('rx', '1'); bar.setAttribute('fill', '#a78bfa'); bar.setAttribute('opacity', '.42');
+            wfG.appendChild(bar);
+        }
+    }
+
+    /* SVG PAD FLASH */
+    var svgPads = document.querySelectorAll('#svgPads rect');
+    var padIdx = 0, padOrder = [0,2,4,6,1,3,5,7];
+    function flashPad() {
+        svgPads.forEach(function (p) { p.setAttribute('fill','#1e1a2a'); p.setAttribute('stroke','#302c3e'); });
+        var p = svgPads[padOrder[padIdx % 8]];
+        if (p) { p.setAttribute('fill','rgba(232,121,249,.3)'); p.setAttribute('stroke','#e879f9'); }
+        padIdx++;
+        setTimeout(flashPad, (60 / BPM / 4) * 1000 * 2);
+    }
+    setTimeout(flashPad, 300);
+
+    /* MIXER DEMO */
+    (function () {
+        var TRACK_COLORS = ['#19d59e', '#e879f9', '#38bdf8'];
+        var trackHeights = [];
+
+        // Build waveform bars for each track
+        [0,1,2].forEach(function (ti) {
+            var tw = document.getElementById('tw' + ti);
+            if (!tw) return;
+            var bars = [];
+            for (var b = 0; b < 48; b++) {
+                var bar = document.createElement('div');
+                bar.className = 'tw-bar';
+                var h = 6 + Math.random() * 22;
+                bar.style.height = h + 'px';
+                bar.style.setProperty('--dur', (0.25 + Math.random() * 0.45).toFixed(2) + 's');
+                bar.style.background = TRACK_COLORS[ti];
+                bar.style.animationDelay = (b * 0.02).toFixed(2) + 's';
+                tw.appendChild(bar);
+                bars.push({ el: bar, base: h });
+            }
+            trackHeights.push(bars);
+        });
+
+        // Play/stop toggle
+        [0,1,2].forEach(function (ti) {
+            var tr = document.getElementById('tr' + ti);
+            var btn = tr ? tr.querySelector('.track-play') : null;
+            var status = tr ? tr.querySelector('.track-status') : null;
+            if (!btn) return;
+            btn.addEventListener('click', function () {
+                var isPlaying = tr.classList.contains('playing');
+                tr.classList.toggle('playing', !isPlaying);
+                if (status) {
+                    status.className = 'track-status ' + (!isPlaying ? 'live' : 'idle');
+                    status.textContent = !isPlaying ? 'LIVE' : 'READY';
+                }
+                btn.innerHTML = !isPlaying
+                    ? '<svg viewBox="0 0 10 10" fill="currentColor"><rect x="1" y="1" width="3" height="8" rx="1"/><rect x="6" y="1" width="3" height="8" rx="1"/></svg>'
+                    : '<svg viewBox="0 0 10 10" fill="currentColor"><polygon points="2,1 9,5 2,9"/></svg>';
+                btn.setAttribute('aria-label', !isPlaying ? 'Stop track' : 'Play track');
+                var liveCount = document.querySelectorAll('.track.playing').length;
+                var tc = document.getElementById('trackCount');
+                if (tc) tc.textContent = liveCount;
+            });
+        });
+
+        // Animate waveform bars heights for playing tracks
+        function animateBars() {
+            [0,1,2].forEach(function (ti) {
+                var tr = document.getElementById('tr' + ti);
+                if (!tr || !tr.classList.contains('playing')) return;
+                var bars = trackHeights[ti];
+                if (!bars) return;
+                bars.forEach(function (b) {
+                    var newH = b.base * (0.3 + Math.random() * 0.7);
+                    b.el.style.height = newH.toFixed(1) + 'px';
+                });
+            });
+        }
+        setInterval(animateBars, 120);
+
+        // Animate FX bars gently
+        var fxTargets = [42, 28, 65, 12, 50, 33];
+        var fxCurrent = fxTargets.slice();
+        var fxColors = ['var(--cyan)','var(--green)','var(--dj2)','var(--red)','var(--yellow)','var(--teal)'];
+        function animateFX() {
+            fxCurrent = fxCurrent.map(function (v, i) {
+                var delta = (Math.random() - 0.5) * 4;
+                return Math.max(5, Math.min(95, v + delta));
+            });
+            fxCurrent.forEach(function (v, i) {
+                var fill = document.getElementById('fx' + i);
+                var val  = document.getElementById('fxv' + i);
+                if (fill) fill.style.width = v.toFixed(0) + '%';
+                if (val) {
+                    if (i === 4) val.textContent = Math.round((v - 50) / 4) + ' st';
+                    else if (i === 5) val.textContent = (0.5 + v / 100 * 1.5).toFixed(1) + '×';
+                    else val.textContent = Math.round(v) + '%';
+                }
+            });
+        }
+        setInterval(animateFX, 700);
+    })();
+
+    /* SVG FX KNOB SPIN */
+    var knobLines = document.querySelectorAll('#fxKnobs line');
+    var angles = [-90,-60,120,-90,-90,-90];
+    var speeds = [0.4,0.5,0.3,0.6,0.35,0.45];
+    (function spinKnobs() {
+        angles = angles.map(function(a,i){ return a + speeds[i]; });
+        knobLines.forEach(function(line, i) {
+            var cx = parseFloat(line.getAttribute('x1'));
+            var cy = parseFloat(document.querySelectorAll('#fxKnobs circle')[i].getAttribute('cy'));
+            var r = 9, a = (angles[i] * Math.PI) / 180;
+            var x2 = cx + Math.sin(a) * (r - 3);
+            var y2 = cy - Math.cos(a) * (r - 3);
+            line.setAttribute('x2', x2.toFixed(2)); line.setAttribute('y2', y2.toFixed(2));
+        });
+        requestAnimationFrame(spinKnobs);
+    })();
+
+})();
+</script>
+</body>
+</html>

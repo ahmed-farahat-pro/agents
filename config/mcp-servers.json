@@ -152,7 +152,10 @@
     "frontend-dev": ["filesystem", "git", "gitlab", "github", "fetch"],
     "qa-tester": ["filesystem", "git", "gitlab", "github", "fetch"],
     "code-reviewer": ["filesystem", "git", "gitlab", "github", "sequential-thinking"],
-    "reporter": ["fetch", "memory"]
+    "reporter": ["fetch", "memory"],
+    "devops": ["filesystem", "git", "gitlab", "github", "fetch", "memory", "docker"],
+    "security": ["filesystem", "git", "gitlab", "github", "fetch", "sequential-thinking"],
+    "architect": ["filesystem", "git", "gitlab", "github", "fetch", "sequential-thinking", "memory"]
   },
   "settings": {
     "connectionTimeout": 30000,

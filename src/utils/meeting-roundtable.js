@@ -4,9 +4,12 @@
 
 const MEETING_ORDER = [
   'orchestrator',
+  'architect',
   'planner',
   'backend-dev',
   'frontend-dev',
+  'devops',
+  'security',
   'qa-tester',
   'code-reviewer',
   'reporter',
@@ -14,9 +17,12 @@ const MEETING_ORDER = [
 
 const LABELS = {
   orchestrator: 'Orchestrator',
+  architect: 'Architect',
   planner: 'Planner',
   'backend-dev': 'Backend Dev',
   'frontend-dev': 'Frontend Dev',
+  devops: 'DevOps',
+  security: 'Security',
   'qa-tester': 'QA Tester',
   'code-reviewer': 'Code Reviewer',
   reporter: 'Reporter',
@@ -52,6 +58,10 @@ function normalizeAgentType(s) {
     qa_tester: 'qa-tester',
     codereviewer: 'code-reviewer',
     code_reviewer: 'code-reviewer',
+    securityanalyst: 'security',
+    security_analyst: 'security',
+    solutionsarchitect: 'architect',
+    solutions_architect: 'architect',
   };
   if (aliases[a]) a = aliases[a];
   return a;
