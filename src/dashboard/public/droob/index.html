@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Droob — Bilingual Learning Platform</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:       #020817;
+      --bg2:      #050d1f;
+      --bg3:      #0a1628;
+      --surface:  rgba(255,255,255,0.04);
+      --border:   rgba(255,255,255,0.08);
+      --border2:  rgba(99,179,237,0.25);
+      --cyan:     #22d3ee;
+      --blue:     #3b82f6;
+      --violet:   #8b5cf6;
+      --orange:   #f97316;
+      --green:    #10b981;
+      --red:      #ef4444;
+      --text:     #f0f6ff;
+      --muted:    #8899aa;
+      --glow-c:   0 0 20px rgba(34,211,238,0.35);
+      --glow-b:   0 0 20px rgba(59,130,246,0.35);
+      --glow-v:   0 0 20px rgba(139,92,246,0.35);
+      --transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* ── CANVAS STARFIELD ─────────────────────────────── */
+    #stars { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    /* ── GRID OVERLAY ─────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(34,211,238,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34,211,238,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── HEADER ───────────────────────────────────────── */
+    header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(2,8,23,0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 64px;
+      display: flex; align-items: center;
+    }
+
+    nav {
+      max-width: 1280px; margin: 0 auto; width: 100%;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .logo {
+      display: flex; align-items: center; gap: 0.65rem;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.4rem; font-weight: 700;
+      color: var(--text); text-decoration: none; letter-spacing: -0.5px;
+    }
+
+    .logo-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--cyan), var(--violet));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 1rem; color: #fff;
+      box-shadow: var(--glow-c);
+    }
+
+    .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+
+    .nav-links a {
+      color: var(--muted); text-decoration: none;
+      font-size: 0.9rem; font-weight: 500;
+      transition: var(--transition);
+    }
+    .nav-links a:hover { color: var(--cyan); }
+
+    .nav-cta { display: flex; gap: 0.75rem; align-items: center; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.6rem 1.25rem; border-radius: 8px;
+      font-size: 0.875rem; font-weight: 600; cursor: pointer;
+      border: none; text-decoration: none;
+      transition: var(--transition); white-space: nowrap;
+    }
+
+    .btn-ghost {
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      color: #fff; box-shadow: var(--glow-c);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(34,211,238,0.5); }
+
+    .btn-accent {
+      background: linear-gradient(135deg, var(--orange), #f59e0b);
+      color: #fff;
+    }
+    .btn-accent:hover { transform: translateY(-2px); box-shadow: 0 0 25px rgba(249,115,22,0.5); }
+
+    .btn-lg { padding: 0.9rem 2rem; font-size: 1rem; border-radius: 10px; }
+
+    /* ── HERO ─────────────────────────────────────────── */
+    .hero {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: flex; align-items: center;
+      padding: 100px 2rem 60px;
+      overflow: hidden;
+    }
+
+    .hero-glow {
+      position: absolute;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+    }
+    .hero-glow-1 {
+      top: -100px; left: -100px;
+      background: radial-gradient(circle, rgba(34,211,238,0.12), transparent 70%);
+      animation: pulse 8s ease-in-out infinite;
+    }
+    .hero-glow-2 {
+      bottom: -100px; right: -100px;
+      background: radial-gradient(circle, rgba(139,92,246,0.12), transparent 70%);
+      animation: pulse 10s ease-in-out infinite reverse;
+    }
+
+    @keyframes pulse { 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.2); } }
+
+    .hero-inner {
+      max-width: 1280px; margin: 0 auto; width: 100%;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 5rem; align-items: center;
+    }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: rgba(34,211,238,0.08);
+      border: 1px solid rgba(34,211,238,0.2);
+      border-radius: 100px;
+      padding: 0.4rem 1rem; margin-bottom: 1.5rem;
+      font-size: 0.8rem; font-weight: 600; color: var(--cyan);
+    }
+    .hero-badge-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--cyan);
+      animation: blink 1.5s infinite;
+    }
+    @keyframes blink { 0%,100%{ opacity:1; } 50%{ opacity:0.3; } }
+
+    .hero h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      font-weight: 800; line-height: 1.1;
+      letter-spacing: -2px; margin-bottom: 1.5rem;
+    }
+
+    .hero h1 .gradient-text {
+      background: linear-gradient(135deg, var(--cyan) 0%, var(--violet) 60%, var(--orange) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 1.15rem; color: var(--muted); line-height: 1.8;
+      margin-bottom: 2.5rem; max-width: 500px;
+    }
+
+    .hero-cta { display: flex; gap: 1rem; flex-wrap: wrap; }
+
+    .hero-stats {
+      display: flex; gap: 2rem; margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+    .hero-stat-val {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.8rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-stat-lbl { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+
+    /* ── PHONE MOCKUPS ────────────────────────────────── */
+    .hero-visual {
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+      height: 560px;
+      opacity: 0;
+      animation: slideUp 0.9s ease 0.4s forwards;
+    }
+
+    @keyframes slideUp {
+      from { opacity:0; transform:translateY(40px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    .phone {
+      position: absolute;
+      border-radius: 28px; overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08);
+    }
+
+    .phone-main {
+      width: 230px; height: 480px;
+      background: var(--bg3);
+      z-index: 2;
+    }
+
+    .phone-back {
+      width: 200px; height: 420px;
+      background: var(--bg2);
+      right: calc(50% - 280px);
+      top: 50%; transform: translateY(-50%) rotate(-8deg);
+      z-index: 1;
+      opacity: 0.7;
+    }
+
+    .phone-screen {
+      height: 100%; display: flex; flex-direction: column;
+      background: #07111f;
+    }
+
+    .phone-bar {
+      padding: 10px 14px 6px;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.65rem; font-weight: 600; color: var(--muted);
+    }
+
+    .phone-body {
+      flex: 1; overflow: hidden; padding: 12px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+
+    .phone-card {
+      background: rgba(34,211,238,0.06);
+      border: 1px solid rgba(34,211,238,0.15);
+      border-radius: 10px; padding: 12px;
+    }
+    .phone-card-title { font-size: 0.7rem; font-weight: 700; color: var(--cyan); margin-bottom: 4px; }
+    .phone-card-text  { font-size: 0.65rem; color: var(--muted); line-height: 1.4; }
+
+    .phone-progress {
+      height: 3px; background: rgba(255,255,255,0.08);
+      border-radius: 2px; margin-top: 8px;
+    }
+    .phone-progress-fill {
+      height: 100%; border-radius: 2px;
+      background: linear-gradient(90deg, var(--cyan), var(--violet));
+    }
+
+    /* ── SECTION SHARED ───────────────────────────────── */
+    section { position: relative; z-index: 1; }
+
+    .section { padding: 6rem 2rem; }
+    .container { max-width: 1280px; margin: 0 auto; }
+
+    .section-label {
+      font-size: 0.75rem; font-weight: 700; letter-spacing: 3px;
+      text-transform: uppercase; color: var(--cyan); margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      font-weight: 700; letter-spacing: -1px;
+      margin-bottom: 1rem; line-height: 1.2;
+    }
+
+    .section-sub {
+      font-size: 1.05rem; color: var(--muted);
+      max-width: 600px; line-height: 1.8; margin-bottom: 4rem;
+    }
+
+    /* ── FEATURES ─────────────────────────────────────── */
+    .features-bg {
+      background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 50%, var(--bg) 100%);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 2rem;
+      transition: var(--transition);
+      position: relative; overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+      opacity: 0; transition: var(--transition);
+    }
+
+    .feature-card:hover {
+      border-color: var(--border2);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4), var(--glow-c);
+    }
+    .feature-card:hover::before { opacity: 1; }
+
+    .feature-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; margin-bottom: 1.25rem;
+    }
+
+    .fi-cyan   { background: rgba(34,211,238,0.12); border: 1px solid rgba(34,211,238,0.2); }
+    .fi-violet { background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.2); }
+    .fi-orange { background: rgba(249,115,22,0.12); border: 1px solid rgba(249,115,22,0.2); }
+    .fi-blue   { background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.2); }
+    .fi-green  { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.2); }
+
+    .feature-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.6rem; }
+    .feature-card p  { font-size: 0.9rem; color: var(--muted); line-height: 1.7; }
+
+    /* ── FLOWS / HOW IT WORKS ─────────────────────────── */
+    .tabs {
+      display: flex; gap: 0.5rem; margin-bottom: 2.5rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 6px;
+      width: fit-content;
+    }
+
+    .tab-btn {
+      background: none; border: none;
+      padding: 0.6rem 1.5rem; border-radius: 8px;
+      font-size: 0.875rem; font-weight: 600;
+      color: var(--muted); cursor: pointer;
+      transition: var(--transition);
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      color: #fff; box-shadow: var(--glow-c);
+    }
+    .tab-btn:not(.active):hover { color: var(--text); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeSlide 0.4s ease; }
+    @keyframes fadeSlide {
+      from { opacity:0; transform:translateY(12px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    .flow-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px; padding: 3rem;
+    }
+
+    .flow-label {
+      font-size: 0.75rem; font-weight: 700; letter-spacing: 3px;
+      text-transform: uppercase; color: var(--cyan); margin-bottom: 0.5rem;
+    }
+
+    .flow-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2rem; font-weight: 700; margin-bottom: 0.75rem;
+    }
+
+    .flow-desc { color: var(--muted); margin-bottom: 2.5rem; font-size: 1rem; line-height: 1.7; }
+
+    .steps { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2.5rem; }
+
+    .step {
+      display: flex; gap: 1.25rem; align-items: flex-start;
+      padding: 1.25rem;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      transition: var(--transition);
+    }
+    .step:hover { border-color: var(--border2); background: rgba(34,211,238,0.03); }
+
+    .step-num {
+      width: 40px; height: 40px; flex-shrink: 0;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), var(--violet));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 0.9rem; color: #fff;
+      box-shadow: var(--glow-c);
+    }
+
+    .step h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.3rem; }
+    .step p  { font-size: 0.875rem; color: var(--muted); line-height: 1.6; margin: 0; }
+
+    .testimonial {
+      background: linear-gradient(135deg, rgba(34,211,238,0.06), rgba(139,92,246,0.06));
+      border: 1px solid rgba(34,211,238,0.15);
+      border-radius: 14px; padding: 1.75rem;
+    }
+
+    .testimonial-quote {
+      font-size: 0.975rem; font-style: italic;
+      color: var(--text); line-height: 1.8; margin-bottom: 1rem;
+    }
+
+    .testimonial-name { font-size: 0.875rem; font-weight: 700; color: var(--cyan); }
+    .testimonial-role { font-size: 0.8rem; color: var(--muted); }
+
+    /* ── PRICING ──────────────────────────────────────── */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem; align-items: start;
+    }
+
+    .pricing-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px; padding: 2rem;
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .pricing-card.featured {
+      background: linear-gradient(135deg, rgba(34,211,238,0.07), rgba(139,92,246,0.07));
+      border-color: rgba(34,211,238,0.3);
+      box-shadow: var(--glow-c), var(--glow-v);
+      transform: scale(1.04);
+    }
+
+    .pricing-badge {
+      position: absolute; top: -12px; left: 20px;
+      background: linear-gradient(135deg, var(--cyan), var(--violet));
+      color: #fff; padding: 0.3rem 1rem;
+      border-radius: 100px; font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 1px; text-transform: uppercase;
+    }
+
+    .pricing-card h3 {
+      font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;
+    }
+
+    .pricing-price {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 3rem; font-weight: 800; letter-spacing: -2px;
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 1.25rem 0 0.5rem;
+    }
+
+    .pricing-currency { font-size: 1rem; vertical-align: super; }
+    .pricing-period   { font-size: 0.85rem; color: var(--muted); margin-bottom: 1.5rem; }
+
+    .pricing-features {
+      list-style: none;
+      padding: 1.5rem 0; margin-bottom: 1.5rem;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 0.75rem;
+    }
+
+    .pricing-features li {
+      display: flex; align-items: center; gap: 0.75rem;
+      font-size: 0.875rem; color: var(--muted);
+    }
+
+    .pricing-features li::before {
+      content: ''; width: 5px; height: 5px; border-radius: 50%;
+      background: var(--green); flex-shrink: 0;
+      box-shadow: 0 0 6px var(--green);
+    }
+
+    /* ── STATS ────────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 2rem; text-align: center;
+      transition: var(--transition);
+    }
+    .stat-card:hover {
+      border-color: var(--border2);
+      box-shadow: var(--glow-c);
+      transform: translateY(-4px);
+    }
+
+    .stat-val {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2.5rem; font-weight: 800; letter-spacing: -1px;
+      background: linear-gradient(135deg, var(--cyan), var(--violet));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; margin-bottom: 0.5rem;
+    }
+
+    .stat-lbl { font-size: 0.875rem; color: var(--muted); font-weight: 500; }
+
+    /* ── CTA BAND ─────────────────────────────────────── */
+    .cta-band {
+      margin: 0 2rem 3rem;
+      background: linear-gradient(135deg, rgba(34,211,238,0.08), rgba(139,92,246,0.08));
+      border: 1px solid rgba(34,211,238,0.2);
+      border-radius: 24px; padding: 4rem 3rem; text-align: center;
+      position: relative; overflow: hidden;
+    }
+
+    .cta-band::before {
+      content: ''; position: absolute;
+      top: -50%; left: -50%; width: 200%; height: 200%;
+      background: radial-gradient(circle at center, rgba(34,211,238,0.05) 0%, transparent 60%);
+    }
+
+    .cta-band h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      font-weight: 800; letter-spacing: -1px;
+      margin-bottom: 1rem; position: relative;
+    }
+
+    .cta-band p {
+      font-size: 1.05rem; color: var(--muted); max-width: 600px;
+      margin: 0 auto 2rem; line-height: 1.8; position: relative;
+    }
+
+    .cta-btns { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; position: relative; }
+
+    /* ── FOOTER ───────────────────────────────────────── */
+    footer {
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      padding: 3rem 2rem 1.5rem;
+    }
+
+    .footer-inner {
+      max-width: 1280px; margin: 0 auto;
+      display: grid; grid-template-columns: 2fr repeat(3, 1fr);
+      gap: 3rem; margin-bottom: 2.5rem;
+    }
+
+    .footer-brand p {
+      font-size: 0.875rem; color: var(--muted); line-height: 1.8; margin-top: 0.75rem;
+    }
+
+    .footer-col h4 {
+      font-size: 0.8rem; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--cyan); margin-bottom: 1.25rem;
+    }
+
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; }
+
+    .footer-col a {
+      color: var(--muted); text-decoration: none;
+      font-size: 0.875rem; transition: var(--transition);
+    }
+    .footer-col a:hover { color: var(--cyan); }
+
+    .footer-bottom {
+      border-top: 1px solid var(--border);
+      padding-top: 1.5rem; text-align: center;
+      font-size: 0.8rem; color: var(--muted);
+    }
+
+    /* ── MODAL ────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 999;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
+      display: none; align-items: center; justify-content: center; padding: 1.5rem;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      border-radius: 20px; padding: 2.5rem;
+      max-width: 480px; width: 100%;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.6), var(--glow-c);
+      animation: modalIn 0.35s cubic-bezier(0.4,0,0.2,1);
+    }
+    @keyframes modalIn {
+      from { opacity:0; transform:scale(0.92) translateY(20px); }
+      to   { opacity:1; transform:scale(1)    translateY(0); }
+    }
+
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1.75rem;
+    }
+
+    .modal-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.3rem; font-weight: 700; color: var(--cyan);
+    }
+
+    .modal-close {
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--muted); width: 34px; height: 34px;
+      border-radius: 8px; cursor: pointer; font-size: 1.2rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: var(--transition);
+    }
+    .modal-close:hover { color: var(--text); border-color: var(--border2); }
+
+    .field { margin-bottom: 1.25rem; }
+    .field label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--muted); margin-bottom: 0.5rem; }
+    .field input, .field select {
+      width: 100%; padding: 0.75rem 1rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text);
+      font-size: 0.9rem; font-family: inherit;
+      transition: var(--transition);
+    }
+    .field input:focus, .field select:focus {
+      outline: none;
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(34,211,238,0.15);
+    }
+    .field select option { background: var(--bg3); }
+
+    /* ── RESPONSIVE ───────────────────────────────────── */
+    @media (max-width: 1024px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 3rem; }
+      .hero-visual { display: none; }
+      .footer-inner { grid-template-columns: 1fr 1fr; }
+      .pricing-card.featured { transform: scale(1.02); }
+    }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hero { padding: 90px 1.5rem 50px; }
+      .section { padding: 4rem 1.5rem; }
+      .flow-panel { padding: 2rem 1.5rem; }
+      .cta-band { margin: 0 1rem 2rem; padding: 3rem 1.5rem; }
+      .footer-inner { grid-template-columns: 1fr; gap: 2rem; }
+      .hero-stats { gap: 1.25rem; flex-wrap: wrap; }
+      .tabs { overflow-x: auto; }
+      .tab-btn { flex-shrink: 0; padding: 0.6rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+
+<!-- ── HEADER ── -->
+<header>
+  <nav>
+    <a href="#" class="logo">
+      <div class="logo-icon">D</div>
+      Droob
+    </a>
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#how">How It Works</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="docs.html">Docs</a></li>
+    </ul>
+    <div class="nav-cta">
+      <button class="btn btn-ghost" onclick="openModal('signin')">Sign In</button>
+      <button class="btn btn-primary" onclick="openModal('signup')">Start Free</button>
+    </div>
+  </nav>
+</header>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-glow hero-glow-1"></div>
+  <div class="hero-glow hero-glow-2"></div>
+  <div class="hero-inner">
+    <div>
+      <div class="hero-badge">
+        <span class="hero-badge-dot"></span>
+        Now in Beta — Saudi Arabia
+      </div>
+      <h1>Learning<br><span class="gradient-text">Redefined.</span></h1>
+      <p>The bilingual platform for elite educators. Build courses, stream at scale, and monetize your expertise—fully in Arabic and English.</p>
+      <div class="hero-cta">
+        <button class="btn btn-primary btn-lg" onclick="openModal('signup')">Start Teaching Free</button>
+        <button class="btn btn-ghost btn-lg" onclick="openModal('demo')">Request Demo</button>
+      </div>
+      <div class="hero-stats">
+        <div>
+          <div class="hero-stat-val">3,000+</div>
+          <div class="hero-stat-lbl">Concurrent Streams</div>
+        </div>
+        <div>
+          <div class="hero-stat-val">92%</div>
+          <div class="hero-stat-lbl">CDN Cache Ratio</div>
+        </div>
+        <div>
+          <div class="hero-stat-val">&lt;300ms</div>
+          <div class="hero-stat-lbl">API Latency p95</div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="phone phone-back">
+        <div class="phone-screen">
+          <div class="phone-bar"><span>9:41</span><span>●●●</span></div>
+          <div class="phone-body">
+            <div class="phone-card">
+              <div class="phone-card-title">Featured Course</div>
+              <div class="phone-card-text">Advanced Arabic Grammar</div>
+            </div>
+            <div class="phone-card">
+              <div class="phone-card-title">Top Instructor</div>
+              <div class="phone-card-text">Dr. Fatima Al-Saud</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone phone-main">
+        <div class="phone-screen">
+          <div class="phone-bar"><span>9:41</span><span>●●●●●</span></div>
+          <div class="phone-body">
+            <div class="phone-card">
+              <div class="phone-card-title">Trending Now</div>
+              <div class="phone-card-text">Advanced Arabic Grammar for Professionals</div>
+            </div>
+            <div class="phone-card">
+              <div class="phone-card-title">Instructor</div>
+              <div class="phone-card-text">Dr. Fatima Al-Saud</div>
+            </div>
+            <div class="phone-card">
+              <div class="phone-card-title">Your Progress</div>
+              <div class="phone-card-text">12 / 15 lessons complete</div>
+              <div class="phone-progress"><div class="phone-progress-fill" style="width:80%"></div></div>
+            </div>
+            <div class="phone-card">
+              <div class="phone-card-title">Next Lesson</div>
+              <div class="phone-card-text">Chapter 13: Verb Conjugation</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ── -->
+<section id="features" class="section features-bg">
+  <div class="container">
+    <div class="section-label">Core Capabilities</div>
+    <h2 class="section-title">Why Educators Choose Droob</h2>
+    <p class="section-sub">Everything you need to create, teach, and monetize your expertise—engineered for the Saudi market.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon fi-cyan"></div>
+        <h3>Ultra-Fast Video Delivery</h3>
+        <p>Professional HLS streaming with adaptive bitrate. Automatic encoding to 4 quality levels. CDN-powered playback that scales to thousands of concurrent viewers.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-violet"></div>
+        <h3>Flexible Monetization</h3>
+        <p>Set your own prices. Local payment integration via mada, Apple Pay, STC Pay, and more. Transparent commission with monthly bank payouts.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-orange"></div>
+        <h3>Fully Bilingual</h3>
+        <p>Arabic and English from day one. Complete RTL support. Localized everything—payments, notifications, certificates—for the Saudi market.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-blue"></div>
+        <h3>Deep Analytics</h3>
+        <p>Know your students intimately. Track engagement, watch-time, quiz performance, and assignment submissions. Data-driven insights to improve every course.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-green"></div>
+        <h3>Enterprise Security</h3>
+        <p>End-to-end encryption, signed URLs, anti-piracy controls, role-based access, and complete audit trails. Your intellectual property is protected.</p>
+      </div>
+      <div class="feature-card" style="border-style: dashed; opacity: 0.7;">
+        <div class="feature-icon fi-violet"></div>
+        <h3>AI Tutor <span style="font-size:0.75rem; background:rgba(139,92,246,0.2); color:var(--violet); padding:2px 8px; border-radius:4px;">Coming Phase 2</span></h3>
+        <p>Students ask questions, get answers drawn directly from your course content. Grounded in your intellectual property—not the open internet.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ── -->
+<section id="how" class="section">
+  <div class="container">
+    <div class="section-label">Workflows</div>
+    <h2 class="section-title">How Droob Works</h2>
+    <p class="section-sub">Three interconnected workflows for instructors, students, and admins.</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(this,'instructor')">Instructors</button>
+      <button class="tab-btn" onclick="switchTab(this,'student')">Students</button>
+      <button class="tab-btn" onclick="switchTab(this,'admin')">Admins</button>
+    </div>
+
+    <!-- Instructor -->
+    <div id="instructor" class="tab-content active">
+      <div class="flow-panel">
+        <div class="flow-label">Instructor Workflow</div>
+        <div class="flow-title">Create. Monetize. Scale.</div>
+        <p class="flow-desc">Sign up, choose a plan, and start building your course empire within minutes.</p>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div><h4>Sign Up & Verify</h4><p>Join Droob with email or SMS. Submit your credentials for KYC verification. Approved instructors unlock full platform access instantly.</p></div></div>
+          <div class="step"><div class="step-num">2</div><div><h4>Select a Plan</h4><p>Choose Free Trial, Basic, Pro, or Business. Each tier unlocks storage, student limits, and features. Upgrade anytime as you grow.</p></div></div>
+          <div class="step"><div class="step-num">3</div><div><h4>Build Your Course</h4><p>Create sections and lessons. Add videos, PDFs, quizzes, and assignments. Write bilingual titles and descriptions. Preview everything before publishing.</p></div></div>
+          <div class="step"><div class="step-num">4</div><div><h4>Upload & Encode</h4><p>Resumable uploads with real-time progress. Automatic encoding to HLS with 4 quality renditions. Live encoding status. Instant preview on completion.</p></div></div>
+          <div class="step"><div class="step-num">5</div><div><h4>Publish & Earn</h4><p>Set your price. Publish instantly. Grade assignments. View analytics. Receive monthly payouts directly to your account.</p></div></div>
+        </div>
+        <div class="testimonial">
+          <div class="testimonial-quote">"Droob made it incredibly easy to launch my course. The video uploading is seamless, students love the interface, and I've earned more in three months than I expected."</div>
+          <div class="testimonial-name">Dr. Amira Al-Otaibi</div>
+          <div class="testimonial-role">Economics Instructor · 450+ Students</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Student -->
+    <div id="student" class="tab-content">
+      <div class="flow-panel">
+        <div class="flow-label">Student Workflow</div>
+        <div class="flow-title">Discover. Learn. Master.</div>
+        <p class="flow-desc">Browse curated courses, purchase with local payments, and engage on iOS and Android.</p>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div><h4>Browse & Explore</h4><p>Discover courses from expert instructors. View ratings, student counts, and full syllabi. Switch between Arabic and English.</p></div></div>
+          <div class="step"><div class="step-num">2</div><div><h4>Secure Checkout</h4><p>Pay via mada, Apple Pay, STC Pay, or credit card. Instant confirmation. Your payment is secure and encrypted end-to-end.</p></div></div>
+          <div class="step"><div class="step-num">3</div><div><h4>Stream & Learn</h4><p>Access your course immediately on iPhone or Android. Adaptive playback ensures a smooth experience on any network.</p></div></div>
+          <div class="step"><div class="step-num">4</div><div><h4>Engage & Grow</h4><p>Take auto-graded quizzes. Submit assignments. Get detailed feedback from your instructor. Track your progress in real-time.</p></div></div>
+          <div class="step"><div class="step-num">5</div><div><h4>Celebrate & Share</h4><p>Complete the course and earn a certificate. Share your achievement. Continue learning or explore new instructors.</p></div></div>
+        </div>
+        <div class="testimonial">
+          <div class="testimonial-quote">"I've tried many platforms, but Droob feels different. The quality is professional, instructors are responsive, and learning feels natural and engaging."</div>
+          <div class="testimonial-name">Mohammed Al-Rashid</div>
+          <div class="testimonial-role">Student · 12 Courses Completed</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin -->
+    <div id="admin" class="tab-content">
+      <div class="flow-panel">
+        <div class="flow-label">Admin Workflow</div>
+        <div class="flow-title">Govern. Moderate. Scale.</div>
+        <p class="flow-desc">Platform administrators keep Droob running smoothly with complete oversight and control.</p>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div><h4>Instructor Verification</h4><p>Review KYC documents and commercial registrations. Approve or reject new instructors. Track verification status in real-time.</p></div></div>
+          <div class="step"><div class="step-num">2</div><div><h4>Plan Management</h4><p>Create subscription tiers with custom limits. Set pricing, trial lengths, and feature flags. Update plans without affecting current subscribers.</p></div></div>
+          <div class="step"><div class="step-num">3</div><div><h4>Subscription Approvals</h4><p>Review instructor upgrade, downgrade, and cancellation requests. Validate usage against new limits. Approve or reject with detailed notes.</p></div></div>
+          <div class="step"><div class="step-num">4</div><div><h4>Content Moderation</h4><p>Review flagged courses. Manage content disputes. Monitor storage and bandwidth usage per instructor. Take action instantly when needed.</p></div></div>
+          <div class="step"><div class="step-num">5</div><div><h4>Financial Operations</h4><p>Monitor revenue and commission. Approve monthly payout batches. View detailed financial reports. Manage refunds and chargebacks.</p></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PRICING ── -->
+<section id="pricing" class="section" style="background: var(--bg2);">
+  <div class="container">
+    <div class="section-label">Pricing</div>
+    <h2 class="section-title">Subscription Plans</h2>
+    <p class="section-sub">Choose the plan that fits your teaching style. Upgrade anytime as your course grows.</p>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <h3>Free Trial</h3>
+        <div class="pricing-price"><span class="pricing-currency">SAR</span>0</div>
+        <div class="pricing-period">14 days to explore</div>
+        <ul class="pricing-features">
+          <li>5 GB storage</li>
+          <li>50 max students</li>
+          <li>2 courses</li>
+          <li>Core features only</li>
+          <li>No payouts</li>
+        </ul>
+        <button class="btn btn-ghost" style="width:100%; justify-content:center;" onclick="openModal('signup')">Start Free</button>
+      </div>
+      <div class="pricing-card">
+        <h3>Basic</h3>
+        <div class="pricing-price"><span class="pricing-currency">SAR</span>149<span style="font-size:0.9rem; color:var(--muted);">/mo</span></div>
+        <div class="pricing-period">Perfect for new instructors</div>
+        <ul class="pricing-features">
+          <li>50 GB storage</li>
+          <li>500 max students</li>
+          <li>10 courses</li>
+          <li>Full features</li>
+          <li>Monthly payouts</li>
+        </ul>
+        <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="openModal('signup')">Choose Plan</button>
+      </div>
+      <div class="pricing-card featured">
+        <div class="pricing-badge">Most Popular</div>
+        <h3>Pro</h3>
+        <div class="pricing-price"><span class="pricing-currency">SAR</span>449<span style="font-size:0.9rem; color:var(--muted);">/mo</span></div>
+        <div class="pricing-period">For established teachers</div>
+        <ul class="pricing-features">
+          <li>250 GB storage</li>
+          <li>2,500 max students</li>
+          <li>50 courses</li>
+          <li>Advanced analytics</li>
+          <li>Priority support</li>
+        </ul>
+        <button class="btn btn-accent" style="width:100%; justify-content:center;" onclick="openModal('signup')">Choose Plan</button>
+      </div>
+      <div class="pricing-card">
+        <h3>Business</h3>
+        <div class="pricing-price"><span class="pricing-currency">SAR</span>1,499<span style="font-size:0.9rem; color:var(--muted);">/mo</span></div>
+        <div class="pricing-period">For academies &amp; institutions</div>
+        <ul class="pricing-features">
+          <li>1 TB storage</li>
+          <li>10,000 max students</li>
+          <li>200 courses</li>
+          <li>Dedicated support</li>
+          <li>Custom branding</li>
+        </ul>
+        <button class="btn btn-ghost" style="width:100%; justify-content:center;" onclick="openModal('contact')">Contact Sales</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── STATS ── -->
+<section class="section">
+  <div class="container">
+    <div class="section-label">Performance</div>
+    <h2 class="section-title">Built for Scale</h2>
+    <div class="stats-grid" style="margin-top:2.5rem;">
+      <div class="stat-card"><div class="stat-val">3,000+</div><div class="stat-lbl">Concurrent Video Streams</div></div>
+      <div class="stat-card"><div class="stat-val">92%</div><div class="stat-lbl">CDN Cache Hit Ratio</div></div>
+      <div class="stat-card"><div class="stat-val">&lt;300ms</div><div class="stat-lbl">API Latency (p95)</div></div>
+      <div class="stat-card"><div class="stat-val">4</div><div class="stat-lbl">HLS Quality Renditions</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+<div class="cta-band">
+  <h2>Ready to Launch Your Course?</h2>
+  <p>Join educators across Saudi Arabia transforming learning on Droob. Start your free trial today—no credit card required.</p>
+  <div class="cta-btns">
+    <button class="btn btn-primary btn-lg" onclick="openModal('signup')">Get Started Free</button>
+    <button class="btn btn-ghost btn-lg" onclick="openModal('contact')">Contact Sales</button>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a href="#" class="logo"><div class="logo-icon">D</div> Droob</a>
+      <p>The professional learning platform built for educators who teach in Arabic and English. Hosted securely in Saudi Arabia.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <ul>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how">How It Works</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="docs.html">Documentation</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="#">About</a></li>
+        <li><a href="#">Blog</a></li>
+        <li><a href="#">Careers</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <ul>
+        <li><a href="#">Privacy</a></li>
+        <li><a href="#">Terms</a></li>
+        <li><a href="#">Security</a></li>
+        <li><a href="#">Status</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">&copy; 2026 Droob. All rights reserved. Deployed on STC Cloud, Saudi Arabia.</div>
+</footer>
+
+<!-- ── MODAL ── -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Title</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+/* ── STARFIELD ── */
+(function(){
+  const c = document.getElementById('stars');
+  const ctx = c.getContext('2d');
+  let stars = [];
+  function resize(){ c.width=innerWidth; c.height=innerHeight; }
+  function init(){
+    stars = Array.from({length:160}, ()=>({
+      x: Math.random()*c.width, y: Math.random()*c.height,
+      r: Math.random()*1.2+0.3, a: Math.random(),
+      s: Math.random()*0.003+0.001
+    }));
+  }
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    stars.forEach(s=>{
+      s.a += s.s;
+      if(s.a>1||s.a<0) s.s*=-1;
+      ctx.beginPath();
+      ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle = `rgba(186,230,253,${s.a*0.7})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize',()=>{ resize(); init(); });
+  resize(); init(); draw();
+})();
+
+/* ── TABS ── */
+function switchTab(btn, id){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+/* ── MODAL ── */
+const modals = {
+  signup:{
+    title:'Create Your Free Account',
+    body:`<div class="field"><label>Email Address</label><input type="email" placeholder="you@example.com"></div>
+          <div class="field"><label>Full Name</label><input type="text" placeholder="Your Full Name"></div>
+          <div class="field"><label>Account Type</label><select><option>I want to teach (Instructor)</option><option>I want to learn (Student)</option></select></div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;padding:0.85rem;">Create Account</button>
+          <p style="text-align:center;margin-top:1rem;font-size:0.85rem;color:var(--muted);">Already have an account? <a href="#" style="color:var(--cyan)">Sign in</a></p>`
+  },
+  signin:{
+    title:'Sign In to Droob',
+    body:`<div class="field"><label>Email Address</label><input type="email" placeholder="you@example.com"></div>
+          <div class="field"><label>Password</label><input type="password" placeholder="••••••••"></div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;padding:0.85rem;">Sign In</button>
+          <p style="text-align:center;margin-top:1rem;font-size:0.85rem;color:var(--muted);">No account? <a href="#" onclick="openModal('signup')" style="color:var(--cyan)">Create one free</a></p>`
+  },
+  demo:{
+    title:'Schedule a Demo',
+    body:`<p style="color:var(--muted);margin-bottom:1.5rem;font-size:0.9rem;">Our team will walk you through the platform and answer all your questions.</p>
+          <div class="field"><label>Your Name</label><input type="text" placeholder="Full Name"></div>
+          <div class="field"><label>Email Address</label><input type="email" placeholder="you@example.com"></div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;padding:0.85rem;">Schedule Demo</button>`
+  },
+  contact:{
+    title:'Contact Sales',
+    body:`<p style="color:var(--muted);margin-bottom:1.5rem;font-size:0.9rem;">Our team is ready to help. Reach out via your preferred channel.</p>
+          <div style="display:flex;flex-direction:column;gap:0.75rem;">
+            <div style="padding:1.25rem;background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.15);border-radius:10px;">
+              <div style="font-size:0.75rem;font-weight:700;color:var(--cyan);margin-bottom:4px;">EMAIL</div>
+              <div style="font-size:0.9rem;color:var(--text);">sales@droob.sa</div>
+            </div>
+            <div style="padding:1.25rem;background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.15);border-radius:10px;">
+              <div style="font-size:0.75rem;font-weight:700;color:var(--cyan);margin-bottom:4px;">WHATSAPP</div>
+              <div style="font-size:0.9rem;color:var(--text);">+966 50 123 4567</div>
+            </div>
+            <div style="padding:1.25rem;background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.15);border-radius:10px;">
+              <div style="font-size:0.75rem;font-weight:700;color:var(--cyan);margin-bottom:4px;">OFFICE</div>
+              <div style="font-size:0.9rem;color:var(--text);">Riyadh, Saudi Arabia</div>
+            </div>
+          </div>`
+  }
+};
+
+function openModal(type){
+  const m = modals[type];
+  if(!m) return;
+  document.getElementById('modal-title').textContent = m.title;
+  document.getElementById('modal-body').innerHTML = m.body;
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(e){
+  if(e && e.target.id !== 'modal') return;
+  document.getElementById('modal').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => { if(e.key==='Escape') document.getElementById('modal').classList.remove('open'); });
+
+/* ── SCROLL ANIMATIONS ── */
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      e.target.style.opacity='1';
+      e.target.style.transform='translateY(0)';
+    }
+  });
+}, { threshold:0.08, rootMargin:'0px 0px -40px 0px' });
+
+document.querySelectorAll('.feature-card, .pricing-card, .stat-card, .step').forEach(el => {
+  el.style.opacity='0';
+  el.style.transform='translateY(24px)';
+  el.style.transition='opacity 0.6s ease, transform 0.6s ease';
+  observer.observe(el);
+});
+</script>
+</body>
+</html>

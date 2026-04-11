@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Droob — Documentation</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    :root {
+      --bg:      #020817;
+      --bg2:     #050d1f;
+      --bg3:     #0a1628;
+      --surface: rgba(255,255,255,0.04);
+      --border:  rgba(255,255,255,0.08);
+      --border2: rgba(99,179,237,0.25);
+      --cyan:    #22d3ee;
+      --blue:    #3b82f6;
+      --violet:  #8b5cf6;
+      --orange:  #f97316;
+      --green:   #10b981;
+      --yellow:  #f59e0b;
+      --red:     #ef4444;
+      --text:    #f0f6ff;
+      --muted:   #8899aa;
+      --code-bg: #0d1f35;
+      --glow-c:  0 0 20px rgba(34,211,238,0.3);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      line-height: 1.7;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(34,211,238,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34,211,238,0.025) 1px, transparent 1px);
+      background-size: 60px 60px;
+      z-index: 0; pointer-events: none;
+    }
+
+    /* ── HEADER ── */
+    header {
+      position: fixed; top:0; left:0; right:0; z-index:200;
+      background: rgba(2,8,23,0.85); backdrop-filter:blur(20px);
+      border-bottom: 1px solid var(--border);
+      height: 60px; display:flex; align-items:center; padding:0 2rem;
+    }
+
+    nav {
+      max-width:1440px; margin:0 auto; width:100%;
+      display:flex; justify-content:space-between; align-items:center;
+    }
+
+    .logo {
+      display:flex; align-items:center; gap:0.6rem;
+      font-family:'Space Grotesk',sans-serif;
+      font-size:1.2rem; font-weight:700; color:var(--text); text-decoration:none;
+    }
+
+    .logo-icon {
+      width:28px; height:28px; border-radius:7px;
+      background:linear-gradient(135deg,var(--cyan),var(--violet));
+      display:flex; align-items:center; justify-content:center;
+      font-weight:900; font-size:0.85rem; color:#fff;
+    }
+
+    .nav-links { display:flex; gap:2rem; list-style:none; }
+    .nav-links a { color:var(--muted); text-decoration:none; font-size:0.875rem; font-weight:500; transition:color 0.2s; }
+    .nav-links a:hover { color:var(--cyan); }
+
+    .btn {
+      display:inline-flex; align-items:center; gap:0.4rem;
+      padding:0.5rem 1.1rem; border-radius:7px;
+      font-size:0.82rem; font-weight:600; cursor:pointer;
+      border:none; text-decoration:none; transition:all 0.25s;
+    }
+    .btn-primary { background:linear-gradient(135deg,var(--cyan),var(--blue)); color:#fff; box-shadow:var(--glow-c); }
+    .btn-primary:hover { transform:translateY(-2px); }
+    .btn-ghost { background:transparent; color:var(--muted); border:1px solid var(--border); }
+    .btn-ghost:hover { border-color:var(--cyan); color:var(--cyan); }
+
+    /* ── LAYOUT ── */
+    .layout {
+      display:grid; grid-template-columns:260px 1fr;
+      margin-top:60px; min-height:calc(100vh - 60px);
+      position:relative; z-index:1;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      position:sticky; top:60px; height:calc(100vh - 60px);
+      overflow-y:auto; padding:2rem 1.25rem;
+      background:var(--bg2); border-right:1px solid var(--border);
+    }
+
+    .sidebar::-webkit-scrollbar { width:4px; }
+    .sidebar::-webkit-scrollbar-track { background:transparent; }
+    .sidebar::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+    .sidebar-group { margin-bottom:2rem; }
+
+    .sidebar-group-label {
+      font-size:0.68rem; font-weight:700; letter-spacing:2.5px;
+      text-transform:uppercase; color:var(--cyan);
+      margin-bottom:0.6rem; padding:0 0.5rem;
+    }
+
+    .sidebar-group ul { list-style:none; display:flex; flex-direction:column; gap:2px; }
+
+    .sidebar-group a {
+      display:block; padding:0.45rem 0.75rem;
+      border-radius:7px; color:var(--muted);
+      text-decoration:none; font-size:0.83rem;
+      border-left:2px solid transparent;
+      transition:all 0.2s;
+    }
+    .sidebar-group a:hover { color:var(--text); background:var(--surface); }
+    .sidebar-group a.active {
+      color:var(--cyan); background:rgba(34,211,238,0.07);
+      border-left-color:var(--cyan);
+    }
+
+    /* ── MAIN CONTENT ── */
+    main { padding:3rem 3.5rem; max-width:900px; }
+
+    /* ── HERO DOC INTRO ── */
+    .doc-intro {
+      background:linear-gradient(135deg, rgba(34,211,238,0.08), rgba(139,92,246,0.08));
+      border:1px solid rgba(34,211,238,0.2);
+      border-radius:18px; padding:2.5rem; margin-bottom:3rem;
+      position:relative; overflow:hidden;
+    }
+    .doc-intro::before {
+      content:''; position:absolute;
+      top:-40px; right:-40px; width:200px; height:200px;
+      background:radial-gradient(circle, rgba(34,211,238,0.08), transparent 70%);
+    }
+
+    .doc-status {
+      display:inline-flex; align-items:center; gap:0.5rem;
+      background:rgba(34,211,238,0.1); border:1px solid rgba(34,211,238,0.2);
+      border-radius:100px; padding:0.3rem 0.85rem;
+      font-size:0.75rem; font-weight:700; color:var(--cyan);
+      margin-bottom:1rem;
+    }
+    .status-dot { width:6px; height:6px; border-radius:50%; background:var(--cyan); animation:blink 1.5s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .doc-intro h1 {
+      font-family:'Space Grotesk',sans-serif;
+      font-size:2.2rem; font-weight:800; letter-spacing:-1px;
+      margin-bottom:0.75rem; position:relative;
+    }
+    .doc-intro p { color:var(--muted); font-size:1rem; line-height:1.8; position:relative; }
+
+    /* ── CONTENT TYPOGRAPHY ── */
+    h2 {
+      font-family:'Space Grotesk',sans-serif;
+      font-size:1.6rem; font-weight:700; letter-spacing:-0.5px;
+      margin:3rem 0 1rem; color:var(--text);
+      padding-bottom:0.75rem;
+      border-bottom:1px solid var(--border);
+      scroll-margin-top:80px;
+    }
+
+    h3 {
+      font-size:1.1rem; font-weight:700; margin:2rem 0 0.75rem; color:var(--text);
+      scroll-margin-top:80px;
+    }
+
+    h4 { font-size:0.95rem; font-weight:700; margin:1.5rem 0 0.5rem; color:var(--cyan); }
+
+    p { color:var(--muted); margin-bottom:1rem; font-size:0.95rem; line-height:1.8; }
+
+    a { color:var(--cyan); text-decoration:none; font-weight:600; }
+    a:hover { text-decoration:underline; }
+
+    ul, ol { margin:0 0 1.5rem 1.5rem; display:flex; flex-direction:column; gap:0.4rem; }
+    li { color:var(--muted); font-size:0.9rem; line-height:1.7; }
+    li strong { color:var(--text); }
+
+    /* ── CODE ── */
+    code {
+      background:var(--code-bg); color:var(--cyan);
+      padding:0.2rem 0.45rem; border-radius:5px;
+      font-family:'Fira Code','Cascadia Code','Monaco',monospace;
+      font-size:0.85em; border:1px solid rgba(34,211,238,0.15);
+    }
+
+    pre {
+      background:var(--code-bg);
+      border:1px solid rgba(34,211,238,0.12);
+      border-radius:12px; padding:1.5rem;
+      overflow-x:auto; margin:1.5rem 0;
+      font-family:'Fira Code','Cascadia Code','Monaco',monospace;
+      font-size:0.82rem; line-height:1.6; color:#7dd3fc;
+      position:relative;
+    }
+
+    pre .comment { color:#475569; }
+    pre .keyword { color:var(--violet); }
+    pre .string  { color:var(--green); }
+    pre .num     { color:var(--orange); }
+
+    /* ── TABLES ── */
+    .table-wrap { overflow-x:auto; margin:1.5rem 0; border-radius:12px; border:1px solid var(--border); }
+
+    table { width:100%; border-collapse:collapse; }
+
+    th {
+      background:rgba(34,211,238,0.07); color:var(--cyan);
+      padding:0.85rem 1rem; text-align:left;
+      font-size:0.8rem; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+    }
+
+    td { padding:0.85rem 1rem; border-top:1px solid var(--border); color:var(--muted); font-size:0.875rem; }
+    tr:hover td { background:rgba(255,255,255,0.02); }
+
+    /* ── ALERTS ── */
+    .alert {
+      padding:1.1rem 1.25rem; border-radius:10px;
+      border-left:3px solid; margin:1.5rem 0; font-size:0.875rem;
+    }
+    .alert p { margin:0; }
+    .alert-info    { background:rgba(34,211,238,0.06);  border-color:var(--cyan);   color:var(--cyan); }
+    .alert-success { background:rgba(16,185,129,0.06);  border-color:var(--green);  color:var(--green); }
+    .alert-warning { background:rgba(245,158,11,0.06);  border-color:var(--yellow); color:var(--yellow); }
+    .alert-danger  { background:rgba(239,68,68,0.06);   border-color:var(--red);    color:var(--red); }
+
+    /* ── CARDS / GRID ── */
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; margin:1.5rem 0; }
+
+    .grid-card {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:12px; padding:1.25rem; transition:all 0.25s;
+    }
+    .grid-card:hover { border-color:var(--border2); transform:translateY(-3px); }
+    .grid-card h4 { color:var(--text); font-size:0.9rem; margin:0 0 0.4rem; }
+    .grid-card p  { font-size:0.82rem; margin:0; }
+
+    /* ── RISK CARDS ── */
+    .risk-card {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:12px; padding:1.25rem; margin-bottom:1rem;
+      transition:all 0.25s;
+    }
+    .risk-card:hover { border-color:rgba(239,68,68,0.3); }
+    .risk-card h4 { color:var(--red); font-size:0.9rem; margin:0 0 0.4rem; }
+    .risk-card p  { font-size:0.85rem; margin:0; }
+
+    /* ── BADGES ── */
+    .badge {
+      display:inline-block; padding:0.2rem 0.7rem;
+      border-radius:100px; font-size:0.7rem; font-weight:700;
+      letter-spacing:0.5px; text-transform:uppercase; margin-right:0.4rem;
+    }
+    .badge-cyan    { background:rgba(34,211,238,0.1);  color:var(--cyan); }
+    .badge-violet  { background:rgba(139,92,246,0.1);  color:var(--violet); }
+    .badge-green   { background:rgba(16,185,129,0.1);  color:var(--green); }
+    .badge-orange  { background:rgba(249,115,22,0.1);  color:var(--orange); }
+    .badge-red     { background:rgba(239,68,68,0.1);   color:var(--red); }
+    .badge-yellow  { background:rgba(245,158,11,0.1);  color:var(--yellow); }
+
+    /* ── FOOTER ── */
+    footer {
+      background:var(--bg2); border-top:1px solid var(--border);
+      padding:2rem; text-align:center;
+      font-size:0.8rem; color:var(--muted);
+      position:relative; z-index:1;
+    }
+
+    /* ── SCROLL PROGRESS ── */
+    #scroll-bar {
+      position:fixed; top:60px; left:0; height:2px; z-index:300;
+      background:linear-gradient(90deg,var(--cyan),var(--violet));
+      transition:width 0.1s;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:1024px){
+      .layout { grid-template-columns:220px 1fr; }
+      main { padding:2.5rem 2rem; }
+    }
+    @media(max-width:768px){
+      .layout { grid-template-columns:1fr; }
+      .sidebar { position:relative; top:0; height:auto; }
+      main { padding:2rem 1.5rem; }
+      .nav-links { display:none; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="scroll-bar"></div>
+
+<!-- ── HEADER ── -->
+<header>
+  <nav>
+    <a href="index.html" class="logo">
+      <div class="logo-icon">D</div>
+      Droob <span style="color:var(--muted);font-weight:400;margin-left:4px;">Docs</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#architecture">Architecture</a></li>
+      <li><a href="#tech-stack">Tech Stack</a></li>
+      <li><a href="#roadmap">Roadmap</a></li>
+    </ul>
+    <a href="index.html" class="btn btn-primary">← Back to Product</a>
+  </nav>
+</header>
+
+<div class="layout">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="sidebar-group">
+      <div class="sidebar-group-label">Getting Started</div>
+      <ul>
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#executive-summary">Executive Summary</a></li>
+        <li><a href="#product-decisions">Product Decisions</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label">Technical</div>
+      <ul>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#tech-stack">Tech Stack</a></li>
+        <li><a href="#video-pipeline">Video Pipeline</a></li>
+        <li><a href="#security">Security</a></li>
+        <li><a href="#payment">Payment System</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label">Deployment</div>
+      <ul>
+        <li><a href="#infrastructure">Infrastructure</a></li>
+        <li><a href="#compliance">Compliance</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label">Project</div>
+      <ul>
+        <li><a href="#team">Team Structure</a></li>
+        <li><a href="#roadmap">Roadmap</a></li>
+        <li><a href="#risks">Risks</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main>
+
+    <!-- INTRO -->
+    <div class="doc-intro">
+      <div class="doc-status"><span class="status-dot"></span>Draft v2 — 11 April 2026</div>
+      <h1>Droob Platform</h1>
+      <p>A bilingual (Arabic/English) student–instructor learning platform deployed on STC Cloud infrastructure inside Saudi Arabia. The platform empowers educators with professional tools and students with engaging learning experiences.</p>
+    </div>
+
+    <!-- OVERVIEW -->
+    <section id="overview">
+      <h2>Overview</h2>
+      <p>Droob is a comprehensive e-learning ecosystem built for the Saudi market. It connects instructors who create and monetize courses with students seeking quality education. The platform is fully bilingual, security-first, and built on enterprise-grade infrastructure.</p>
+      <div class="alert alert-info">
+        <p><strong>Version:</strong> Draft v2 — Refined for engineering execution &nbsp;·&nbsp;
+        <strong>Region:</strong> Saudi Arabia (STC Cloud) &nbsp;·&nbsp;
+        <strong>Timeline:</strong> 9 months to MVP launch</p>
+      </div>
+    </section>
+
+    <!-- EXECUTIVE SUMMARY -->
+    <section id="executive-summary">
+      <h2>Executive Summary</h2>
+      <p>Droob consists of three front-ends and a shared backend:</p>
+      <div class="grid">
+        <div class="grid-card"><h4>Instructor Web App</h4><p>Course authoring, video upload, student management, analytics, subscription billing.</p></div>
+        <div class="grid-card"><h4>Student Mobile Apps</h4><p>Native iOS (Swift/SwiftUI) and Android (Kotlin/Jetpack Compose) for course discovery, video streaming, quizzes, assignments.</p></div>
+        <div class="grid-card"><h4>Admin Web App</h4><p>Platform operations, instructor moderation, subscription management, content review, financial reporting.</p></div>
+      </div>
+
+      <h3>Commercial Model</h3>
+      <p><strong style="color:var(--text)">Dual-sided marketplace:</strong></p>
+      <ul>
+        <li>Instructors pay SaaS subscription (tiered on storage, students, courses)</li>
+        <li>Students purchase individual courses from instructors</li>
+        <li>Platform takes commission per sale (15–20%)</li>
+        <li>Transparent financial tracking with monthly payouts</li>
+      </ul>
+
+      <h3>Core Challenges</h3>
+      <ul>
+        <li><strong>Scalable VOD Pipeline:</strong> Handle 3,000+ concurrent streams with automatic encoding to HLS</li>
+        <li><strong>Bilingual UX:</strong> Full Arabic/English support with RTL layout compatibility</li>
+        <li><strong>Secure Monetization:</strong> Safe payment processing via Saudi payment gateways</li>
+        <li><strong>Future AI Tutor:</strong> Course-grounded AI assistant (Phase 3)</li>
+      </ul>
+    </section>
+
+    <!-- PRODUCT DECISIONS -->
+    <section id="product-decisions">
+      <h2>Confirmed Product Decisions</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Area</th><th>Decision</th></tr></thead>
+          <tbody>
+            <tr><td><strong style="color:var(--text)">Student Mobile</strong></td><td>Fully native — Swift (iOS) + Kotlin (Android)</td></tr>
+            <tr><td><strong style="color:var(--text)">Instructor Portal</strong></td><td>Web app (React + TypeScript)</td></tr>
+            <tr><td><strong style="color:var(--text)">Admin Panel</strong></td><td>Web app (React + TypeScript)</td></tr>
+            <tr><td><strong style="color:var(--text)">Languages</strong></td><td>Arabic (RTL) + English (LTR), full bilingual UX</td></tr>
+            <tr><td><strong style="color:var(--text)">Monetization</strong></td><td>(a) Instructor SaaS + (b) Student purchases with platform commission</td></tr>
+            <tr><td><strong style="color:var(--text)">Course Content v1</strong></td><td>Video lessons, PDF attachments, quizzes, assignments</td></tr>
+            <tr><td><strong style="color:var(--text)">Video Delivery</strong></td><td>HLS over CDN (never from backend)</td></tr>
+            <tr><td><strong style="color:var(--text)">Hosting</strong></td><td>STC Cloud (compute + storage) with external CDN</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section id="architecture">
+      <h2>High-Level Architecture</h2>
+      <p>Designed around one critical invariant: <strong style="color:var(--text)">the backend API must never stream video bytes.</strong> All video flows directly from CDN to device.</p>
+      <pre>
+┌──────────────────────┐   ┌─────────────────────┐   ┌──────────────────────┐
+│  Instructor Web App  │   │ Student iOS/Android │   │   Admin Web App      │
+│  (React + TS)        │   │  (Swift / Kotlin)   │   │  (React + TS)        │
+└──────────┬───────────┘   └──────────┬───────────┘   └──────────┬───────────┘
+           └──────────────┬───────────┴────────────┬─────────────┘
+                  ┌───────▼────────┐       ┌───────▼─────────┐
+                  │   API Gateway  │       │ Realtime / WS   │
+                  │   (NGINX/Kong) │       │ (notifications) │
+                  └───────┬────────┘       └────────┬────────┘
+              ┌───────────▼─────────────────────────▼──────────┐
+              │     NestJS Monolith (Modular Architecture)     │
+              │  auth · users · catalog · media · billing      │
+              └─┬───────────┬──────────────┬────────────┬──────┘
+        ┌───────▼───┐ ┌─────▼─────┐ ┌──────▼──────┐ ┌───▼──────┐
+        │PostgreSQL │ │   Redis   │ │Object Store │ │ BullMQ   │
+        │(+replicas)│ │(cache+Q)  │ │  STC S3     │ │ Queues   │
+        └───────────┘ └───────────┘ └──────┬───────┘ └────┬─────┘
+                                   ┌───────▼────┐   ┌─────▼──────┐
+                                   │    CDN     │   │ Encoding   │
+                                   │(Bunny/CF)  │   │ (FFmpeg)   │
+                                   └─────┬──────┘   └────────────┘
+                                  Student devices
+                                  stream HLS here</pre>
+
+      <h3>Architectural Invariants</h3>
+      <ul>
+        <li>Backend API must never stream video bytes</li>
+        <li>All video delivered as HLS only</li>
+        <li>All uploads are asynchronous</li>
+        <li>Encoding always queued (never on API threads)</li>
+        <li>CDN is mandatory for delivery</li>
+        <li>Signed URLs required for all media assets</li>
+        <li>No secrets in code (Vault-based only)</li>
+        <li>Idempotency keys on all external side-effects</li>
+      </ul>
+    </section>
+
+    <!-- TECH STACK -->
+    <section id="tech-stack">
+      <h2>Technology Stack</h2>
+
+      <h3>Backend</h3>
+      <ul>
+        <li><strong>Runtime:</strong> Node.js 20 + NestJS (TypeScript)</li>
+        <li><strong>Database:</strong> PostgreSQL 16 (primary + 1 read replica)</li>
+        <li><strong>Cache & Queues:</strong> Redis 7 (BullMQ for async jobs)</li>
+        <li><strong>Object Storage:</strong> STC S3-compatible (raw + HLS output)</li>
+        <li><strong>Auth:</strong> JWT (15 min access, rotating refresh tokens)</li>
+        <li><strong>OTP:</strong> SMS via Unifonic/Taqnyat (Saudi providers)</li>
+      </ul>
+
+      <h3>Frontend</h3>
+      <ul>
+        <li><strong>Framework:</strong> React 18 + TypeScript + Vite</li>
+        <li><strong>Styling:</strong> Tailwind CSS + shadcn/ui + custom RTL tokens</li>
+        <li><strong>State:</strong> TanStack Query + Zustand</li>
+        <li><strong>i18n:</strong> react-i18next (Arabic/English, auto-RTL)</li>
+        <li><strong>Forms:</strong> React Hook Form + Zod validation</li>
+      </ul>
+
+      <h3>Mobile</h3>
+      <ul>
+        <li><strong>iOS:</strong> Swift 5.10, SwiftUI, AVPlayer for HLS</li>
+        <li><strong>Android:</strong> Kotlin 2.x, Jetpack Compose, ExoPlayer (Media3)</li>
+        <li><strong>API Clients:</strong> OpenAPI-generated, identical feature parity</li>
+      </ul>
+
+      <h3>DevOps & Observability</h3>
+      <ul>
+        <li><strong>CI/CD:</strong> GitHub Actions → STC registry → SSH/Ansible deploy</li>
+        <li><strong>Monitoring:</strong> Prometheus + Grafana (self-hosted)</li>
+        <li><strong>Logging:</strong> Structured JSON via pino, exported to Loki</li>
+        <li><strong>Tracing:</strong> OpenTelemetry → Tempo/Jaeger</li>
+        <li><strong>Error Tracking:</strong> Sentry for real-time alerts</li>
+      </ul>
+    </section>
+
+    <!-- VIDEO PIPELINE -->
+    <section id="video-pipeline">
+      <h2>Video Pipeline</h2>
+      <p>The video pipeline is the highest-risk, highest-leverage subsystem. It must work flawlessly on day one.</p>
+
+      <h3>Upload Phase</h3>
+      <ul>
+        <li>Resumable uploads via <code>tus.io</code> protocol over HTTPS</li>
+        <li>Parallel chunk uploads (max 4 concurrent, 8 MiB per chunk)</li>
+        <li>Checksum verification per chunk (SHA256)</li>
+        <li>Upload resumable for 48 hours if connection drops</li>
+        <li>Pre-flight quota checks against instructor's plan limits</li>
+        <li>MIME validation + ClamAV virus scan + ffprobe inspection</li>
+      </ul>
+
+      <h3>Encoding Phase</h3>
+      <ul>
+        <li>Auto-queued to BullMQ after upload completion</li>
+        <li>Dedicated encoding workers (auto-scale 1→5 based on queue depth)</li>
+        <li>Priority lanes: interactive → standard → bulk</li>
+        <li>FFmpeg generates 4 renditions + master HLS playlist</li>
+        <li>Timeout: <code>max(90min, 4× video duration)</code></li>
+        <li>3 automatic retry attempts with exponential backoff</li>
+      </ul>
+
+      <h3>Playback Phase</h3>
+      <ul>
+        <li>Signed URLs for master playlist (4-hour expiry)</li>
+        <li>CDN caches segments aggressively (7+ days)</li>
+        <li>Target ≥92% cache hit ratio</li>
+        <li>Adaptive bitrate handled by AVPlayer / ExoPlayer natively</li>
+        <li>Progress reported to backend every 10 seconds for analytics</li>
+        <li>Token bound to user + IP CIDR + device fingerprint</li>
+      </ul>
+
+      <div class="alert alert-warning">
+        <p><strong>Anti-Piracy (v1):</strong> Signed URLs, short expiry, token binding, watermark overlay on clients. Phase 2: Widevine/FairPlay DRM if piracy observed at scale.</p>
+      </div>
+    </section>
+
+    <!-- SECURITY -->
+    <section id="security">
+      <h2>Security</h2>
+
+      <h3>Authentication & Authorization</h3>
+      <ul>
+        <li><strong>JWT:</strong> 15-minute access tokens + 30-day rotating refresh tokens</li>
+        <li><strong>OTP:</strong> 6-digit SMS, 5-minute TTL, max 5 attempts</li>
+        <li><strong>Password:</strong> Argon2id hashing — no plain text ever</li>
+        <li><strong>Admin:</strong> Mandatory 2FA (TOTP), 8-hour session max, no refresh</li>
+        <li><strong>Mobile:</strong> Certificate pinning + client attestation validation</li>
+      </ul>
+
+      <h3>Data Protection</h3>
+      <ul>
+        <li><strong>Encryption:</strong> TLS 1.2+ everywhere, AES-256 at rest</li>
+        <li><strong>Secrets:</strong> HashiCorp Vault with KMS envelope encryption</li>
+        <li><strong>PII:</strong> All stored inside Saudi Arabia on STC (PDPL compliance)</li>
+        <li><strong>Audit Logging:</strong> Every admin action logged with before/after state</li>
+      </ul>
+
+      <h3>Signed URL Spec</h3>
+      <ul>
+        <li><strong>Signing:</strong> <code>HMAC-SHA256(videoId|userId|exp|scope)</code></li>
+        <li><strong>Binding:</strong> User ID + IP CIDR (/24) + device fingerprint</li>
+        <li><strong>Expiry:</strong> 4 hours for playlists, auto-refresh at 3h 55m</li>
+        <li><strong>Abuse Detection:</strong> Revoke token if seen from &gt;3 IPs or &gt;3 devices in 4h</li>
+      </ul>
+    </section>
+
+    <!-- PAYMENT -->
+    <section id="payment">
+      <h2>Payment System & Billing</h2>
+
+      <h3>Instructor Subscription Tiers</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Tier</th><th>Price/Month</th><th>Storage</th><th>Max Students</th><th>Max Courses</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge badge-cyan">Free Trial</span></td><td>0 SAR (14 days)</td><td>5 GB</td><td>50</td><td>2</td></tr>
+            <tr><td><span class="badge badge-violet">Basic</span></td><td>149 SAR</td><td>50 GB</td><td>500</td><td>10</td></tr>
+            <tr><td><span class="badge badge-orange">Pro</span></td><td>449 SAR</td><td>250 GB</td><td>2,500</td><td>50</td></tr>
+            <tr><td><span class="badge badge-yellow">Business</span></td><td>1,499 SAR</td><td>1 TB</td><td>10,000</td><td>200</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Student Course Purchases</h3>
+      <ul>
+        <li><strong>Gateway:</strong> Moyasar (primary) or HyperPay (backup)</li>
+        <li><strong>Methods:</strong> mada, Apple Pay, STC Pay, Visa, Mastercard</li>
+        <li><strong>Commission:</strong> Platform takes 15–20% per sale</li>
+        <li><strong>Refund Window:</strong> 7 days if watched &lt;20% of course content</li>
+        <li><strong>Payout:</strong> Monthly batch on the 5th for preceding calendar month</li>
+      </ul>
+
+      <div class="alert alert-warning">
+        <p><strong>v1 Design:</strong> Admin-gated subscription changes. Instructors submit change requests; admin approves/rejects. No automatic prorating. Gives full control to finance team while platform matures.</p>
+      </div>
+    </section>
+
+    <!-- INFRASTRUCTURE -->
+    <section id="infrastructure">
+      <h2>Infrastructure (STC Cloud)</h2>
+
+      <h3>Production Environment (v1 — 3,000 concurrent streams)</h3>
+      <ul>
+        <li><strong>API Cluster:</strong> 3× VM (4 vCPU, 8 GB RAM) behind load balancer</li>
+        <li><strong>Encoding Workers:</strong> 2× VM (8 vCPU, 16 GB RAM), auto-scale to 5</li>
+        <li><strong>PostgreSQL:</strong> 1× primary (8 vCPU, 32 GB RAM, SSD) + 1× read replica</li>
+        <li><strong>Redis:</strong> 1× VM (2 vCPU, 8 GB RAM) with persistence enabled</li>
+        <li><strong>Object Storage:</strong> STC S3-compatible, starting 5 TB, elastic</li>
+        <li><strong>CDN:</strong> Bunny or Cloudflare in front of object storage</li>
+      </ul>
+
+      <h3>Backups & DR</h3>
+      <ul>
+        <li>Database snapshots every 6 hours, retained 30 days</li>
+        <li>WAL archiving for point-in-time recovery</li>
+        <li><strong>RPO:</strong> 1 hour &nbsp;|&nbsp; <strong>RTO:</strong> 4 hours</li>
+      </ul>
+    </section>
+
+    <!-- COMPLIANCE -->
+    <section id="compliance">
+      <h2>Compliance & Data Residency</h2>
+      <ul>
+        <li><strong>PDPL:</strong> Personal Data Protection Law (Saudi Arabia)</li>
+        <li><strong>Data Residency:</strong> All PII and content stored inside Saudi Arabia on STC</li>
+        <li><strong>CITC:</strong> Communications and IT Commission alignment</li>
+        <li><strong>ZATCA:</strong> Tax authority e-invoicing for B2B instructor transactions</li>
+        <li><strong>Consent:</strong> Explicit user consent at signup, right to data export/deletion</li>
+        <li><strong>Audit Log:</strong> Complete access audit trail for all sensitive operations</li>
+      </ul>
+    </section>
+
+    <!-- TEAM -->
+    <section id="team">
+      <h2>Team Structure</h2>
+      <p>Assumed team size: ~10 people (adjust based on budget/timeline).</p>
+      <div class="grid">
+        <div class="grid-card"><h4>1× Eng Manager / Tech Lead</h4></div>
+        <div class="grid-card"><h4>2× Backend Engineers</h4><p>Node/Nest + PostgreSQL</p></div>
+        <div class="grid-card"><h4>1× DevOps/Infra</h4><p>STC, CDN, encoding pipeline</p></div>
+        <div class="grid-card"><h4>1× Frontend Engineer</h4><p>React — instructor + admin</p></div>
+        <div class="grid-card"><h4>1× iOS Engineer</h4><p>Swift/SwiftUI</p></div>
+        <div class="grid-card"><h4>1× Android Engineer</h4><p>Kotlin/Jetpack Compose</p></div>
+        <div class="grid-card"><h4>1× QA Engineer</h4><p>Manual + automation, bilingual</p></div>
+        <div class="grid-card"><h4>1× UI/UX Designer</h4><p>Bilingual design system</p></div>
+      </div>
+      <p><strong style="color:var(--text)">Consultants:</strong> Pentest (contract), Legal (PDPL/ZATCA), Arabic copywriter</p>
+    </section>
+
+    <!-- ROADMAP -->
+    <section id="roadmap">
+      <h2>Phased Roadmap — 9 Months to Launch</h2>
+
+      <h3><span class="badge badge-cyan">Phase 0</span> Foundation (Weeks 1–4)</h3>
+      <ul>
+        <li>Finalize product requirements & wireframes</li>
+        <li>Build design system (bilingual RTL/LTR)</li>
+        <li>Set up STC infra (dev + staging), CI/CD, monitoring</li>
+        <li>Sign payment gateway & CDN contracts</li>
+      </ul>
+
+      <h3><span class="badge badge-violet">Phase 1</span> Instructor Portal & Video Pipeline (Weeks 5–14)</h3>
+      <ul>
+        <li>Instructor signup, KYC flow, onboarding</li>
+        <li>Subscription plan enforcement + billing integration</li>
+        <li>Course/section/lesson CRUD, PDF attachments</li>
+        <li>Resumable video upload, automatic encoding to HLS</li>
+        <li>CDN integration with signed URLs</li>
+        <li>Admin panel v1</li>
+      </ul>
+
+      <h3><span class="badge badge-orange">Phase 2</span> Student Mobile Apps (Weeks 15–26)</h3>
+      <ul>
+        <li>iOS app (Swift/SwiftUI) — browse, purchase, stream, quizzes, assignments</li>
+        <li>Android app (Kotlin/Compose) — feature parity</li>
+        <li>Payment integration, progress tracking, push notifications</li>
+        <li>Bilingual polish & RTL QA</li>
+        <li>Closed beta with 5–10 instructors, ~100 students</li>
+      </ul>
+
+      <h3><span class="badge badge-green">Phase 3</span> Launch Hardening (Weeks 27–36)</h3>
+      <ul>
+        <li>Load test to 3,000 concurrent streams</li>
+        <li>Security pentest & fixes</li>
+        <li>Payout automation & financial reconciliation</li>
+        <li>App Store + Play Store submissions</li>
+        <li>Public launch</li>
+      </ul>
+
+      <h3><span class="badge badge-yellow">Phase 4+</span> Post-Launch</h3>
+      <ul>
+        <li>Transcript generation (Whisper)</li>
+        <li>AI tutor with RAG over course content</li>
+        <li>Live streaming</li>
+        <li>DRM (Widevine/FairPlay) if piracy observed</li>
+      </ul>
+    </section>
+
+    <!-- RISKS -->
+    <section id="risks">
+      <h2>Risks & Mitigations</h2>
+      <div class="risk-card"><h4>R1 — CDN egress costs explode</h4><p><strong style="color:var(--text)">Mitigation:</strong> Default to 480p, aggressive cache TTLs, per-instructor bandwidth caps, monthly cost alerts.</p></div>
+      <div class="risk-card"><h4>R2 — Encoding queue backs up</h4><p><strong style="color:var(--text)">Mitigation:</strong> Auto-scale workers, priority queue, admin alerts on backlog &gt;50 jobs.</p></div>
+      <div class="risk-card"><h4>R3 — Video piracy</h4><p><strong style="color:var(--text)">Mitigation:</strong> Signed URLs, watermarks. Escalate to DRM if observed at scale.</p></div>
+      <div class="risk-card"><h4>R4 — Apple IAP rejection</h4><p><strong style="color:var(--text)">Mitigation:</strong> Apple requires in-app purchase for digital content. Evaluate IAP (15–30% cut) vs. positioning as educational service. Legal decision needed before Phase 2.</p></div>
+      <div class="risk-card"><h4>R5 — Saudi payment gateway limits</h4><p><strong style="color:var(--text)">Mitigation:</strong> Use "collect then monthly payout" model if gateways don't support marketplace splits natively.</p></div>
+      <div class="risk-card"><h4>R6 — Bilingual QA complexity</h4><p><strong style="color:var(--text)">Mitigation:</strong> Dedicated QA matrix, RTL reviewer in every sprint, Arabic copywriter on retainer.</p></div>
+    </section>
+
+    <!-- NEXT STEPS -->
+    <section>
+      <h2 style="border-bottom-color:rgba(16,185,129,0.3); color:var(--green);">Next Steps</h2>
+      <div class="alert alert-success">
+        <ul style="margin:0 0 0 1.5rem; gap:0.5rem;">
+          <li>Confirm timeline & team size</li>
+          <li>Finalize payment gateway choice (Moyasar vs. HyperPay)</li>
+          <li>Make Apple IAP decision before Phase 2</li>
+          <li>Select CDN vendor (Bunny vs. Cloudflare)</li>
+          <li>Begin Phase 0: design system + infra setup</li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  <p><strong>Droob Platform Documentation</strong> &nbsp;·&nbsp; Draft v2 &nbsp;·&nbsp; 11 April 2026 &nbsp;·&nbsp; Saudi Arabia (STC Cloud)</p>
+</footer>
+
+<script>
+/* ── SCROLL PROGRESS BAR ── */
+window.addEventListener('scroll', () => {
+  const pct = window.scrollY / (document.body.scrollHeight - window.innerHeight) * 100;
+  document.getElementById('scroll-bar').style.width = pct + '%';
+});
+
+/* ── ACTIVE SIDEBAR LINK ── */
+const sections = document.querySelectorAll('section[id]');
+const links    = document.querySelectorAll('.sidebar-group a');
+
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      links.forEach(l => {
+        l.classList.toggle('active', l.getAttribute('href') === '#' + e.target.id);
+      });
+    }
+  });
+}, { rootMargin:'-60px 0px -60% 0px', threshold:0 });
+
+sections.forEach(s => observer.observe(s));
+
+/* ── SMOOTH SCROLL ── */
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const t = document.querySelector(a.getAttribute('href'));
+    if(t){ e.preventDefault(); t.scrollIntoView({ behavior:'smooth' }); }
+  });
+});
+</script>
+</body>
+</html>
