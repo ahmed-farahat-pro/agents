@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bonyad Canvas — Dependency Map</title>
+  <link rel="stylesheet" href="brief.css">
+  <style>
+    /* ── Reset & base ─────────────────────────────────────── */
+    html, body { height: 100%; overflow: hidden; }
+    body.bonyad-theme { display: flex; flex-direction: column; }
+
+    /* ── Toolbar ──────────────────────────────────────────── */
+    .cv-toolbar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 0 16px; height: 52px; flex-shrink: 0;
+      background: var(--bg-elevated); border-bottom: 1px solid var(--border);
+      z-index: 100; position: relative;
+    }
+    .cv-toolbar-left  { display: flex; align-items: center; gap: 8px; }
+    .cv-toolbar-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .cv-tb-btn {
+      padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border);
+      background: none; color: var(--text-secondary); font-size: 12px;
+      font-family: var(--mono); cursor: pointer; transition: all .15s;
+    }
+    .cv-tb-btn:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+    .cv-tb-btn.active { background: var(--accent-orange); border-color: var(--accent-orange); color: #08070b; font-weight: 700; }
+    .cv-zoom-label {
+      font-size: 12px; font-family: var(--mono);
+      color: var(--text-muted); min-width: 44px; text-align: center;
+    }
+    .cv-sheet-sel {
+      background: var(--bg-primary); border: 1px solid var(--border);
+      color: var(--text-primary); border-radius: 8px; padding: 5px 10px;
+      font-size: 12px; font-family: var(--font); cursor: pointer;
+    }
+    .cv-sheet-sel:focus { outline: none; border-color: var(--accent-orange); }
+    .cv-key-input {
+      background: var(--bg-primary); border: 1px solid var(--border);
+      color: var(--text-primary); border-radius: 8px; padding: 5px 10px;
+      font-size: 12px; font-family: var(--mono); width: 180px;
+    }
+    .cv-key-input:focus { outline: none; border-color: var(--accent-orange); }
+    .cv-stats { font-size: 11px; color: var(--text-muted); font-family: var(--mono); white-space: nowrap; }
+    .cv-hint {
+      font-size: 11px; color: var(--text-muted);
+      border-left: 1px solid var(--border); padding-left: 10px;
+    }
+
+    /* ── Viewport ─────────────────────────────────────────── */
+    .cv-viewport {
+      flex: 1; overflow: hidden; position: relative;
+      cursor: default; user-select: none;
+      background-color: var(--bg-primary);
+      background-image:
+        radial-gradient(circle, rgba(255,255,255,.06) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+    .cv-viewport.panning { cursor: grabbing; }
+
+    .cv-world {
+      position: absolute; top: 0; left: 0;
+      transform-origin: 0 0;
+      will-change: transform;
+    }
+
+    /* ── SVG edges layer ──────────────────────────────────── */
+    .cv-edges-svg {
+      position: absolute; top: 0; left: 0;
+      width: 12000px; height: 8000px;
+      pointer-events: none; overflow: visible;
+    }
+    .cv-edge {
+      stroke-width: 2; fill: none;
+      pointer-events: stroke; cursor: pointer;
+      transition: stroke .2s;
+    }
+    .cv-edge.dep-open     { stroke: rgba(255,107,26,.55); stroke-dasharray: 6 4; }
+    .cv-edge.dep-done     { stroke: #2ee6b8; stroke-dasharray: none; }
+    .cv-edge.dep-progress { stroke: #5eb3ff; stroke-dasharray: 4 3; }
+    .cv-edge.selected     { stroke: #fff; stroke-width: 2.5; }
+    .cv-edge-hit {
+      stroke-width: 18; fill: none; stroke: transparent;
+      pointer-events: stroke; cursor: pointer;
+    }
+    /* Arrow markers */
+    .cv-arrow-open     { fill: rgba(255,107,26,.7); }
+    .cv-arrow-done     { fill: #2ee6b8; }
+    .cv-arrow-progress { fill: #5eb3ff; }
+    .cv-arrow-selected { fill: #fff; }
+    /* Temp edge while drawing */
+    .cv-edge-temp {
+      stroke: rgba(255,107,26,.6); stroke-width: 2;
+      stroke-dasharray: 5 4; fill: none;
+      pointer-events: none;
+    }
+
+    /* ── Nodes ────────────────────────────────────────────── */
+    .cv-node {
+      position: absolute; width: 260px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; overflow: visible;
+      transition: box-shadow .2s, border-color .2s;
+      will-change: transform;
+    }
+    .cv-node:hover { border-color: rgba(255,107,26,.35); }
+    .cv-node.selected { border-color: var(--accent-orange); box-shadow: 0 0 0 2px rgba(255,107,26,.2); }
+    .cv-node.wf-done  { border-color: rgba(46,230,184,.35); }
+    .cv-node.wf-progress { border-color: rgba(94,179,255,.35); }
+
+    /* Completion glow */
+    @keyframes cv-done-pulse {
+      0%,100% { box-shadow: 0 0 0 2px rgba(46,230,184,.15); }
+      50%      { box-shadow: 0 0 18px 4px rgba(46,230,184,.45); }
+    }
+    .cv-node.just-done { animation: cv-done-pulse .8s ease 2; }
+
+    .cv-node-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 12px 8px; cursor: grab; border-radius: 12px 12px 0 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .cv-node-header:active { cursor: grabbing; }
+    .cv-node-pri {
+      width: 3px; height: 28px; border-radius: 2px; flex-shrink: 0;
+    }
+    .pri-high   { background: var(--danger); }
+    .pri-medium { background: var(--accent-orange); }
+    .pri-low    { background: var(--blue-accent); }
+    .cv-node-title {
+      font-size: 12px; font-weight: 700; color: var(--text-primary);
+      flex: 1; line-height: 1.35;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .cv-node-wf {
+      padding: 2px 7px; border-radius: 5px; font-size: 10px;
+      font-weight: 700; letter-spacing: .04em; white-space: nowrap;
+      font-family: var(--mono); flex-shrink: 0;
+    }
+    .wf-open     .cv-node-wf { background: rgba(168,168,179,.12); color: var(--text-muted); }
+    .wf-progress .cv-node-wf { background: rgba(94,179,255,.12);  color: var(--blue-accent); }
+    .wf-done     .cv-node-wf { background: rgba(46,230,184,.12);  color: var(--accent-green); }
+
+    .cv-node-body {
+      padding: 8px 12px 10px;
+      font-size: 11px; color: var(--text-muted);
+    }
+    .cv-node-id { font-family: var(--mono); color: rgba(255,255,255,.2); font-size: 10px; }
+
+    /* Ports */
+    .cv-port {
+      position: absolute; width: 12px; height: 12px;
+      border-radius: 50%; border: 2px solid var(--border);
+      background: var(--bg-elevated); top: 50%; transform: translateY(-50%);
+      cursor: crosshair; transition: border-color .15s, background .15s;
+      z-index: 10;
+    }
+    .cv-port:hover, .cv-port.active {
+      border-color: var(--accent-orange); background: rgba(255,107,26,.3);
+    }
+    .cv-port-in  { left: -7px; }
+    .cv-port-out { right: -7px; }
+
+    /* ── Edge delete button ───────────────────────────────── */
+    .cv-edge-del {
+      position: absolute; width: 20px; height: 20px;
+      border-radius: 50%; background: var(--danger); border: none;
+      color: #fff; font-size: 11px; line-height: 20px; text-align: center;
+      cursor: pointer; display: none; z-index: 200;
+      transform: translate(-50%, -50%);
+    }
+    .cv-edge-del.visible { display: block; }
+
+    /* ── Celebration overlay ──────────────────────────────── */
+    .cv-celebrate {
+      position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity .4s;
+    }
+    .cv-celebrate.show { opacity: 1; }
+    .cv-celebrate-banner {
+      background: linear-gradient(135deg, #0f0d14, #1a1720);
+      border: 1px solid var(--accent-green);
+      border-radius: 20px; padding: 28px 48px; text-align: center;
+      box-shadow: 0 0 60px rgba(46,230,184,.25);
+    }
+    .cv-celebrate-banner h2 {
+      font-size: 28px; font-weight: 900; color: var(--accent-green);
+      letter-spacing: -0.03em; margin-bottom: 6px;
+    }
+    .cv-celebrate-banner p { font-size: 14px; color: var(--text-muted); }
+
+    /* Confetti particles */
+    @keyframes cv-confetti {
+      0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(-180px) rotate(720deg) translateX(var(--cx)); opacity: 0; }
+    }
+    .cv-particle {
+      position: absolute; width: 8px; height: 8px; border-radius: 2px;
+      animation: cv-confetti 1.2s ease forwards;
+      bottom: 100%;
+    }
+
+    /* ── Empty / error states ─────────────────────────────── */
+    .cv-empty {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 12px; color: var(--text-muted); font-size: 14px;
+    }
+    .cv-empty svg { opacity: .3; }
+
+    /* ── Legend ───────────────────────────────────────────── */
+    .cv-legend {
+      position: absolute; bottom: 16px; left: 16px; z-index: 50;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 14px;
+      font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 6px;
+    }
+    .cv-legend-row { display: flex; align-items: center; gap: 8px; }
+    .cv-legend-line {
+      width: 28px; height: 2px; border-radius: 1px;
+    }
+    .cv-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  </style>
+</head>
+<body class="bonyad-theme">
+
+<!-- ── Toolbar ──────────────────────────────────────────────────── -->
+<div class="cv-toolbar">
+  <div class="cv-toolbar-left">
+    <a href="./" style="color:var(--text-muted);text-decoration:none;font-size:12px;white-space:nowrap;">← Hub</a>
+    <select class="cv-sheet-sel" id="cv-sheet-sel"><option value="">Loading…</option></select>
+    <button class="cv-tb-btn" id="cv-fit" title="Fit all nodes">Fit</button>
+    <button class="cv-tb-btn" id="cv-zoom-out" title="Zoom out">−</button>
+    <span class="cv-zoom-label" id="cv-zoom-label">100%</span>
+    <button class="cv-tb-btn" id="cv-zoom-in" title="Zoom in">+</button>
+    <button class="cv-tb-btn" id="cv-auto-layout" title="Auto-arrange nodes">Auto layout</button>
+  </div>
+  <div class="cv-hint" id="cv-hint">Drag nodes · Drag port to connect · Right-click edge to delete</div>
+  <div class="cv-toolbar-right">
+    <span class="cv-stats" id="cv-stats"></span>
+    <input class="cv-key-input" type="password" id="cv-key" placeholder="Your key to edit" autocomplete="off" />
+    <button class="add-btn" id="cv-key-save" style="padding:5px 14px;font-size:12px;">Connect</button>
+  </div>
+</div>
+
+<!-- ── Canvas viewport ──────────────────────────────────────────── -->
+<div class="cv-viewport" id="cvViewport">
+  <div class="cv-world" id="cvWorld">
+    <svg class="cv-edges-svg" id="cvEdgesSvg">
+      <defs>
+        <marker id="arr-open"     markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" class="cv-arrow-open"/>
+        </marker>
+        <marker id="arr-done"     markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" class="cv-arrow-done"/>
+        </marker>
+        <marker id="arr-progress" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" class="cv-arrow-progress"/>
+        </marker>
+        <marker id="arr-selected" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" class="cv-arrow-selected"/>
+        </marker>
+      </defs>
+    </svg>
+    <div id="cvNodesLayer"></div>
+  </div>
+  <!-- Temp edge path for drawing new connections -->
+  <svg id="cvTempSvg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;">
+    <path id="cvTempEdge" class="cv-edge-temp" d="" style="display:none;"/>
+  </svg>
+  <!-- Empty state -->
+  <div class="cv-empty" id="cvEmpty" style="display:none;">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    <span id="cvEmptyMsg">Select a sheet to view its canvas</span>
+  </div>
+</div>
+
+<!-- Edge delete button (floats over canvas) -->
+<button class="cv-edge-del" id="cvEdgeDel" title="Delete connection">×</button>
+
+<!-- Legend -->
+<div class="cv-legend">
+  <div class="cv-legend-row"><span class="cv-legend-dot" style="background:var(--danger)"></span> High</div>
+  <div class="cv-legend-row"><span class="cv-legend-dot" style="background:var(--accent-orange)"></span> Medium</div>
+  <div class="cv-legend-row"><span class="cv-legend-dot" style="background:var(--blue-accent)"></span> Low</div>
+  <div style="border-top:1px solid var(--border);margin:2px 0;"></div>
+  <div class="cv-legend-row"><span class="cv-legend-line" style="background:rgba(255,107,26,.55);border-top:1px dashed rgba(255,107,26,.55);height:0;"></span> Pending dep</div>
+  <div class="cv-legend-row"><span class="cv-legend-line" style="background:#2ee6b8;"></span> Done dep</div>
+  <div class="cv-legend-row"><span class="cv-legend-line" style="background:#5eb3ff;"></span> In-progress dep</div>
+</div>
+
+<!-- Celebration overlay -->
+<div class="cv-celebrate" id="cvCelebrate">
+  <div class="cv-celebrate-banner" id="cvCelebrateBanner">
+    <h2>All Issues Complete</h2>
+    <p id="cvCelebrateMsg">Every node on this sheet is marked done.</p>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="bonyad-notifications.js"></script>
+<script>
+'use strict';
+/* ════════════════════════════════════════════════════════════
+   BONYAD CANVAS  — dependency map
+   ════════════════════════════════════════════════════════════ */
+
+/* ── State ──────────────────────────────────────────────────── */
+const S = {
+  slug:      '',
+  nodes:     {},   // id(str) → { id, title, priority, is_done, sheet_status, x, y, el }
+  edges:     [],   // [{ id, from_issue_id, to_issue_id }]
+  sheets:    [],
+  transform: { x: 60, y: 60, scale: 1 },
+  pan:       null, // { startX, startY, ox, oy }
+  dragging:  null, // { id, startX, startY, ox, oy }
+  conn:      null, // { fromId, x1, y1 } — drawing a new edge
+  selEdge:   null, // selected edge id
+  key:       localStorage.getItem('bonyad_edit_key') || '',
+};
+const NODE_W = 260, NODE_H = 80;
+
+/* ── DOM refs ───────────────────────────────────────────────── */
+const viewport   = document.getElementById('cvViewport');
+const world      = document.getElementById('cvWorld');
+const nodesLayer = document.getElementById('cvNodesLayer');
+const edgesSvg   = document.getElementById('cvEdgesSvg');
+const tempEdge   = document.getElementById('cvTempEdge');
+const edgeDel    = document.getElementById('cvEdgeDel');
+const zoomLabel  = document.getElementById('cv-zoom-label');
+const statsEl    = document.getElementById('cv-stats');
+const sheetSel   = document.getElementById('cv-sheet-sel');
+const emptyEl    = document.getElementById('cvEmpty');
+const emptyMsg   = document.getElementById('cvEmptyMsg');
+const keyInput   = document.getElementById('cv-key');
+
+if (S.key) keyInput.value = S.key;
+
+/* ── Helpers ────────────────────────────────────────────────── */
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function applyTransform() {
+  world.style.transform = `translate(${S.transform.x}px,${S.transform.y}px) scale(${S.transform.scale})`;
+  zoomLabel.textContent = Math.round(S.transform.scale * 100) + '%';
+}
+
+function workflowState(n) {
+  if (n.is_done) return 'done';
+  if (String(n.sheet_status||'').toLowerCase() === 'in_progress') return 'in_progress';
+  return 'open';
+}
+
+function wfLabel(wf){ return wf === 'done' ? 'Done' : wf === 'in_progress' ? 'In Progress' : 'Open'; }
+
+/* ── Sheet selector ─────────────────────────────────────────── */
+sheetSel.addEventListener('change', () => { S.slug = sheetSel.value; loadCanvas(); });
+
+document.getElementById('cv-key-save').addEventListener('click', () => {
+  S.key = keyInput.value.trim();
+  localStorage.setItem('bonyad_edit_key', S.key);
+  if (S.slug) loadCanvas();
+});
+keyInput.addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('cv-key-save').click(); });
+
+/* ── Load data ──────────────────────────────────────────────── */
+async function loadCanvas() {
+  if (!S.slug) { showEmpty('Select a sheet to view its canvas'); return; }
+  showEmpty('Loading…');
+  try {
+    const r    = await fetch(`/api/bonyad/canvas?slug=${encodeURIComponent(S.slug)}`);
+    const data = await r.json();
+    if (!data.success) { showEmpty('Error: ' + (data.error||'failed')); return; }
+
+    // Populate sheets dropdown once
+    if (data.sheets && data.sheets.length) {
+      const cur = sheetSel.value;
+      sheetSel.innerHTML = data.sheets.map(s =>
+        `<option value="${esc(s.slug)}" ${s.slug===S.slug?'selected':''}>${esc(s.label||s.slug)}</option>`
+      ).join('');
+      if (!sheetSel.value) { sheetSel.value = cur; }
+    }
+
+    if (!data.issues.length) { showEmpty('No issues on this sheet yet'); return; }
+
+    emptyEl.style.display = 'none';
+
+    // Build nodes map
+    S.nodes = {};
+    data.issues.forEach(iss => { S.nodes[String(iss.id)] = { ...iss, x: iss.x < 0 ? -1 : iss.x, y: iss.y < 0 ? -1 : iss.y }; });
+    S.edges = data.edges || [];
+
+    // Auto-layout nodes that have no saved position
+    const unpositioned = Object.values(S.nodes).filter(n => n.x < 0);
+    if (unpositioned.length === Object.values(S.nodes).length) {
+      autoLayout();
+    } else if (unpositioned.length > 0) {
+      // Stack unpositioned nodes to the right of the canvas
+      let maxX = Math.max(...Object.values(S.nodes).filter(n=>n.x>=0).map(n=>n.x), 0);
+      unpositioned.forEach((n, i) => { n.x = maxX + NODE_W + 60; n.y = 60 + i * (NODE_H + 30); });
+    }
+
+    renderAll();
+    fitAll(false);
+    updateStats();
+    checkCelebration();
+  } catch(e) { showEmpty('Error: ' + e.message); }
+}
+
+function showEmpty(msg) {
+  nodesLayer.innerHTML = '';
+  // Clear all edge paths
+  Array.from(edgesSvg.querySelectorAll('.cv-edge,.cv-edge-hit')).forEach(el=>el.remove());
+  emptyMsg.textContent = msg;
+  emptyEl.style.display = 'flex';
+}
+
+/* ── Auto-layout (topological sort + layered) ────────────────── */
+function autoLayout() {
+  const ids = Object.keys(S.nodes);
+  if (!ids.length) return;
+
+  // Build adjacency: from → [to] (from depends on to = to is prerequisite)
+  const prereqs = {}; // id → set of prerequisite ids
+  ids.forEach(id => { prereqs[id] = new Set(); });
+  S.edges.forEach(e => {
+    const f = String(e.from_issue_id), t = String(e.to_issue_id);
+    if (prereqs[f]) prereqs[f].add(t);
+  });
+
+  // Assign layers: layer = max(layer of all prereqs) + 1
+  const layer = {};
+  ids.forEach(id => { layer[id] = 0; });
+  let changed = true;
+  for (let iter = 0; iter < 50 && changed; iter++) {
+    changed = false;
+    ids.forEach(id => {
+      prereqs[id].forEach(pre => {
+        const want = (layer[pre] || 0) + 1;
+        if ((layer[id]||0) < want) { layer[id] = want; changed = true; }
+      });
+    });
+  }
+
+  // Group by layer
+  const byLayer = {};
+  ids.forEach(id => {
+    const l = layer[id] || 0;
+    if (!byLayer[l]) byLayer[l] = [];
+    byLayer[l].push(id);
+  });
+
+  const XGAP = NODE_W + 80, YGAP = NODE_H + 40, YSTART = 60;
+  Object.entries(byLayer).forEach(([l, group]) => {
+    const x = 60 + Number(l) * XGAP;
+    group.forEach((id, i) => {
+      S.nodes[id].x = x;
+      S.nodes[id].y = YSTART + i * YGAP;
+    });
+  });
+}
+
+/* ── Render ──────────────────────────────────────────────────── */
+function renderAll() {
+  renderNodes();
+  renderEdges();
+}
+
+function renderNodes() {
+  nodesLayer.innerHTML = '';
+  Object.values(S.nodes).forEach(n => {
+    const el = document.createElement('div');
+    const wf = workflowState(n);
+    el.className = `cv-node wf-${wf}`;
+    el.id = `cvn-${n.id}`;
+    el.style.transform = `translate(${n.x}px,${n.y}px)`;
+    el.innerHTML = `
+      <div class="cv-node-header" data-nid="${n.id}">
+        <span class="cv-node-pri pri-${n.priority||'medium'}"></span>
+        <span class="cv-node-title">${esc(n.title)}</span>
+        <span class="cv-node-wf">${wfLabel(wf)}</span>
+      </div>
+      <div class="cv-node-body">
+        <span class="cv-node-id">#${n.id}</span>
+        <a href="sheet.html?slug=${esc(S.slug)}#issue-${n.id}" target="_blank"
+           style="float:right;font-size:10px;color:var(--accent-orange);text-decoration:none;">open ↗</a>
+      </div>
+      <div class="cv-port cv-port-in"  data-nid="${n.id}" data-port="in"></div>
+      <div class="cv-port cv-port-out" data-nid="${n.id}" data-port="out"></div>
+    `;
+    nodesLayer.appendChild(el);
+    n.el = el;
+    wireNodeEvents(el, n);
+  });
+}
+
+function wireNodeEvents(el, n) {
+  const header = el.querySelector('.cv-node-header');
+  header.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    S.dragging = { id: String(n.id), startX: e.clientX, startY: e.clientY, ox: n.x, oy: n.y };
+  });
+
+  // Output port → start drawing edge
+  const portOut = el.querySelector('.cv-port-out');
+  portOut.addEventListener('mousedown', e => {
+    if (!S.key) return;
+    e.stopPropagation(); e.preventDefault();
+    const rect = portOut.getBoundingClientRect();
+    const vRect = viewport.getBoundingClientRect();
+    const x1 = (rect.left + rect.width/2 - vRect.left - S.transform.x) / S.transform.scale;
+    const y1 = (rect.top + rect.height/2 - vRect.top  - S.transform.y) / S.transform.scale;
+    S.conn = { fromId: String(n.id), x1, y1 };
+    portOut.classList.add('active');
+    tempEdge.style.display = '';
+  });
+
+  // Input port → receive connection drop
+  const portIn = el.querySelector('.cv-port-in');
+  portIn.addEventListener('mouseup', e => {
+    if (!S.conn || S.conn.fromId === String(n.id)) return;
+    createEdge(S.conn.fromId, String(n.id));
+    cancelConn();
+  });
+}
+
+/* ── Render edges ────────────────────────────────────────────── */
+function renderEdges() {
+  // Remove existing edge elements
+  Array.from(edgesSvg.querySelectorAll('.cv-edge,.cv-edge-hit')).forEach(el => el.remove());
+
+  S.edges.forEach(e => {
+    const fromN = S.nodes[String(e.from_issue_id)];
+    const toN   = S.nodes[String(e.to_issue_id)];
+    if (!fromN || !toN) return;
+
+    const wf = workflowState(fromN);
+    const cls = wf === 'done' ? 'dep-done' : wf === 'in_progress' ? 'dep-progress' : 'dep-open';
+    const marker = wf === 'done' ? 'arr-done' : wf === 'in_progress' ? 'arr-progress' : 'arr-open';
+
+    const { x1, y1, x2, y2, d } = bezierPath(fromN, toN);
+    const mid = bezierMidpoint(x1, y1, x2, y2);
+
+    // Invisible hit area
+    const hit = document.createElementNS('http://www.w3.org/2000/svg','path');
+    hit.setAttribute('d', d);
+    hit.setAttribute('class','cv-edge-hit');
+    hit.dataset.eid = e.id;
+    edgesSvg.appendChild(hit);
+
+    // Visible path
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', d);
+    path.setAttribute('class', `cv-edge ${cls}${S.selEdge===e.id?' selected':''}`);
+    path.setAttribute('marker-end', `url(#${S.selEdge===e.id?'arr-selected':marker})`);
+    path.dataset.eid = e.id;
+    edgesSvg.appendChild(path);
+
+    // Context events on hit area
+    hit.addEventListener('contextmenu', ev => { ev.preventDefault(); selectEdge(e.id, mid); });
+    hit.addEventListener('click', ev => { ev.stopPropagation(); selectEdge(e.id, mid); });
+    path.addEventListener('contextmenu', ev => { ev.preventDefault(); selectEdge(e.id, mid); });
+    path.addEventListener('click', ev => { ev.stopPropagation(); selectEdge(e.id, mid); });
+  });
+}
+
+function bezierPath(fromN, toN) {
+  const x1 = fromN.x + NODE_W + 1;
+  const y1 = fromN.y + NODE_H / 2;
+  const x2 = toN.x - 1;
+  const y2 = toN.y + NODE_H / 2;
+  const cx = Math.abs(x2 - x1) * 0.55 + 80;
+  const d = `M${x1},${y1} C${x1+cx},${y1} ${x2-cx},${y2} ${x2},${y2}`;
+  return { x1, y1, x2, y2, d };
+}
+
+function bezierMidpoint(x1, y1, x2, y2) {
+  return { x: (x1 + x2) / 2, y: (y1 + y2) / 2 };
+}
+
+/* ── Edge selection & deletion ───────────────────────────────── */
+function selectEdge(eid, mid) {
+  S.selEdge = eid;
+  renderEdges();
+  // Position delete button in screen coords
+  const vRect = viewport.getBoundingClientRect();
+  const sx = mid.x * S.transform.scale + S.transform.x + vRect.left;
+  const sy = mid.y * S.transform.scale + S.transform.y + vRect.top;
+  edgeDel.style.left = sx + 'px';
+  edgeDel.style.top  = sy + 'px';
+  edgeDel.classList.add('visible');
+}
+
+function deselectEdge() {
+  S.selEdge = null;
+  edgeDel.classList.remove('visible');
+  renderEdges();
+}
+
+edgeDel.addEventListener('click', async () => {
+  if (!S.selEdge || !S.key) return;
+  try {
+    await fetch(`/api/bonyad/canvas/edges/${S.selEdge}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type':'application/json', 'x-bonyad-edit-key': S.key },
+      body: JSON.stringify({ editKey: S.key })
+    });
+    S.edges = S.edges.filter(e => e.id !== S.selEdge);
+    S.selEdge = null;
+    edgeDel.classList.remove('visible');
+    renderEdges();
+    updateStats();
+  } catch(err) {}
+});
+
+/* ── Create edge ─────────────────────────────────────────────── */
+async function createEdge(fromId, toId) {
+  if (!S.key) return;
+  try {
+    const r    = await fetch('/api/bonyad/canvas/edges', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'x-bonyad-edit-key': S.key },
+      body: JSON.stringify({ from_issue_id: fromId, to_issue_id: toId, sheet_slug: S.slug, editKey: S.key })
+    });
+    const data = await r.json();
+    if (data.success && data.id) {
+      S.edges.push({ id: data.id, from_issue_id: Number(fromId), to_issue_id: Number(toId) });
+      renderEdges();
+      updateStats();
+    }
+  } catch(e) {}
+}
+
+function cancelConn() {
+  S.conn = null;
+  tempEdge.style.display = 'none';
+  tempEdge.setAttribute('d','');
+  document.querySelectorAll('.cv-port-out.active').forEach(p => p.classList.remove('active'));
+}
+
+/* ── Mouse events: pan + drag + edge drawing ─────────────────── */
+viewport.addEventListener('mousedown', e => {
+  if (e.button === 1 || (e.button === 0 && e.target === viewport) || (e.button === 0 && e.target === world)) {
+    S.pan = { startX: e.clientX, startY: e.clientY, ox: S.transform.x, oy: S.transform.y };
+    viewport.classList.add('panning');
+    deselectEdge();
+  }
+});
+
+window.addEventListener('mousemove', e => {
+  // Panning
+  if (S.pan) {
+    S.transform.x = S.pan.ox + (e.clientX - S.pan.startX);
+    S.transform.y = S.pan.oy + (e.clientY - S.pan.startY);
+    applyTransform();
+    return;
+  }
+
+  // Node dragging
+  if (S.dragging) {
+    const dx = (e.clientX - S.dragging.startX) / S.transform.scale;
+    const dy = (e.clientY - S.dragging.startY) / S.transform.scale;
+    const n = S.nodes[S.dragging.id];
+    n.x = S.dragging.ox + dx;
+    n.y = S.dragging.oy + dy;
+    n.el.style.transform = `translate(${n.x}px,${n.y}px)`;
+    renderEdges();
+    if (S.selEdge) deselectEdge();
+    return;
+  }
+
+  // Drawing temp edge
+  if (S.conn) {
+    const vRect = viewport.getBoundingClientRect();
+    const mx = (e.clientX - vRect.left - S.transform.x) / S.transform.scale;
+    const my = (e.clientY - vRect.top  - S.transform.y) / S.transform.scale;
+    const cx = Math.abs(mx - S.conn.x1) * 0.55 + 60;
+    const d = `M${S.conn.x1},${S.conn.y1} C${S.conn.x1+cx},${S.conn.y1} ${mx-cx},${my} ${mx},${my}`;
+    tempEdge.setAttribute('d', d);
+  }
+});
+
+window.addEventListener('mouseup', e => {
+  if (S.dragging) {
+    savePosition(S.dragging.id);
+    S.dragging = null;
+  }
+  if (S.pan) { S.pan = null; viewport.classList.remove('panning'); }
+  if (S.conn) cancelConn();
+});
+
+/* ── Zoom ────────────────────────────────────────────────────── */
+viewport.addEventListener('wheel', e => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.1 : 0.91;
+  const rect   = viewport.getBoundingClientRect();
+  const mx     = e.clientX - rect.left;
+  const my     = e.clientY - rect.top;
+  const newScale = Math.min(3, Math.max(0.2, S.transform.scale * factor));
+  S.transform.x  = mx - (mx - S.transform.x) * (newScale / S.transform.scale);
+  S.transform.y  = my - (my - S.transform.y) * (newScale / S.transform.scale);
+  S.transform.scale = newScale;
+  applyTransform();
+}, { passive: false });
+
+document.getElementById('cv-zoom-in').addEventListener('click',  () => zoomBy(1.2));
+document.getElementById('cv-zoom-out').addEventListener('click', () => zoomBy(0.83));
+
+function zoomBy(f) {
+  const rect = viewport.getBoundingClientRect();
+  const cx = rect.width / 2, cy = rect.height / 2;
+  const ns = Math.min(3, Math.max(0.2, S.transform.scale * f));
+  S.transform.x = cx - (cx - S.transform.x) * (ns / S.transform.scale);
+  S.transform.y = cy - (cy - S.transform.y) * (ns / S.transform.scale);
+  S.transform.scale = ns;
+  applyTransform();
+}
+
+/* ── Fit all ─────────────────────────────────────────────────── */
+document.getElementById('cv-fit').addEventListener('click', () => fitAll(true));
+
+function fitAll(animate) {
+  const ns = Object.values(S.nodes);
+  if (!ns.length) return;
+  const minX = Math.min(...ns.map(n=>n.x));
+  const minY = Math.min(...ns.map(n=>n.y));
+  const maxX = Math.max(...ns.map(n=>n.x+NODE_W));
+  const maxY = Math.max(...ns.map(n=>n.y+NODE_H));
+  const rect  = viewport.getBoundingClientRect();
+  const pad   = 60;
+  const sx = (rect.width  - pad*2) / (maxX - minX || 1);
+  const sy = (rect.height - pad*2) / (maxY - minY || 1);
+  S.transform.scale = Math.min(sx, sy, 1.2);
+  S.transform.x = pad - minX * S.transform.scale;
+  S.transform.y = pad - minY * S.transform.scale;
+  applyTransform();
+}
+
+/* ── Auto-layout button ──────────────────────────────────────── */
+document.getElementById('cv-auto-layout').addEventListener('click', () => {
+  autoLayout();
+  renderAll();
+  fitAll(true);
+  // Save all positions
+  Object.values(S.nodes).forEach(n => savePosition(String(n.id)));
+});
+
+/* ── Save position (debounced) ───────────────────────────────── */
+const _posTimers = {};
+function savePosition(id) {
+  if (!S.key) return;
+  clearTimeout(_posTimers[id]);
+  _posTimers[id] = setTimeout(async () => {
+    const n = S.nodes[id];
+    if (!n) return;
+    await fetch('/api/bonyad/canvas/position', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'x-bonyad-edit-key': S.key },
+      body: JSON.stringify({ issue_id: n.id, sheet_slug: S.slug, x: n.x, y: n.y, editKey: S.key })
+    }).catch(()=>{});
+  }, 600);
+}
+
+/* ── Stats ───────────────────────────────────────────────────── */
+function updateStats() {
+  const ns    = Object.values(S.nodes);
+  const total = ns.length;
+  const done  = ns.filter(n => n.is_done).length;
+  statsEl.textContent = `${total} nodes · ${S.edges.length} edges · ${done}/${total} done`;
+}
+
+/* ── Celebration ─────────────────────────────────────────────── */
+function checkCelebration() {
+  const ns = Object.values(S.nodes);
+  if (!ns.length) return;
+  if (ns.every(n => n.is_done)) {
+    celebrate(ns.length);
+  }
+}
+
+function celebrate(count) {
+  const overlay = document.getElementById('cvCelebrate');
+  document.getElementById('cvCelebrateMsg').textContent = `All ${count} issues on this sheet are marked done.`;
+  overlay.classList.add('show');
+  spawnParticles(overlay);
+  setTimeout(() => overlay.classList.remove('show'), 5000);
+}
+
+function spawnParticles(parent) {
+  const colors = ['#ff6b1a','#2ee6b8','#5eb3ff','#a78bfa','#fbbf24'];
+  for (let i = 0; i < 28; i++) {
+    const p = document.createElement('div');
+    p.className = 'cv-particle';
+    p.style.cssText = `
+      background:${colors[i%colors.length]};
+      left:${30+Math.random()*40}%;
+      --cx:${(Math.random()-0.5)*120}px;
+      animation-delay:${Math.random()*0.4}s;
+      animation-duration:${0.9+Math.random()*0.6}s;
+    `;
+    parent.appendChild(p);
+    setTimeout(() => p.remove(), 2000);
+  }
+}
+
+/* ── Keyboard shortcuts ──────────────────────────────────────── */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') deselectEdge();
+  if ((e.key === 'Delete' || e.key === 'Backspace') && S.selEdge && e.target.tagName !== 'INPUT') {
+    edgeDel.click();
+  }
+  if (e.key === 'f' && e.target.tagName !== 'INPUT') fitAll(true);
+});
+
+/* ── Click outside deselects ─────────────────────────────────── */
+viewport.addEventListener('click', e => {
+  if (e.target === viewport || e.target === world) deselectEdge();
+});
+
+/* ── Boot ────────────────────────────────────────────────────── */
+(async function boot() {
+  // Load sheet list
+  try {
+    const r    = await fetch('/api/bonyad/sheets');
+    const data = await r.json();
+    if (data.success && data.sheets.length) {
+      sheetSel.innerHTML = '<option value="">— select sheet —</option>' +
+        data.sheets.map(s => `<option value="${esc(s.slug)}">${esc(s.label||s.slug)}</option>`).join('');
+      // Auto-select from URL
+      const urlSlug = new URLSearchParams(location.search).get('slug');
+      if (urlSlug) { sheetSel.value = urlSlug; S.slug = urlSlug; loadCanvas(); }
+      else showEmpty('Select a sheet above to open its canvas');
+    } else {
+      showEmpty('No sheets found');
+    }
+  } catch(e) { showEmpty('Could not load sheets: ' + e.message); }
+  applyTransform();
+})();
+</script>
+</body>
+</html>

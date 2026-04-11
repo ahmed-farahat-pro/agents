@@ -3312,6 +3312,7 @@ if (useDatabase) {
 
     const bonyadApi = require('./bonyad-api');
     bonyadApi.registerBonyadRoutes(app);
+    bonyadApi.registerCanvasRoutes(app);
 
     const bonyadExcel = require('./bonyad-excel-import');
     bonyadExcel.registerBonyadExcelRoutes(app);

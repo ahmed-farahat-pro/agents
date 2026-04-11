@@ -167,7 +167,28 @@ async function ensureBonyadTables() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
-  logger.info('[Bonyad] Tables ensured (including users, activity_log, notifications, builds, designs)');
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS bonyad_canvas_positions (
+      id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      issue_id   BIGINT UNSIGNED NOT NULL,
+      sheet_slug VARCHAR(64) NOT NULL,
+      x          FLOAT NOT NULL DEFAULT 0,
+      y          FLOAT NOT NULL DEFAULT 0,
+      UNIQUE KEY uq_cp_issue (issue_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS bonyad_dependencies (
+      id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      from_issue_id   BIGINT UNSIGNED NOT NULL,
+      to_issue_id     BIGINT UNSIGNED NOT NULL,
+      sheet_slug      VARCHAR(64) NOT NULL,
+      created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_dep (from_issue_id, to_issue_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  logger.info('[Bonyad] Tables ensured (including users, activity_log, notifications, builds, designs, canvas)');
 }
 
 /** Add Excel / bug-tracker columns on existing deployments (CREATE IF NOT EXISTS skips new columns). */
@@ -885,8 +906,80 @@ function registerBonyadRoutes(app) {
   });
 }
 
+function registerCanvasRoutes(app) {
+  // GET /api/bonyad/canvas?slug= — issues + positions + edges
+  app.get('/api/bonyad/canvas', async (req, res) => {
+    const { slug } = req.query;
+    if (!slug) return res.json({ success: false, error: 'slug required' });
+    try {
+      const [issues] = await db.query(
+        `SELECT i.id, i.title, i.priority, i.is_done, i.sheet_status,
+                COALESCE(cp.x, -1) AS x, COALESCE(cp.y, -1) AS y
+         FROM bonyad_issues i
+         LEFT JOIN bonyad_canvas_positions cp ON cp.issue_id = i.id
+         WHERE i.sheet_slug = ?
+         ORDER BY i.sort_order, i.id`,
+        [slug]
+      );
+      const [edges] = await db.query(
+        `SELECT id, from_issue_id, to_issue_id FROM bonyad_dependencies WHERE sheet_slug = ?`,
+        [slug]
+      );
+      const [sheets] = await db.query(
+        `SELECT slug, label, platform_line FROM bonyad_sheets ORDER BY sort_order, id`
+      );
+      res.json({ success: true, issues, edges, sheets });
+    } catch (e) {
+      res.json({ success: false, error: e.message });
+    }
+  });
+
+  // POST /api/bonyad/canvas/position — upsert node position
+  app.post('/api/bonyad/canvas/position', requireUser, async (req, res) => {
+    const { issue_id, sheet_slug, x, y } = req.body;
+    try {
+      await db.query(
+        `INSERT INTO bonyad_canvas_positions (issue_id, sheet_slug, x, y)
+         VALUES (?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE x=VALUES(x), y=VALUES(y)`,
+        [issue_id, sheet_slug, x, y]
+      );
+      res.json({ success: true });
+    } catch (e) {
+      res.json({ success: false, error: e.message });
+    }
+  });
+
+  // POST /api/bonyad/canvas/edges — create dependency edge
+  app.post('/api/bonyad/canvas/edges', requireUser, async (req, res) => {
+    const { from_issue_id, to_issue_id, sheet_slug } = req.body;
+    if (from_issue_id === to_issue_id) return res.json({ success: false, error: 'Cannot depend on itself' });
+    try {
+      const [result] = await db.query(
+        `INSERT IGNORE INTO bonyad_dependencies (from_issue_id, to_issue_id, sheet_slug)
+         VALUES (?, ?, ?)`,
+        [from_issue_id, to_issue_id, sheet_slug]
+      );
+      res.json({ success: true, id: result.insertId });
+    } catch (e) {
+      res.json({ success: false, error: e.message });
+    }
+  });
+
+  // DELETE /api/bonyad/canvas/edges/:id — remove edge
+  app.delete('/api/bonyad/canvas/edges/:id', requireUser, async (req, res) => {
+    try {
+      await db.query(`DELETE FROM bonyad_dependencies WHERE id = ?`, [req.params.id]);
+      res.json({ success: true });
+    } catch (e) {
+      res.json({ success: false, error: e.message });
+    }
+  });
+}
+
 module.exports = {
   registerBonyadRoutes,
+  registerCanvasRoutes,
   ensureBonyadTables,
   initBonyadData,
 };
