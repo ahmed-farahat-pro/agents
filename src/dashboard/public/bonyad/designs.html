@@ -227,8 +227,9 @@
         <div class="figma-spinner"></div>
         <span>Loading design…</span>
       </div>
-      <iframe id="figma-iframe" title="Figma Design" allowfullscreen
-        sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+      <iframe id="figma-iframe" title="Figma Design"
+        allow="fullscreen; clipboard-write; clipboard-read"
+        allowfullscreen
         onload="document.getElementById('figma-loading').style.display='none'"></iframe>
     </div>
   </div>
@@ -363,11 +364,34 @@
 
     function buildFigmaEmbed(url) {
       if (!url) return '';
-      // If it's already an embed URL, return as-is
-      if (url.includes('figma.com/embed')) return url;
-      // Convert design/proto URL to embed
-      const encoded = encodeURIComponent(url);
-      return `https://www.figma.com/embed?embed_host=bonyad&url=${encoded}`;
+
+      // Already an embed.figma.com URL — return as-is
+      if (url.includes('embed.figma.com')) return url;
+
+      // Old-style embed URL — migrate to new domain
+      if (url.includes('figma.com/embed')) {
+        return url.replace('www.figma.com/embed', 'embed.figma.com/design')
+                  .replace('figma.com/embed', 'embed.figma.com/design');
+      }
+
+      // Extract path from figma.com URL and build embed.figma.com URL
+      // Supports: /design/, /file/, /proto/
+      try {
+        const u = new URL(url);
+        if (u.hostname === 'www.figma.com' || u.hostname === 'figma.com') {
+          // /design/ID/name  →  embed.figma.com/design/ID/name
+          // /file/ID/name    →  embed.figma.com/design/ID/name
+          // /proto/ID/name   →  embed.figma.com/proto/ID/name
+          const pathType = u.pathname.startsWith('/proto/') ? 'proto' : 'design';
+          const newPath   = u.pathname.replace(/^\/(design|file|proto)\//, `/${pathType}/`);
+          const nodeId    = u.searchParams.get('node-id');
+          const nodeParam = nodeId ? `&node-id=${encodeURIComponent(nodeId)}` : '';
+          return `https://embed.figma.com${newPath}?embed-host=bonyad&footer=false${nodeParam}`;
+        }
+      } catch (_) {}
+
+      // Fallback — wrap the full URL the old way
+      return `https://www.figma.com/embed?embed_host=bonyad&url=${encodeURIComponent(url)}`;
     }
 
     document.getElementById('figma-close').addEventListener('click', closeModal);
