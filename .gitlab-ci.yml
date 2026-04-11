@@ -218,6 +218,12 @@ deploy-to-ec2:
     - |
       ENV_SYNC="cd ${DEPLOY_DIR} && touch .env"
       ENV_SYNC="${ENV_SYNC} && sed -i '/^BONYAD_EDIT_SECRET=/d' .env && echo \"BONYAD_EDIT_SECRET=${BONYAD_EDIT_SECRET}\" >> .env"
+      if [ -n "${BONYAD_ADMIN_KEY:-}" ]; then
+        ENV_SYNC="${ENV_SYNC} && sed -i '/^BONYAD_ADMIN_KEY=/d' .env && echo \"BONYAD_ADMIN_KEY=${BONYAD_ADMIN_KEY}\" >> .env"
+        echo "BONYAD_ADMIN_KEY will be written to server .env."
+      else
+        echo "BONYAD_ADMIN_KEY not set in CI — skip."
+      fi
       if [ -n "${OPENAI_API_KEY:-}" ]; then
         ENV_SYNC="${ENV_SYNC} && sed -i '/^OPENAI_API_KEY=/d' .env && echo \"OPENAI_API_KEY=${OPENAI_API_KEY}\" >> .env"
         echo "OPENAI_API_KEY will be written to server .env (Bonyad smart import + voice)."
