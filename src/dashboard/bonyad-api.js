@@ -912,7 +912,7 @@ function registerCanvasRoutes(app) {
     const { slug } = req.query;
     if (!slug) return res.json({ success: false, error: 'slug required' });
     try {
-      const [issues] = await db.query(
+      const issues = await db.query(
         `SELECT i.id, i.title, i.priority, i.is_done, i.sheet_status,
                 COALESCE(cp.x, -1) AS x, COALESCE(cp.y, -1) AS y
          FROM bonyad_issues i
@@ -921,11 +921,11 @@ function registerCanvasRoutes(app) {
          ORDER BY i.sort_order, i.id`,
         [slug]
       );
-      const [edges] = await db.query(
+      const edges = await db.query(
         `SELECT id, from_issue_id, to_issue_id FROM bonyad_dependencies WHERE sheet_slug = ?`,
         [slug]
       );
-      const [sheets] = await db.query(
+      const sheets = await db.query(
         `SELECT slug, label, platform_line FROM bonyad_sheets ORDER BY sort_order, id`
       );
       res.json({ success: true, issues, edges, sheets });
@@ -955,7 +955,7 @@ function registerCanvasRoutes(app) {
     const { from_issue_id, to_issue_id, sheet_slug } = req.body;
     if (from_issue_id === to_issue_id) return res.json({ success: false, error: 'Cannot depend on itself' });
     try {
-      const [result] = await db.query(
+      const result = await db.query(
         `INSERT IGNORE INTO bonyad_dependencies (from_issue_id, to_issue_id, sheet_slug)
          VALUES (?, ?, ?)`,
         [from_issue_id, to_issue_id, sheet_slug]
