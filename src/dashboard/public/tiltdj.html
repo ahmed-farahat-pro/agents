@@ -383,6 +383,99 @@
         /* REVEAL */
         .reveal { opacity:0; transform:translateY(22px); transition:opacity .6s ease, transform .6s ease; }
         .reveal.visible { opacity:1; transform:none; }
+
+        /* SPEC PILLS */
+        .spec-pills { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+        .spec-pill {
+            display:inline-flex; align-items:center;
+            font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.04em;
+            padding:3px 9px; border-radius:999px;
+            background:rgba(232,121,249,.08); border:1px solid rgba(232,121,249,.2); color:var(--dj);
+        }
+        .spec-pill.grn { background:rgba(25,213,158,.08); border-color:rgba(25,213,158,.2); color:var(--green); }
+        .spec-pill.cyn { background:rgba(56,189,248,.08); border-color:rgba(56,189,248,.2); color:var(--cyan); }
+        .spec-pill.org { background:rgba(255,87,10,.08);  border-color:rgba(255,87,10,.2);  color:var(--orange); }
+        .spec-pill.yel { background:rgba(251,191,36,.08); border-color:rgba(251,191,36,.2); color:var(--yellow); }
+        .spec-pill.red { background:rgba(248,113,113,.08);border-color:rgba(248,113,113,.2);color:var(--red); }
+        .spec-pill.pur { background:rgba(167,139,250,.08);border-color:rgba(167,139,250,.2);color:var(--dj2); }
+        .spec-pill.tel { background:rgba(103,232,249,.08);border-color:rgba(103,232,249,.2);color:var(--teal); }
+
+        /* STAGGER */
+        .feat { transition-delay: var(--delay, 0ms); }
+
+        /* MIXER DEMO */
+        .mixer-demo {
+            background:var(--bg2); border:1px solid var(--bdr); border-radius:18px;
+            padding:28px; margin-bottom:60px; position:relative; overflow:hidden;
+        }
+        .mixer-demo::before {
+            content:''; position:absolute; top:0; left:0; right:0; height:2px;
+            background:linear-gradient(90deg, var(--green), var(--dj), var(--cyan));
+        }
+        .mixer-header {
+            display:flex; align-items:center; justify-content:space-between;
+            margin-bottom:20px; flex-wrap:wrap; gap:12px;
+        }
+        .mixer-title { font-size:.82rem; font-family:var(--mono); font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--green); }
+        .mixer-meta { font-size:11px; font-family:var(--mono); color:var(--txt3); }
+        .mixer-meta span { color:var(--dj); font-weight:700; }
+
+        .track-list { display:flex; flex-direction:column; gap:10px; }
+        .track {
+            display:grid; align-items:center;
+            grid-template-columns: 110px 1fr 60px 80px 32px;
+            gap:12px;
+            background:var(--bg3); border:1px solid var(--bdr); border-radius:10px;
+            padding:10px 14px;
+            transition:border-color .25s;
+        }
+        .track:hover { border-color:rgba(25,213,158,.3); }
+        .track.playing { border-color:rgba(25,213,158,.4); }
+        @media(max-width:600px){
+            .track { grid-template-columns:1fr 80px 32px; }
+            .track-name { display:none; }
+            .track-vol { display:none; }
+        }
+        .track-name { display:flex; flex-direction:column; gap:2px; }
+        .track-nm { font-family:var(--mono); font-size:11px; font-weight:700; color:var(--txt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .track-fmt { font-size:9px; font-family:var(--mono); color:var(--txt3); }
+        .track-wave { height:32px; display:flex; align-items:center; gap:1px; overflow:hidden; }
+        .tw-bar { width:3px; border-radius:2px; background:var(--green); opacity:.5; flex-shrink:0; transition:height .3s; }
+        .track.playing .tw-bar { opacity:.85; animation:waveAnim var(--dur,.4s) ease-in-out infinite alternate; }
+        @keyframes waveAnim { from{transform:scaleY(.3)} to{transform:scaleY(1)} }
+        .track-vol { display:flex; align-items:center; gap:8px; }
+        .vol-lbl { font-size:9px; font-family:var(--mono); color:var(--txt3); white-space:nowrap; }
+        .vol-slider { -webkit-appearance:none; appearance:none; height:3px; border-radius:2px; background:var(--bdr2); flex:1; outline:none; cursor:pointer; }
+        .vol-slider::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:var(--green); cursor:pointer; border:2px solid var(--bg3); }
+        .track-status {
+            display:flex; align-items:center; justify-content:center;
+            font-family:var(--mono); font-size:9px; font-weight:700; letter-spacing:.06em;
+            padding:3px 7px; border-radius:999px; white-space:nowrap;
+        }
+        .track-status.live { background:rgba(25,213,158,.12); border:1px solid rgba(25,213,158,.3); color:var(--green); }
+        .track-status.live::before { content:''; display:inline-block; width:5px; height:5px; border-radius:50%; background:var(--green); margin-right:4px; animation:blink 1s ease-in-out infinite; }
+        .track-status.idle { background:rgba(255,255,255,.04); border:1px solid var(--bdr); color:var(--txt3); }
+        .track-play {
+            width:32px; height:32px; border-radius:50%; border:1px solid var(--bdr2);
+            background:rgba(25,213,158,.08); color:var(--green);
+            display:flex; align-items:center; justify-content:center;
+            cursor:pointer; transition:background .2s, border-color .2s; flex-shrink:0;
+        }
+        .track-play:hover { background:rgba(25,213,158,.2); border-color:var(--green); }
+        .track-play svg { width:10px; height:10px; }
+
+        /* FX strip in mixer */
+        .fx-demo-strip {
+            display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; align-items:flex-end;
+            padding-top:18px; border-top:1px solid var(--bdr);
+        }
+        .fxd {
+            display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; min-width:60px;
+        }
+        .fxd-label { font-family:var(--mono); font-size:9px; color:var(--txt3); letter-spacing:.06em; text-transform:uppercase; }
+        .fxd-bar { width:100%; height:4px; border-radius:2px; background:var(--bdr2); position:relative; overflow:hidden; }
+        .fxd-fill { height:100%; border-radius:2px; transition:width .8s cubic-bezier(.4,0,.2,1); }
+        .fxd-val { font-family:var(--mono); font-size:10px; font-weight:700; }
     </style>
 </head>
 <body>
@@ -604,88 +697,247 @@
         </div>
     </section>
 
+    <!-- ANIMATED MIXER DEMO -->
+    <section class="mixer-demo reveal" style="margin-bottom:60px;">
+        <div class="mixer-header">
+            <span class="mixer-title">Multi-Track Mixer — Live</span>
+            <span class="mixer-meta">Master vol <span id="masterVal">78%</span> &nbsp;&middot;&nbsp; <span id="trackCount">3</span> tracks loaded &nbsp;&middot;&nbsp; <span id="bpmDisp">128</span> BPM</span>
+        </div>
+
+        <div class="track-list" id="trackList">
+            <div class="track playing" id="tr0">
+                <div class="track-name">
+                    <span class="track-nm">lofi_beat_01.mp3</span>
+                    <span class="track-fmt">MP3 &middot; 128kbps &middot; 3:42</span>
+                </div>
+                <div class="track-wave" id="tw0"></div>
+                <div class="track-vol">
+                    <span class="vol-lbl">VOL</span>
+                    <input type="range" class="vol-slider" min="0" max="100" value="82">
+                </div>
+                <div class="track-status live">LIVE</div>
+                <button class="track-play" aria-label="Stop track">
+                    <svg viewBox="0 0 10 10" fill="currentColor"><rect x="1" y="1" width="3" height="8" rx="1"/><rect x="6" y="1" width="3" height="8" rx="1"/></svg>
+                </button>
+            </div>
+            <div class="track playing" id="tr1">
+                <div class="track-name">
+                    <span class="track-nm">youtube_download.mp3</span>
+                    <span class="track-fmt">MP3 &middot; from YouTube &middot; 4:15</span>
+                </div>
+                <div class="track-wave" id="tw1"></div>
+                <div class="track-vol">
+                    <span class="vol-lbl">VOL</span>
+                    <input type="range" class="vol-slider" min="0" max="100" value="65">
+                </div>
+                <div class="track-status live">LIVE</div>
+                <button class="track-play" aria-label="Stop track">
+                    <svg viewBox="0 0 10 10" fill="currentColor"><rect x="1" y="1" width="3" height="8" rx="1"/><rect x="6" y="1" width="3" height="8" rx="1"/></svg>
+                </button>
+            </div>
+            <div class="track" id="tr2">
+                <div class="track-name">
+                    <span class="track-nm">ambient_pad.wav</span>
+                    <span class="track-fmt">WAV &middot; 44.1kHz &middot; 2:58</span>
+                </div>
+                <div class="track-wave" id="tw2"></div>
+                <div class="track-vol">
+                    <span class="vol-lbl">VOL</span>
+                    <input type="range" class="vol-slider" min="0" max="100" value="50">
+                </div>
+                <div class="track-status idle">READY</div>
+                <button class="track-play" aria-label="Play track">
+                    <svg viewBox="0 0 10 10" fill="currentColor"><polygon points="2,1 9,5 2,9"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- FX strip -->
+        <div class="fx-demo-strip">
+            <div class="fxd">
+                <span class="fxd-label">Reverb</span>
+                <div class="fxd-bar"><div class="fxd-fill" id="fx0" style="width:42%;background:var(--cyan)"></div></div>
+                <span class="fxd-val" id="fxv0" style="color:var(--cyan)">42%</span>
+            </div>
+            <div class="fxd">
+                <span class="fxd-label">Delay</span>
+                <div class="fxd-bar"><div class="fxd-fill" id="fx1" style="width:28%;background:var(--green)"></div></div>
+                <span class="fxd-val" id="fxv1" style="color:var(--green)">28%</span>
+            </div>
+            <div class="fxd">
+                <span class="fxd-label">Filter</span>
+                <div class="fxd-bar"><div class="fxd-fill" id="fx2" style="width:65%;background:var(--dj2)"></div></div>
+                <span class="fxd-val" id="fxv2" style="color:var(--dj2)">65%</span>
+            </div>
+            <div class="fxd">
+                <span class="fxd-label">Distortion</span>
+                <div class="fxd-bar"><div class="fxd-fill" id="fx3" style="width:12%;background:var(--red)"></div></div>
+                <span class="fxd-val" id="fxv3" style="color:var(--red)">12%</span>
+            </div>
+            <div class="fxd">
+                <span class="fxd-label">Pitch</span>
+                <div class="fxd-bar"><div class="fxd-fill" id="fx4" style="width:50%;background:var(--yellow)"></div></div>
+                <span class="fxd-val" id="fxv4" style="color:var(--yellow)">0 st</span>
+            </div>
+            <div class="fxd">
+                <span class="fxd-label">Speed</span>
+                <div class="fxd-bar"><div class="fxd-fill" id="fx5" style="width:33%;background:var(--teal)"></div></div>
+                <span class="fxd-val" id="fxv5" style="color:var(--teal)">1.0×</span>
+            </div>
+        </div>
+    </section>
+
     <!-- CURRENT FEATURES -->
-    <section class="reveal" style="margin-bottom:60px;">
+    <section style="margin-bottom:60px;">
         <span class="sec-lbl">What's inside</span>
         <h2 class="sec-title">
             Current features
             <span class="status-live">Available now</span>
         </h2>
-        <p class="sec-sub">Everything below is in the downloaded build, ready to use on launch.</p>
+        <p class="sec-sub">Everything below ships in the downloaded build — ready on first launch.</p>
 
         <div class="feat-grid">
-            <div class="feat">
+            <div class="feat reveal" style="--delay:0ms">
                 <div class="feat-tok dj">PAD</div>
                 <h3>8 Performance Pads</h3>
-                <p>Trigger Kick, Snare, Hi-Hat, Clap, Bass, Riser, Chop and Horn with keys <strong>1–8</strong> or <strong>Q W E R T Y U I</strong>. Toggle keyboard mode off when you need to type.</p>
+                <p>Eight sounds ready to trigger live — Kick, Snare, Hi-Hat, Clap, Bass, Riser, Chop and Horn. Use the number row or the top keyboard row, no mouse needed. Toggle keyboard mode off to type normally.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill">Keys 1–8</span>
+                    <span class="spec-pill">Q W E R T Y U I</span>
+                    <span class="spec-pill pur">8 sounds</span>
+                    <span class="spec-pill grn">Instant trigger</span>
+                </div>
             </div>
-            <div class="feat">
+            <div class="feat reveal" style="--delay:60ms">
                 <div class="feat-tok pur">FX</div>
                 <h3>6-Effect FX Rack</h3>
-                <p>Reverb, Delay, Filter, Distortion, Pitch (&plusmn;12 st) and Speed (0.5&times;–2&times;) — every knob has a live slider and real-time visual feedback.</p>
+                <p>A full effects chain applied in real-time to any audio — pads, imports, or the sequencer. Every knob has a precision slider beneath it with a live value readout. Drag or click to adjust while the music plays.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill cyn">Reverb 0–100%</span>
+                    <span class="spec-pill grn">Delay 0–100%</span>
+                    <span class="spec-pill pur">Filter 0–100%</span>
+                    <span class="spec-pill red">Distortion 0–100%</span>
+                    <span class="spec-pill yel">Pitch ±12 st</span>
+                    <span class="spec-pill tel">Speed 0.5×–2×</span>
+                </div>
             </div>
-            <div class="feat">
+            <div class="feat reveal" style="--delay:120ms">
                 <div class="feat-tok red">YT</div>
                 <h3>YouTube Downloader</h3>
-                <p>Paste any YouTube URL, click Download. TiltDJ fetches and saves the audio as MP3 directly to <code style="font-family:var(--mono);font-size:.8em;color:var(--dj2)">~/Documents/TiltDJ Downloads</code> and adds it to your mixer automatically.</p>
+                <p>Paste any YouTube URL, hit Download. TiltDJ fetches the audio as MP3 using yt-dlp (auto-installed on first use), runs waveform analysis, and drops the track straight into your mixer — no browser, no manual steps.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill red">Paste URL → MP3</span>
+                    <span class="spec-pill grn">Auto waveform scan</span>
+                    <span class="spec-pill">Saves to ~/Documents/TiltDJ Downloads</span>
+                </div>
             </div>
-            <div class="feat">
+            <div class="feat reveal" style="--delay:180ms">
                 <div class="feat-tok grn">MIX</div>
                 <h3>Multi-Track Mixer</h3>
-                <p>Import MP3, WAV, AIFF or M4A files. Play multiple tracks simultaneously, each with its own volume fader and waveform analysis indicator.</p>
+                <p>Load as many audio files as you want and play them all at the same time. Each track gets its own volume fader, a live waveform strip, a green checkmark once analysis is done, and a play/stop button — full desk-side mixing without a DAW.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill">MP3</span>
+                    <span class="spec-pill">WAV</span>
+                    <span class="spec-pill">AIFF</span>
+                    <span class="spec-pill">M4A</span>
+                    <span class="spec-pill grn">Simultaneous playback</span>
+                    <span class="spec-pill grn">Per-track faders</span>
+                </div>
             </div>
-            <div class="feat">
+            <div class="feat reveal" style="--delay:240ms">
                 <div class="feat-tok cyn">WAV</div>
                 <h3>Waveform Visualizer</h3>
-                <p>Real-time waveform display with a live playhead. Tap to drop hot cue markers and jump to any position in one click.</p>
+                <p>See your import as a waveform with a live moving playhead. Tap anywhere on the waveform to set a hot cue marker in that colour and jump back to it instantly — great for verse/chorus navigation without scrubbing.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill cyn">Live playhead</span>
+                    <span class="spec-pill">Hot cue markers</span>
+                    <span class="spec-pill pur">Instant jump</span>
+                </div>
             </div>
-            <div class="feat">
+            <div class="feat reveal" style="--delay:300ms">
                 <div class="feat-tok dj">SEQ</div>
                 <h3>16-Step Sequencer</h3>
-                <p>8&times;16 grid — one row per pad. Toggle steps on/off, set BPM and hit Play to fire a one-bar loop you can layer over your imported tracks.</p>
+                <p>An 8-row × 16-column grid — one row per pad sound. Toggle steps on/off to build a one-bar pattern, set your BPM, hit Play and the loop fires in sync with whatever tracks are running in the mixer.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill">8 × 16 grid</span>
+                    <span class="spec-pill dj">One bar loop</span>
+                    <span class="spec-pill yel">BPM control</span>
+                    <span class="spec-pill grn">Mixer sync</span>
+                </div>
             </div>
-            <div class="feat">
+            <div class="feat reveal" style="--delay:360ms">
                 <div class="feat-tok org">VOC</div>
                 <h3>Voice FX &amp; Drops</h3>
-                <p>Type a phrase or pick a preset, press <strong>P</strong> and macOS speech reads it aloud over your mix. Zero cloud, zero latency.</p>
+                <p>Type any phrase or pick from built-in presets and press <strong>P</strong>. macOS native speech engine reads it aloud over your mix in real-time — no cloud, no latency. Use it for shout-outs, intros, or live commentary over your beats.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill org">Native macOS speech</span>
+                    <span class="spec-pill grn">Zero cloud</span>
+                    <span class="spec-pill">Key P to fire</span>
+                    <span class="spec-pill pur">Custom phrases</span>
+                </div>
             </div>
-            <div class="feat">
+            <div class="feat reveal" style="--delay:420ms">
                 <div class="feat-tok tel">KB</div>
                 <h3>Full Keyboard Control</h3>
-                <p>Trigger pads, control BPM, master volume and voice drops without touching the mouse. Complete reference in the shortcuts panel below.</p>
+                <p>Every major action has a key binding. Fire pads, tweak BPM up or down one click at a time, raise or lower master volume, trigger a voice drop — all without touching the mouse. Perfect for heads-down study sessions.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill tel">10 shortcuts</span>
+                    <span class="spec-pill">No mouse needed</span>
+                    <span class="spec-pill dj">Toggle on/off</span>
+                </div>
             </div>
         </div>
     </section>
 
     <!-- COMING SOON -->
-    <section class="reveal" style="margin-bottom:60px;">
+    <section style="margin-bottom:60px;">
         <span class="sec-lbl">On the roadmap</span>
         <h2 class="sec-title">
             Upcoming features
             <span class="status-soon">Coming soon</span>
         </h2>
-        <p class="sec-sub">In active development — these land in the next major update.</p>
+        <p class="sec-sub">In active development — land in the next major update.</p>
 
         <div class="feat-grid">
-            <div class="feat soon">
+            <div class="feat soon reveal" style="--delay:0ms">
                 <div class="feat-tok yel">SYS</div>
                 <h3>System Audio Capture</h3>
-                <p>Route Chrome, Spotify or any app through TiltDJ effects in real-time via BlackHole virtual audio driver. Remix what's already playing on your Mac.</p>
+                <p>Route Chrome, Spotify or any running app through TiltDJ's FX rack in real-time using the BlackHole virtual audio driver. Slap reverb on a YouTube video, pitch-shift a podcast, add delay to Spotify — remix anything playing on your Mac.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill yel">BlackHole driver</span>
+                    <span class="spec-pill">Chrome / Spotify</span>
+                    <span class="spec-pill org">Real-time FX</span>
+                </div>
             </div>
-            <div class="feat soon">
+            <div class="feat soon reveal" style="--delay:80ms">
                 <div class="feat-tok yel">REC</div>
                 <h3>Record Output</h3>
-                <p>Capture your live performance directly to MP3 or WAV — sessions, mixes and beats saved with one click.</p>
+                <p>Capture your entire live performance — pads, mixer tracks, sequencer loop and voice drops — directly to MP3 or WAV with one click. Save full sessions or short clips.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill yel">MP3 export</span>
+                    <span class="spec-pill">WAV export</span>
+                    <span class="spec-pill grn">One-click capture</span>
+                </div>
             </div>
-            <div class="feat soon">
+            <div class="feat soon reveal" style="--delay:160ms">
                 <div class="feat-tok yel">THM</div>
                 <h3>More Visual Themes</h3>
-                <p>Additional dark cyberpunk and neon UI themes so you can customise the look of your DJ station.</p>
+                <p>Additional dark cyberpunk, neon and minimal UI themes so you can switch the look of your entire DJ station in one tap — from deep purple to acid green to monochrome.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill yel">Cyberpunk</span>
+                    <span class="spec-pill">Neon</span>
+                    <span class="spec-pill">Minimal</span>
+                </div>
             </div>
-            <div class="feat soon">
+            <div class="feat soon reveal" style="--delay:240ms">
                 <div class="feat-tok yel">iOS</div>
                 <h3>iOS / iPad Version</h3>
-                <p>Bring the full TiltDJ experience to iPhone and iPad for mobile music production on the go.</p>
+                <p>Bring the full TiltDJ experience to iPhone and iPad — same pads, same FX rack, same sequencer, optimised for touch with haptic pad feedback and an AirDrop session bridge to your Mac.</p>
+                <div class="spec-pills">
+                    <span class="spec-pill yel">iPhone + iPad</span>
+                    <span class="spec-pill">Haptic pads</span>
+                    <span class="spec-pill pur">AirDrop sync</span>
+                </div>
             </div>
         </div>
     </section>
@@ -949,6 +1201,91 @@
         setTimeout(flashPad, (60 / BPM / 4) * 1000 * 2);
     }
     setTimeout(flashPad, 300);
+
+    /* MIXER DEMO */
+    (function () {
+        var TRACK_COLORS = ['#19d59e', '#e879f9', '#38bdf8'];
+        var trackHeights = [];
+
+        // Build waveform bars for each track
+        [0,1,2].forEach(function (ti) {
+            var tw = document.getElementById('tw' + ti);
+            if (!tw) return;
+            var bars = [];
+            for (var b = 0; b < 48; b++) {
+                var bar = document.createElement('div');
+                bar.className = 'tw-bar';
+                var h = 6 + Math.random() * 22;
+                bar.style.height = h + 'px';
+                bar.style.setProperty('--dur', (0.25 + Math.random() * 0.45).toFixed(2) + 's');
+                bar.style.background = TRACK_COLORS[ti];
+                bar.style.animationDelay = (b * 0.02).toFixed(2) + 's';
+                tw.appendChild(bar);
+                bars.push({ el: bar, base: h });
+            }
+            trackHeights.push(bars);
+        });
+
+        // Play/stop toggle
+        [0,1,2].forEach(function (ti) {
+            var tr = document.getElementById('tr' + ti);
+            var btn = tr ? tr.querySelector('.track-play') : null;
+            var status = tr ? tr.querySelector('.track-status') : null;
+            if (!btn) return;
+            btn.addEventListener('click', function () {
+                var isPlaying = tr.classList.contains('playing');
+                tr.classList.toggle('playing', !isPlaying);
+                if (status) {
+                    status.className = 'track-status ' + (!isPlaying ? 'live' : 'idle');
+                    status.textContent = !isPlaying ? 'LIVE' : 'READY';
+                }
+                btn.innerHTML = !isPlaying
+                    ? '<svg viewBox="0 0 10 10" fill="currentColor"><rect x="1" y="1" width="3" height="8" rx="1"/><rect x="6" y="1" width="3" height="8" rx="1"/></svg>'
+                    : '<svg viewBox="0 0 10 10" fill="currentColor"><polygon points="2,1 9,5 2,9"/></svg>';
+                btn.setAttribute('aria-label', !isPlaying ? 'Stop track' : 'Play track');
+                var liveCount = document.querySelectorAll('.track.playing').length;
+                var tc = document.getElementById('trackCount');
+                if (tc) tc.textContent = liveCount;
+            });
+        });
+
+        // Animate waveform bars heights for playing tracks
+        function animateBars() {
+            [0,1,2].forEach(function (ti) {
+                var tr = document.getElementById('tr' + ti);
+                if (!tr || !tr.classList.contains('playing')) return;
+                var bars = trackHeights[ti];
+                if (!bars) return;
+                bars.forEach(function (b) {
+                    var newH = b.base * (0.3 + Math.random() * 0.7);
+                    b.el.style.height = newH.toFixed(1) + 'px';
+                });
+            });
+        }
+        setInterval(animateBars, 120);
+
+        // Animate FX bars gently
+        var fxTargets = [42, 28, 65, 12, 50, 33];
+        var fxCurrent = fxTargets.slice();
+        var fxColors = ['var(--cyan)','var(--green)','var(--dj2)','var(--red)','var(--yellow)','var(--teal)'];
+        function animateFX() {
+            fxCurrent = fxCurrent.map(function (v, i) {
+                var delta = (Math.random() - 0.5) * 4;
+                return Math.max(5, Math.min(95, v + delta));
+            });
+            fxCurrent.forEach(function (v, i) {
+                var fill = document.getElementById('fx' + i);
+                var val  = document.getElementById('fxv' + i);
+                if (fill) fill.style.width = v.toFixed(0) + '%';
+                if (val) {
+                    if (i === 4) val.textContent = Math.round((v - 50) / 4) + ' st';
+                    else if (i === 5) val.textContent = (0.5 + v / 100 * 1.5).toFixed(1) + '×';
+                    else val.textContent = Math.round(v) + '%';
+                }
+            });
+        }
+        setInterval(animateFX, 700);
+    })();
 
     /* SVG FX KNOB SPIN */
     var knobLines = document.querySelectorAll('#fxKnobs line');
