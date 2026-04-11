@@ -10,18 +10,25 @@
   <div class="top-banner"></div>
   <div class="bonyad-hub-hero">
     <h1><span class="accent">Bonyad</span> — platform fix briefs</h1>
-    <p>Open a sheet for Android, iOS, Web, or Backend. Issues live in the Nigents database. Use the same <strong style="color:var(--accent-orange);">BONYAD_EDIT_SECRET</strong> from your server <code style="font-size:13px;">.env</code> as the edit key below (then Save).</p>
+    <p>Open a sheet for Android, iOS, Web, or Backend. Issues live in the Nigents database.</p>
     <p class="hub-nav" style="margin-top:14px;">
       <a href="/">← Nigents home</a>
       <span class="hub-nav-sep" aria-hidden="true">·</span>
-      <a href="ai-features.html">AI features roadmap</a>
+      <a href="ai-features.html">AI Roadmap</a>
+      <span class="hub-nav-sep" aria-hidden="true">·</span>
+      <a href="builds.html">Builds</a>
+      <span class="hub-nav-sep" aria-hidden="true">·</span>
+      <a href="designs.html">Designs</a>
+      <span class="hub-nav-sep" aria-hidden="true">·</span>
+      <a href="admin.html" id="nav-admin-link" style="display:none;">Admin</a>
     </p>
   </div>
   <div id="hub-err" class="bonyad-err-box" style="display:none;"></div>
   <div class="hub-key-row">
-    <div class="edit-key-bar">
-      <span><strong>Edit key</strong> (server <code>BONYAD_EDIT_SECRET</code>):</span>
-      <input type="password" id="hub-edit-key" placeholder="Paste secret" autocomplete="off" />
+    <div class="edit-key-bar" style="flex-wrap:wrap;gap:10px;">
+      <span id="hub-user-tag" style="font-size:12px;color:var(--text-muted);display:none;"></span>
+      <span><strong>Your key:</strong></span>
+      <input type="password" id="hub-edit-key" placeholder="Paste your Bonyad key" autocomplete="off" />
       <button type="button" id="hub-save-key" class="add-btn" style="padding:8px 16px;">Save in browser</button>
     </div>
   </div>
@@ -609,7 +616,31 @@
           .catch(function (e) { toast(e.message); });
       };
       loadSheets();
+
+      // ── Resolve user identity after key is saved ──────────────
+      async function resolveHubIdentity() {
+        var k = key();
+        if (!k) return;
+        try {
+          var res  = await fetch('/api/bonyad/me', { headers: { 'x-bonyad-edit-key': k } });
+          var data = await res.json();
+          if (data.success) {
+            var tag  = document.getElementById('hub-user-tag');
+            tag.textContent = data.user.name + ' (' + data.user.role + ')';
+            tag.style.display = 'inline';
+            if (data.user.role === 'admin') {
+              document.getElementById('nav-admin-link').style.display = 'inline';
+            }
+          }
+        } catch (e) {}
+      }
+      resolveHubIdentity();
+      document.getElementById('hub-save-key').addEventListener('click', function () {
+        setTimeout(resolveHubIdentity, 200);
+      });
     })();
   </script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="bonyad-notifications.js"></script>
 </body>
 </html>

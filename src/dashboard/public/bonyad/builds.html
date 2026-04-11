@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bonyad Builds — APK &amp; Build Distribution</title>
+  <link rel="stylesheet" href="brief.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+  <style>
+    .builds-wrap { max-width: 1080px; margin: 0 auto; padding: clamp(16px,4vw,40px) var(--gutter); }
+    /* Platform tabs */
+    .plat-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 28px; }
+    .plat-tab {
+      padding: 8px 18px; border-radius: 10px; border: 1px solid var(--border);
+      background: none; color: var(--text-secondary); font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all .18s; display: flex; align-items: center; gap: 6px;
+    }
+    .plat-tab:hover  { border-color: var(--accent-orange); color: var(--accent-orange); }
+    .plat-tab.active { background: var(--accent-orange); border-color: var(--accent-orange); color: #08070b; }
+    /* Upload card */
+    .upload-card {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 22px 24px; margin-bottom: 28px;
+    }
+    .upload-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 16px; }
+    .form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+    .form-row .fg { flex: 1; min-width: 140px; }
+    .form-row label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin-bottom: 5px; }
+    .form-row input, .form-row select, .form-row textarea {
+      width: 100%; background: var(--bg-primary); border: 1px solid var(--border);
+      color: var(--text-primary); border-radius: 8px; padding: 8px 11px; font-size: 13px;
+      font-family: inherit;
+    }
+    .form-row input:focus, .form-row select:focus, .form-row textarea:focus { outline: none; border-color: var(--accent-orange); }
+    .file-drop {
+      width: 100%; border: 2px dashed var(--border); border-radius: var(--radius-sm);
+      padding: 28px 20px; text-align: center; cursor: pointer;
+      color: var(--text-muted); font-size: 13px;
+      transition: border-color .2s, background .2s;
+      margin-top: 12px;
+    }
+    .file-drop:hover, .file-drop.drag-over { border-color: var(--accent-orange); background: var(--accent-orange-dim); color: var(--text-primary); }
+    .file-drop input { display: none; }
+    .file-drop .file-name { font-weight: 600; color: var(--text-primary); margin-top: 6px; font-size: 13px; }
+    /* Build grid */
+    .builds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .build-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; position: relative;
+      transition: border-color .2s, transform .2s, box-shadow .2s;
+    }
+    .build-card:hover { border-color: rgba(255,107,26,.4); transform: translateY(-3px); box-shadow: var(--shadow-sm); }
+    .build-card-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 8px; }
+    .build-platform { font-size: 22px; }
+    .env-badge {
+      padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    }
+    .env-dev        { background: rgba(94,179,255,.12); color: var(--blue-accent); }
+    .env-staging    { background: rgba(251,146,60,.12);  color: var(--warning); }
+    .env-production { background: rgba(46,230,184,.12);  color: var(--accent-green); }
+    .build-version { font-size: 20px; font-weight: 800; color: var(--text-primary); }
+    .build-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+    .build-changelog {
+      font-size: 12px; color: var(--text-secondary); margin: 10px 0;
+      padding: 10px; background: rgba(0,0,0,.2); border-radius: 8px;
+      max-height: 80px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;
+    }
+    .build-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+    .dl-btn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+      background: var(--accent-orange); color: #08070b; border-radius: 9px;
+      font-size: 13px; font-weight: 700; text-decoration: none; border: none; cursor: pointer;
+      transition: opacity .15s, transform .15s;
+    }
+    .dl-btn:hover { opacity: .88; transform: translateY(-1px); }
+    .qr-btn {
+      padding: 8px 12px; border-radius: 9px; border: 1px solid var(--border);
+      background: none; color: var(--text-secondary); font-size: 13px; cursor: pointer;
+      transition: all .15s;
+    }
+    .qr-btn:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+    .del-btn {
+      padding: 8px 10px; border-radius: 9px; border: 1px solid var(--border);
+      background: none; color: var(--text-muted); font-size: 13px; cursor: pointer;
+      margin-left: auto; transition: all .15s;
+    }
+    .del-btn:hover { border-color: var(--danger); color: var(--danger); }
+    .dl-count { font-size: 11px; color: var(--text-muted); }
+    /* QR Modal */
+    .qr-modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,.65);
+      display: none; align-items: center; justify-content: center;
+      z-index: 10000; backdrop-filter: blur(6px);
+    }
+    .qr-modal-backdrop.open { display: flex; }
+    .qr-modal {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 28px; text-align: center;
+      max-width: 320px; width: 90%; box-shadow: var(--shadow);
+      animation: bonyadFadeUp .2s ease;
+    }
+    .qr-modal h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .qr-modal p  { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+    #qr-canvas   { border-radius: 8px; }
+    .qr-close {
+      margin-top: 16px; padding: 8px 20px; border-radius: 9px;
+      border: 1px solid var(--border); background: none; color: var(--text-secondary);
+      cursor: pointer; font-size: 13px; transition: all .15s;
+    }
+    .qr-close:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+    .key-row {
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 24px;
+    }
+    .key-row input {
+      flex: 1; min-width: 180px; background: var(--bg-primary); border: 1px solid var(--border);
+      color: var(--text-primary); border-radius: 8px; padding: 7px 11px; font-size: 13px;
+      font-family: var(--mono);
+    }
+    .key-row input:focus { outline: none; border-color: var(--accent-orange); }
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 14px; }
+    .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+    .upload-progress { margin-top: 12px; display: none; }
+    .upload-progress progress {
+      width: 100%; height: 6px; border-radius: 3px;
+      accent-color: var(--accent-orange);
+    }
+  </style>
+</head>
+<body class="bonyad-theme">
+  <div class="top-banner"></div>
+  <nav class="hub-nav bonyad-sheet-topnav" aria-label="Bonyad section">
+    <a href="./">← Bonyad hub</a>
+    <span class="hub-nav-sep" aria-hidden="true">·</span>
+    <a href="designs.html">Designs</a>
+    <span class="hub-nav-sep" aria-hidden="true">·</span>
+    <a href="admin.html">Admin</a>
+    <span class="hub-nav-sep" aria-hidden="true">·</span>
+    <a href="/">Nigents</a>
+  </nav>
+  <div class="builds-wrap">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;flex-wrap:wrap;">
+      <h1 style="font-size:clamp(20px,4vw,26px);font-weight:800;flex:1;">Build Distribution</h1>
+    </div>
+
+    <!-- Key row -->
+    <div class="key-row">
+      <span style="font-size:12px;font-weight:700;color:var(--text-muted);white-space:nowrap;">Your Key</span>
+      <input type="password" id="edit-key" placeholder="Paste your Bonyad key" autocomplete="off" />
+      <button class="add-btn" id="key-save" style="padding:7px 16px;font-size:13px;">Use</button>
+    </div>
+
+    <!-- Platform tabs -->
+    <div class="plat-tabs">
+      <button class="plat-tab active" data-plat="">All</button>
+      <button class="plat-tab" data-plat="android">Android</button>
+      <button class="plat-tab" data-plat="ios">iOS</button>
+      <button class="plat-tab" data-plat="web">Web</button>
+      <button class="plat-tab" data-plat="backend">Backend</button>
+    </div>
+
+    <!-- Upload form -->
+    <div class="upload-card" id="upload-card" style="display:none;">
+      <h3>Upload New Build</h3>
+      <div class="form-row">
+        <div class="fg">
+          <label>Platform</label>
+          <select id="up-platform">
+            <option value="android">Android</option>
+            <option value="ios">iOS</option>
+            <option value="web">Web</option>
+            <option value="backend">Backend</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Environment</label>
+          <select id="up-env">
+            <option value="dev">Dev</option>
+            <option value="staging">Staging</option>
+            <option value="production">Production</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Version</label>
+          <input type="text" id="up-version" placeholder="e.g. 1.4.2" />
+        </div>
+        <div class="fg">
+          <label>Build #</label>
+          <input type="number" id="up-build" placeholder="e.g. 42" />
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:10px;">
+        <div class="fg" style="flex:2;">
+          <label>Changelog</label>
+          <textarea id="up-changelog" rows="2" placeholder="What's new in this build…" style="resize:vertical;"></textarea>
+        </div>
+      </div>
+      <label class="file-drop" id="file-drop">
+        <input type="file" id="up-file" accept=".apk,.ipa,.zip,.aab,.tar,.gz,.dmg" />
+        <div>Drop your APK / IPA / ZIP here or <strong>click to browse</strong></div>
+        <div class="file-name" id="file-name-label"></div>
+      </label>
+      <div class="upload-progress" id="up-progress">
+        <progress id="up-prog-bar" value="0" max="100"></progress>
+        <span id="up-prog-label" style="font-size:11px;color:var(--text-muted);">Uploading…</span>
+      </div>
+      <div style="margin-top:14px;">
+        <button class="add-btn" id="upload-btn" style="padding:10px 22px;">Upload Build</button>
+      </div>
+    </div>
+
+    <!-- Build grid -->
+    <div id="builds-container">
+      <div class="empty-state">Loading builds…</div>
+    </div>
+  </div>
+
+  <!-- QR Modal -->
+  <div class="qr-modal-backdrop" id="qr-backdrop">
+    <div class="qr-modal">
+      <h3 id="qr-title">Scan to Download</h3>
+      <p id="qr-subtitle">Point your phone camera at this QR code</p>
+      <canvas id="qr-canvas"></canvas>
+      <br>
+      <button class="qr-close" id="qr-close">Close</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="bonyad-notifications.js"></script>
+  <script>
+    'use strict';
+
+    const keyInput = document.getElementById('edit-key');
+    const storedK  = localStorage.getItem('bonyad_edit_key') || '';
+    if (storedK) keyInput.value = storedK;
+    function getKey() { return keyInput.value.trim(); }
+
+    document.getElementById('key-save').addEventListener('click', () => {
+      const k = getKey();
+      if (k) {
+        localStorage.setItem('bonyad_edit_key', k);
+        document.getElementById('upload-card').style.display = 'block';
+        loadBuilds(activePlat);
+      }
+    });
+    if (storedK) { document.getElementById('upload-card').style.display = 'block'; }
+
+    /* ── Platform filter ────────────────────────────────────────── */
+    let activePlat = '';
+    document.querySelectorAll('.plat-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.plat-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activePlat = btn.dataset.plat;
+        // Sync upload select
+        if (activePlat) document.getElementById('up-platform').value = activePlat;
+        loadBuilds(activePlat);
+      });
+    });
+
+    /* ── File drop ──────────────────────────────────────────────── */
+    const dropZone = document.getElementById('file-drop');
+    const fileInput = document.getElementById('up-file');
+    fileInput.addEventListener('change', () => {
+      document.getElementById('file-name-label').textContent = fileInput.files[0]?.name || '';
+    });
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault(); dropZone.classList.remove('drag-over');
+      if (e.dataTransfer.files[0]) {
+        fileInput.files = e.dataTransfer.files;
+        document.getElementById('file-name-label').textContent = e.dataTransfer.files[0].name;
+      }
+    });
+
+    /* ── Upload ─────────────────────────────────────────────────── */
+    document.getElementById('upload-btn').addEventListener('click', async () => {
+      const file = fileInput.files[0];
+      if (!file) { alert('Select a file first'); return; }
+      const btn = document.getElementById('upload-btn');
+      btn.disabled = true; btn.textContent = 'Uploading…';
+
+      const fd = new FormData();
+      fd.append('file',         file);
+      fd.append('platform',     document.getElementById('up-platform').value);
+      fd.append('environment',  document.getElementById('up-env').value);
+      fd.append('version',      document.getElementById('up-version').value);
+      fd.append('build_number', document.getElementById('up-build').value);
+      fd.append('changelog',    document.getElementById('up-changelog').value);
+      fd.append('editKey',      getKey());
+
+      const prog  = document.getElementById('up-progress');
+      const bar   = document.getElementById('up-prog-bar');
+      const label = document.getElementById('up-prog-label');
+      prog.style.display = 'block';
+
+      try {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/bonyad/builds');
+        xhr.setRequestHeader('x-bonyad-edit-key', getKey());
+        xhr.upload.onprogress = e => {
+          if (e.lengthComputable) {
+            const pct = Math.round(e.loaded / e.total * 100);
+            bar.value = pct; label.textContent = `${pct}% — ${(e.loaded/1048576).toFixed(1)} MB`;
+          }
+        };
+        xhr.onload = () => {
+          prog.style.display = 'none'; btn.disabled = false; btn.textContent = 'Upload Build';
+          const data = JSON.parse(xhr.responseText);
+          if (data.success) {
+            fileInput.value = ''; document.getElementById('file-name-label').textContent = '';
+            document.getElementById('up-version').value = '';
+            document.getElementById('up-build').value = '';
+            document.getElementById('up-changelog').value = '';
+            loadBuilds(activePlat);
+          } else { alert(data.error || 'Upload failed'); }
+        };
+        xhr.onerror = () => { prog.style.display = 'none'; btn.disabled = false; btn.textContent = 'Upload Build'; alert('Network error'); };
+        xhr.send(fd);
+      } catch (e) {
+        prog.style.display = 'none'; btn.disabled = false; btn.textContent = 'Upload Build';
+        alert(e.message);
+      }
+    });
+
+    /* ── Load builds ────────────────────────────────────────────── */
+    async function loadBuilds(plat) {
+      const container = document.getElementById('builds-container');
+      container.innerHTML = '<div class="empty-state">Loading…</div>';
+      try {
+        const url = plat ? `/api/bonyad/builds?platform=${plat}` : '/api/bonyad/builds';
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (!data.success) { container.innerHTML = `<div class="empty-state" style="color:var(--danger)">${esc(data.error)}</div>`; return; }
+        if (!data.builds.length) {
+          container.innerHTML = '<div class="empty-state">No builds yet — upload the first one above</div>';
+          return;
+        }
+        container.innerHTML = `<div class="builds-grid">${data.builds.map(buildCard).join('')}</div>`;
+      } catch (e) {
+        container.innerHTML = `<div class="empty-state" style="color:var(--danger)">Error: ${esc(e.message)}</div>`;
+      }
+    }
+
+    function buildCard(b) {
+      const envClass = `env-${b.environment}`;
+      const sizeMB   = b.file_size ? (b.file_size / 1048576).toFixed(1) + ' MB' : '—';
+      return `
+        <div class="build-card">
+          <div class="build-card-head">
+            <div>
+              <span style="font-size:13px;font-weight:700;text-transform:capitalize;">${esc(b.platform)}</span>
+            </div>
+            <span class="env-badge ${envClass}">${esc(b.environment)}</span>
+          </div>
+          <div class="build-version">v${esc(b.version || '—')}</div>
+          <div class="build-meta">Build #${b.build_number || '—'} &nbsp;·&nbsp; ${sizeMB}</div>
+          <div class="build-meta">By ${esc(b.uploaded_by_name || 'Unknown')} &nbsp;·&nbsp; ${fmtDate(b.created_at)}</div>
+          ${b.changelog ? `<div class="build-changelog">${esc(b.changelog)}</div>` : ''}
+          <div class="build-actions">
+            <a class="dl-btn" href="/api/bonyad/builds/${b.id}/download" download>Download</a>
+            <button class="qr-btn" onclick="showQR(${b.id}, '${esc(b.platform)} v${esc(b.version || '')}')">QR Code</button>
+            <span class="dl-count">${b.download_count || 0} downloads</span>
+            <button class="del-btn" title="Delete build" onclick="deleteBuild(${b.id})">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ── Delete ─────────────────────────────────────────────────── */
+    async function deleteBuild(id) {
+      if (!confirm('Delete this build? The file will be removed from the server.')) return;
+      try {
+        const res  = await fetch(`/api/bonyad/builds/${id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', 'x-bonyad-edit-key': getKey() },
+          body: JSON.stringify({ editKey: getKey() }),
+        });
+        const data = await res.json();
+        if (!data.success) { alert(data.error || 'Failed'); return; }
+        loadBuilds(activePlat);
+      } catch (e) { alert(e.message); }
+    }
+
+    /* ── QR Code ────────────────────────────────────────────────── */
+    function showQR(buildId, label) {
+      const url  = window.location.origin + `/api/bonyad/builds/${buildId}/download`;
+      document.getElementById('qr-title').textContent = label || 'Scan to Download';
+      document.getElementById('qr-subtitle').textContent = url;
+      const canvas = document.getElementById('qr-canvas');
+      QRCode.toCanvas(canvas, url, { width: 220, color: { dark: '#ffffff', light: '#1a1720' } });
+      document.getElementById('qr-backdrop').classList.add('open');
+    }
+
+    document.getElementById('qr-close').addEventListener('click', () => {
+      document.getElementById('qr-backdrop').classList.remove('open');
+    });
+    document.getElementById('qr-backdrop').addEventListener('click', e => {
+      if (e.target === e.currentTarget) document.getElementById('qr-backdrop').classList.remove('open');
+    });
+
+    /* ── Helpers ────────────────────────────────────────────────── */
+    function esc(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function fmtDate(iso) {
+      if (!iso) return '—';
+      return new Date(iso).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    }
+
+    /* ── Boot ───────────────────────────────────────────────────── */
+    loadBuilds('');
+  </script>
+</body>
+</html>

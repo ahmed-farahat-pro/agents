@@ -1,6 +1,6 @@
 /**
  * Bonyad fix-brief API — sheets + issues in MySQL (Nigents).
- * GET is public. Mutations require BONYAD_EDIT_SECRET when set (header x-bonyad-edit-key, query editKey, or body.editKey).
+ * GET is public. Mutations require a valid Bonyad user key (or legacy BONYAD_EDIT_SECRET).
  */
 
 const db = require('../database/connection');
@@ -8,22 +8,11 @@ const logger = require('../utils/logger');
 const androidSeed = require('./bonyad-android-seed');
 const { SHEET: SHEET_45, ISSUES: ISSUES_45 } = require('./bonyad-45-batch-seed');
 const { normalizeMediaArray, deleteUploadedFilesForIssueRow } = require('./bonyad-issue-media');
+const { requireUser, resolveUser } = require('./bonyad-auth');
+const { logAction } = require('./bonyad-logger');
 
-const BONYAD_EDIT_SECRET = (process.env.BONYAD_EDIT_SECRET || '').trim();
-
-function requireBonyadEdit(req, res, next) {
-  if (!BONYAD_EDIT_SECRET) {
-    return next();
-  }
-  const k =
-    (req.body && req.body.editKey) ||
-    req.headers['x-bonyad-edit-key'] ||
-    (req.query && req.query.editKey);
-  if (k === BONYAD_EDIT_SECRET) {
-    return next();
-  }
-  return res.status(403).json({ success: false, error: 'Invalid or missing edit key (set BONYAD_EDIT_SECRET on server).' });
-}
+// Legacy alias so existing callers keep working
+const requireBonyadEdit = requireUser;
 
 function parseJsonField(raw, fallback) {
   if (raw == null || raw === '') return fallback;
@@ -90,7 +79,95 @@ async function ensureBonyadTables() {
       INDEX idx_ai_roadmap_sort (sort_order)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
-  logger.info('[Bonyad] Tables ensured');
+  // ── Users ──────────────────────────────────────────────────────────────────
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS bonyad_users (
+      id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      name        VARCHAR(255) NOT NULL,
+      role        ENUM('admin','developer','designer','tester') NOT NULL DEFAULT 'developer',
+      api_key     VARCHAR(64)  NOT NULL UNIQUE,
+      is_active   TINYINT(1)   NOT NULL DEFAULT 1,
+      created_by  INT UNSIGNED NULL,
+      created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  // ── Activity log ───────────────────────────────────────────────────────────
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS bonyad_activity_log (
+      id           BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      user_id      INT UNSIGNED NULL,
+      user_name    VARCHAR(255) NULL,
+      user_role    VARCHAR(32)  NULL,
+      action       VARCHAR(64)  NOT NULL,
+      entity_type  VARCHAR(32)  NULL,
+      entity_id    VARCHAR(64)  NULL,
+      entity_title VARCHAR(512) NULL,
+      sheet_slug   VARCHAR(64)  NULL,
+      metadata     JSON         NULL,
+      ip_address   VARCHAR(45)  NULL,
+      created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_bal_created  (created_at),
+      INDEX idx_bal_user     (user_id),
+      INDEX idx_bal_sheet    (sheet_slug)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  // ── Notifications ──────────────────────────────────────────────────────────
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS bonyad_notifications (
+      id                BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      type              VARCHAR(64)  NULL,
+      title             VARCHAR(512) NULL,
+      message           TEXT         NULL,
+      entity_type       VARCHAR(32)  NULL,
+      entity_id         VARCHAR(64)  NULL,
+      sheet_slug        VARCHAR(64)  NULL,
+      triggered_by_id   INT UNSIGNED NULL,
+      triggered_by_name VARCHAR(255) NULL,
+      read_by           JSON         NULL,
+      created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_bn_created (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  // ── Builds ─────────────────────────────────────────────────────────────────
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS bonyad_builds (
+      id               INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      platform         ENUM('android','ios','web','backend') NOT NULL,
+      environment      ENUM('dev','staging','production')    NOT NULL DEFAULT 'dev',
+      version          VARCHAR(32)  NULL,
+      build_number     INT UNSIGNED NULL,
+      file_path        VARCHAR(512) NOT NULL,
+      file_name        VARCHAR(255) NULL,
+      file_size        BIGINT UNSIGNED NULL,
+      changelog        TEXT         NULL,
+      uploaded_by_id   INT UNSIGNED NULL,
+      uploaded_by_name VARCHAR(255) NULL,
+      download_count   INT UNSIGNED NOT NULL DEFAULT 0,
+      created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_bb_platform (platform, created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  // ── Designs ────────────────────────────────────────────────────────────────
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS bonyad_designs (
+      id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      title           VARCHAR(255) NOT NULL,
+      platform        VARCHAR(64)  NULL,
+      figma_url       VARCHAR(1024) NULL,
+      description     TEXT          NULL,
+      version         VARCHAR(32)   NULL,
+      uploaded_by_id  INT UNSIGNED  NULL,
+      sort_order      INT           NOT NULL DEFAULT 0,
+      created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  logger.info('[Bonyad] Tables ensured (including users, activity_log, notifications, builds, designs)');
 }
 
 /** Add Excel / bug-tracker columns on existing deployments (CREATE IF NOT EXISTS skips new columns). */
@@ -493,6 +570,12 @@ function registerBonyadRoutes(app) {
           mediaJson,
         ]
       );
+      await resolveUser(req);
+      logAction(req, {
+        action: 'issue.created', entityType: 'issue',
+        entityId: String(r.insertId), entityTitle: title, sheetSlug: slug,
+        metadata: { priority: pri },
+      }).catch(() => {});
       res.json({ success: true, id: r.insertId });
     } catch (e) {
       logger.error('[Bonyad] add issue:', e.message);
@@ -635,6 +718,19 @@ function registerBonyadRoutes(app) {
           id,
         ]
       );
+      // Determine which action to log
+      let loggedAction = 'issue.updated';
+      if (body.is_done != null && row.is_done !== is_done) {
+        loggedAction = is_done ? 'issue.status.done' : 'issue.status.open';
+      } else if (body.sheet_status === 'in_progress') {
+        loggedAction = 'issue.status.in_progress';
+      }
+      await resolveUser(req);
+      logAction(req, {
+        action: loggedAction, entityType: 'issue',
+        entityId: String(id), entityTitle: title, sheetSlug: row.sheet_slug,
+        metadata: { priority, is_done },
+      }).catch(() => {});
       res.json({ success: true });
     } catch (e) {
       logger.error('[Bonyad] patch issue:', e.message);
@@ -650,6 +746,12 @@ function registerBonyadRoutes(app) {
         deleteUploadedFilesForIssueRow(cur[0]);
       }
       await db.query('DELETE FROM bonyad_issues WHERE id=?', [id]);
+      const deleted = cur[0] || {};
+      await resolveUser(req);
+      logAction(req, {
+        action: 'issue.deleted', entityType: 'issue',
+        entityId: String(id), entityTitle: deleted.title || '', sheetSlug: deleted.sheet_slug || null,
+      }).catch(() => {});
       res.json({ success: true });
     } catch (e) {
       logger.error('[Bonyad] delete issue:', e.message);

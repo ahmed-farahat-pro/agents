@@ -3074,6 +3074,11 @@ io.on('connection', async (socket) => {
     }
   });
 
+  // Auto-join the 'bonyad' room so Bonyad notifications are broadcast to all tabs
+  socket.on('bonyad:join', () => {
+    socket.join('bonyad');
+  });
+
   socket.on('disconnect', () => {
     logger.info('Dashboard client disconnected:', socket.id);
   });
@@ -3084,15 +3089,29 @@ io.on('connection', async (socket) => {
 // ============================================================================
 if (useDatabase) {
   try {
+    // Inject Socket.io into logger so notifications are pushed in real-time
+    const bonyadLogger = require('./bonyad-logger');
+    bonyadLogger.setIo(io);
+
     const bonyadApi = require('./bonyad-api');
     bonyadApi.registerBonyadRoutes(app);
+
     const bonyadExcel = require('./bonyad-excel-import');
     bonyadExcel.registerBonyadExcelRoutes(app);
+
     const bonyadIssueMedia = require('./bonyad-issue-media');
     bonyadIssueMedia.registerBonyadIssueMediaRoutes(app);
+
     const bonyadExcelAi = require('./bonyad-excel-ai-import');
     bonyadExcelAi.registerBonyadExcelAiRoutes(app);
-    logger.info('[Bonyad] API routes registered (Excel + AI import + issue media)');
+
+    const bonyadAdmin = require('./bonyad-admin-api');
+    bonyadAdmin.registerBonyadAdminRoutes(app);
+
+    const bonyadBuilds = require('./bonyad-builds-api');
+    bonyadBuilds.registerBonyadBuildsRoutes(app);
+
+    logger.info('[Bonyad] API routes registered (Excel + AI + media + admin + builds + designs)');
   } catch (e) {
     logger.error('[Bonyad] Register routes failed:', e.message);
   }
@@ -3145,8 +3164,10 @@ async function startDashboardServer() {
     try {
       const bonyadApi = require('./bonyad-api');
       await bonyadApi.initBonyadData();
-      if (!process.env.BONYAD_EDIT_SECRET) {
-        logger.warn('[Bonyad] BONYAD_EDIT_SECRET is unset — issue/sheet mutations are open to anyone with network access to the API');
+      if (!process.env.BONYAD_ADMIN_KEY && !process.env.BONYAD_EDIT_SECRET) {
+        logger.warn('[Bonyad] Neither BONYAD_ADMIN_KEY nor BONYAD_EDIT_SECRET is set — mutations are open to anyone. Set BONYAD_ADMIN_KEY to enable user management.');
+      } else if (process.env.BONYAD_ADMIN_KEY) {
+        logger.info('[Bonyad] Admin key active. Create developer keys via /bonyad/admin.html');
       }
     } catch (e) {
       logger.error('[Bonyad] init:', e.message);

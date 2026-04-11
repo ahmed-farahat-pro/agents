@@ -398,25 +398,18 @@
       h += '</div>';
     }
     if (k) {
-      h += '<div class="issue-media-add">';
+      h += '<div class=”issue-media-add”>';
       h +=
-        '<p class="issue-media-add-hint">Add more screenshots anytime — paste a link (Google Drive sharing links work; preview may fall back to “open link”) or upload additional files.</p>';
+        '<label class=”media-drop-zone” data-issue=”' + iss.id + '” ondragover=”event.preventDefault();this.classList.add(\'drag-over\')” ondragleave=”this.classList.remove(\'drag-over\')” ondrop=”window._bonyadHandleDrop(event,\'' + iss.id + '\')”>' +
+        '<input type=”file” class=”media-files bonyad-sr-only” data-issue=”' + iss.id + '” accept=”image/jpeg,image/png,image/gif,image/webp” multiple />' +
+        '<svg width=”20” height=”20” viewBox=”0 0 24 24” fill=”none” stroke=”currentColor” stroke-width=”2” stroke-linecap=”round” stroke-linejoin=”round”><path d=”M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4”/><polyline points=”17 8 12 3 7 8”/><line x1=”12” y1=”3” x2=”12” y2=”15”/></svg>' +
+        '<span>Drop images here or <strong>click to browse</strong></span>' +
+        '</label>';
       h +=
-        '<div class="form-group"><label>Image URL</label><div class="media-inline">' +
-        '<input type="url" class="media-url-in" data-issue="' +
-        iss.id +
-        '" placeholder="https://drive.google.com/… or direct image URL" />' +
-        '<button type="button" class="btn-submit" data-act="add-media-url" data-issue="' +
-        iss.id +
-        '">Add URL</button></div></div>';
-      h +=
-        '<div class="form-group"><label>Upload more images</label><div class="media-inline">' +
-        '<input type="file" class="media-files" data-issue="' +
-        iss.id +
-        '" accept="image/jpeg,image/png,image/gif,image/webp" multiple />' +
-        '<button type="button" class="btn-submit" data-act="upload-media" data-issue="' +
-        iss.id +
-        '">Choose files</button></div></div>';
+        '<div class=”media-url-row”>' +
+        '<input type=”url” class=”media-url-in” data-issue=”' + iss.id + '” placeholder=”Or paste an image / Google Drive URL” />' +
+        '<button type=”button” class=”btn-submit” data-act=”add-media-url” data-issue=”' + iss.id + '”>Add URL</button>' +
+        '</div>';
       h += '</div>';
     }
     h += '</div>';
@@ -920,18 +913,26 @@
         addIssueMediaUrl(issueId, u);
       });
     });
-    root.querySelectorAll('[data-act="upload-media"]').forEach(function (el) {
-      el.addEventListener('click', function (e) {
-        e.preventDefault();
-        const issueId = Number(el.getAttribute('data-issue'));
-        const inp = root.querySelector('.media-files[data-issue="' + issueId + '"]');
-        if (!inp || !inp.files || !inp.files.length) {
-          showBonyadFlash('Choose one or more images', 'warn');
-          return;
+    // Drop zone: clicking the label opens the hidden file input
+    root.querySelectorAll('.media-drop-zone').forEach(function (zone) {
+      const issueId = Number(zone.getAttribute('data-issue'));
+      const inp = zone.querySelector('.media-files');
+      if (!inp) return;
+      inp.addEventListener('change', function () {
+        if (inp.files && inp.files.length) {
+          uploadIssueMedia(issueId, inp.files);
         }
-        uploadIssueMedia(issueId, inp.files);
       });
     });
+    // Global drop handler exposed for the inline ondrop attribute
+    window._bonyadHandleDrop = function (e, issueIdStr) {
+      e.preventDefault();
+      const zone = e.currentTarget;
+      if (zone) zone.classList.remove('drag-over');
+      const files = e.dataTransfer && e.dataTransfer.files;
+      if (!files || !files.length) return;
+      uploadIssueMedia(Number(issueIdStr), files);
+    };
 
     const addBtn = root.querySelector('[data-act="show-form"]');
     const addForm = root.querySelector('#addForm');
@@ -1220,15 +1221,32 @@
       });
   }
 
+  function resolveSheetIdentity() {
+    const k = getEditKey();
+    const subEl = document.querySelector('.bonyad-sub-line');
+    if (!k || !subEl) return;
+    fetch('/api/bonyad/me', { headers: { 'x-bonyad-edit-key': k } })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data && data.success && data.user) {
+          const u = data.user;
+          subEl.textContent = u.name + ' \u00b7 ' + u.role.charAt(0).toUpperCase() + u.role.slice(1);
+        }
+      })
+      .catch(function () {});
+  }
+
   document.getElementById('save-edit-key') &&
     document.getElementById('save-edit-key').addEventListener('click', function () {
       const v = document.getElementById('edit-key-input').value.trim();
       setEditKey(v);
       showBonyadFlash(v ? 'Edit key saved in this browser' : 'Edit key cleared', v ? 'success' : 'info');
+      resolveSheetIdentity();
       load();
     });
   document.getElementById('edit-key-input') &&
     (document.getElementById('edit-key-input').value = getEditKey());
 
+  resolveSheetIdentity();
   load();
 })();
