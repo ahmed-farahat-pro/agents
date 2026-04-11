@@ -193,8 +193,15 @@
       </div>
       <div class="form-row" style="margin-top:10px;">
         <div class="fg" style="flex:3;">
-          <label>Figma URL</label>
-          <input type="url" id="d-figma-url" placeholder="https://www.figma.com/design/…" />
+          <label>Figma Share URL</label>
+          <input type="url" id="d-figma-url" placeholder="https://www.figma.com/design/AbCdEf1234/My-Screen?node-id=0-1" />
+          <div style="margin-top:6px;padding:8px 10px;background:rgba(255,107,26,.07);border:1px solid rgba(255,107,26,.2);border-radius:6px;font-size:11px;color:var(--text-muted);line-height:1.6;">
+            <strong style="color:var(--accent-orange);">How to get the link:</strong>
+            In Figma open your file → click <strong>Share</strong> (top right) →
+            set access to <strong>"Anyone with the link → can view"</strong> →
+            click <strong>Copy link</strong> and paste it here.
+            <br>Supports: <code style="color:var(--text-secondary)">figma.com/design/…</code> · <code style="color:var(--text-secondary)">figma.com/file/…</code> · <code style="color:var(--text-secondary)">figma.com/proto/…</code>
+          </div>
         </div>
       </div>
       <div class="form-row" style="margin-top:10px;">
@@ -306,6 +313,8 @@
           container.innerHTML = '<div class="empty-state">No designs yet — add the first Figma link above</div>';
           return;
         }
+        // Populate cache so openDesign() doesn't need to re-fetch
+        _designsCache = data.designs;
         container.innerHTML = `<div class="designs-grid">${data.designs.map(designCard).join('')}</div>`;
       } catch (e) {
         container.innerHTML = `<div class="empty-state" style="color:var(--danger)">Error: ${esc(e.message)}</div>`;
@@ -340,7 +349,7 @@
     let _designsCache = [];
 
     async function openDesign(id) {
-      // Refresh cache if needed
+      // Ensure cache is populated
       if (!_designsCache.length) {
         const res  = await fetch('/api/bonyad/designs');
         const data = await res.json();
