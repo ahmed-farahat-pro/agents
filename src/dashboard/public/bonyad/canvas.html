@@ -6,66 +6,83 @@
   <title>Bonyad Canvas — Dependency Map</title>
   <link rel="stylesheet" href="brief.css">
   <style>
-    /* ── Reset & base ─────────────────────────────────────── */
+    /* ═══════════════════════════════════════════════════════════
+       CANVAS PAGE — Professional dependency map
+    ════════════════════════════════════════════════════════════ */
     html, body { height: 100%; overflow: hidden; }
-    body.bonyad-theme { display: flex; flex-direction: column; }
+    body.bonyad-theme { display: flex; flex-direction: column; background: var(--bg-primary); }
 
-    /* ── Toolbar ──────────────────────────────────────────── */
+    /* ── Toolbar ─────────────────────────────────────────────── */
     .cv-toolbar {
-      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-      padding: 0 16px; height: 52px; flex-shrink: 0;
+      display: flex; align-items: center; gap: 0;
+      height: 52px; flex-shrink: 0;
       background: var(--bg-elevated); border-bottom: 1px solid var(--border);
       z-index: 100; position: relative;
     }
-    .cv-toolbar-left  { display: flex; align-items: center; gap: 8px; }
-    .cv-toolbar-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .cv-toolbar-sep {
+      width: 1px; height: 28px; background: var(--border); margin: 0 8px; flex-shrink: 0;
+    }
+    .cv-toolbar-group { display: flex; align-items: center; gap: 4px; padding: 0 10px; }
     .cv-tb-btn {
-      padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border);
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 7px; border: 1px solid transparent;
       background: none; color: var(--text-secondary); font-size: 12px;
       font-family: var(--mono); cursor: pointer; transition: all .15s;
+      white-space: nowrap;
     }
-    .cv-tb-btn:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
-    .cv-tb-btn.active { background: var(--accent-orange); border-color: var(--accent-orange); color: #08070b; font-weight: 700; }
+    .cv-tb-btn:hover { background: rgba(255,255,255,.05); color: var(--text-primary); }
+    .cv-tb-btn.primary {
+      background: var(--accent-orange); border-color: var(--accent-orange);
+      color: #08070b; font-weight: 700;
+    }
+    .cv-tb-btn.primary:hover { background: #ff7d35; }
+    .cv-tb-btn.active { background: rgba(255,107,26,.15); border-color: rgba(255,107,26,.4); color: var(--accent-orange); }
     .cv-zoom-label {
       font-size: 12px; font-family: var(--mono);
       color: var(--text-muted); min-width: 44px; text-align: center;
     }
     .cv-sheet-sel {
-      background: var(--bg-primary); border: 1px solid var(--border);
-      color: var(--text-primary); border-radius: 8px; padding: 5px 10px;
-      font-size: 12px; font-family: var(--font); cursor: pointer;
+      background: rgba(255,255,255,.04); border: 1px solid var(--border);
+      color: var(--text-primary); border-radius: 7px; padding: 5px 10px;
+      font-size: 12px; font-family: var(--font); cursor: pointer; max-width: 200px;
     }
     .cv-sheet-sel:focus { outline: none; border-color: var(--accent-orange); }
     .cv-key-input {
-      background: var(--bg-primary); border: 1px solid var(--border);
-      color: var(--text-primary); border-radius: 8px; padding: 5px 10px;
-      font-size: 12px; font-family: var(--mono); width: 180px;
+      background: rgba(255,255,255,.04); border: 1px solid var(--border);
+      color: var(--text-primary); border-radius: 7px; padding: 5px 10px;
+      font-size: 12px; font-family: var(--mono); width: 160px;
     }
     .cv-key-input:focus { outline: none; border-color: var(--accent-orange); }
-    .cv-stats { font-size: 11px; color: var(--text-muted); font-family: var(--mono); white-space: nowrap; }
-    .cv-hint {
-      font-size: 11px; color: var(--text-muted);
-      border-left: 1px solid var(--border); padding-left: 10px;
+    .cv-user-badge {
+      font-size: 11px; font-family: var(--mono); color: var(--accent-green);
+      padding: 3px 8px; background: rgba(46,230,184,.1); border: 1px solid rgba(46,230,184,.2);
+      border-radius: 5px; white-space: nowrap; display: none;
     }
+    .cv-stats { font-size: 11px; color: var(--text-muted); font-family: var(--mono); white-space: nowrap; }
+    .cv-spacer { flex: 1; }
 
-    /* ── Viewport ─────────────────────────────────────────── */
+    /* ── Viewport ─────────────────────────────────────────────── */
     .cv-viewport {
       flex: 1; overflow: hidden; position: relative;
       cursor: default; user-select: none;
-      background-color: var(--bg-primary);
+      background-color: #0b0a0f;
+      /* Subtle grid lines */
       background-image:
-        radial-gradient(circle, rgba(255,255,255,.06) 1px, transparent 1px);
-      background-size: 28px 28px;
+        linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px),
+        linear-gradient(rgba(255,255,255,.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.015) 1px, transparent 1px);
+      background-size: 100px 100px, 100px 100px, 25px 25px, 25px 25px;
     }
     .cv-viewport.panning { cursor: grabbing; }
+    .cv-viewport.connecting { cursor: crosshair; }
 
     .cv-world {
       position: absolute; top: 0; left: 0;
-      transform-origin: 0 0;
-      will-change: transform;
+      transform-origin: 0 0; will-change: transform;
     }
 
-    /* ── SVG edges layer ──────────────────────────────────── */
+    /* ── SVG edges layer ─────────────────────────────────────── */
     .cv-edges-svg {
       position: absolute; top: 0; left: 0;
       width: 12000px; height: 8000px;
@@ -74,105 +91,234 @@
     .cv-edge {
       stroke-width: 2; fill: none;
       pointer-events: stroke; cursor: pointer;
-      transition: stroke .2s;
     }
-    .cv-edge.dep-open     { stroke: rgba(255,107,26,.55); stroke-dasharray: 6 4; }
-    .cv-edge.dep-done     { stroke: #2ee6b8; stroke-dasharray: none; }
-    .cv-edge.dep-progress { stroke: #5eb3ff; stroke-dasharray: 4 3; }
+    .cv-edge.dep-open     { stroke: rgba(255,107,26,.5); stroke-dasharray: 7 4; }
+    .cv-edge.dep-done     { stroke: #2ee6b8; }
+    .cv-edge.dep-progress { stroke: #5eb3ff; stroke-dasharray: 5 3; }
     .cv-edge.selected     { stroke: #fff; stroke-width: 2.5; }
     .cv-edge-hit {
-      stroke-width: 18; fill: none; stroke: transparent;
+      stroke-width: 20; fill: none; stroke: transparent;
       pointer-events: stroke; cursor: pointer;
     }
-    /* Arrow markers */
     .cv-arrow-open     { fill: rgba(255,107,26,.7); }
     .cv-arrow-done     { fill: #2ee6b8; }
     .cv-arrow-progress { fill: #5eb3ff; }
     .cv-arrow-selected { fill: #fff; }
-    /* Temp edge while drawing */
     .cv-edge-temp {
-      stroke: rgba(255,107,26,.6); stroke-width: 2;
-      stroke-dasharray: 5 4; fill: none;
-      pointer-events: none;
+      stroke: rgba(255,107,26,.7); stroke-width: 2;
+      stroke-dasharray: 6 4; fill: none; pointer-events: none;
     }
 
-    /* ── Nodes ────────────────────────────────────────────── */
+    /* ── Nodes ───────────────────────────────────────────────── */
     .cv-node {
-      position: absolute; width: 260px;
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: 12px; overflow: visible;
-      transition: box-shadow .2s, border-color .2s;
-      will-change: transform;
+      position: absolute; width: 280px;
+      background: #13111a; border: 1px solid rgba(255,255,255,.08);
+      border-top: 3px solid var(--border);
+      border-radius: 10px; overflow: visible;
+      transition: border-color .2s, box-shadow .2s;
+      will-change: transform; cursor: default;
     }
-    .cv-node:hover { border-color: rgba(255,107,26,.35); }
-    .cv-node.selected { border-color: var(--accent-orange); box-shadow: 0 0 0 2px rgba(255,107,26,.2); }
-    .cv-node.wf-done  { border-color: rgba(46,230,184,.35); }
-    .cv-node.wf-progress { border-color: rgba(94,179,255,.35); }
+    .cv-node:hover { border-color: rgba(255,107,26,.25); box-shadow: 0 4px 24px rgba(0,0,0,.4); }
+    .cv-node.selected {
+      border-color: var(--accent-orange) !important;
+      box-shadow: 0 0 0 2px rgba(255,107,26,.2), 0 4px 24px rgba(0,0,0,.5);
+    }
+    .cv-node.wf-done    { border-top-color: #2ee6b8; }
+    .cv-node.wf-progress{ border-top-color: #5eb3ff; }
+    /* Priority top strips */
+    .cv-node.pri-high    { border-top-color: var(--danger); }
+    .cv-node.pri-medium  { border-top-color: var(--accent-orange); }
+    .cv-node.pri-low     { border-top-color: #5eb3ff; }
+    /* Done overrides priority */
+    .cv-node.wf-done { border-top-color: #2ee6b8; }
 
-    /* Completion glow */
     @keyframes cv-done-pulse {
-      0%,100% { box-shadow: 0 0 0 2px rgba(46,230,184,.15); }
-      50%      { box-shadow: 0 0 18px 4px rgba(46,230,184,.45); }
+      0%,100% { box-shadow: 0 0 0 2px rgba(46,230,184,.1); }
+      50%      { box-shadow: 0 0 20px 4px rgba(46,230,184,.4); }
     }
-    .cv-node.just-done { animation: cv-done-pulse .8s ease 2; }
+    .cv-node.just-done { animation: cv-done-pulse 1s ease 2; }
 
-    .cv-node-header {
+    /* Drag handle */
+    .cv-node-drag {
       display: flex; align-items: center; gap: 8px;
-      padding: 10px 12px 8px; cursor: grab; border-radius: 12px 12px 0 0;
-      border-bottom: 1px solid var(--border);
+      padding: 10px 12px 6px; cursor: grab;
+      border-radius: 8px 8px 0 0;
     }
-    .cv-node-header:active { cursor: grabbing; }
-    .cv-node-pri {
-      width: 3px; height: 28px; border-radius: 2px; flex-shrink: 0;
+    .cv-node-drag:active { cursor: grabbing; }
+    .cv-drag-grip {
+      display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; opacity: .35;
     }
-    .pri-high   { background: var(--danger); }
-    .pri-medium { background: var(--accent-orange); }
-    .pri-low    { background: var(--blue-accent); }
+    .cv-drag-grip span {
+      display: block; width: 16px; height: 1.5px;
+      background: var(--text-muted); border-radius: 1px;
+    }
     .cv-node-title {
-      font-size: 12px; font-weight: 700; color: var(--text-primary);
-      flex: 1; line-height: 1.35;
+      font-size: 12.5px; font-weight: 600; color: var(--text-primary);
+      flex: 1; line-height: 1.4;
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
     .cv-node-wf {
-      padding: 2px 7px; border-radius: 5px; font-size: 10px;
-      font-weight: 700; letter-spacing: .04em; white-space: nowrap;
+      padding: 2px 7px; border-radius: 4px; font-size: 10px;
+      font-weight: 700; letter-spacing: .05em; white-space: nowrap;
       font-family: var(--mono); flex-shrink: 0;
     }
-    .wf-open     .cv-node-wf { background: rgba(168,168,179,.12); color: var(--text-muted); }
-    .wf-progress .cv-node-wf { background: rgba(94,179,255,.12);  color: var(--blue-accent); }
-    .wf-done     .cv-node-wf { background: rgba(46,230,184,.12);  color: var(--accent-green); }
+    .wf-open     .cv-node-wf { background: rgba(168,168,179,.1); color: rgba(255,255,255,.4); }
+    .wf-progress .cv-node-wf { background: rgba(94,179,255,.12);  color: #5eb3ff; }
+    .wf-done     .cv-node-wf { background: rgba(46,230,184,.12);  color: #2ee6b8; }
 
-    .cv-node-body {
-      padding: 8px 12px 10px;
-      font-size: 11px; color: var(--text-muted);
+    .cv-node-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 5px 12px 9px; border-top: 1px solid rgba(255,255,255,.05);
     }
-    .cv-node-id { font-family: var(--mono); color: rgba(255,255,255,.2); font-size: 10px; }
+    .cv-node-id { font-family: var(--mono); color: rgba(255,255,255,.18); font-size: 10px; }
+    .cv-node-actions { display: flex; gap: 4px; }
+    .cv-node-action-btn {
+      background: none; border: none; cursor: pointer;
+      color: rgba(255,255,255,.25); padding: 2px 5px; font-size: 10px;
+      border-radius: 4px; font-family: var(--mono); transition: all .12s;
+    }
+    .cv-node-action-btn:hover { background: rgba(255,255,255,.06); color: var(--accent-orange); }
 
-    /* Ports */
+    /* Ports — always visible with large invisible hit zone */
+    .cv-port-wrap {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 32px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: crosshair; z-index: 20;
+    }
+    .cv-port-wrap-in  { left: -16px; }
+    .cv-port-wrap-out { right: -16px; }
     .cv-port {
-      position: absolute; width: 12px; height: 12px;
-      border-radius: 50%; border: 2px solid var(--border);
-      background: var(--bg-elevated); top: 50%; transform: translateY(-50%);
-      cursor: crosshair; transition: border-color .15s, background .15s;
-      z-index: 10;
+      width: 12px; height: 12px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.2);
+      background: #13111a;
+      transition: border-color .15s, transform .15s, background .15s;
+      pointer-events: none;
     }
-    .cv-port:hover, .cv-port.active {
-      border-color: var(--accent-orange); background: rgba(255,107,26,.3);
+    .cv-port-wrap:hover .cv-port,
+    .cv-port-wrap.port-active .cv-port {
+      border-color: var(--accent-orange); background: rgba(255,107,26,.25);
+      transform: scale(1.4);
     }
-    .cv-port-in  { left: -7px; }
-    .cv-port-out { right: -7px; }
+    .cv-port-wrap.port-valid-target .cv-port {
+      border-color: #2ee6b8; background: rgba(46,230,184,.25);
+      transform: scale(1.5);
+    }
 
-    /* ── Edge delete button ───────────────────────────────── */
+    /* ── Edge delete btn ─────────────────────────────────────── */
     .cv-edge-del {
-      position: absolute; width: 20px; height: 20px;
-      border-radius: 50%; background: var(--danger); border: none;
-      color: #fff; font-size: 11px; line-height: 20px; text-align: center;
-      cursor: pointer; display: none; z-index: 200;
+      position: absolute; width: 22px; height: 22px;
+      border-radius: 50%; background: var(--danger); border: 2px solid rgba(0,0,0,.4);
+      color: #fff; font-size: 12px; line-height: 18px; text-align: center;
+      cursor: pointer; display: none; z-index: 300;
       transform: translate(-50%, -50%);
+      box-shadow: 0 2px 8px rgba(0,0,0,.4);
     }
     .cv-edge-del.visible { display: block; }
 
-    /* ── Celebration overlay ──────────────────────────────── */
+    /* ── Right panel (edit/add issue) ────────────────────────── */
+    .cv-panel {
+      position: absolute; right: 0; top: 0; bottom: 0;
+      width: 340px; background: #0f0d14;
+      border-left: 1px solid var(--border);
+      z-index: 200; display: flex; flex-direction: column;
+      transform: translateX(100%); transition: transform .22s cubic-bezier(.4,0,.2,1);
+    }
+    .cv-panel.open { transform: translateX(0); }
+    .cv-panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .cv-panel-title { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+    .cv-panel-close {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-muted); font-size: 18px; line-height: 1; padding: 2px 6px;
+      border-radius: 5px; transition: all .12s;
+    }
+    .cv-panel-close:hover { background: rgba(255,255,255,.06); color: var(--text-primary); }
+    .cv-panel-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+    .cv-field label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 5px; font-family: var(--mono); letter-spacing: .04em; text-transform: uppercase; }
+    .cv-field input,
+    .cv-field textarea,
+    .cv-field select {
+      width: 100%; background: rgba(255,255,255,.04); border: 1px solid var(--border);
+      color: var(--text-primary); border-radius: 7px; padding: 8px 10px;
+      font-size: 12.5px; font-family: var(--font); transition: border-color .15s;
+      resize: vertical; box-sizing: border-box;
+    }
+    .cv-field input:focus, .cv-field textarea:focus, .cv-field select:focus {
+      outline: none; border-color: var(--accent-orange);
+    }
+    .cv-field textarea { min-height: 80px; }
+    .cv-status-pills { display: flex; gap: 6px; }
+    .cv-status-pill {
+      flex: 1; padding: 6px 0; border-radius: 6px; border: 1px solid var(--border);
+      background: none; cursor: pointer; font-size: 11px; font-family: var(--mono);
+      font-weight: 700; color: var(--text-muted); text-align: center; transition: all .15s;
+    }
+    .cv-status-pill:hover { border-color: rgba(255,255,255,.2); color: var(--text-primary); }
+    .cv-status-pill.active-open     { border-color: rgba(255,255,255,.3); color: var(--text-primary); background: rgba(255,255,255,.05); }
+    .cv-status-pill.active-progress { border-color: #5eb3ff; color: #5eb3ff; background: rgba(94,179,255,.1); }
+    .cv-status-pill.active-done     { border-color: #2ee6b8; color: #2ee6b8; background: rgba(46,230,184,.1); }
+    .cv-pri-pills { display: flex; gap: 6px; }
+    .cv-pri-pill {
+      flex: 1; padding: 6px 0; border-radius: 6px; border: 1px solid var(--border);
+      background: none; cursor: pointer; font-size: 11px; font-family: var(--mono);
+      font-weight: 700; color: var(--text-muted); text-align: center; transition: all .15s;
+    }
+    .cv-pri-pill[data-p="high"].active   { border-color: var(--danger);  color: var(--danger);  background: rgba(239,68,68,.1); }
+    .cv-pri-pill[data-p="medium"].active { border-color: var(--accent-orange); color: var(--accent-orange); background: rgba(255,107,26,.1); }
+    .cv-pri-pill[data-p="low"].active    { border-color: #5eb3ff; color: #5eb3ff; background: rgba(94,179,255,.1); }
+    .cv-panel-footer {
+      padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-shrink: 0;
+    }
+    .cv-panel-save {
+      flex: 1; padding: 9px 0; border-radius: 7px; border: none;
+      background: var(--accent-orange); color: #08070b; font-weight: 700;
+      font-size: 13px; cursor: pointer; transition: background .15s;
+    }
+    .cv-panel-save:hover { background: #ff7d35; }
+    .cv-panel-cancel {
+      padding: 9px 16px; border-radius: 7px; border: 1px solid var(--border);
+      background: none; color: var(--text-muted); font-size: 13px; cursor: pointer;
+    }
+    .cv-panel-cancel:hover { background: rgba(255,255,255,.04); color: var(--text-primary); }
+    .cv-panel-open-link {
+      display: block; text-align: center; margin-top: 4px;
+      font-size: 11px; color: var(--accent-orange); text-decoration: none; font-family: var(--mono);
+    }
+    .cv-panel-open-link:hover { text-decoration: underline; }
+    .cv-panel-delete-btn {
+      padding: 8px 14px; border-radius: 7px; border: 1px solid rgba(239,68,68,.3);
+      background: none; color: #ef4444; font-size: 12px; cursor: pointer; transition: all .15s;
+    }
+    .cv-panel-delete-btn:hover { background: rgba(239,68,68,.1); }
+
+    /* ── Legend ─────────────────────────────────────────────── */
+    .cv-legend {
+      position: absolute; bottom: 16px; left: 16px; z-index: 50;
+      background: rgba(15,13,20,.95); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 14px;
+      font-size: 10.5px; color: var(--text-muted);
+      display: flex; flex-direction: column; gap: 5px;
+      backdrop-filter: blur(8px);
+    }
+    .cv-legend-row { display: flex; align-items: center; gap: 8px; }
+    .cv-legend-line { width: 24px; height: 2px; border-radius: 1px; flex-shrink: 0; }
+    .cv-legend-dot  { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .cv-legend-title { font-weight: 700; font-family: var(--mono); color: rgba(255,255,255,.4); font-size: 9px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+
+    /* ── Mini-map ─────────────────────────────────────────────── */
+    .cv-minimap {
+      position: absolute; bottom: 16px; right: 16px; z-index: 50;
+      width: 160px; height: 100px;
+      background: rgba(15,13,20,.9); border: 1px solid var(--border);
+      border-radius: 8px; overflow: hidden; cursor: pointer;
+      backdrop-filter: blur(8px);
+    }
+    .cv-minimap canvas { width: 100%; height: 100%; display: block; }
+
+    /* ── Celebrate ─────────────────────────────────────────────── */
     .cv-celebrate {
       position: fixed; inset: 0; pointer-events: none; z-index: 9999;
       display: flex; align-items: center; justify-content: center;
@@ -181,67 +327,85 @@
     .cv-celebrate.show { opacity: 1; }
     .cv-celebrate-banner {
       background: linear-gradient(135deg, #0f0d14, #1a1720);
-      border: 1px solid var(--accent-green);
-      border-radius: 20px; padding: 28px 48px; text-align: center;
-      box-shadow: 0 0 60px rgba(46,230,184,.25);
+      border: 1px solid #2ee6b8; border-radius: 16px; padding: 28px 48px; text-align: center;
+      box-shadow: 0 0 80px rgba(46,230,184,.2), 0 0 0 1px rgba(46,230,184,.1);
     }
-    .cv-celebrate-banner h2 {
-      font-size: 28px; font-weight: 900; color: var(--accent-green);
-      letter-spacing: -0.03em; margin-bottom: 6px;
-    }
-    .cv-celebrate-banner p { font-size: 14px; color: var(--text-muted); }
-
-    /* Confetti particles */
+    .cv-celebrate-banner h2 { font-size: 26px; font-weight: 900; color: #2ee6b8; margin-bottom: 4px; }
+    .cv-celebrate-banner p  { font-size: 13px; color: var(--text-muted); }
     @keyframes cv-confetti {
       0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
-      100% { transform: translateY(-180px) rotate(720deg) translateX(var(--cx)); opacity: 0; }
+      100% { transform: translateY(-200px) rotate(720deg) translateX(var(--cx)); opacity: 0; }
     }
     .cv-particle {
-      position: absolute; width: 8px; height: 8px; border-radius: 2px;
-      animation: cv-confetti 1.2s ease forwards;
-      bottom: 100%;
+      position: absolute; width: 7px; height: 7px; border-radius: 2px;
+      animation: cv-confetti 1.4s ease forwards; bottom: 100%;
     }
 
-    /* ── Empty / error states ─────────────────────────────── */
+    /* ── Empty state ─────────────────────────────────────────── */
     .cv-empty {
       position: absolute; inset: 0;
       display: flex; align-items: center; justify-content: center;
-      flex-direction: column; gap: 12px; color: var(--text-muted); font-size: 14px;
+      flex-direction: column; gap: 10px; color: var(--text-muted);
+      font-size: 13px; pointer-events: none;
     }
-    .cv-empty svg { opacity: .3; }
+    .cv-empty svg { opacity: .2; }
+    .cv-empty-hint {
+      font-size: 11px; color: rgba(255,255,255,.25); font-family: var(--mono);
+      margin-top: 4px;
+    }
 
-    /* ── Legend ───────────────────────────────────────────── */
-    .cv-legend {
-      position: absolute; bottom: 16px; left: 16px; z-index: 50;
-      background: var(--bg-elevated); border: 1px solid var(--border);
-      border-radius: 10px; padding: 10px 14px;
-      font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 6px;
+    /* ── Connecting-mode pulse ring on active port ─────────── */
+    @keyframes cv-port-pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(255,107,26,.5); }
+      70%  { box-shadow: 0 0 0 8px rgba(255,107,26,0); }
+      100% { box-shadow: 0 0 0 0 rgba(255,107,26,0); }
     }
-    .cv-legend-row { display: flex; align-items: center; gap: 8px; }
-    .cv-legend-line {
-      width: 28px; height: 2px; border-radius: 1px;
-    }
-    .cv-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .cv-port-wrap.port-active .cv-port { animation: cv-port-pulse 1.2s infinite; }
   </style>
 </head>
 <body class="bonyad-theme">
 
 <!-- ── Toolbar ──────────────────────────────────────────────────── -->
 <div class="cv-toolbar">
-  <div class="cv-toolbar-left">
-    <a href="./" style="color:var(--text-muted);text-decoration:none;font-size:12px;white-space:nowrap;">← Hub</a>
+  <div class="cv-toolbar-group">
+    <a href="./" style="color:var(--text-muted);text-decoration:none;font-size:12px;font-family:var(--mono);display:flex;align-items:center;gap:4px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Hub
+    </a>
+  </div>
+  <div class="cv-toolbar-sep"></div>
+  <div class="cv-toolbar-group">
     <select class="cv-sheet-sel" id="cv-sheet-sel"><option value="">Loading…</option></select>
-    <button class="cv-tb-btn" id="cv-fit" title="Fit all nodes">Fit</button>
+  </div>
+  <div class="cv-toolbar-sep"></div>
+  <div class="cv-toolbar-group">
+    <button class="cv-tb-btn" id="cv-fit" title="Fit all nodes (F)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+      Fit
+    </button>
     <button class="cv-tb-btn" id="cv-zoom-out" title="Zoom out">−</button>
     <span class="cv-zoom-label" id="cv-zoom-label">100%</span>
     <button class="cv-tb-btn" id="cv-zoom-in" title="Zoom in">+</button>
-    <button class="cv-tb-btn" id="cv-auto-layout" title="Auto-arrange nodes">Auto layout</button>
+    <button class="cv-tb-btn" id="cv-auto-layout" title="Auto-arrange nodes">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="9" y="15" width="6" height="6" rx="1"/><path d="M6 9v3a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V9"/></svg>
+      Auto Layout
+    </button>
   </div>
-  <div class="cv-hint" id="cv-hint">Drag nodes · Drag port to connect · Right-click edge to delete</div>
-  <div class="cv-toolbar-right">
+  <div class="cv-toolbar-sep"></div>
+  <div class="cv-toolbar-group">
+    <button class="cv-tb-btn primary" id="cv-add-issue" title="Add new issue (Double-click canvas)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add Issue
+    </button>
+  </div>
+  <span class="cv-spacer"></span>
+  <div class="cv-toolbar-group">
     <span class="cv-stats" id="cv-stats"></span>
-    <input class="cv-key-input" type="password" id="cv-key" placeholder="Your key to edit" autocomplete="off" />
-    <button class="add-btn" id="cv-key-save" style="padding:5px 14px;font-size:12px;">Connect</button>
+  </div>
+  <div class="cv-toolbar-sep"></div>
+  <div class="cv-toolbar-group" style="gap:6px;">
+    <input class="cv-key-input" type="password" id="cv-key" placeholder="Your key…" autocomplete="off" />
+    <button class="cv-tb-btn" id="cv-key-save" style="border-color:rgba(255,107,26,.4);color:var(--accent-orange);">Connect</button>
+    <span class="cv-user-badge" id="cv-user-badge"></span>
   </div>
 </div>
 
@@ -250,52 +414,105 @@
   <div class="cv-world" id="cvWorld">
     <svg class="cv-edges-svg" id="cvEdgesSvg">
       <defs>
-        <marker id="arr-open"     markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
-          <path d="M0,0 L0,6 L8,3 z" class="cv-arrow-open"/>
-        </marker>
-        <marker id="arr-done"     markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
-          <path d="M0,0 L0,6 L8,3 z" class="cv-arrow-done"/>
-        </marker>
-        <marker id="arr-progress" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
-          <path d="M0,0 L0,6 L8,3 z" class="cv-arrow-progress"/>
-        </marker>
-        <marker id="arr-selected" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
-          <path d="M0,0 L0,6 L8,3 z" class="cv-arrow-selected"/>
-        </marker>
+        <marker id="arr-open"     markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" class="cv-arrow-open"/></marker>
+        <marker id="arr-done"     markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" class="cv-arrow-done"/></marker>
+        <marker id="arr-progress" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" class="cv-arrow-progress"/></marker>
+        <marker id="arr-selected" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" class="cv-arrow-selected"/></marker>
       </defs>
     </svg>
     <div id="cvNodesLayer"></div>
   </div>
-  <!-- Temp edge path for drawing new connections -->
+  <!-- Temp edge for drawing -->
   <svg id="cvTempSvg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;">
     <path id="cvTempEdge" class="cv-edge-temp" d="" style="display:none;"/>
   </svg>
   <!-- Empty state -->
   <div class="cv-empty" id="cvEmpty" style="display:none;">
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+      <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+      <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+    </svg>
     <span id="cvEmptyMsg">Select a sheet to view its canvas</span>
+    <span class="cv-empty-hint">Double-click to add issues · Drag ports to connect</span>
   </div>
 </div>
 
-<!-- Edge delete button (floats over canvas) -->
+<!-- Edge delete btn -->
 <button class="cv-edge-del" id="cvEdgeDel" title="Delete connection">×</button>
 
 <!-- Legend -->
 <div class="cv-legend">
+  <div class="cv-legend-title">Priority</div>
   <div class="cv-legend-row"><span class="cv-legend-dot" style="background:var(--danger)"></span> High</div>
   <div class="cv-legend-row"><span class="cv-legend-dot" style="background:var(--accent-orange)"></span> Medium</div>
-  <div class="cv-legend-row"><span class="cv-legend-dot" style="background:var(--blue-accent)"></span> Low</div>
-  <div style="border-top:1px solid var(--border);margin:2px 0;"></div>
-  <div class="cv-legend-row"><span class="cv-legend-line" style="background:rgba(255,107,26,.55);border-top:1px dashed rgba(255,107,26,.55);height:0;"></span> Pending dep</div>
-  <div class="cv-legend-row"><span class="cv-legend-line" style="background:#2ee6b8;"></span> Done dep</div>
-  <div class="cv-legend-row"><span class="cv-legend-line" style="background:#5eb3ff;"></span> In-progress dep</div>
+  <div class="cv-legend-row"><span class="cv-legend-dot" style="background:#5eb3ff"></span> Low</div>
+  <div style="border-top:1px solid rgba(255,255,255,.05);margin:4px 0;"></div>
+  <div class="cv-legend-title">Dependency</div>
+  <div class="cv-legend-row">
+    <svg width="24" height="8" style="flex-shrink:0"><line x1="0" y1="4" x2="24" y2="4" stroke="rgba(255,107,26,.55)" stroke-width="2" stroke-dasharray="5 3"/></svg>
+    Pending
+  </div>
+  <div class="cv-legend-row"><span class="cv-legend-line" style="background:#2ee6b8;"></span> Done</div>
+  <div class="cv-legend-row">
+    <svg width="24" height="8" style="flex-shrink:0"><line x1="0" y1="4" x2="24" y2="4" stroke="#5eb3ff" stroke-width="2" stroke-dasharray="4 3"/></svg>
+    In Progress
+  </div>
 </div>
 
-<!-- Celebration overlay -->
+<!-- Mini-map -->
+<div class="cv-minimap" id="cvMinimap" title="Click to fit all"><canvas id="cvMinimapCanvas"></canvas></div>
+
+<!-- Celebration -->
 <div class="cv-celebrate" id="cvCelebrate">
   <div class="cv-celebrate-banner" id="cvCelebrateBanner">
     <h2>All Issues Complete</h2>
     <p id="cvCelebrateMsg">Every node on this sheet is marked done.</p>
+  </div>
+</div>
+
+<!-- Right panel (add / edit issue) -->
+<div class="cv-panel" id="cvPanel">
+  <div class="cv-panel-header">
+    <span class="cv-panel-title" id="cvPanelTitle">Add Issue</span>
+    <button class="cv-panel-close" id="cvPanelClose">×</button>
+  </div>
+  <div class="cv-panel-body">
+    <div class="cv-field">
+      <label>Title *</label>
+      <input type="text" id="cvPanelTitleInput" placeholder="Short, clear issue title" maxlength="255"/>
+    </div>
+    <div class="cv-field">
+      <label>Description / Steps to reproduce *</label>
+      <textarea id="cvPanelDesc" placeholder="Describe the issue, steps to reproduce, expected vs actual…" rows="4"></textarea>
+    </div>
+    <div class="cv-field">
+      <label>Priority</label>
+      <div class="cv-pri-pills" id="cvPanelPri">
+        <button class="cv-pri-pill" data-p="high">High</button>
+        <button class="cv-pri-pill active" data-p="medium">Medium</button>
+        <button class="cv-pri-pill" data-p="low">Low</button>
+      </div>
+    </div>
+    <div class="cv-field" id="cvPanelStatusField" style="display:none;">
+      <label>Status</label>
+      <div class="cv-status-pills" id="cvPanelStatus">
+        <button class="cv-status-pill active-open" data-s="open">Open</button>
+        <button class="cv-status-pill" data-s="in_progress">In Progress</button>
+        <button class="cv-status-pill" data-s="done">Done</button>
+      </div>
+    </div>
+    <div class="cv-field" id="cvPanelTagsField">
+      <label>Tags (comma separated)</label>
+      <input type="text" id="cvPanelTags" placeholder="ui, crash, android"/>
+    </div>
+    <div class="cv-field" id="cvPanelModuleField">
+      <label>Module / Screen</label>
+      <input type="text" id="cvPanelModule" placeholder="e.g. Login, Dashboard"/>
+    </div>
+  </div>
+  <div class="cv-panel-footer" id="cvPanelFooter">
+    <button class="cv-panel-cancel" id="cvPanelCancel">Cancel</button>
+    <button class="cv-panel-save" id="cvPanelSave">Add Issue</button>
   </div>
 </div>
 
@@ -304,67 +521,88 @@
 <script>
 'use strict';
 /* ════════════════════════════════════════════════════════════
-   BONYAD CANVAS  — dependency map
-   ════════════════════════════════════════════════════════════ */
+   BONYAD CANVAS v2 — Professional dependency map
+   with Add/Edit issue from canvas
+════════════════════════════════════════════════════════════ */
 
 /* ── State ──────────────────────────────────────────────────── */
 const S = {
-  slug:      '',
-  nodes:     {},   // id(str) → { id, title, priority, is_done, sheet_status, x, y, el }
-  edges:     [],   // [{ id, from_issue_id, to_issue_id }]
-  sheets:    [],
-  transform: { x: 60, y: 60, scale: 1 },
-  pan:       null, // { startX, startY, ox, oy }
-  dragging:  null, // { id, startX, startY, ox, oy }
-  conn:      null, // { fromId, x1, y1 } — drawing a new edge
-  selEdge:   null, // selected edge id
-  key:       localStorage.getItem('bonyad_edit_key') || '',
+  slug:       '',
+  nodes:      {},     // id(str) → node object + .el
+  edges:      [],     // [{id, from_issue_id, to_issue_id}]
+  sheets:     [],
+  transform:  { x: 60, y: 60, scale: 1 },
+  pan:        null,
+  dragging:   null,   // {id, startX, startY, ox, oy, moved}
+  conn:       null,   // {fromId, x1, y1} — edge being drawn
+  connClick:  null,   // {fromId} — two-click mode pending
+  selEdge:    null,
+  key:        localStorage.getItem('bonyad_edit_key') || '',
+  panel:      { mode: 'add', issueId: null, addPos: null },  // mode: 'add' | 'edit'
 };
-const NODE_W = 260, NODE_H = 80;
+const NODE_W = 280, NODE_H = 88; // approximate rendered height
 
-/* ── DOM refs ───────────────────────────────────────────────── */
-const viewport   = document.getElementById('cvViewport');
-const world      = document.getElementById('cvWorld');
-const nodesLayer = document.getElementById('cvNodesLayer');
-const edgesSvg   = document.getElementById('cvEdgesSvg');
-const tempEdge   = document.getElementById('cvTempEdge');
-const edgeDel    = document.getElementById('cvEdgeDel');
-const zoomLabel  = document.getElementById('cv-zoom-label');
-const statsEl    = document.getElementById('cv-stats');
-const sheetSel   = document.getElementById('cv-sheet-sel');
-const emptyEl    = document.getElementById('cvEmpty');
-const emptyMsg   = document.getElementById('cvEmptyMsg');
-const keyInput   = document.getElementById('cv-key');
+/* ── DOM ────────────────────────────────────────────────────── */
+const viewport    = document.getElementById('cvViewport');
+const world       = document.getElementById('cvWorld');
+const nodesLayer  = document.getElementById('cvNodesLayer');
+const edgesSvg    = document.getElementById('cvEdgesSvg');
+const tempEdge    = document.getElementById('cvTempEdge');
+const edgeDel     = document.getElementById('cvEdgeDel');
+const zoomLabel   = document.getElementById('cv-zoom-label');
+const statsEl     = document.getElementById('cv-stats');
+const sheetSel    = document.getElementById('cv-sheet-sel');
+const emptyEl     = document.getElementById('cvEmpty');
+const emptyMsg    = document.getElementById('cvEmptyMsg');
+const keyInput    = document.getElementById('cv-key');
+const userBadge   = document.getElementById('cv-user-badge');
+const cvPanel     = document.getElementById('cvPanel');
+const mmCanvas    = document.getElementById('cvMinimapCanvas');
 
 if (S.key) keyInput.value = S.key;
 
-/* ── Helpers ────────────────────────────────────────────────── */
+/* ── Utils ──────────────────────────────────────────────────── */
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function applyTransform() {
   world.style.transform = `translate(${S.transform.x}px,${S.transform.y}px) scale(${S.transform.scale})`;
   zoomLabel.textContent = Math.round(S.transform.scale * 100) + '%';
+  drawMinimap();
 }
 
 function workflowState(n) {
   if (n.is_done) return 'done';
-  if (String(n.sheet_status||'').toLowerCase() === 'in_progress') return 'in_progress';
+  const st = String(n.sheet_status||'').toLowerCase();
+  if (st === 'in_progress' || st === 'in progress') return 'in_progress';
   return 'open';
 }
 
-function wfLabel(wf){ return wf === 'done' ? 'Done' : wf === 'in_progress' ? 'In Progress' : 'Open'; }
+function wfLabel(wf){ return wf==='done'?'Done':wf==='in_progress'?'In Progress':'Open'; }
 
-/* ── Sheet selector ─────────────────────────────────────────── */
+/* ── Key / auth ─────────────────────────────────────────────── */
 sheetSel.addEventListener('change', () => { S.slug = sheetSel.value; loadCanvas(); });
 
 document.getElementById('cv-key-save').addEventListener('click', () => {
   S.key = keyInput.value.trim();
   localStorage.setItem('bonyad_edit_key', S.key);
+  resolveUser();
   if (S.slug) loadCanvas();
 });
 keyInput.addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('cv-key-save').click(); });
 
-/* ── Load data ──────────────────────────────────────────────── */
+async function resolveUser() {
+  if (!S.key) { userBadge.style.display = 'none'; return; }
+  try {
+    const r = await fetch('/api/bonyad/me', { headers: { 'x-bonyad-edit-key': S.key } });
+    const d = await r.json();
+    if (d && d.success && d.user) {
+      userBadge.textContent = d.user.name + ' · ' + d.user.role;
+      userBadge.style.display = '';
+    } else { userBadge.style.display = 'none'; }
+  } catch { userBadge.style.display = 'none'; }
+}
+
+/* ── Load canvas data ───────────────────────────────────────── */
 async function loadCanvas() {
   if (!S.slug) { showEmpty('Select a sheet to view its canvas'); return; }
   showEmpty('Loading…');
@@ -373,36 +611,32 @@ async function loadCanvas() {
     const data = await r.json();
     if (!data.success) { showEmpty('Error: ' + (data.error||'failed')); return; }
 
-    // Populate sheets dropdown once
     if (data.sheets && data.sheets.length) {
-      const cur = sheetSel.value;
       sheetSel.innerHTML = data.sheets.map(s =>
         `<option value="${esc(s.slug)}" ${s.slug===S.slug?'selected':''}>${esc(s.label||s.slug)}</option>`
       ).join('');
-      if (!sheetSel.value) { sheetSel.value = cur; }
     }
 
-    if (!data.issues.length) { showEmpty('No issues on this sheet yet'); return; }
+    if (!data.issues || !data.issues.length) { showEmpty('No issues on this sheet yet — add one!'); return; }
 
     emptyEl.style.display = 'none';
 
-    // Build nodes map
     S.nodes = {};
-    data.issues.forEach(iss => { S.nodes[String(iss.id)] = { ...iss, x: iss.x < 0 ? -1 : iss.x, y: iss.y < 0 ? -1 : iss.y }; });
+    data.issues.forEach(iss => {
+      S.nodes[String(iss.id)] = { ...iss, x: iss.x < 0 ? -1 : iss.x, y: iss.y < 0 ? -1 : iss.y };
+    });
     S.edges = data.edges || [];
 
-    // Auto-layout nodes that have no saved position
-    const unpositioned = Object.values(S.nodes).filter(n => n.x < 0);
-    if (unpositioned.length === Object.values(S.nodes).length) {
+    const unpos = Object.values(S.nodes).filter(n => n.x < 0);
+    if (unpos.length === Object.values(S.nodes).length) {
       autoLayout();
-    } else if (unpositioned.length > 0) {
-      // Stack unpositioned nodes to the right of the canvas
+    } else if (unpos.length > 0) {
       let maxX = Math.max(...Object.values(S.nodes).filter(n=>n.x>=0).map(n=>n.x), 0);
-      unpositioned.forEach((n, i) => { n.x = maxX + NODE_W + 60; n.y = 60 + i * (NODE_H + 30); });
+      unpos.forEach((n, i) => { n.x = maxX + NODE_W + 60; n.y = 60 + i * (NODE_H + 40); });
     }
 
     renderAll();
-    fitAll(false);
+    fitAll();
     updateStats();
     checkCelebration();
   } catch(e) { showEmpty('Error: ' + e.message); }
@@ -410,50 +644,43 @@ async function loadCanvas() {
 
 function showEmpty(msg) {
   nodesLayer.innerHTML = '';
-  // Clear all edge paths
-  Array.from(edgesSvg.querySelectorAll('.cv-edge,.cv-edge-hit')).forEach(el=>el.remove());
+  edgesSvg.querySelectorAll('.cv-edge,.cv-edge-hit').forEach(el=>el.remove());
   emptyMsg.textContent = msg;
   emptyEl.style.display = 'flex';
 }
 
-/* ── Auto-layout (topological sort + layered) ────────────────── */
+/* ── Auto-layout ────────────────────────────────────────────── */
 function autoLayout() {
   const ids = Object.keys(S.nodes);
   if (!ids.length) return;
-
-  // Build adjacency: from → [to] (from depends on to = to is prerequisite)
-  const prereqs = {}; // id → set of prerequisite ids
+  const prereqs = {};
   ids.forEach(id => { prereqs[id] = new Set(); });
   S.edges.forEach(e => {
     const f = String(e.from_issue_id), t = String(e.to_issue_id);
     if (prereqs[f]) prereqs[f].add(t);
   });
-
-  // Assign layers: layer = max(layer of all prereqs) + 1
   const layer = {};
   ids.forEach(id => { layer[id] = 0; });
   let changed = true;
-  for (let iter = 0; iter < 50 && changed; iter++) {
+  for (let i = 0; i < 100 && changed; i++) {
     changed = false;
     ids.forEach(id => {
       prereqs[id].forEach(pre => {
-        const want = (layer[pre] || 0) + 1;
+        const want = (layer[pre]||0) + 1;
         if ((layer[id]||0) < want) { layer[id] = want; changed = true; }
       });
     });
   }
-
-  // Group by layer
   const byLayer = {};
   ids.forEach(id => {
-    const l = layer[id] || 0;
+    const l = layer[id]||0;
     if (!byLayer[l]) byLayer[l] = [];
     byLayer[l].push(id);
   });
-
-  const XGAP = NODE_W + 80, YGAP = NODE_H + 40, YSTART = 60;
+  const XGAP = NODE_W + 90, YGAP = NODE_H + 50, YSTART = 60;
   Object.entries(byLayer).forEach(([l, group]) => {
     const x = 60 + Number(l) * XGAP;
+    const totalH = group.length * YGAP - (YGAP - NODE_H);
     group.forEach((id, i) => {
       S.nodes[id].x = x;
       S.nodes[id].y = YSTART + i * YGAP;
@@ -461,142 +688,178 @@ function autoLayout() {
   });
 }
 
-/* ── Render ──────────────────────────────────────────────────── */
-function renderAll() {
-  renderNodes();
-  renderEdges();
-}
+/* ── Render ─────────────────────────────────────────────────── */
+function renderAll() { renderNodes(); renderEdges(); drawMinimap(); }
 
 function renderNodes() {
   nodesLayer.innerHTML = '';
-  Object.values(S.nodes).forEach(n => {
-    const el = document.createElement('div');
-    const wf = workflowState(n);
-    el.className = `cv-node wf-${wf}`;
-    el.id = `cvn-${n.id}`;
-    el.style.transform = `translate(${n.x}px,${n.y}px)`;
-    el.innerHTML = `
-      <div class="cv-node-header" data-nid="${n.id}">
-        <span class="cv-node-pri pri-${n.priority||'medium'}"></span>
-        <span class="cv-node-title">${esc(n.title)}</span>
-        <span class="cv-node-wf">${wfLabel(wf)}</span>
-      </div>
-      <div class="cv-node-body">
-        <span class="cv-node-id">#${n.id}</span>
+  Object.values(S.nodes).forEach(n => createNodeEl(n));
+}
+
+function createNodeEl(n) {
+  const el = document.createElement('div');
+  const wf  = workflowState(n);
+  const pri = n.priority || 'medium';
+  el.className = `cv-node wf-${wf} pri-${pri}`;
+  el.id = `cvn-${n.id}`;
+  el.style.transform = `translate(${n.x}px,${n.y}px)`;
+  el.innerHTML = `
+    <div class="cv-node-drag" data-nid="${n.id}">
+      <div class="cv-drag-grip"><span></span><span></span><span></span></div>
+      <span class="cv-node-title">${esc(n.title)}</span>
+      <span class="cv-node-wf">${wfLabel(wf)}</span>
+    </div>
+    <div class="cv-node-footer">
+      <span class="cv-node-id">#${n.id}</span>
+      <div class="cv-node-actions">
+        <button class="cv-node-action-btn" data-act="edit" data-nid="${n.id}" title="Edit issue">Edit</button>
         <a href="sheet.html?slug=${esc(S.slug)}#issue-${n.id}" target="_blank"
-           style="float:right;font-size:10px;color:var(--accent-orange);text-decoration:none;">open ↗</a>
+           class="cv-node-action-btn" style="text-decoration:none;" title="Open in sheet">Sheet ↗</a>
       </div>
-      <div class="cv-port cv-port-in"  data-nid="${n.id}" data-port="in"></div>
-      <div class="cv-port cv-port-out" data-nid="${n.id}" data-port="out"></div>
-    `;
-    nodesLayer.appendChild(el);
-    n.el = el;
-    wireNodeEvents(el, n);
-  });
+    </div>
+    <div class="cv-port-wrap cv-port-wrap-in"  data-nid="${n.id}" data-port="in" ><div class="cv-port"></div></div>
+    <div class="cv-port-wrap cv-port-wrap-out" data-nid="${n.id}" data-port="out"><div class="cv-port"></div></div>
+  `;
+  nodesLayer.appendChild(el);
+  n.el = el;
+  wireNodeEvents(el, n);
+  return el;
 }
 
 function wireNodeEvents(el, n) {
-  const header = el.querySelector('.cv-node-header');
-  header.addEventListener('mousedown', e => {
+  // Drag handle
+  const dragHandle = el.querySelector('.cv-node-drag');
+  dragHandle.addEventListener('mousedown', e => {
     if (e.button !== 0) return;
     e.stopPropagation();
-    S.dragging = { id: String(n.id), startX: e.clientX, startY: e.clientY, ox: n.x, oy: n.y };
+    S.dragging = { id: String(n.id), startX: e.clientX, startY: e.clientY, ox: n.x, oy: n.y, moved: false };
   });
 
-  // Output port → start drawing edge
-  const portOut = el.querySelector('.cv-port-out');
+  // Edit button
+  el.querySelector('[data-act="edit"]').addEventListener('click', e => {
+    e.stopPropagation();
+    openEditPanel(String(n.id));
+  });
+
+  // Output port
+  const portOut = el.querySelector('.cv-port-wrap-out');
   portOut.addEventListener('mousedown', e => {
-    if (!S.key) return;
     e.stopPropagation(); e.preventDefault();
-    const rect = portOut.getBoundingClientRect();
-    const vRect = viewport.getBoundingClientRect();
-    const x1 = (rect.left + rect.width/2 - vRect.left - S.transform.x) / S.transform.scale;
-    const y1 = (rect.top + rect.height/2 - vRect.top  - S.transform.y) / S.transform.scale;
+    const { x1, y1 } = portCenter(portOut);
     S.conn = { fromId: String(n.id), x1, y1 };
-    portOut.classList.add('active');
+    portOut.classList.add('port-active');
     tempEdge.style.display = '';
+    viewport.classList.add('connecting');
   });
 
-  // Input port → receive connection drop
-  const portIn = el.querySelector('.cv-port-in');
+  // Input port — receive drag-drop
+  const portIn = el.querySelector('.cv-port-wrap-in');
   portIn.addEventListener('mouseup', e => {
     if (!S.conn || S.conn.fromId === String(n.id)) return;
-    createEdge(S.conn.fromId, String(n.id));
+    finishEdge(S.conn.fromId, String(n.id));
     cancelConn();
+  });
+
+  // Two-click mode: click output port to prime, click input port to connect
+  portOut.addEventListener('click', e => {
+    e.stopPropagation();
+    if (S.connClick && S.connClick.fromId === String(n.id)) {
+      // Deactivate
+      clearConnClick();
+    } else {
+      clearConnClick();
+      S.connClick = { fromId: String(n.id) };
+      portOut.classList.add('port-active');
+    }
+  });
+
+  portIn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (S.connClick && S.connClick.fromId !== String(n.id)) {
+      finishEdge(S.connClick.fromId, String(n.id));
+      clearConnClick();
+    }
   });
 }
 
-/* ── Render edges ────────────────────────────────────────────── */
-function renderEdges() {
-  // Remove existing edge elements
-  Array.from(edgesSvg.querySelectorAll('.cv-edge,.cv-edge-hit')).forEach(el => el.remove());
+function portCenter(portWrapEl) {
+  const rect  = portWrapEl.getBoundingClientRect();
+  const vRect = viewport.getBoundingClientRect();
+  return {
+    x1: (rect.left + rect.width/2  - vRect.left - S.transform.x) / S.transform.scale,
+    y1: (rect.top  + rect.height/2 - vRect.top  - S.transform.y) / S.transform.scale,
+  };
+}
 
+function clearConnClick() {
+  if (S.connClick) {
+    const oldN = S.nodes[S.connClick.fromId];
+    if (oldN && oldN.el) {
+      oldN.el.querySelector('.cv-port-wrap-out').classList.remove('port-active');
+    }
+  }
+  S.connClick = null;
+  // Remove valid-target highlights
+  document.querySelectorAll('.cv-port-wrap.port-valid-target').forEach(p => p.classList.remove('port-valid-target'));
+}
+
+/* ── Edges ──────────────────────────────────────────────────── */
+function renderEdges() {
+  edgesSvg.querySelectorAll('.cv-edge,.cv-edge-hit').forEach(el=>el.remove());
   S.edges.forEach(e => {
     const fromN = S.nodes[String(e.from_issue_id)];
     const toN   = S.nodes[String(e.to_issue_id)];
     if (!fromN || !toN) return;
+    const wf    = workflowState(fromN);
+    const cls   = wf==='done'?'dep-done':wf==='in_progress'?'dep-progress':'dep-open';
+    const marker= wf==='done'?'arr-done':wf==='in_progress'?'arr-progress':'arr-open';
+    const { d } = bezierPath(fromN, toN);
+    const mid   = bezierMidpoint(fromN, toN);
 
-    const wf = workflowState(fromN);
-    const cls = wf === 'done' ? 'dep-done' : wf === 'in_progress' ? 'dep-progress' : 'dep-open';
-    const marker = wf === 'done' ? 'arr-done' : wf === 'in_progress' ? 'arr-progress' : 'arr-open';
-
-    const { x1, y1, x2, y2, d } = bezierPath(fromN, toN);
-    const mid = bezierMidpoint(x1, y1, x2, y2);
-
-    // Invisible hit area
     const hit = document.createElementNS('http://www.w3.org/2000/svg','path');
-    hit.setAttribute('d', d);
-    hit.setAttribute('class','cv-edge-hit');
-    hit.dataset.eid = e.id;
-    edgesSvg.appendChild(hit);
+    hit.setAttribute('d', d); hit.setAttribute('class','cv-edge-hit'); hit.dataset.eid = e.id;
 
-    // Visible path
     const path = document.createElementNS('http://www.w3.org/2000/svg','path');
     path.setAttribute('d', d);
     path.setAttribute('class', `cv-edge ${cls}${S.selEdge===e.id?' selected':''}`);
     path.setAttribute('marker-end', `url(#${S.selEdge===e.id?'arr-selected':marker})`);
     path.dataset.eid = e.id;
+
+    edgesSvg.appendChild(hit);
     edgesSvg.appendChild(path);
 
-    // Context events on hit area
-    hit.addEventListener('contextmenu', ev => { ev.preventDefault(); selectEdge(e.id, mid); });
-    hit.addEventListener('click', ev => { ev.stopPropagation(); selectEdge(e.id, mid); });
-    path.addEventListener('contextmenu', ev => { ev.preventDefault(); selectEdge(e.id, mid); });
-    path.addEventListener('click', ev => { ev.stopPropagation(); selectEdge(e.id, mid); });
+    [hit, path].forEach(el => {
+      el.addEventListener('contextmenu', ev => { ev.preventDefault(); selectEdge(e.id, mid); });
+      el.addEventListener('click', ev => { ev.stopPropagation(); selectEdge(e.id, mid); });
+    });
   });
 }
 
 function bezierPath(fromN, toN) {
-  const x1 = fromN.x + NODE_W + 1;
-  const y1 = fromN.y + NODE_H / 2;
-  const x2 = toN.x - 1;
-  const y2 = toN.y + NODE_H / 2;
-  const cx = Math.abs(x2 - x1) * 0.55 + 80;
-  const d = `M${x1},${y1} C${x1+cx},${y1} ${x2-cx},${y2} ${x2},${y2}`;
+  const x1 = fromN.x + NODE_W + 1, y1 = fromN.y + NODE_H / 2;
+  const x2 = toN.x - 1,           y2 = toN.y  + NODE_H / 2;
+  const cx = Math.max(Math.abs(x2 - x1) * 0.5, 80);
+  const d  = `M${x1},${y1} C${x1+cx},${y1} ${x2-cx},${y2} ${x2},${y2}`;
   return { x1, y1, x2, y2, d };
 }
 
-function bezierMidpoint(x1, y1, x2, y2) {
-  return { x: (x1 + x2) / 2, y: (y1 + y2) / 2 };
+function bezierMidpoint(fromN, toN) {
+  const x1 = fromN.x + NODE_W + 1, y1 = fromN.y + NODE_H / 2;
+  const x2 = toN.x - 1,           y2 = toN.y  + NODE_H / 2;
+  return { x: (x1+x2)/2, y: (y1+y2)/2 };
 }
 
-/* ── Edge selection & deletion ───────────────────────────────── */
+/* ── Edge select / delete ───────────────────────────────────── */
 function selectEdge(eid, mid) {
-  S.selEdge = eid;
-  renderEdges();
-  // Position delete button in screen coords
+  S.selEdge = eid; renderEdges();
   const vRect = viewport.getBoundingClientRect();
-  const sx = mid.x * S.transform.scale + S.transform.x + vRect.left;
-  const sy = mid.y * S.transform.scale + S.transform.y + vRect.top;
-  edgeDel.style.left = sx + 'px';
-  edgeDel.style.top  = sy + 'px';
+  edgeDel.style.left = (mid.x * S.transform.scale + S.transform.x + vRect.left) + 'px';
+  edgeDel.style.top  = (mid.y * S.transform.scale + S.transform.y + vRect.top)  + 'px';
   edgeDel.classList.add('visible');
 }
 
 function deselectEdge() {
-  S.selEdge = null;
-  edgeDel.classList.remove('visible');
-  renderEdges();
+  S.selEdge = null; edgeDel.classList.remove('visible'); renderEdges();
 }
 
 edgeDel.addEventListener('click', async () => {
@@ -608,233 +871,475 @@ edgeDel.addEventListener('click', async () => {
       body: JSON.stringify({ editKey: S.key })
     });
     S.edges = S.edges.filter(e => e.id !== S.selEdge);
-    S.selEdge = null;
-    edgeDel.classList.remove('visible');
-    renderEdges();
-    updateStats();
-  } catch(err) {}
+    S.selEdge = null; edgeDel.classList.remove('visible');
+    renderEdges(); updateStats();
+  } catch {}
 });
 
-/* ── Create edge ─────────────────────────────────────────────── */
-async function createEdge(fromId, toId) {
-  if (!S.key) return;
+/* ── Create edge ────────────────────────────────────────────── */
+async function finishEdge(fromId, toId) {
+  if (!S.key) { alert('Enter your key first to create connections.'); return; }
+  // Prevent duplicate
+  if (S.edges.some(e => String(e.from_issue_id)===fromId && String(e.to_issue_id)===toId)) return;
   try {
-    const r    = await fetch('/api/bonyad/canvas/edges', {
+    const r = await fetch('/api/bonyad/canvas/edges', {
       method: 'POST',
       headers: { 'Content-Type':'application/json', 'x-bonyad-edit-key': S.key },
       body: JSON.stringify({ from_issue_id: fromId, to_issue_id: toId, sheet_slug: S.slug, editKey: S.key })
     });
-    const data = await r.json();
-    if (data.success && data.id) {
-      S.edges.push({ id: data.id, from_issue_id: Number(fromId), to_issue_id: Number(toId) });
-      renderEdges();
-      updateStats();
+    const d = await r.json();
+    if (d.success && d.id) {
+      S.edges.push({ id: d.id, from_issue_id: Number(fromId), to_issue_id: Number(toId) });
+      renderEdges(); updateStats();
     }
-  } catch(e) {}
+  } catch {}
 }
 
 function cancelConn() {
-  S.conn = null;
-  tempEdge.style.display = 'none';
-  tempEdge.setAttribute('d','');
-  document.querySelectorAll('.cv-port-out.active').forEach(p => p.classList.remove('active'));
+  S.conn = null; tempEdge.style.display = 'none'; tempEdge.setAttribute('d','');
+  document.querySelectorAll('.cv-port-wrap.port-active').forEach(p => p.classList.remove('port-active'));
+  viewport.classList.remove('connecting');
 }
 
-/* ── Mouse events: pan + drag + edge drawing ─────────────────── */
+/* ── Mouse events ───────────────────────────────────────────── */
 viewport.addEventListener('mousedown', e => {
-  if (e.button === 1 || (e.button === 0 && e.target === viewport) || (e.button === 0 && e.target === world)) {
+  // Pan on middle-button or clicking empty space
+  if (e.button === 1 || ((e.button === 0) && (e.target === viewport || e.target === world || e.target.classList.contains('cv-edges-svg')))) {
+    if (S.conn) { cancelConn(); return; }
+    if (S.connClick) { clearConnClick(); }
     S.pan = { startX: e.clientX, startY: e.clientY, ox: S.transform.x, oy: S.transform.y };
     viewport.classList.add('panning');
     deselectEdge();
   }
 });
 
+// Double-click empty canvas → add issue at that position
+viewport.addEventListener('dblclick', e => {
+  if (e.target === viewport || e.target === world || e.target.classList.contains('cv-edges-svg')) {
+    const vRect = viewport.getBoundingClientRect();
+    const wx = (e.clientX - vRect.left - S.transform.x) / S.transform.scale;
+    const wy = (e.clientY - vRect.top  - S.transform.y) / S.transform.scale;
+    openAddPanel({ x: wx - NODE_W/2, y: wy - NODE_H/2 });
+  }
+});
+
 window.addEventListener('mousemove', e => {
-  // Panning
   if (S.pan) {
     S.transform.x = S.pan.ox + (e.clientX - S.pan.startX);
     S.transform.y = S.pan.oy + (e.clientY - S.pan.startY);
-    applyTransform();
-    return;
+    applyTransform(); return;
   }
-
-  // Node dragging
   if (S.dragging) {
     const dx = (e.clientX - S.dragging.startX) / S.transform.scale;
     const dy = (e.clientY - S.dragging.startY) / S.transform.scale;
-    const n = S.nodes[S.dragging.id];
-    n.x = S.dragging.ox + dx;
-    n.y = S.dragging.oy + dy;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) S.dragging.moved = true;
+    const n  = S.nodes[S.dragging.id];
+    n.x = S.dragging.ox + dx; n.y = S.dragging.oy + dy;
     n.el.style.transform = `translate(${n.x}px,${n.y}px)`;
-    renderEdges();
-    if (S.selEdge) deselectEdge();
-    return;
+    renderEdges(); return;
   }
-
-  // Drawing temp edge
   if (S.conn) {
     const vRect = viewport.getBoundingClientRect();
     const mx = (e.clientX - vRect.left - S.transform.x) / S.transform.scale;
     const my = (e.clientY - vRect.top  - S.transform.y) / S.transform.scale;
-    const cx = Math.abs(mx - S.conn.x1) * 0.55 + 60;
-    const d = `M${S.conn.x1},${S.conn.y1} C${S.conn.x1+cx},${S.conn.y1} ${mx-cx},${my} ${mx},${my}`;
-    tempEdge.setAttribute('d', d);
+    const cx = Math.max(Math.abs(mx - S.conn.x1) * 0.5, 60);
+    tempEdge.setAttribute('d', `M${S.conn.x1},${S.conn.y1} C${S.conn.x1+cx},${S.conn.y1} ${mx-cx},${my} ${mx},${my}`);
+    // Highlight valid target ports
+    document.querySelectorAll('.cv-port-wrap-in').forEach(pw => {
+      const nid = pw.dataset.nid;
+      if (nid === S.conn.fromId) return;
+      const { x1: px, y1: py } = portCenter(pw);
+      const dist = Math.hypot(px - mx, py - my);
+      pw.classList.toggle('port-valid-target', dist < 60);
+    });
   }
 });
 
 window.addEventListener('mouseup', e => {
   if (S.dragging) {
-    savePosition(S.dragging.id);
+    if (S.dragging.moved) savePosition(S.dragging.id);
     S.dragging = null;
   }
   if (S.pan) { S.pan = null; viewport.classList.remove('panning'); }
-  if (S.conn) cancelConn();
+  if (S.conn) {
+    // Check if we released on a valid input port
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const pw = el && el.closest('.cv-port-wrap-in');
+    if (pw && pw.dataset.nid !== S.conn.fromId) {
+      finishEdge(S.conn.fromId, pw.dataset.nid);
+    }
+    cancelConn();
+    document.querySelectorAll('.cv-port-wrap.port-valid-target').forEach(p => p.classList.remove('port-valid-target'));
+  }
 });
 
-/* ── Zoom ────────────────────────────────────────────────────── */
+/* ── Zoom ───────────────────────────────────────────────────── */
 viewport.addEventListener('wheel', e => {
   e.preventDefault();
-  const factor = e.deltaY < 0 ? 1.1 : 0.91;
-  const rect   = viewport.getBoundingClientRect();
-  const mx     = e.clientX - rect.left;
-  const my     = e.clientY - rect.top;
-  const newScale = Math.min(3, Math.max(0.2, S.transform.scale * factor));
-  S.transform.x  = mx - (mx - S.transform.x) * (newScale / S.transform.scale);
-  S.transform.y  = my - (my - S.transform.y) * (newScale / S.transform.scale);
-  S.transform.scale = newScale;
+  const f     = e.deltaY < 0 ? 1.1 : 0.91;
+  const rect  = viewport.getBoundingClientRect();
+  const mx    = e.clientX - rect.left, my = e.clientY - rect.top;
+  const ns    = Math.min(3, Math.max(0.15, S.transform.scale * f));
+  S.transform.x = mx - (mx - S.transform.x) * (ns / S.transform.scale);
+  S.transform.y = my - (my - S.transform.y) * (ns / S.transform.scale);
+  S.transform.scale = ns;
   applyTransform();
 }, { passive: false });
 
 document.getElementById('cv-zoom-in').addEventListener('click',  () => zoomBy(1.2));
 document.getElementById('cv-zoom-out').addEventListener('click', () => zoomBy(0.83));
-
 function zoomBy(f) {
   const rect = viewport.getBoundingClientRect();
-  const cx = rect.width / 2, cy = rect.height / 2;
-  const ns = Math.min(3, Math.max(0.2, S.transform.scale * f));
+  const cx = rect.width/2, cy = rect.height/2;
+  const ns = Math.min(3, Math.max(0.15, S.transform.scale * f));
   S.transform.x = cx - (cx - S.transform.x) * (ns / S.transform.scale);
   S.transform.y = cy - (cy - S.transform.y) * (ns / S.transform.scale);
-  S.transform.scale = ns;
-  applyTransform();
+  S.transform.scale = ns; applyTransform();
 }
 
-/* ── Fit all ─────────────────────────────────────────────────── */
-document.getElementById('cv-fit').addEventListener('click', () => fitAll(true));
-
-function fitAll(animate) {
+/* ── Fit all ────────────────────────────────────────────────── */
+document.getElementById('cv-fit').addEventListener('click', fitAll);
+document.getElementById('cvMinimap').addEventListener('click', fitAll);
+function fitAll() {
   const ns = Object.values(S.nodes);
   if (!ns.length) return;
   const minX = Math.min(...ns.map(n=>n.x));
   const minY = Math.min(...ns.map(n=>n.y));
   const maxX = Math.max(...ns.map(n=>n.x+NODE_W));
   const maxY = Math.max(...ns.map(n=>n.y+NODE_H));
-  const rect  = viewport.getBoundingClientRect();
-  const pad   = 60;
-  const sx = (rect.width  - pad*2) / (maxX - minX || 1);
-  const sy = (rect.height - pad*2) / (maxY - minY || 1);
-  S.transform.scale = Math.min(sx, sy, 1.2);
+  const rect = viewport.getBoundingClientRect();
+  const pad  = 60;
+  const sx = (rect.width  - pad*2) / Math.max(maxX-minX, 1);
+  const sy = (rect.height - pad*2) / Math.max(maxY-minY, 1);
+  S.transform.scale = Math.min(sx, sy, 1.4);
   S.transform.x = pad - minX * S.transform.scale;
   S.transform.y = pad - minY * S.transform.scale;
   applyTransform();
 }
 
-/* ── Auto-layout button ──────────────────────────────────────── */
+/* ── Auto layout ────────────────────────────────────────────── */
 document.getElementById('cv-auto-layout').addEventListener('click', () => {
-  autoLayout();
-  renderAll();
-  fitAll(true);
-  // Save all positions
+  autoLayout(); renderAll(); fitAll();
   Object.values(S.nodes).forEach(n => savePosition(String(n.id)));
 });
 
-/* ── Save position (debounced) ───────────────────────────────── */
+/* ── Save position ──────────────────────────────────────────── */
 const _posTimers = {};
 function savePosition(id) {
   if (!S.key) return;
   clearTimeout(_posTimers[id]);
   _posTimers[id] = setTimeout(async () => {
-    const n = S.nodes[id];
-    if (!n) return;
-    await fetch('/api/bonyad/canvas/position', {
+    const n = S.nodes[id]; if (!n) return;
+    fetch('/api/bonyad/canvas/position', {
       method: 'POST',
       headers: { 'Content-Type':'application/json', 'x-bonyad-edit-key': S.key },
       body: JSON.stringify({ issue_id: n.id, sheet_slug: S.slug, x: n.x, y: n.y, editKey: S.key })
     }).catch(()=>{});
-  }, 600);
+  }, 500);
 }
 
-/* ── Stats ───────────────────────────────────────────────────── */
+/* ── Stats ──────────────────────────────────────────────────── */
 function updateStats() {
-  const ns    = Object.values(S.nodes);
-  const total = ns.length;
-  const done  = ns.filter(n => n.is_done).length;
-  statsEl.textContent = `${total} nodes · ${S.edges.length} edges · ${done}/${total} done`;
+  const ns = Object.values(S.nodes);
+  const done = ns.filter(n=>n.is_done).length;
+  statsEl.textContent = `${ns.length} nodes · ${S.edges.length} deps · ${done}/${ns.length} done`;
 }
 
-/* ── Celebration ─────────────────────────────────────────────── */
-function checkCelebration() {
+/* ── Mini-map ───────────────────────────────────────────────── */
+function drawMinimap() {
   const ns = Object.values(S.nodes);
   if (!ns.length) return;
-  if (ns.every(n => n.is_done)) {
-    celebrate(ns.length);
-  }
+  const mm = mmCanvas;
+  mm.width  = mm.offsetWidth  || 160;
+  mm.height = mm.offsetHeight || 100;
+  const ctx = mm.getContext('2d');
+  ctx.clearRect(0, 0, mm.width, mm.height);
+
+  // Bounds
+  const minX = Math.min(...ns.map(n=>n.x));
+  const minY = Math.min(...ns.map(n=>n.y));
+  const maxX = Math.max(...ns.map(n=>n.x+NODE_W));
+  const maxY = Math.max(...ns.map(n=>n.y+NODE_H));
+  const pw   = maxX - minX || 1, ph = maxY - minY || 1;
+  const pad  = 6;
+  const scX  = (mm.width  - pad*2) / pw;
+  const scY  = (mm.height - pad*2) / ph;
+  const sc   = Math.min(scX, scY);
+  const toMX = x => pad + (x - minX) * sc;
+  const toMY = y => pad + (y - minY) * sc;
+
+  // Draw edges
+  S.edges.forEach(e => {
+    const f = S.nodes[String(e.from_issue_id)], t = S.nodes[String(e.to_issue_id)];
+    if (!f || !t) return;
+    ctx.beginPath();
+    ctx.moveTo(toMX(f.x + NODE_W), toMY(f.y + NODE_H/2));
+    ctx.lineTo(toMX(t.x), toMY(t.y + NODE_H/2));
+    ctx.strokeStyle = 'rgba(255,107,26,.3)'; ctx.lineWidth = 0.8; ctx.stroke();
+  });
+
+  // Draw nodes
+  ns.forEach(n => {
+    const wf  = workflowState(n);
+    ctx.fillStyle = wf==='done' ? 'rgba(46,230,184,.5)' : wf==='in_progress' ? 'rgba(94,179,255,.5)' : 'rgba(255,255,255,.15)';
+    const w = NODE_W * sc, h = Math.max(NODE_H * sc, 4);
+    ctx.fillRect(toMX(n.x), toMY(n.y), Math.max(w, 6), h);
+  });
+
+  // Draw viewport indicator
+  const vpRect  = viewport.getBoundingClientRect();
+  const vpLeft  = (-S.transform.x) / S.transform.scale;
+  const vpTop   = (-S.transform.y) / S.transform.scale;
+  const vpW     = vpRect.width  / S.transform.scale;
+  const vpH     = vpRect.height / S.transform.scale;
+  ctx.strokeStyle = 'rgba(255,107,26,.6)'; ctx.lineWidth = 0.8;
+  ctx.strokeRect(toMX(vpLeft), toMY(vpTop), vpW*sc, vpH*sc);
 }
 
+/* ── Celebration ────────────────────────────────────────────── */
+function checkCelebration() {
+  const ns = Object.values(S.nodes);
+  if (ns.length && ns.every(n => n.is_done)) celebrate(ns.length);
+}
 function celebrate(count) {
-  const overlay = document.getElementById('cvCelebrate');
+  const ov = document.getElementById('cvCelebrate');
   document.getElementById('cvCelebrateMsg').textContent = `All ${count} issues on this sheet are marked done.`;
-  overlay.classList.add('show');
-  spawnParticles(overlay);
-  setTimeout(() => overlay.classList.remove('show'), 5000);
+  ov.classList.add('show');
+  spawnParticles(ov);
+  setTimeout(() => ov.classList.remove('show'), 6000);
 }
-
 function spawnParticles(parent) {
   const colors = ['#ff6b1a','#2ee6b8','#5eb3ff','#a78bfa','#fbbf24'];
-  for (let i = 0; i < 28; i++) {
-    const p = document.createElement('div');
-    p.className = 'cv-particle';
-    p.style.cssText = `
-      background:${colors[i%colors.length]};
-      left:${30+Math.random()*40}%;
-      --cx:${(Math.random()-0.5)*120}px;
-      animation-delay:${Math.random()*0.4}s;
-      animation-duration:${0.9+Math.random()*0.6}s;
-    `;
-    parent.appendChild(p);
-    setTimeout(() => p.remove(), 2000);
+  for (let i = 0; i < 32; i++) {
+    const p = document.createElement('div'); p.className = 'cv-particle';
+    p.style.cssText = `background:${colors[i%colors.length]};left:${25+Math.random()*50}%;--cx:${(Math.random()-.5)*140}px;animation-delay:${Math.random()*.5}s;animation-duration:${1+Math.random()*.7}s;`;
+    parent.appendChild(p); setTimeout(() => p.remove(), 2200);
   }
 }
 
-/* ── Keyboard shortcuts ──────────────────────────────────────── */
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') deselectEdge();
-  if ((e.key === 'Delete' || e.key === 'Backspace') && S.selEdge && e.target.tagName !== 'INPUT') {
-    edgeDel.click();
+/* ── Right panel: Add Issue ─────────────────────────────────── */
+document.getElementById('cv-add-issue').addEventListener('click', () => {
+  const rect = viewport.getBoundingClientRect();
+  const cx = (-S.transform.x + rect.width/2)  / S.transform.scale;
+  const cy = (-S.transform.y + rect.height/2) / S.transform.scale;
+  openAddPanel({ x: cx - NODE_W/2, y: cy - NODE_H/2 });
+});
+
+function openAddPanel(pos) {
+  S.panel.mode = 'add'; S.panel.addPos = pos; S.panel.issueId = null;
+  document.getElementById('cvPanelTitle').textContent = 'Add Issue';
+  document.getElementById('cvPanelTitleInput').value = '';
+  document.getElementById('cvPanelDesc').value = '';
+  document.getElementById('cvPanelTags').value = '';
+  document.getElementById('cvPanelModule').value = '';
+  setPri('medium');
+  document.getElementById('cvPanelStatusField').style.display = 'none';
+  document.getElementById('cvPanelSave').textContent = 'Add Issue';
+  // Remove delete btn if present
+  const delBtn = document.getElementById('cvPanelDelete');
+  if (delBtn) delBtn.remove();
+  document.getElementById('cvPanelCancel').style.display = '';
+  cvPanel.classList.add('open');
+  setTimeout(() => document.getElementById('cvPanelTitleInput').focus(), 250);
+}
+
+function openEditPanel(nodeId) {
+  const n = S.nodes[nodeId]; if (!n) return;
+  S.panel.mode = 'edit'; S.panel.issueId = nodeId; S.panel.addPos = null;
+  document.getElementById('cvPanelTitle').textContent = 'Edit Issue';
+  document.getElementById('cvPanelTitleInput').value = n.title || '';
+  document.getElementById('cvPanelDesc').value = n.prompt_text || '';
+  document.getElementById('cvPanelTags').value = (Array.isArray(n.tags) ? n.tags : (typeof n.tags==='string'?JSON.parse(n.tags||'[]'):[])).join(', ');
+  document.getElementById('cvPanelModule').value = n.module || '';
+  setPri(n.priority || 'medium');
+  setStatus(n.is_done ? 'done' : (String(n.sheet_status||'').toLowerCase().includes('progress') ? 'in_progress' : 'open'));
+  document.getElementById('cvPanelStatusField').style.display = '';
+  document.getElementById('cvPanelSave').textContent = 'Save Changes';
+  // Add open-in-sheet link
+  let link = document.getElementById('cvPanelLink');
+  if (!link) {
+    link = document.createElement('a');
+    link.id = 'cvPanelLink'; link.className = 'cv-panel-open-link';
+    link.target = '_blank'; link.textContent = 'Open full issue in Sheet ↗';
+    document.querySelector('.cv-panel-body').appendChild(link);
   }
-  if (e.key === 'f' && e.target.tagName !== 'INPUT') fitAll(true);
+  link.href = `sheet.html?slug=${encodeURIComponent(S.slug)}#issue-${n.id}`;
+  // Delete button
+  let delBtn = document.getElementById('cvPanelDelete');
+  if (!delBtn) {
+    delBtn = document.createElement('button');
+    delBtn.id = 'cvPanelDelete'; delBtn.className = 'cv-panel-delete-btn';
+    delBtn.textContent = 'Delete Issue';
+    delBtn.addEventListener('click', confirmDeleteIssue);
+    document.getElementById('cvPanelFooter').prepend(delBtn);
+  }
+  cvPanel.classList.add('open');
+  setTimeout(() => document.getElementById('cvPanelTitleInput').focus(), 250);
+}
+
+function setPri(p) {
+  document.querySelectorAll('.cv-pri-pill').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.p === p);
+  });
+}
+function getPri() {
+  const a = document.querySelector('.cv-pri-pill.active'); return a ? a.dataset.p : 'medium';
+}
+
+function setStatus(s) {
+  document.querySelectorAll('.cv-status-pill').forEach(btn => {
+    btn.className = 'cv-status-pill' + (btn.dataset.s===s ? ` active-${s}` : '');
+  });
+}
+function getStatus() {
+  const a = document.querySelector('.cv-status-pill[class*="active-"]'); return a ? a.dataset.s : 'open';
+}
+
+document.querySelectorAll('.cv-pri-pill').forEach(btn => {
+  btn.addEventListener('click', () => setPri(btn.dataset.p));
+});
+document.querySelectorAll('.cv-status-pill').forEach(btn => {
+  btn.addEventListener('click', () => setStatus(btn.dataset.s));
 });
 
-/* ── Click outside deselects ─────────────────────────────────── */
+document.getElementById('cvPanelClose').addEventListener('click',  closePanel);
+document.getElementById('cvPanelCancel').addEventListener('click', closePanel);
+function closePanel() { cvPanel.classList.remove('open'); }
+
+document.getElementById('cvPanelSave').addEventListener('click', async () => {
+  const title = document.getElementById('cvPanelTitleInput').value.trim();
+  const desc  = document.getElementById('cvPanelDesc').value.trim();
+  if (!title) { document.getElementById('cvPanelTitleInput').focus(); return; }
+  if (!desc && S.panel.mode === 'add') { document.getElementById('cvPanelDesc').focus(); return; }
+
+  const priority = getPri();
+  const tagsRaw  = document.getElementById('cvPanelTags').value.trim();
+  const tags     = tagsRaw ? tagsRaw.split(',').map(t=>t.trim()).filter(Boolean) : [];
+  const module   = document.getElementById('cvPanelModule').value.trim();
+
+  const saveBtn = document.getElementById('cvPanelSave');
+  saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+
+  try {
+    if (S.panel.mode === 'add') {
+      await addIssueFromCanvas({ title, desc, priority, tags, module });
+    } else {
+      await editIssueFromCanvas({ title, desc, priority, tags, module });
+    }
+    closePanel();
+  } catch(err) {
+    alert('Error: ' + err.message);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = S.panel.mode === 'add' ? 'Add Issue' : 'Save Changes';
+  }
+});
+
+async function addIssueFromCanvas({ title, desc, priority, tags, module }) {
+  if (!S.key) throw new Error('Enter your key first.');
+  if (!S.slug) throw new Error('No sheet selected.');
+  const r = await fetch(`/api/bonyad/sheets/${encodeURIComponent(S.slug)}/issues`, {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', 'x-bonyad-edit-key': S.key },
+    body: JSON.stringify({ title, prompt_text: desc, priority, tags, module, editKey: S.key })
+  });
+  const d = await r.json();
+  if (!d.success) throw new Error(d.error || 'Failed to create issue');
+
+  // Add node at click position or stacked to the right
+  let pos = S.panel.addPos;
+  if (!pos) {
+    const maxX = Object.values(S.nodes).reduce((m,n)=>Math.max(m,n.x+NODE_W),0);
+    pos = { x: maxX + 60, y: 60 };
+  }
+
+  const newNode = { id: d.id, title, priority, is_done: 0, sheet_status: 'open', prompt_text: desc, tags, module, x: pos.x, y: pos.y };
+  S.nodes[String(d.id)] = newNode;
+  emptyEl.style.display = 'none';
+
+  createNodeEl(newNode);
+  savePosition(String(d.id));
+  updateStats();
+}
+
+async function editIssueFromCanvas({ title, desc, priority, tags, module }) {
+  if (!S.key) throw new Error('Enter your key first.');
+  const id  = S.panel.issueId;
+  const st  = getStatus();
+  const is_done    = st === 'done' ? 1 : 0;
+  const sheet_status = st === 'in_progress' ? 'in_progress' : st === 'done' ? 'done' : 'open';
+  const r = await fetch(`/api/bonyad/issues/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type':'application/json', 'x-bonyad-edit-key': S.key },
+    body: JSON.stringify({ title, prompt_text: desc, priority, tags, module, is_done, sheet_status, editKey: S.key })
+  });
+  const d = await r.json();
+  if (!d.success) throw new Error(d.error || 'Failed to update issue');
+
+  // Update local node
+  const n = S.nodes[id];
+  if (n) {
+    n.title = title; n.priority = priority; n.is_done = is_done;
+    n.sheet_status = sheet_status; n.prompt_text = desc; n.tags = tags; n.module = module;
+    // Refresh node element
+    const wf = workflowState(n);
+    n.el.className = `cv-node wf-${wf} pri-${priority}`;
+    n.el.querySelector('.cv-node-title').textContent = title;
+    n.el.querySelector('.cv-node-wf').textContent = wfLabel(wf);
+    renderEdges();
+    updateStats();
+    checkCelebration();
+  }
+}
+
+async function confirmDeleteIssue() {
+  if (!confirm('Delete this issue? This cannot be undone.')) return;
+  if (!S.key) { alert('Enter your key first.'); return; }
+  const id = S.panel.issueId;
+  try {
+    const r = await fetch(`/api/bonyad/sheets/${encodeURIComponent(S.slug)}/issues/batch-delete`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'x-bonyad-edit-key': S.key },
+      body: JSON.stringify({ ids: [Number(id)], editKey: S.key })
+    });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || 'Delete failed');
+    // Remove node
+    const n = S.nodes[id];
+    if (n && n.el) n.el.remove();
+    delete S.nodes[id];
+    S.edges = S.edges.filter(e => String(e.from_issue_id)!==String(id) && String(e.to_issue_id)!==String(id));
+    renderEdges(); updateStats(); closePanel();
+    if (!Object.keys(S.nodes).length) showEmpty('No issues on this sheet yet — add one!');
+  } catch(err) { alert('Error: ' + err.message); }
+}
+
+/* ── Keyboard shortcuts ─────────────────────────────────────── */
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'Escape') { deselectEdge(); closePanel(); cancelConn(); clearConnClick(); }
+  if ((e.key === 'Delete' || e.key === 'Backspace') && S.selEdge) edgeDel.click();
+  if (e.key === 'f') fitAll();
+  if (e.key === 'n') document.getElementById('cv-add-issue').click();
+});
+
 viewport.addEventListener('click', e => {
-  if (e.target === viewport || e.target === world) deselectEdge();
+  if (e.target === viewport || e.target === world) { deselectEdge(); clearConnClick(); }
 });
 
-/* ── Boot ────────────────────────────────────────────────────── */
+/* ── Boot ───────────────────────────────────────────────────── */
 (async function boot() {
-  // Load sheet list
+  if (S.key) resolveUser();
   try {
     const r    = await fetch('/api/bonyad/sheets');
     const data = await r.json();
     if (data.success && data.sheets.length) {
       sheetSel.innerHTML = '<option value="">— select sheet —</option>' +
         data.sheets.map(s => `<option value="${esc(s.slug)}">${esc(s.label||s.slug)}</option>`).join('');
-      // Auto-select from URL
       const urlSlug = new URLSearchParams(location.search).get('slug');
       if (urlSlug) { sheetSel.value = urlSlug; S.slug = urlSlug; loadCanvas(); }
       else showEmpty('Select a sheet above to open its canvas');
-    } else {
-      showEmpty('No sheets found');
-    }
+    } else { showEmpty('No sheets found'); }
   } catch(e) { showEmpty('Could not load sheets: ' + e.message); }
   applyTransform();
 })();
