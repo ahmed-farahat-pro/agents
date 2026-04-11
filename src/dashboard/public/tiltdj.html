@@ -1069,8 +1069,8 @@
 # Drag TiltDJ.app → /Applications
 # Right-click → Open  (Gatekeeper bypass for unsigned build)</code></pre>
         <div class="install-meta">
-            <div class="im"><span class="im-lbl">Version</span><span class="im-val">PRO v2.0 Remix Edition</span></div>
-            <div class="im"><span class="im-lbl">Size</span><span class="im-val" style="color:var(--dj)">920 KB</span></div>
+            <div class="im"><span class="im-lbl">Version</span><span class="im-val">PRO v2.0</span></div>
+            <div class="im"><span class="im-lbl">Size</span><span class="im-val" style="color:var(--dj)">1.0 MB</span></div>
             <div class="im"><span class="im-lbl">Requires</span><span class="im-val">macOS 14+ &middot; Apple Silicon</span></div>
             <div class="im"><span class="im-lbl">Framework</span><span class="im-val">SwiftUI &amp; AVFoundation</span></div>
         </div>
@@ -1082,6 +1082,69 @@
         </div>
     </section>
 
+    <!-- YOUTUBE SETUP -->
+    <section class="reveal" style="margin-bottom:60px;">
+        <span class="sec-lbl">YouTube Downloader Setup</span>
+        <h2 class="sec-title" style="font-size:1.45rem;margin-bottom:10px;">Enable YouTube downloads</h2>
+        <p style="color:var(--txt2);font-size:.92rem;margin-bottom:28px;">TiltDJ downloads audio from YouTube using <strong style="color:var(--txt)">yt-dlp</strong> — a free open-source tool. Run the one-line command below in Terminal and it installs everything automatically.</p>
+
+        <!-- Step cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:28px;">
+            <div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:12px;padding:20px;position:relative;overflow:hidden;">
+                <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--dj),var(--dj2));"></div>
+                <div style="font-family:var(--mono);font-size:10px;font-weight:800;color:var(--dj);letter-spacing:.1em;margin-bottom:10px;">STEP 01</div>
+                <div style="font-size:.9rem;font-weight:700;margin-bottom:6px;">Open Terminal</div>
+                <div style="font-size:.8rem;color:var(--txt2);">Press <span style="background:var(--bg3);border:1px solid var(--bdr2);border-radius:4px;padding:1px 6px;font-family:var(--mono);font-size:.75em;">&#8984; Space</span> → type <span style="color:var(--dj);font-family:var(--mono);font-size:.82em;">Terminal</span> → Enter</div>
+            </div>
+            <div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:12px;padding:20px;position:relative;overflow:hidden;">
+                <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--dj2),var(--cyan));"></div>
+                <div style="font-family:var(--mono);font-size:10px;font-weight:800;color:var(--dj2);letter-spacing:.1em;margin-bottom:10px;">STEP 02</div>
+                <div style="font-size:.9rem;font-weight:700;margin-bottom:6px;">Paste &amp; Run</div>
+                <div style="font-size:.8rem;color:var(--txt2);">Copy the command below, paste into Terminal and press <span style="background:var(--bg3);border:1px solid var(--bdr2);border-radius:4px;padding:1px 6px;font-family:var(--mono);font-size:.75em;">Enter</span></div>
+            </div>
+            <div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:12px;padding:20px;position:relative;overflow:hidden;">
+                <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--cyan),var(--green));"></div>
+                <div style="font-family:var(--mono);font-size:10px;font-weight:800;color:var(--green);letter-spacing:.1em;margin-bottom:10px;">STEP 03</div>
+                <div style="font-size:.9rem;font-weight:700;margin-bottom:6px;">Restart TiltDJ</div>
+                <div style="font-size:.8rem;color:var(--txt2);">Once done, quit and reopen TiltDJ. YouTube downloads will work immediately.</div>
+            </div>
+        </div>
+
+        <!-- Copy command box -->
+        <div style="background:#07060b;border:1px solid var(--bdr2);border-radius:12px;overflow:hidden;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--bdr);background:var(--bg3);">
+                <span style="font-family:var(--mono);font-size:11px;color:var(--txt3);letter-spacing:.08em;">TERMINAL — one command, does everything</span>
+                <button id="copyYtCmd" onclick="copyYT()" style="display:inline-flex;align-items:center;gap:6px;background:rgba(232,121,249,.12);border:1px solid rgba(232,121,249,.3);color:var(--dj);font-family:var(--mono);font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;cursor:pointer;transition:background .2s;">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="4" y="1" width="7" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="3" width="7" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/></svg>
+                    Copy
+                </button>
+            </div>
+            <pre id="ytCmd" style="margin:0;padding:18px 20px;font-size:.82rem;color:var(--dj);font-family:ui-monospace,monospace;line-height:1.7;overflow-x:auto;white-space:pre-wrap;word-break:break-all;">curl -fsSL https://nigents.com/downloads/setup-tiltdj-yt.sh | bash</pre>
+        </div>
+
+        <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+            <span style="font-size:.8rem;color:var(--txt3);">What the script does:</span>
+            <span style="font-family:var(--mono);font-size:10px;background:rgba(25,213,158,.08);border:1px solid rgba(25,213,158,.2);color:var(--green);padding:3px 9px;border-radius:999px;">Checks if already installed</span>
+            <span style="font-family:var(--mono);font-size:10px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.2);color:var(--cyan);padding:3px 9px;border-radius:999px;">Installs Homebrew if missing</span>
+            <span style="font-family:var(--mono);font-size:10px;background:rgba(232,121,249,.08);border:1px solid rgba(232,121,249,.2);color:var(--dj);padding:3px 9px;border-radius:999px;">Installs yt-dlp</span>
+            <span style="font-family:var(--mono);font-size:10px;background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);color:var(--dj2);padding:3px 9px;border-radius:999px;">M1/M2/M3/M4 + Intel</span>
+        </div>
+
+        <!-- Manual fallback -->
+        <details style="margin-top:24px;background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;overflow:hidden;">
+            <summary style="padding:14px 18px;cursor:pointer;font-size:.85rem;font-weight:600;color:var(--txt2);list-style:none;display:flex;align-items:center;gap:8px;">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="flex-shrink:0"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Already have Homebrew? Install manually in one line
+            </summary>
+            <div style="padding:0 18px 18px;">
+                <div style="background:#07060b;border:1px solid var(--bdr);border-radius:8px;padding:14px 18px;font-family:ui-monospace,monospace;font-size:.8rem;color:var(--green);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                    <span id="brewCmd">brew install yt-dlp</span>
+                    <button onclick="copyBrew()" style="background:rgba(25,213,158,.1);border:1px solid rgba(25,213,158,.3);color:var(--green);font-family:var(--mono);font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;">Copy</button>
+                </div>
+            </div>
+        </details>
+    </section>
+
     <!-- FOOT -->
     <p class="foot reveal">
         <strong>TiltDJ PRO</strong> is part of the <a href="/crazy-apps.html">Nigents Crazy apps</a> collection &mdash; experimental Mac utilities built for fun and focus.
@@ -1091,6 +1154,31 @@
 
 <script>
 (function () {
+    /* COPY BUTTONS */
+    window.copyYT = function () {
+        var cmd = document.getElementById('ytCmd').textContent.trim();
+        navigator.clipboard.writeText(cmd).then(function () {
+            var btn = document.getElementById('copyYtCmd');
+            if (!btn) return;
+            btn.textContent = 'Copied!';
+            btn.style.background = 'rgba(25,213,158,.2)';
+            btn.style.borderColor = 'rgba(25,213,158,.5)';
+            btn.style.color = 'var(--green)';
+            setTimeout(function () {
+                btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="4" y="1" width="7" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="3" width="7" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/></svg> Copy';
+                btn.style.background = 'rgba(232,121,249,.12)';
+                btn.style.borderColor = 'rgba(232,121,249,.3)';
+                btn.style.color = 'var(--dj)';
+            }, 2000);
+        });
+    };
+    window.copyBrew = function () {
+        navigator.clipboard.writeText('brew install yt-dlp').then(function () {
+            var btns = document.querySelectorAll('button[onclick="copyBrew()"]');
+            btns.forEach(function(b){ b.textContent = 'Copied!'; setTimeout(function(){ b.textContent = 'Copy'; }, 2000); });
+        });
+    };
+
     /* NAV */
     var toggle = document.getElementById('nav-toggle');
     var bd = document.getElementById('nav-bd');
