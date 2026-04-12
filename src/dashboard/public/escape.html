@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Escape — One shortcut to look busy. Instantly flips all open windows to VS Code and Terminal when the manager walks in. From Nigents Crazy apps." />
+    <title>Escape — Look Busy in 0.1s · Nigents</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #09080c;
+            --bg-secondary: #141116;
+            --bg-card: #111111;
+            --border: #2a2a35;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            --accent: #ff4747;
+            --accent-alt: #ff7a2b;
+            --accent-green: #19d59e;
+            --accent-blue: #4fc3f7;
+            --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+            --font-sans: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,71,71,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,71,71,0.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* NAV */
+        .nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            padding: 20px 40px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: linear-gradient(to bottom, var(--bg-primary) 0%, transparent 100%);
+        }
+        .nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+        .nav-logo {
+            width: 40px; height: 40px; background: var(--accent); border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 20px; color: var(--bg-primary);
+        }
+        .nav-title { font-size: 22px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px; }
+        .nav-links { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; justify-content: flex-end; }
+        .nav-link { color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+        .nav-link:hover { color: var(--text-primary); }
+        .nav-cta {
+            padding: 10px 20px; border: 1px solid var(--accent); color: var(--accent);
+            text-decoration: none; font-size: 14px; font-weight: 600; transition: all 0.2s;
+        }
+        .nav-cta:hover { background: var(--accent); color: var(--bg-primary); }
+        .nav-toggle {
+            display: none; width: 44px; height: 44px; align-items: center; justify-content: center;
+            margin-left: auto; background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+            border-radius: 10px; color: var(--text-primary); cursor: pointer;
+        }
+        .nav-toggle-icon-close { display: none; font-size: 28px; }
+        body.nav-open .nav-toggle-icon-open { display: none; }
+        body.nav-open .nav-toggle-icon-close { display: block; }
+        .nav-backdrop {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.55); z-index: 998;
+        }
+        body.nav-open .nav-backdrop { display: block; }
+        body.nav-open { overflow: hidden; }
+        @media (max-width: 900px) {
+            .nav-toggle { display: flex; }
+            .nav-links {
+                display: none; position: fixed; top: 72px; left: 16px; right: 16px;
+                flex-direction: column; align-items: stretch;
+                background: var(--bg-secondary); border: 1px solid var(--border);
+                padding: 12px; z-index: 999;
+            }
+            body.nav-open .nav-links { display: flex; }
+        }
+
+        main {
+            position: relative; z-index: 1;
+            max-width: 1100px; margin: 0 auto;
+            padding: 120px 32px 80px;
+        }
+
+        /* HERO */
+        .hero-badge {
+            display: inline-block; font-family: var(--font-mono); font-size: 11px;
+            font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+            color: var(--accent); border: 1px solid rgba(255,71,71,0.4);
+            padding: 6px 14px; border-radius: 4px; margin-bottom: 32px;
+        }
+
+        header { margin-bottom: 80px; }
+        header h1 {
+            font-size: clamp(42px, 7vw, 80px); font-weight: 800;
+            letter-spacing: -2px; line-height: 1.05; margin-bottom: 20px;
+        }
+        header h1 span {
+            background: linear-gradient(135deg, var(--accent), var(--accent-alt));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        header p.lead {
+            font-size: 18px; color: var(--text-secondary); max-width: 580px;
+            margin-bottom: 32px; line-height: 1.7;
+        }
+        .cta-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 56px; }
+        .btn {
+            padding: 14px 28px; font-size: 15px; font-weight: 600;
+            text-decoration: none; transition: all 0.2s; font-family: var(--font-sans);
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-primary:hover { background: #ff2020; transform: translateY(-1px); }
+        .btn-outline { border: 1px solid var(--border); color: var(--text-secondary); }
+        .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* ===== THE ANIMATION STAGE ===== */
+        .stage {
+            width: 100%; max-width: 700px; margin: 0 auto 80px;
+            position: relative;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            padding-bottom: 0;
+        }
+
+        .stage-header {
+            display: flex; align-items: center; gap: 8px;
+            padding: 12px 16px; border-bottom: 1px solid var(--border);
+            background: #1a1820;
+        }
+        .stage-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .stage-dot.red { background: #ff5f57; }
+        .stage-dot.yellow { background: #febc2e; }
+        .stage-dot.green { background: #28c840; }
+        .stage-label {
+            font-family: var(--font-mono); font-size: 12px; color: var(--text-muted);
+            margin-left: 8px;
+        }
+
+        .scene {
+            width: 100%; height: 340px; position: relative;
+            overflow: hidden;
+        }
+
+        /* ---- DESK SCENE ---- */
+        .desk-area {
+            position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 340px;
+        }
+
+        /* Monitor */
+        .monitor-stand {
+            width: 12px; height: 32px; background: #333;
+            margin: 0 auto;
+        }
+        .monitor-base {
+            width: 60px; height: 6px; background: #333; border-radius: 3px;
+            margin: 0 auto;
+        }
+        .monitor-body {
+            width: 260px; height: 160px;
+            background: #1e1e2e;
+            border: 3px solid #444;
+            border-radius: 8px;
+            margin: 0 auto;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Slacking screen content */
+        .screen-slack {
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            padding: 12px;
+            transition: opacity 0.15s ease;
+        }
+        .screen-slack.hidden { opacity: 0; pointer-events: none; }
+
+        /* YouTube-like fake content bars */
+        .yt-bar {
+            height: 6px; border-radius: 3px; margin-bottom: 5px;
+            animation: barPulse 2s ease-in-out infinite;
+        }
+        .yt-bar-red { background: rgba(255,0,0,0.7); width: 70%; }
+        .yt-bar-gray { background: rgba(255,255,255,0.12); }
+        .yt-bar-gray:nth-child(2) { width: 90%; animation-delay: 0.2s; }
+        .yt-bar-gray:nth-child(3) { width: 75%; animation-delay: 0.4s; }
+        .yt-bar-gray:nth-child(4) { width: 85%; animation-delay: 0.6s; }
+        @keyframes barPulse { 0%,100%{opacity:0.8} 50%{opacity:1} }
+
+        .yt-thumb {
+            width: 100%; height: 70px; border-radius: 4px;
+            background: linear-gradient(45deg, #1a0033, #003366, #1a0033);
+            margin-bottom: 6px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .yt-play {
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 12px 0 12px 20px;
+            border-color: transparent transparent transparent rgba(255,255,255,0.5);
+        }
+
+        /* VS Code screen content */
+        .screen-vscode {
+            position: absolute; inset: 0;
+            background: #1e1e1e;
+            padding: 10px;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.15s ease;
+        }
+        .screen-vscode.visible { opacity: 1; }
+
+        .vscode-titlebar {
+            display: flex; gap: 8px; margin-bottom: 8px;
+        }
+        .vscode-tab {
+            font-family: var(--font-mono); font-size: 9px;
+            color: #ccc; background: #2d2d2d;
+            padding: 3px 10px; border-radius: 3px 3px 0 0;
+        }
+        .vscode-tab.active { background: #1e1e1e; border-top: 1px solid #4fc3f7; color: #4fc3f7; }
+
+        .code-line {
+            font-family: var(--font-mono); font-size: 9px;
+            line-height: 1.5; white-space: nowrap;
+        }
+        .c-keyword { color: #569cd6; }
+        .c-fn { color: #dcdcaa; }
+        .c-str { color: #ce9178; }
+        .c-comment { color: #608b4e; }
+        .c-num { color: #b5cea8; }
+        .c-var { color: #9cdcfe; }
+        .c-cursor {
+            display: inline-block; width: 6px; height: 12px;
+            background: #aeafad; animation: blink 1s step-end infinite; vertical-align: middle;
+        }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+        /* Terminal strip at bottom */
+        .terminal-strip {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            height: 48px; background: #0d1117;
+            border-top: 1px solid #333;
+            padding: 6px 10px;
+            font-family: var(--font-mono); font-size: 9px;
+            color: #4ec9b0;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.15s ease 0.05s;
+        }
+        .terminal-strip.visible { opacity: 1; }
+        .terminal-prompt { color: #19d59e; }
+        .terminal-cmd { color: #fff; }
+        .terminal-out { color: #888; }
+
+        /* Person silhouette */
+        .person {
+            position: absolute; bottom: 46px;
+            width: 36px; height: 60px;
+        }
+        /* Developer sitting */
+        .dev {
+            left: 50%; transform: translateX(-50%);
+            margin-left: -20px;
+        }
+        .dev-svg { width: 36px; height: 60px; }
+
+        /* Manager walking */
+        .mgr {
+            right: -60px;
+            bottom: 44px;
+            transition: right 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .mgr.approaching { right: 28px; }
+        .mgr.gone { right: -60px; }
+        .mgr-svg { width: 40px; height: 64px; }
+
+        /* Danger indicator */
+        .danger-bar {
+            position: absolute; top: 8px; right: 10px;
+            display: flex; align-items: center; gap: 6px;
+            font-family: var(--font-mono); font-size: 10px;
+            color: var(--accent);
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .danger-bar.show { opacity: 1; }
+        .danger-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--accent);
+            animation: dangerPulse 0.5s ease-in-out infinite;
+        }
+        @keyframes dangerPulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.4);opacity:0.6} }
+
+        /* Escape key flash */
+        .escape-flash {
+            position: absolute; top: 8px; left: 10px;
+            background: rgba(255,71,71,0.15); border: 1px solid rgba(255,71,71,0.5);
+            border-radius: 6px; padding: 4px 10px;
+            font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+            color: var(--accent); letter-spacing: 0.05em;
+            opacity: 0; transition: opacity 0.2s;
+        }
+        .escape-flash.show { opacity: 1; }
+
+        /* Status label at bottom of stage */
+        .stage-status {
+            padding: 12px 20px;
+            border-top: 1px solid var(--border);
+            font-family: var(--font-mono); font-size: 12px;
+            color: var(--text-muted);
+            text-align: center;
+            min-height: 40px;
+        }
+        .stage-status span { transition: color 0.3s; }
+
+        /* ===== SECTIONS ===== */
+        .section { margin-bottom: 80px; }
+        .section h2 {
+            font-size: 32px; font-weight: 700; margin-bottom: 16px;
+            letter-spacing: -0.5px;
+        }
+        .section p.lead {
+            font-size: 16px; color: var(--text-secondary); max-width: 580px;
+            margin-bottom: 40px; line-height: 1.7;
+        }
+
+        .grid-3 {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+        }
+        @media (max-width: 768px) { .grid-3 { grid-template-columns: 1fr; } }
+        @media (min-width: 769px) and (max-width: 960px) { .grid-3 { grid-template-columns: 1fr 1fr; } }
+
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 24px;
+        }
+        .card h3 { font-size: 16px; font-weight: 600; margin-bottom: 10px; color: var(--text-primary); }
+        .card p { font-size: 14px; color: var(--text-secondary); line-height: 1.65; }
+        .card-accent { border-left: 3px solid var(--accent); }
+        .card-icon {
+            width: 40px; height: 40px; border-radius: 10px;
+            background: rgba(255,71,71,0.12);
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        /* How it works steps */
+        .steps { display: flex; flex-direction: column; gap: 0; }
+        .step {
+            display: flex; gap: 24px; padding: 28px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .step:last-child { border-bottom: none; }
+        .step-num {
+            flex-shrink: 0; width: 40px; height: 40px;
+            border-radius: 50%; border: 1px solid var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 16px; color: var(--accent);
+            font-family: var(--font-mono);
+        }
+        .step-body h3 { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+        .step-body p { font-size: 14px; color: var(--text-secondary); line-height: 1.65; }
+
+        /* Download panel */
+        .download-panel {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 32px;
+        }
+        .download-panel .lead { font-size: 16px; color: var(--text-secondary); margin-bottom: 20px; }
+        .download-panel ul { padding-left: 20px; }
+        .download-panel ul li {
+            font-size: 14px; color: var(--text-secondary);
+            margin-bottom: 8px; line-height: 1.65;
+        }
+        .mono { font-family: var(--font-mono); font-size: 13px; color: var(--accent-green); }
+
+        footer {
+            border-top: 1px solid var(--border); padding: 32px 0; margin-top: 40px;
+            font-size: 14px; color: var(--text-muted); text-align: center;
+        }
+        footer a { color: var(--text-secondary); text-decoration: none; }
+        footer a:hover { color: var(--text-primary); }
+
+        @media (max-width: 600px) {
+            main { padding: 100px 20px 60px; }
+            .nav { padding: 16px 20px; }
+            header h1 { font-size: 40px; }
+            .scene { height: 260px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="nav-backdrop" class="nav-backdrop" hidden></div>
+
+<nav class="nav">
+    <a class="nav-brand" href="/">
+        <div class="nav-logo">N</div>
+        <span class="nav-title">Nigents</span>
+    </a>
+    <div class="nav-links" id="nav-links">
+        <a class="nav-link" href="/crazy-apps.html">Crazy apps</a>
+        <a class="nav-link" href="/materials.html">Free materials</a>
+        <a class="nav-link" href="/how-it-works.html">How it works</a>
+        <a class="nav-cta" href="/downloads/Escape-1.0.0.dmg" download>Download .dmg</a>
+    </div>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+        <span class="nav-toggle-icon-open">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect y="3" width="20" height="2" rx="1" fill="currentColor"/><rect y="9" width="20" height="2" rx="1" fill="currentColor"/><rect y="15" width="20" height="2" rx="1" fill="currentColor"/></svg>
+        </span>
+        <span class="nav-toggle-icon-close">&times;</span>
+    </button>
+</nav>
+
+<main>
+    <header>
+        <div class="hero-badge">Crazy app #10 &mdash; macOS</div>
+        <h1>One key.<br><span>Look busy instantly.</span></h1>
+        <p class="lead">
+            Escape watches for your trigger — a keyboard shortcut, a hotkey combo, or a proximity sensor ping — and switches every visible window to VS Code and Terminal in under 0.1 seconds.
+        </p>
+        <div class="cta-row">
+            <a class="btn btn-primary" href="/downloads/Escape-1.0.0.dmg" download>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1v8M5 7l3 3 3-3M2 11v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Download DMG
+            </a>
+            <a class="btn btn-outline" href="/crazy-apps.html">All Crazy apps</a>
+        </div>
+    </header>
+
+    <!-- ANIMATION STAGE -->
+    <div class="stage" aria-label="App demo animation">
+        <div class="stage-header">
+            <div class="stage-dot red"></div>
+            <div class="stage-dot yellow"></div>
+            <div class="stage-dot green"></div>
+            <span class="stage-label" id="stage-title">Your screen right now</span>
+        </div>
+
+        <div class="scene">
+            <!-- Escape key indicator -->
+            <div class="escape-flash" id="escFlash">ESC triggered</div>
+
+            <!-- Danger bar -->
+            <div class="danger-bar" id="dangerBar">
+                <div class="danger-dot"></div>
+                MANAGER DETECTED
+            </div>
+
+            <!-- Monitor -->
+            <div class="desk-area">
+                <div class="monitor-body">
+                    <!-- Slacking screen -->
+                    <div class="screen-slack" id="screenSlack">
+                        <div class="yt-thumb"><div class="yt-play"></div></div>
+                        <div class="yt-bar yt-bar-red"></div>
+                        <div class="yt-bar yt-bar-gray" style="width:90%"></div>
+                        <div class="yt-bar yt-bar-gray" style="width:75%"></div>
+                        <div class="yt-bar yt-bar-gray" style="width:85%"></div>
+                        <div class="yt-bar yt-bar-gray" style="width:60%;margin-top:10px;height:4px;opacity:0.5"></div>
+                        <div class="yt-bar yt-bar-gray" style="width:80%;height:4px;opacity:0.5"></div>
+                        <div class="yt-bar yt-bar-gray" style="width:70%;height:4px;opacity:0.5"></div>
+                    </div>
+                    <!-- VS Code screen -->
+                    <div class="screen-vscode" id="screenVscode">
+                        <div class="vscode-titlebar">
+                            <div class="vscode-tab active">index.ts</div>
+                            <div class="vscode-tab">server.js</div>
+                        </div>
+                        <div class="code-line"><span class="c-keyword">import</span> <span class="c-var">express</span> <span class="c-keyword">from</span> <span class="c-str">'express'</span>;</div>
+                        <div class="code-line"><span class="c-keyword">import</span> { <span class="c-var">db</span> } <span class="c-keyword">from</span> <span class="c-str">'./database'</span>;</div>
+                        <div class="code-line">&nbsp;</div>
+                        <div class="code-line"><span class="c-keyword">const</span> <span class="c-var">app</span> = <span class="c-fn">express</span>();</div>
+                        <div class="code-line"><span class="c-keyword">const</span> <span class="c-var">PORT</span> = <span class="c-num">3000</span>;</div>
+                        <div class="code-line">&nbsp;</div>
+                        <div class="code-line"><span class="c-comment">// Route handler — totally working on this</span></div>
+                        <div class="code-line"><span class="c-var">app</span>.<span class="c-fn">get</span>(<span class="c-str">'/api/status'</span>, (<span class="c-var">req</span>, <span class="c-var">res</span>) =&gt; {</div>
+                        <div class="code-line">&nbsp;&nbsp;<span class="c-var">res</span>.<span class="c-fn">json</span>({ <span class="c-var">status</span>: <span class="c-str">'productive'</span> });</div>
+                        <div class="code-line">});<span class="c-cursor"></span></div>
+                        <div class="terminal-strip" id="termStrip">
+                            <div><span class="terminal-prompt">$</span> <span class="terminal-cmd">npm run dev</span></div>
+                            <div class="terminal-out">server running on port 3000 &#x2714;</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="monitor-stand"></div>
+                <div class="monitor-base"></div>
+            </div>
+
+            <!-- Developer (seated silhouette) -->
+            <svg class="person dev dev-svg" viewBox="0 0 36 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Head -->
+                <circle cx="18" cy="9" r="7" fill="#555"/>
+                <!-- Body (seated) -->
+                <rect x="10" y="17" width="16" height="20" rx="4" fill="#444"/>
+                <!-- Arms on desk -->
+                <rect x="2" y="24" width="32" height="5" rx="2.5" fill="#3a3a3a"/>
+                <!-- Legs bent -->
+                <rect x="11" y="37" width="6" height="12" rx="3" fill="#3a3a3a"/>
+                <rect x="19" y="37" width="6" height="12" rx="3" fill="#3a3a3a"/>
+            </svg>
+
+            <!-- Manager (walking silhouette) -->
+            <svg class="person mgr mgr-svg" id="mgrSvg" viewBox="0 0 40 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Head -->
+                <circle cx="20" cy="10" r="8" fill="#666"/>
+                <!-- Tie detail -->
+                <polygon points="20,20 17,30 20,26 23,30" fill="#ff4747" opacity="0.8"/>
+                <!-- Body (suit) -->
+                <rect x="10" y="19" width="20" height="24" rx="4" fill="#4a4a5a"/>
+                <!-- Arms walking -->
+                <rect x="2" y="22" width="8" height="4" rx="2" fill="#4a4a5a" id="mgrArmL" style="transform-origin:10px 24px"/>
+                <rect x="30" y="22" width="8" height="4" rx="2" fill="#4a4a5a" id="mgrArmR" style="transform-origin:30px 24px"/>
+                <!-- Legs walking -->
+                <rect x="11" y="43" width="7" height="16" rx="3" fill="#3a3a4a" id="mgrLegL"/>
+                <rect x="22" y="43" width="7" height="16" rx="3" fill="#3a3a4a" id="mgrLegR"/>
+            </svg>
+        </div>
+
+        <div class="stage-status">
+            <span id="stageMsg">Watching YouTube... totally "researching" the project</span>
+        </div>
+    </div>
+
+    <!-- WHAT IT DOES -->
+    <section class="section" id="features">
+        <h2>What it does</h2>
+        <p class="lead">
+            Escape is a macOS menu bar app that listens for a global hotkey and instantly orchestrates your window layout to look like you've been coding all morning.
+        </p>
+        <div class="grid-3">
+            <div class="card card-accent">
+                <div class="card-icon">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M3 10h9M3 15h5" stroke="#ff4747" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </div>
+                <h3>Instant window flip</h3>
+                <p>One hotkey — Escape activates VS Code on your main display and Terminal on secondary. Sub-100ms switch via Accessibility API.</p>
+            </div>
+            <div class="card card-accent">
+                <div class="card-icon">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="#ff4747" stroke-width="1.5"/><path d="M10 7v4l2 2" stroke="#ff4747" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </div>
+                <h3>Configurable trigger</h3>
+                <p>Set any key combo — Cmd+Shift+E, F13, a dedicated macro key. Or wire it to a Bluetooth button clipped under your desk.</p>
+            </div>
+            <div class="card card-accent">
+                <div class="card-icon">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="#ff4747" stroke-width="1.5"/><path d="M7 10l2 2 4-4" stroke="#ff4747" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <h3>Smart app roster</h3>
+                <p>Choose which apps to front — VS Code, Xcode, Terminal, iTerm, Warp. Mix and match per space. The set is fully configurable.</p>
+            </div>
+            <div class="card card-accent">
+                <div class="card-icon">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2L3 7v6l7 5 7-5V7z" stroke="#ff4747" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                </div>
+                <h3>Restore on release</h3>
+                <p>Hold the hotkey and everything snaps back to exactly where you left it — windows, scroll positions, the works — when you release.</p>
+            </div>
+            <div class="card card-accent">
+                <div class="card-icon">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 4l12 12M16 4L4 16" stroke="#ff4747" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </div>
+                <h3>Zero footprint</h3>
+                <p>Lives in the menu bar. No dock icon. No background agent. Launches at login in 8 MB of RAM. Invisible until you need it.</p>
+            </div>
+            <div class="card card-accent">
+                <div class="card-icon">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 3a7 7 0 100 14A7 7 0 0010 3z" stroke="#ff4747" stroke-width="1.5"/><path d="M10 7v3l2 1" stroke="#ff4747" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </div>
+                <h3>Fake typing mode</h3>
+                <p>Optional: Escape can trigger a fake typing animation in Terminal so there's activity on screen even if you just sat down.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="section" id="how">
+        <h2>How it works</h2>
+        <p class="lead">Three things happen in sequence when the hotkey fires.</p>
+        <div class="steps">
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-body">
+                    <h3>Hotkey listener wakes up</h3>
+                    <p>A low-level CGEventTap intercepts your key combo before it reaches any app — no focus required. Escape responds even when a browser video is fullscreen.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-body">
+                    <h3>Window map is taken</h3>
+                    <p>The current layout is snapshotted — app, space, display, bounds, z-order — so restore is exact. Snapshot takes under 5 ms via Accessibility API.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-body">
+                    <h3>Target apps are fronted</h3>
+                    <p>VS Code (or Xcode) gets main display focus. Terminal gets the secondary. If neither is running they are launched silently. Whole sequence: ~80 ms on Apple Silicon.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- DOWNLOAD -->
+    <section class="section" id="download">
+        <h2>Install</h2>
+        <div class="download-panel">
+            <p class="lead">Open the disk image, drag <span class="mono">Escape.app</span> into Applications, then eject the volume.</p>
+            <ul>
+                <li>On first launch, macOS will ask for <strong>Accessibility permission</strong> — required for the window manager to work.</li>
+                <li>If Gatekeeper blocks it: <strong>System Settings &rarr; Privacy &amp; Security</strong> &rarr; Open anyway.</li>
+                <li>If needed: <span class="mono">xattr -cr ~/Downloads/Escape-1.0.0.dmg</span> then open again.</li>
+                <li>Configure your hotkey and app roster from the menu bar icon.</li>
+            </ul>
+            <div class="cta-row" style="margin-top:24px;margin-bottom:0">
+                <a class="btn btn-primary" href="/downloads/Escape-1.0.0.dmg" download>Download Escape-1.0.0.dmg</a>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p><strong>Escape</strong> &middot; <a href="/crazy-apps.html">Crazy apps</a> &middot; <a href="/materials.html">Free materials</a> &middot; <a href="/">Nigents</a></p>
+    </footer>
+</main>
+
+<script>
+(function () {
+    // Nav toggle
+    var toggle = document.getElementById('nav-toggle');
+    var backdrop = document.getElementById('nav-backdrop');
+    if (toggle) {
+        function setOpen(open) {
+            document.body.classList.toggle('nav-open', open);
+            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (backdrop) backdrop.hidden = !open;
+        }
+        toggle.addEventListener('click', function () { setOpen(!document.body.classList.contains('nav-open')); });
+        if (backdrop) backdrop.addEventListener('click', function () { setOpen(false); });
+        document.getElementById('nav-links').querySelectorAll('a').forEach(function (l) { l.addEventListener('click', function () { setOpen(false); }); });
+    }
+
+    // ---- ANIMATION SEQUENCE ----
+    var screenSlack = document.getElementById('screenSlack');
+    var screenVscode = document.getElementById('screenVscode');
+    var termStrip = document.getElementById('termStrip');
+    var mgrSvg = document.getElementById('mgrSvg');
+    var dangerBar = document.getElementById('dangerBar');
+    var escFlash = document.getElementById('escFlash');
+    var stageMsg = document.getElementById('stageMsg');
+    var stageTitle = document.getElementById('stage-title');
+
+    function runSequence() {
+        // Phase 0: slack screen visible, manager off-screen
+        screenSlack.classList.remove('hidden');
+        screenVscode.classList.remove('visible');
+        termStrip.classList.remove('visible');
+        mgrSvg.classList.remove('approaching', 'gone');
+        dangerBar.classList.remove('show');
+        escFlash.classList.remove('show');
+        stageMsg.textContent = 'Watching YouTube\u2026 totally "researching" the project';
+        stageTitle.textContent = 'Your screen right now';
+
+        // Phase 1 (2s): manager starts walking in
+        setTimeout(function () {
+            mgrSvg.classList.add('approaching');
+            stageMsg.textContent = 'Manager spotted 3 desks away\u2026';
+            stageMsg.style.color = '#ff9944';
+        }, 2000);
+
+        // Phase 2 (3s): danger bar appears
+        setTimeout(function () {
+            dangerBar.classList.add('show');
+            stageMsg.textContent = 'MANAGER INCOMING \u2014 0.8 seconds';
+            stageMsg.style.color = '#ff4747';
+        }, 3000);
+
+        // Phase 3 (3.8s): ESC fires, screen flips
+        setTimeout(function () {
+            escFlash.classList.add('show');
+            screenSlack.classList.add('hidden');
+            screenVscode.classList.add('visible');
+            termStrip.classList.add('visible');
+            stageTitle.textContent = 'After Escape fires';
+            stageMsg.textContent = 'VS Code + Terminal. You\'ve been "working on this all morning."';
+            stageMsg.style.color = '#19d59e';
+        }, 3800);
+
+        // Phase 4 (5.5s): manager retreats
+        setTimeout(function () {
+            dangerBar.classList.remove('show');
+            escFlash.classList.remove('show');
+            mgrSvg.classList.remove('approaching');
+            mgrSvg.classList.add('gone');
+            stageMsg.textContent = 'Manager moves on. Back to normal\u2026 until next time.';
+            stageMsg.style.color = '';
+        }, 5500);
+
+        // Phase 5 (7.5s): reset and repeat
+        setTimeout(function () {
+            mgrSvg.classList.remove('gone');
+            runSequence();
+        }, 8000);
+    }
+
+    // Start after 1s
+    setTimeout(runSequence, 1000);
+})();
+</script>
+</body>
+</html>
