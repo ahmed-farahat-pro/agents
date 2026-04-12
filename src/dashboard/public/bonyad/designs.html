@@ -365,7 +365,7 @@
       // Show modal first (paint frame), then load iframe after a tick to avoid freezing
       const embedUrl = buildFigmaEmbed(d.figma_url);
       const iframe   = document.getElementById('figma-iframe');
-      iframe.src     = '';   // clear any previous
+      iframe.removeAttribute('src');   // detach without triggering onload
       document.getElementById('figma-loading').style.display = 'flex';
       document.getElementById('figma-modal').classList.add('open');
       document.body.style.overflow = 'hidden';

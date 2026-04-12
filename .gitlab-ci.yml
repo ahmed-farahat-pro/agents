@@ -165,10 +165,10 @@ deploy-to-ec2:
       echo "Installing dependencies (includes cookie-parser for dashboard auth)..."
       npm ci --production
 
-      echo "Rebuilding MCP servers..."
-      cd mcp-servers/arabic-rtl-auditor && npm ci && npm run build && cd ../..
-      cd mcp-servers/task-splitter && npm ci && npm run build && cd ../..
-      cd mcp-servers/smart-code-search && npm ci && npm run build && cd ../..
+      echo "Rebuilding MCP servers (non-fatal — site stays up even if a build fails)..."
+      (cd mcp-servers/arabic-rtl-auditor && npm ci && npm run build) || echo "WARN: arabic-rtl-auditor build failed, skipping"
+      (cd mcp-servers/task-splitter      && npm ci && npm run build) || echo "WARN: task-splitter build failed, skipping"
+      (cd mcp-servers/smart-code-search  && npm ci && npm run build) || echo "WARN: smart-code-search build failed, skipping"
 
       # Note: Database should already be set up. If schema changes needed:
       # sudo mysql nigents < src/database/schema.sql
