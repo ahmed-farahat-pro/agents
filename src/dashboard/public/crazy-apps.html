@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Nigents Crazy apps — experimental macOS utilities. AirSound, AppJealousy, Battery DNA, BreathBar, LangFlip, Break Alarm, MoodBoard, and TiltDJ." />
+    <meta name="description" content="Nigents Crazy apps — experimental macOS utilities. AirSound, AppJealousy, Battery DNA, BreathBar, LangFlip, Break Alarm, MoodBoard, TiltDJ, and ThermalMap." />
     <title>Crazy apps — Nigents</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -327,6 +327,20 @@
             border-color: rgba(232, 121, 249, 0.45);
         }
 
+        .app-pick.tm::before {
+            background: linear-gradient(90deg, var(--accent-heat), #2dd4bf);
+        }
+
+        .app-pick.tm .icon {
+            color: var(--accent-heat);
+            background: rgba(255, 61, 92, 0.1);
+            border: 1px solid rgba(255, 61, 92, 0.35);
+        }
+
+        .app-pick.tm:hover {
+            border-color: rgba(255, 61, 92, 0.45);
+        }
+
         .app-pick h2 {
             font-size: 1.35rem;
             font-weight: 700;
@@ -494,6 +508,15 @@
                 <div class="app-actions">
                     <a class="btn-landing" href="/tiltdj.html">Open landing</a>
                     <a class="btn-dl" href="/downloads/TiltDJ-Pro.dmg" download>Download DMG</a>
+                </div>
+            </article>
+            <article class="app-pick tm">
+                <div class="icon"><img src="/icons/thermalmap.png" alt="ThermalMap icon" loading="lazy"></div>
+                <h2>ThermalMap</h2>
+                <p>Visualize your Mac's thermal state — CPU, GPU, Neural Engine, storage, battery, and chassis zones. Animated fan indicator and menu bar panel included.</p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/thermalmap.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/ThermalMap-1.1.1.dmg" download>Download DMG</a>
                 </div>
             </article>
         </div>
