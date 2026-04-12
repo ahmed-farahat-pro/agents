@@ -1,0 +1,171 @@
+# CodeRabbit AI Code Review Configuration
+# https://coderabbit.ai/docs
+
+language: en
+
+# Review settings
+reviews:
+  # When to request reviews
+  request_changes_workflow: true
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  
+  # Path filters - which files to review
+  path_filters:
+    - "!**/*.log"
+    - "!**/node_modules/**"
+    - "!**/dist/**"
+    - "!**/.env*"
+    - "!**/data/**"
+    - "!**/logs/**"
+    - "!**/coverage/**"
+    - "!mcp-servers/**/dist/**"
+    - "!mcp-servers/**/node_modules/**"
+  
+  # Path-based instructions
+  path_instructions:
+    - path: "src/**/*.js"
+      instructions: |
+        Review JavaScript code for:
+        - Proper error handling with try/catch
+        - Async/await usage patterns
+        - Logging best practices using the logger utility
+        - MySQL connection pooling safety
+        - AI provider API call patterns
+        - Telegram bot message handling
+        
+    - path: "src/agents/**/*.js"
+      instructions: |
+        Review agent code for:
+        - BaseAgent class extension patterns
+        - EventEmitter usage for status updates
+        - MCP tool integration patterns
+        - AI provider configuration handling
+        - Proper agent role separation
+        
+    - path: "src/database/**/*.js"
+      instructions: |
+        Review database code for:
+        - SQL injection prevention (parameterized queries)
+        - Connection pool management
+        - Transaction handling
+        - Proper error handling for DB operations
+        
+    - path: "config/**/*.json"
+      instructions: |
+        Review configuration files for:
+        - Valid JSON syntax
+        - Proper agent model assignments
+        - MCP server configurations
+        
+    - path: "mcp-servers/**/*.ts"
+      instructions: |
+        Review TypeScript MCP servers for:
+        - Proper MCP SDK usage
+        - Tool schema definitions
+        - Error handling in tools
+        
+    - path: "**/*.sql"
+      instructions: |
+        Review SQL for:
+        - Proper index creation
+        - Foreign key constraints
+        - Character set (utf8mb4)
+        - Engine (InnoDB)
+
+  # Auto-review settings
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - "main"
+      - "develop"
+
+# Chat settings
+chat:
+  auto_reply: true
+
+# Knowledge base (optional)
+knowledge_base:
+  learnings:
+    scope: "local"
+  issues:
+    scope: "local"
+
+# Tool-specific settings
+tools:
+  # ESLint for JavaScript
+  eslint:
+    enabled: true
+  
+  # Node.js specific checks
+  nodejs:
+    enabled: true
+  
+  # Dependency check
+  dependency_check:
+    enabled: true
+  
+  # Secret detection
+  secrets:
+    enabled: true
+  
+  # Shell script checks
+  shellcheck:
+    enabled: true
+
+# Ignore specific issues
+ignore:
+  # Common patterns to ignore
+  - "**/package-lock.json"
+  - "**/*.min.js"
+  - "**/*.min.css"
+
+# Custom review instructions for this project
+instructions: |
+  This is Nigents - an AI agent development team system with the following architecture:
+  
+  Key Components:
+  1. Telegram Bot Interface (src/bot.js)
+  2. 7 AI Agents (src/agents/)
+  3. MCP Tool Integration (src/mcp/)
+  4. MySQL Database Layer (src/database/)
+  5. Dashboard (src/dashboard/)
+  
+  Review Focus Areas:
+  1. AI Provider Configuration
+     - Check that agent models are properly configured
+     - Verify fallback providers are set
+     - Ensure API key handling is secure
+  
+  2. Database Operations
+     - Verify all SQL uses parameterized queries
+     - Check connection pool usage
+     - Ensure transactions are properly handled
+  
+  3. MCP Tool Integration
+     - Verify MCP client initialization
+     - Check tool error handling
+     - Ensure proper tool timeout handling
+  
+  4. Agent Architecture
+     - Check BaseAgent inheritance
+     - Verify event emission for status updates
+     - Ensure proper agent coordination
+  
+  5. Security
+     - No hardcoded API keys
+     - No exposed credentials in logs
+     - Proper input validation
+  
+  6. Error Handling
+     - All async operations have try/catch
+     - Errors are logged with context
+     - User-friendly error messages
+  
+  Testing Requirements:
+  - New features should include test commands
+  - Database changes need migration scripts
+  - Agent changes should be testable via /testagents

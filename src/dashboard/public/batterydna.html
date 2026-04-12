@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Battery DNA — Menu bar battery clarity for macOS. Health, cycles, and charging story at a glance. From Nigents Crazy apps." />
+    <title>Battery DNA — Crazy apps · Nigents</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #09080c;
+            --bg-secondary: #141116;
+            --bg-card: #111111;
+            --border: #2a2a35;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            --accent-orange: #ff570a;
+            --accent-green: #19d59e;
+            --accent-volt: #2dd4bf;
+            --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+            --font-sans: 'Poppins', 'Sakkal Majalla', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(45, 212, 191, 0.045) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(45, 212, 191, 0.045) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, var(--bg-primary) 0%, transparent 100%);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .nav-logo {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-orange);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 20px;
+            color: var(--bg-primary);
+        }
+
+        .nav-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover { color: var(--text-primary); }
+
+        .soon-pill {
+            display: inline-block;
+            margin-left: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--bg-primary);
+            background: var(--accent-orange);
+            padding: 3px 9px;
+            border-radius: 999px;
+            vertical-align: middle;
+        }
+
+        .nav-cta {
+            padding: 10px 20px;
+            border: 1px solid var(--accent-orange);
+            color: var(--accent-orange);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .nav-cta:hover {
+            background: var(--accent-orange);
+            color: var(--bg-primary);
+        }
+
+        .nav-toggle {
+            display: none;
+            width: 44px;
+            height: 44px;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .nav-toggle-icon-close { display: none; font-size: 28px; }
+        body.nav-open .nav-toggle-icon-open { display: none; }
+        body.nav-open .nav-toggle-icon-close { display: block; }
+        .nav-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 998;
+        }
+        body.nav-open .nav-backdrop { display: block; }
+        body.nav-open { overflow: hidden; }
+
+        @media (max-width: 900px) {
+            .nav-toggle { display: flex; }
+            .nav-links {
+                display: none;
+                position: fixed;
+                top: 72px;
+                left: 16px;
+                right: 16px;
+                flex-direction: column;
+                align-items: stretch;
+                background: var(--bg-secondary);
+                border: 1px solid var(--border);
+                padding: 12px;
+                z-index: 999;
+            }
+            body.nav-open .nav-links { display: flex; }
+        }
+
+        main {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 120px 32px 80px;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--accent-volt);
+            border: 1px solid rgba(45, 212, 191, 0.4);
+            padding: 8px 14px;
+            margin-bottom: 20px;
+            animation: badgePulse 3s ease-in-out infinite;
+        }
+
+        @keyframes badgePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.22); }
+            50% { box-shadow: 0 0 24px 2px rgba(45, 212, 191, 0.12); }
+        }
+
+        .hero-title {
+            font-size: clamp(2.2rem, 5vw, 3.4rem);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1.08;
+            margin-bottom: 16px;
+        }
+
+        .hero-title .shimmer {
+            background: linear-gradient(
+                90deg,
+                var(--text-primary) 0%,
+                var(--text-primary) 38%,
+                var(--accent-volt) 50%,
+                var(--text-primary) 62%,
+                var(--text-primary) 100%
+            );
+            background-size: 200% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: textShimmer 4s linear infinite;
+        }
+
+        @keyframes textShimmer {
+            0% { background-position: 100% 50%; }
+            100% { background-position: -100% 50%; }
+        }
+
+        .hero-title em {
+            font-style: normal;
+            color: var(--accent-volt);
+        }
+
+        .hero-lead {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 52ch;
+            margin-bottom: 28px;
+            animation: fadeUp 0.8s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .cta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 48px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 0;
+            transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+        }
+
+        .btn:active { transform: scale(0.98); }
+
+        .btn-primary {
+            background: var(--accent-volt);
+            color: #041312;
+            border: 1px solid var(--accent-volt);
+            box-shadow: 0 8px 32px rgba(45, 212, 191, 0.28);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 12px 40px rgba(45, 212, 191, 0.4);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--accent-volt);
+            color: var(--accent-volt);
+        }
+
+        .stage {
+            margin: 32px 0 56px;
+            padding: 48px 24px 40px;
+            background: linear-gradient(165deg, rgba(20, 17, 22, 0.95) 0%, rgba(9, 8, 12, 0.98) 100%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .battery-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+        }
+
+        .battery-body {
+            position: relative;
+            width: min(200px, 55vw);
+            height: 88px;
+            border: 3px solid rgba(45, 212, 191, 0.45);
+            border-radius: 14px;
+            background: rgba(0, 0, 0, 0.35);
+            overflow: hidden;
+            box-shadow:
+                inset 0 0 40px rgba(45, 212, 191, 0.06),
+                0 20px 50px rgba(0, 0, 0, 0.45);
+        }
+
+        .battery-fill {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            top: 0;
+            width: 72%;
+            background: linear-gradient(180deg, rgba(45, 212, 191, 0.95) 0%, rgba(25, 213, 158, 0.55) 100%);
+            border-radius: 0 10px 10px 0;
+            animation: fillPulse 3.5s ease-in-out infinite;
+            box-shadow: 0 0 24px rgba(45, 212, 191, 0.35);
+        }
+
+        @keyframes fillPulse {
+            0%, 100% { width: 62%; opacity: 0.92; }
+            50% { width: 88%; opacity: 1; }
+        }
+
+        .battery-cap {
+            width: 10px;
+            height: 32px;
+            margin-left: -2px;
+            background: linear-gradient(180deg, rgba(45, 212, 191, 0.5), rgba(45, 212, 191, 0.2));
+            border-radius: 0 6px 6px 0;
+            border: 3px solid rgba(45, 212, 191, 0.35);
+            border-left: none;
+        }
+
+        .dna-strand {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 28px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+        }
+
+        .dna-strand span {
+            animation: helix 2.4s ease-in-out infinite;
+        }
+        .dna-strand span:nth-child(2) { animation-delay: 0.2s; }
+        .dna-strand span:nth-child(3) { animation-delay: 0.4s; }
+        .dna-strand span:nth-child(4) { animation-delay: 0.6s; }
+        .dna-strand span:nth-child(5) { animation-delay: 0.8s; }
+
+        @keyframes helix {
+            0%, 100% { color: var(--text-muted); transform: translateY(0); }
+            50% { color: var(--accent-volt); transform: translateY(-4px); }
+        }
+
+        .section {
+            margin-bottom: 56px;
+        }
+
+        .section h2 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .section p.lead {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            max-width: 65ch;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 22px;
+            transition: border-color 0.2s;
+        }
+
+        .card:hover {
+            border-color: rgba(45, 212, 191, 0.45);
+        }
+
+        .card h3 {
+            font-size: 15px;
+            margin-bottom: 8px;
+        }
+
+        .card p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.55;
+        }
+
+        .download-panel {
+            background: rgba(45, 212, 191, 0.08);
+            border: 1px solid rgba(45, 212, 191, 0.38);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .download-panel ul {
+            margin: 12px 0 0 1.2rem;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .mono {
+            font-family: var(--font-mono);
+            font-size: 0.9em;
+            color: var(--accent-green);
+        }
+
+        footer {
+            border-top: 1px solid var(--border);
+            padding-top: 24px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        footer a {
+            color: var(--accent-orange);
+            text-decoration: none;
+        }
+
+        @media (max-width: 640px) {
+            .nav { padding: 16px 20px; }
+            main { padding-top: 100px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .hero-title .shimmer { animation: none; color: var(--text-primary); -webkit-text-fill-color: var(--text-primary); }
+            .hero-badge { animation: none; }
+            .battery-fill { animation: none; width: 75%; }
+            .dna-strand span { animation: none; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <a href="/" class="nav-brand">
+            <div class="nav-logo">N</div>
+            <span class="nav-title">Nigents</span>
+        </a>
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+            <span class="nav-toggle-icon-open" aria-hidden="true">☰</span>
+            <span class="nav-toggle-icon-close" aria-hidden="true">×</span>
+        </button>
+        <div class="nav-links" id="nav-links" role="navigation" aria-label="Main">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/how-it-works.html" class="nav-link">How it works</a>
+            <a href="/materials.html" class="nav-link">Free Materials</a>
+            <a href="/crazy-apps.html" class="nav-link">Crazy apps</a>
+            <a href="/opencode-kits.html" class="nav-link">OpenCode kits <span class="soon-pill">Soon</span></a>
+            <a href="/bonyad/" class="nav-link">Bonyad</a>
+            <a href="/login.html" class="nav-cta">Login →</a>
+        </div>
+    </nav>
+    <div class="nav-backdrop" id="nav-backdrop" aria-hidden="true" hidden></div>
+
+    <main>
+        <header>
+            <p class="hero-badge">macOS · Menu bar</p>
+            <h1 class="hero-title"><span class="shimmer">Battery DNA</span> — your Mac’s <em>power profile</em></h1>
+            <p class="hero-lead">
+                A small menu bar companion for charge state, cycle context, and the story your battery tells over time.
+                Part of our <strong style="color:var(--accent-volt)">Crazy apps</strong> line — playful utilities, not enterprise fleet tooling.
+            </p>
+            <div class="cta-row">
+                <a class="btn btn-primary" href="/downloads/BatteryDNA-1.0.0.dmg" download>Download DMG</a>
+                <a class="btn btn-ghost" href="/crazy-apps.html">All crazy apps</a>
+                <a class="btn btn-ghost" href="/materials.html#crazy-apps">Free materials</a>
+                <a class="btn btn-ghost" href="#how">What you get</a>
+            </div>
+        </header>
+
+        <div class="stage" aria-hidden="true">
+            <div class="battery-wrap">
+                <div class="battery-body">
+                    <div class="battery-fill"></div>
+                </div>
+                <div class="battery-cap" aria-hidden="true"></div>
+            </div>
+            <div class="dna-strand" aria-hidden="true">
+                <span>●</span><span>━</span><span>◆</span><span>━</span><span>●</span>
+            </div>
+            <p style="text-align:center;font-size:12px;color:var(--text-muted);margin-top:16px;font-family:var(--font-mono);">
+                Charge rhythm · cycle history · menu bar at a glance
+            </p>
+        </div>
+
+        <section class="section" id="how">
+            <h2>What you get</h2>
+            <p class="lead">
+                Battery DNA keeps the essentials visible without opening System Settings — ideal when you’re debugging drain, travel days, or just curious how your pack is aging.
+            </p>
+            <div class="grid-3">
+                <div class="card">
+                    <h3>Menu bar pulse</h3>
+                    <p>Percentage, charging state, and quick cues stay in the tray — same Nigents dark aesthetic as our other Crazy apps.</p>
+                </div>
+                <div class="card">
+                    <h3>Health &amp; cycles</h3>
+                    <p>Surface maximum capacity and cycle count in plain language so “is this normal?” has a faster answer.</p>
+                </div>
+                <div class="card">
+                    <h3>Experimental</h3>
+                    <p>Built for makers and curious users. Not a replacement for Apple diagnostics or service — just a clearer daily lens.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="download">
+            <h2>Install</h2>
+            <div class="download-panel">
+                <p class="lead" style="margin-bottom:0">Open the disk image, drag <span class="mono">Battery DNA.app</span> into Applications, then eject the volume.</p>
+                <ul>
+                    <li>If Gatekeeper blocks the download: <strong>System Settings → Privacy &amp; Security</strong> → Open anyway.</li>
+                    <li>If needed: <span class="mono">xattr -cr ~/Downloads/BatteryDNA-1.0.0.dmg</span> then open again.</li>
+                    <li>Rebuild locally with your MacAppsBundle packaging script after changes.</li>
+                </ul>
+                <div class="cta-row" style="margin-top:20px;margin-bottom:0">
+                    <a class="btn btn-primary" href="/downloads/BatteryDNA-1.0.0.dmg" download>Download BatteryDNA-1.0.0.dmg</a>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p><strong>Battery DNA</strong> · <a href="/crazy-apps.html">Crazy apps</a> · <a href="/materials.html">Free materials</a> · <a href="/">Nigents</a></p>
+        </footer>
+    </main>
+
+    <script>
+        (function () {
+            var toggle = document.getElementById('nav-toggle');
+            var backdrop = document.getElementById('nav-backdrop');
+            if (!toggle) return;
+            function setOpen(open) {
+                document.body.classList.toggle('nav-open', open);
+                toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                if (backdrop) backdrop.hidden = !open;
+            }
+            toggle.addEventListener('click', function () {
+                setOpen(!document.body.classList.contains('nav-open'));
+            });
+            if (backdrop) backdrop.addEventListener('click', function () { setOpen(false); });
+            document.getElementById('nav-links').querySelectorAll('a').forEach(function (link) {
+                link.addEventListener('click', function () { setOpen(false); });
+            });
+        })();
+    </script>
+</body>
+</html>

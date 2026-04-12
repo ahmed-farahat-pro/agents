@@ -1,10 +1,11 @@
 /**
- * 🦉 NightOwl - Agent MCP Wrapper
+ * 🦉 Nigents - Agent MCP Wrapper
  * Wraps agents with MCP tool capabilities
  */
 
 const mcpClient = require('./mcp-client');
 const logger = require('../utils/logger');
+const aiClient = require('../utils/ai-client');
 
 class AgentMCPWrapper {
   constructor(agent, agentName) {
@@ -34,12 +35,48 @@ class AgentMCPWrapper {
     const prompt = this.createToolEnhancedPrompt(task, availableTools, context);
 
     try {
+      // If no tools available, just call AI directly
+      if (availableTools.length === 0) {
+        logger.info(`[MCP Wrapper] No tools for ${this.agentName}, calling AI directly`);
+        const result = await aiClient.call(prompt, {
+          provider: this.agent.provider,
+          model: this.agent.model,
+          systemMessage: this.agent.systemMessage,
+          maxTokens: 4096,
+        });
+        return {
+          success: true,
+          content: result.content,
+          toolCalls: [],
+          iterations: 1,
+        };
+      }
+
       // Execute with tool loop
       const result = await this.executeWithToolLoop(prompt, availableTools);
       return result;
     } catch (error) {
       logger.error(`[MCP Wrapper] Error in ${this.agentName}:`, error);
-      throw error;
+      // Fallback to direct AI call on error
+      try {
+        logger.info(`[MCP Wrapper] Falling back to direct AI call for ${this.agentName}`);
+        const result = await aiClient.call(prompt, {
+          provider: this.agent.provider,
+          model: this.agent.model,
+          systemMessage: this.agent.systemMessage,
+          maxTokens: 4096,
+        });
+        return {
+          success: true,
+          content: result.content,
+          toolCalls: [],
+          iterations: 1,
+          fallback: true,
+        };
+      } catch (fallbackError) {
+        logger.error(`[MCP Wrapper] Fallback also failed:`, fallbackError);
+        throw error;
+      }
     }
   }
 
@@ -59,26 +96,29 @@ class AgentMCPWrapper {
     ).join('\n');
 
     return `
-You are ${this.agentName} agent in NightOwl AI development team.
+${this.agent.systemMessage || ''}
 
-Task: ${task}
+You are ${this.agentName} with access to tools.
 
-Context: ${JSON.stringify(context, null, 2)}
+TASK: ${task}
 
-You have access to the following MCP tools:
+${context.project ? `PROJECT: ${context.project}` : ''}
 
-${toolDescriptions}
+AVAILABLE TOOLS:
+${toolDescriptions || 'No tools available'}
 
-When you need to use a tool, respond with a tool_use request.
-After receiving tool results, continue with your response.
-You can chain multiple tool calls to accomplish complex tasks.
+When you need to use a tool, respond with:
+TOOL: <tool_name>
+INPUT: <json_input>
 
-Proceed to accomplish the task using available tools when needed.
+After tool results are provided, continue with your analysis.
+
+If no tools are needed, simply provide your response.
 `;
   }
 
   /**
-   * Execute with tool use loop
+   * Execute with tool use loop - Simplified version using aiClient
    */
   async executeWithToolLoop(prompt, tools) {
     const messages = [
@@ -86,81 +126,106 @@ Proceed to accomplish the task using available tools when needed.
     ];
 
     let iteration = 0;
-    const maxIterations = 20;
+    const maxIterations = 10;
 
     while (iteration < maxIterations) {
       iteration++;
       
-      // Call Claude with tools
-      const response = await this.agent.anthropic.messages.create({
-        model: this.agent.model,
-        max_tokens: 4096,
-        system: this.agent.systemMessage,
-        messages: messages,
-        tools: tools.map(t => ({
-          name: t.name,
-          description: t.description,
-          input_schema: t.inputSchema,
-        })),
-      });
-
-      // Check if Claude wants to use a tool
-      const toolUse = response.content.find(c => c.type === 'tool_use');
+      logger.info(`[MCP Wrapper] ${this.agentName} iteration ${iteration}`);
       
-      if (!toolUse) {
-        // No tool use, return the final response
+      // Build the full prompt with conversation history
+      const fullPrompt = messages.map(m => {
+        if (m.role === 'user') return `User: ${m.content}`;
+        if (m.role === 'assistant') return `Assistant: ${typeof m.content === 'string' ? m.content : JSON.stringify(m.content)}`;
+        if (m.role === 'tool') return `Tool Result: ${m.content}`;
+        return `${m.role}: ${m.content}`;
+      }).join('\n\n');
+
+      try {
+        // Call AI using aiClient
+        const response = await aiClient.call(fullPrompt, {
+          provider: this.agent.provider,
+          model: this.agent.model,
+          systemMessage: this.agent.systemMessage,
+          maxTokens: 4096,
+          temperature: 0.7,
+        });
+
+        const content = response.content;
+
+        // Check if AI wants to use a tool
+        const toolMatch = content.match(/TOOL:\s*(\w+)\s*\nINPUT:\s*(\{[^}]*\}|.+)/i);
+        
+        if (!toolMatch) {
+          // No tool use, return the final response
+          return {
+            success: true,
+            content: content,
+            toolCalls: this.toolHistory,
+            iterations: iteration,
+          };
+        }
+
+        // Extract tool info
+        const toolName = toolMatch[1].trim();
+        let toolInput;
+        try {
+          toolInput = JSON.parse(toolMatch[2].trim());
+        } catch {
+          toolInput = { query: toolMatch[2].trim() };
+        }
+
+        // Execute the tool
+        logger.info(`[MCP Wrapper] ${this.agentName} using tool: ${toolName}`);
+        
+        const toolResult = await this.executeTool(toolName, toolInput);
+        
+        this.toolHistory.push({
+          tool: toolName,
+          input: toolInput,
+          output: toolResult,
+          timestamp: new Date(),
+        });
+
+        // Add to messages for next iteration
+        messages.push({
+          role: 'assistant',
+          content: content,
+        });
+
+        messages.push({
+          role: 'tool',
+          content: typeof toolResult === 'string' 
+            ? toolResult 
+            : JSON.stringify(toolResult, null, 2),
+        });
+
+      } catch (error) {
+        logger.error(`[MCP Wrapper] AI call failed in iteration ${iteration}:`, error);
         return {
-          success: true,
-          content: response.content[0].text,
+          success: false,
+          error: error.message,
+          content: messages.map(m => `${m.role}: ${m.content}`).join('\n\n'),
           toolCalls: this.toolHistory,
           iterations: iteration,
         };
       }
-
-      // Execute the tool
-      logger.info(`[MCP Wrapper] ${this.agentName} using tool: ${toolUse.name}`);
-      
-      const toolResult = await this.executeTool(toolUse.name, toolUse.input);
-      
-      this.toolHistory.push({
-        tool: toolUse.name,
-        input: toolUse.input,
-        output: toolResult,
-        timestamp: new Date(),
-      });
-
-      // Add tool use and result to messages
-      messages.push({
-        role: 'assistant',
-        content: response.content,
-      });
-
-      messages.push({
-        role: 'user',
-        content: [{
-          type: 'tool_result',
-          tool_use_id: toolUse.id,
-          content: typeof toolResult === 'string' 
-            ? toolResult 
-            : JSON.stringify(toolResult),
-        }],
-      });
     }
 
     return {
       success: false,
       error: 'Maximum iterations reached',
       toolCalls: this.toolHistory,
+      iterations,
     };
   }
 
   /**
    * Execute a specific tool
    */
-  async executeTool(toolName, params) {
+  async executeTool(toolName, input) {
     try {
-      const result = await mcpClient.executeTool(toolName, params);
-      return result;
+      return await mcpClient.executeTool(toolName, input);
     } catch (error) {
       logger.error(`[MCP Wrapper] Tool execution failed: ${toolName}`, error);
       return { error: error.message };
@@ -168,91 +233,36 @@ Proceed to accomplish the task using available tools when needed.
   }
 
   /**
-   * Quick tool execution without conversation
+   * Get tool usage history
    */
-  async quickTool(toolName, params) {
-    if (!mcpClient.isInitialized) {
-      await mcpClient.initialize();
+  getToolHistory() {
+    return this.toolHistory;
+  }
+
+  /**
+   * Quick tool execution - directly execute a tool without AI loop
+   * Used by planner for simple filesystem/git operations
+   */
+  async quickTool(toolName, input) {
+    try {
+      if (!mcpClient.isInitialized) {
+        await mcpClient.initialize();
+      }
+      
+      // Ensure tool is available to this agent
+      const availableTools = this.getAgentTools();
+      const tool = availableTools.find(t => t.name === toolName);
+      
+      if (!tool) {
+        logger.debug(`[MCP Wrapper] Tool ${toolName} not in agent's allowed list, trying anyway...`);
+      }
+      
+      const result = await mcpClient.executeTool(toolName, input);
+      return result;
+    } catch (error) {
+      logger.debug(`[MCP Wrapper] quickTool failed: ${toolName} - ${error.message}`);
+      throw error;
     }
-
-    return await mcpClient.executeTool(toolName, params);
-  }
-
-  /**
-   * Chain multiple tools in sequence
-   */
-  async chainTools(operations) {
-    const results = [];
-
-    for (const op of operations) {
-      const result = await this.executeTool(op.tool, op.params);
-      results.push({
-        operation: op,
-        result,
-      });
-    }
-
-    return results;
-  }
-
-  /**
-   * Read file using MCP filesystem
-   */
-  async readFile(path) {
-    return this.quickTool('read_file', { path });
-  }
-
-  /**
-   * Write file using MCP filesystem
-   */
-  async writeFile(path, content) {
-    return this.quickTool('write_file', { path, content });
-  }
-
-  /**
-   * Search files using MCP
-   */
-  async searchFiles(path, pattern) {
-    return this.quickTool('search_files', { path, pattern });
-  }
-
-  /**
-   * Git status using MCP
-   */
-  async gitStatus(repoPath) {
-    return this.quickTool('git_status', { repo_path: repoPath });
-  }
-
-  /**
-   * Git commit using MCP
-   */
-  async gitCommit(repoPath, message) {
-    return this.quickTool('git_commit', { 
-      repo_path: repoPath, 
-      message,
-      files: []
-    });
-  }
-
-  /**
-   * Database query using MCP
-   */
-  async queryDatabase(query) {
-    return this.quickTool('query', { sql: query });
-  }
-
-  /**
-   * Web fetch using MCP
-   */
-  async fetchWeb(url) {
-    return this.quickTool('fetch', { url });
-  }
-
-  /**
-   * Search web using Brave
-   */
-  async webSearch(query) {
-    return this.quickTool('brave_web_search', { query });
   }
 }
 

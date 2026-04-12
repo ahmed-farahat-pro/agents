@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bonyad — Platform fix briefs | Nigents</title>
+  <link rel="stylesheet" href="brief.css" />
+</head>
+<body class="bonyad-theme">
+  <div class="top-banner"></div>
+  <div class="bonyad-hub-hero">
+    <h1><span class="accent">Bonyad</span> — platform fix briefs</h1>
+    <p>Open a sheet for Android, iOS, Web, or Backend. Issues live in the Nigents database.</p>
+    <p class="hub-nav" style="margin-top:14px;">
+      <a href="/">← Nigents home</a>
+      <span class="hub-nav-sep" aria-hidden="true">·</span>
+      <a href="ai-features.html">AI Roadmap</a>
+      <span class="hub-nav-sep" aria-hidden="true">·</span>
+      <a href="builds.html">Builds</a>
+      <span class="hub-nav-sep" aria-hidden="true">·</span>
+      <a href="designs.html">Designs</a>
+      <span class="hub-nav-sep" aria-hidden="true">·</span>
+      <a href="canvas.html">Canvas</a>
+      <span class="hub-nav-sep" aria-hidden="true">·</span>
+      <a href="admin.html" id="nav-admin-link" style="display:none;">Admin</a>
+    </p>
+  </div>
+  <div id="hub-err" class="bonyad-err-box" style="display:none;"></div>
+  <div class="hub-key-row">
+    <div class="edit-key-bar" style="flex-wrap:wrap;gap:10px;">
+      <span id="hub-user-tag" style="font-size:12px;color:var(--text-muted);display:none;"></span>
+      <span><strong>Your key:</strong></span>
+      <input type="password" id="hub-edit-key" placeholder="Paste your Bonyad key" autocomplete="off" />
+      <button type="button" id="hub-save-key" class="add-btn" style="padding:8px 16px;">Save in browser</button>
+    </div>
+  </div>
+  <div class="bonyad-sheet-grid" id="sheet-grid"></div>
+  <div class="bonyad-excel-import" id="import-excel">
+    <h3>Import bugs from Excel</h3>
+    <p class="hint">
+      Upload <strong>.xls</strong> or <strong>.xlsx</strong>. The importer picks the first worksheet whose header row includes
+      <strong>Title</strong> (matches exports like <em>Bonyad_BUGS.xlsx</em>: Module, Type, Priority, Title, Description,
+      Steps to Reproduce, Expected / Actual Behavior, Notes, Attachments, Status). <strong>Hyperlinks</strong> on a row (e.g. screenshot cell linking to a URL) are read as the real <strong>https</strong> target for clickable bugs, not only the visible filename. Plain <strong>http(s)</strong> text in cells is detected too. Status <strong>solved</strong> marks the issue done.
+      No edit key required — up to <strong>2000</strong> rows, <strong>6&nbsp;MB</strong> max.
+      If you import into the <strong>wrong sheet</strong>, use <strong>Undo last import</strong> (same browser tab) to delete only the rows that import just added.
+    </p>
+    <div class="bonyad-excel-import-inner">
+      <div class="form-group" style="margin-bottom:16px;">
+        <label for="imp-slug">Target sheet</label>
+        <select id="imp-slug"></select>
+      </div>
+      <div class="form-group excel-file-form-group">
+          <span class="excel-field-label">Spreadsheet file</span>
+          <label class="excel-file-zone" id="excel-file-zone">
+            <input
+              type="file"
+              id="imp-file"
+              class="excel-file-input"
+              accept=".xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            />
+            <span class="excel-file-glow" aria-hidden="true"></span>
+            <span class="excel-file-body">
+              <span class="excel-file-icon" aria-hidden="true">
+                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="8" y="6" width="32" height="36" rx="3" stroke="currentColor" stroke-width="2" opacity="0.35"/>
+                  <path d="M14 16h20M14 22h14M14 28h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+                  <path d="M26 34l4 4 8-10" stroke="var(--accent-orange)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span class="excel-file-copy">
+                <span class="excel-file-title">Choose spreadsheet</span>
+                <span class="excel-file-sub">Drop a file here or click to browse — <strong>.xlsx</strong> or <strong>.xls</strong></span>
+              </span>
+              <span class="excel-file-browse">Browse</span>
+            </span>
+          </label>
+        <p class="excel-file-chosen" id="imp-file-chosen" aria-live="polite">No file selected yet</p>
+      </div>
+      <button type="button" class="add-btn" id="imp-submit" style="margin-top:12px;">Analyze &amp; import into Bonyad</button>
+      <pre id="imp-result" style="display:none;margin-top:14px;font-size:12px;white-space:pre-wrap;word-break:break-word;background:rgba(0,0,0,0.25);padding:12px;border-radius:8px;color:var(--text-secondary);"></pre>
+      <div id="imp-revert-wrap" style="display:none;margin-top:14px;padding:14px 16px;border-radius:10px;border:1px solid var(--border);background:rgba(248,113,113,0.07);">
+        <p class="hint" style="margin-bottom:10px;">Undo the last Excel import into <strong id="imp-revert-slug"></strong> (<span id="imp-revert-count">0</span> issue(s)). This removes only those imported rows, not older issues.</p>
+        <button type="button" class="btn-danger-outline" id="imp-revert-btn">Undo last import</button>
+      </div>
+    </div>
+  </div>
+  <div class="bonyad-ai-excel-import" id="ai-import-excel">
+    <h3>Smart import — AI routes bugs to the right brief</h3>
+    <p class="hint">
+      Upload one spreadsheet; the server calls <strong>OpenAI</strong> to route each row to the best sheet (iOS, Android, Web, etc.). Set <code style="font-size:12px;">OPENAI_API_KEY</code> (or <code>BONYAD_OPENAI_API_KEY</code>) on the host <em>or</em> save the key in the <strong>Nigents dashboard → API keys</strong> (<code>shared-config.json</code> — picked up on the next import). Never commit keys. New sheets are created when needed. Requires your <strong>Bonyad edit key</strong> below. Optional: <code>BONYAD_IMPORT_AI_MODEL</code> (default <code>gpt-4o-mini</code>).
+    </p>
+    <div class="bonyad-ai-excel-inner">
+      <div class="form-group excel-file-form-group">
+        <span class="excel-field-label">Spreadsheet file</span>
+        <label class="excel-file-zone" id="ai-excel-file-zone">
+          <input
+            type="file"
+            id="ai-imp-file"
+            class="excel-file-input"
+            accept=".xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          />
+          <span class="excel-file-glow" aria-hidden="true"></span>
+          <span class="excel-file-body">
+            <span class="excel-file-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="8" y="6" width="32" height="36" rx="3" stroke="currentColor" stroke-width="2" opacity="0.35"/>
+                <path d="M14 16h20M14 22h14M14 28h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+                <path d="M26 34l4 4 8-10" stroke="var(--accent-orange)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <span class="excel-file-copy">
+              <span class="excel-file-title">Choose spreadsheet</span>
+              <span class="excel-file-sub">Drop a file here or click to browse — <strong>.xlsx</strong> or <strong>.xls</strong></span>
+            </span>
+            <span class="excel-file-browse">Browse</span>
+          </span>
+        </label>
+        <p class="excel-file-chosen" id="ai-imp-file-chosen" aria-live="polite">No file selected yet</p>
+      </div>
+      <button type="button" class="add-btn" id="ai-imp-submit">Route with AI &amp; import</button>
+      <pre id="ai-imp-result" class="bonyad-import-result" style="display:none;" aria-live="polite"></pre>
+      <div id="ai-imp-revert-wrap" style="display:none;margin-top:14px;padding:14px 16px;border-radius:10px;border:1px solid var(--border);background:rgba(251,146,60,0.08);">
+        <p class="hint" style="margin-bottom:10px;">Undo the last <strong>AI import</strong> (<span id="ai-imp-revert-count">0</span> issue(s)).</p>
+        <button type="button" class="btn-danger-outline" id="ai-imp-revert-btn">Undo AI import</button>
+      </div>
+    </div>
+  </div>
+  <div class="bonyad-new-sheet">
+    <h3>Add another platform / sheet</h3>
+    <div class="bonyad-new-sheet-inner">
+      <div class="form-row">
+        <div class="form-group">
+          <label>URL slug</label>
+          <input type="text" id="ns-slug" placeholder="watchos" />
+        </div>
+        <div class="form-group">
+          <label>Label</label>
+          <input type="text" id="ns-label" placeholder="Bonyad" />
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Platform line</label>
+        <input type="text" id="ns-platform" placeholder="watchOS Application" />
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Brief title</label>
+        <input type="text" id="ns-title" placeholder="watchOS — Developer Fix Brief" />
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Subtitle</label>
+        <input type="text" id="ns-sub" placeholder="Short description" />
+      </div>
+      <button type="button" class="add-btn" id="ns-submit">Create sheet</button>
+    </div>
+  </div>
+  <footer>
+    <div class="footer-logos">
+      <img src="assets/bonyad-cube-icon.svg" alt="Bonyad" style="width:36px;height:auto;" />
+      <div class="footer-n" aria-hidden="true">N</div>
+      <img src="assets/problem-x-logo.png" alt="Problem-X" />
+    </div>
+    <div class="footer-txt">Bonyad · Nigents · Problem-X · Consult Code Achieve</div>
+  </footer>
+  <div class="toast" id="toast"></div>
+  <div id="ai-imp-loading" class="bonyad-ai-loading-overlay" aria-hidden="true" style="display:none;">
+    <div class="bonyad-ai-loading-card">
+      <div class="bonyad-ai-loading-spinner" aria-hidden="true"></div>
+      <p class="bonyad-ai-loading-title">AI is working on your file…</p>
+      <p class="bonyad-ai-loading-sub">Reading the sheet and routing each bug to the right platform brief. Large files can take a minute.</p>
+    </div>
+  </div>
+  <div id="ai-imp-modal" class="bonyad-ai-summary-overlay" aria-hidden="true" style="display:none;">
+    <div class="bonyad-ai-summary-dialog" role="dialog" aria-modal="true" aria-labelledby="ai-imp-modal-title">
+      <div class="bonyad-ai-summary-accent" aria-hidden="true"></div>
+      <h3 id="ai-imp-modal-title">AI import summary</h3>
+      <p class="bonyad-ai-summary-total" id="ai-imp-modal-total"></p>
+      <ul class="bonyad-ai-summary-list" id="ai-imp-modal-list"></ul>
+      <div class="bonyad-ai-summary-news" id="ai-imp-modal-news"></div>
+      <button type="button" class="add-btn" id="ai-imp-modal-close" style="margin-top:16px;">Done</button>
+    </div>
+  </div>
+  <script>
+    (function () {
+      function toast(msg, kind, durationMs) {
+        var t = document.getElementById('toast');
+        if (!t) {
+          window.alert(msg);
+          return;
+        }
+        t.textContent = msg;
+        t.className = 'toast' + (kind === 'error' ? ' toast--error' : kind === 'success' ? ' toast--success' : '') + ' show';
+        var ms = durationMs != null ? durationMs : kind === 'error' ? 7000 : 3800;
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(function () {
+          t.classList.remove('show');
+          t.className = 'toast';
+        }, ms);
+      }
+      function setAiImportResult(text, kind) {
+        var el = document.getElementById('ai-imp-result');
+        if (!el) return;
+        el.textContent = text || '';
+        el.style.display = text ? 'block' : 'none';
+        el.classList.toggle('is-error', kind === 'error');
+        el.classList.toggle('is-success', kind === 'success');
+        el.classList.toggle('is-info', kind === 'info');
+        if (text) {
+          try {
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          } catch (e) {}
+        }
+      }
+      function key() { return localStorage.getItem('bonyad_edit_key') || ''; }
+      document.getElementById('hub-edit-key').value = key();
+      document.getElementById('hub-save-key').onclick = function () {
+        var v = document.getElementById('hub-edit-key').value.trim();
+        if (v) localStorage.setItem('bonyad_edit_key', v);
+        else localStorage.removeItem('bonyad_edit_key');
+        toast(v ? 'Saved' : 'Cleared');
+      };
+      function loadSheets() {
+        fetch('/api/bonyad/sheets')
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (!j.success) throw new Error(j.error || 'Failed');
+            var g = document.getElementById('sheet-grid');
+            g.innerHTML = j.sheets.map(function (s) {
+              return (
+                '<article class="bonyad-sheet-card">' +
+                '<h2>' + escapeHtml(s.label) + '</h2>' +
+                '<div class="sub">' + escapeHtml(s.platform_line || s.slug) + '</div>' +
+                '<a href="sheet.html?slug=' + encodeURIComponent(s.slug) + '">Open brief</a>' +
+                '</article>'
+              );
+            }).join('');
+            var sel = document.getElementById('imp-slug');
+            sel.innerHTML = j.sheets.map(function (s) {
+              return '<option value="' + escapeHtml(s.slug) + '">' + escapeHtml(s.platform_line || s.label || s.slug) + '</option>';
+            }).join('');
+            sel.removeEventListener('change', updateRevertUi);
+            sel.addEventListener('change', updateRevertUi);
+            updateRevertUi();
+            updateAiRevertUi();
+          })
+          .catch(function (e) {
+            document.getElementById('hub-err').style.display = 'block';
+            document.getElementById('hub-err').textContent = 'Could not load sheets (is MySQL enabled?). ' + e.message;
+          });
+      }
+      function escapeHtml(x) {
+        return String(x || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+      var LAST_IMPORT_KEY = 'bonyad_last_excel_import';
+      function readLastImport() {
+        try {
+          var s = sessionStorage.getItem(LAST_IMPORT_KEY);
+          return s ? JSON.parse(s) : null;
+        } catch (e) { return null; }
+      }
+      function writeLastImport(obj) {
+        if (obj) sessionStorage.setItem(LAST_IMPORT_KEY, JSON.stringify(obj));
+        else sessionStorage.removeItem(LAST_IMPORT_KEY);
+      }
+      function updateRevertUi() {
+        var sel = document.getElementById('imp-slug');
+        var wrap = document.getElementById('imp-revert-wrap');
+        if (!sel || !wrap) return;
+        var slug = sel.value;
+        var last = readLastImport();
+        if (last && last.batch_id && last.slug === slug) {
+          wrap.style.display = 'block';
+          document.getElementById('imp-revert-slug').textContent = last.slug;
+          document.getElementById('imp-revert-count').textContent = String(last.imported != null ? last.imported : '?');
+        } else {
+          wrap.style.display = 'none';
+        }
+      }
+      var SMART_IMPORT_KEY = 'bonyad_last_smart_import';
+      function readSmartImport() {
+        try {
+          var s = sessionStorage.getItem(SMART_IMPORT_KEY);
+          return s ? JSON.parse(s) : null;
+        } catch (e) { return null; }
+      }
+      function writeSmartImport(obj) {
+        if (obj) sessionStorage.setItem(SMART_IMPORT_KEY, JSON.stringify(obj));
+        else sessionStorage.removeItem(SMART_IMPORT_KEY);
+      }
+      function updateAiRevertUi() {
+        var wrap = document.getElementById('ai-imp-revert-wrap');
+        if (!wrap) return;
+        var last = readSmartImport();
+        if (last && last.batch_id) {
+          wrap.style.display = 'block';
+          document.getElementById('ai-imp-revert-count').textContent = String(last.imported != null ? last.imported : '?');
+        } else {
+          wrap.style.display = 'none';
+        }
+      }
+      function showAiSummaryModal(j) {
+        var overlay = document.getElementById('ai-imp-modal');
+        if (!overlay) return;
+        var totalEl = document.getElementById('ai-imp-modal-total');
+        var listEl = document.getElementById('ai-imp-modal-list');
+        var newsEl = document.getElementById('ai-imp-modal-news');
+        totalEl.textContent = 'Imported ' + j.imported + ' bug(s)' + (j.worksheet ? ' from worksheet “' + j.worksheet + '”.' : '.');
+        listEl.innerHTML = '';
+        (j.breakdown || []).forEach(function (row) {
+          var li = document.createElement('li');
+          li.className = 'bonyad-ai-summary-item';
+          li.innerHTML =
+            '<span class="bonyad-ai-summary-count">' + row.count + '</span>' +
+            '<span class="bonyad-ai-summary-meta">' +
+            '<strong>' + escapeHtml(row.label || row.slug) + '</strong>' +
+            '<span class="bonyad-ai-summary-slug">' + escapeHtml(row.slug) + '</span>' +
+            '</span>';
+          listEl.appendChild(li);
+        });
+        if (j.new_sheets_created && j.new_sheets_created.length) {
+          newsEl.style.display = 'block';
+          newsEl.innerHTML =
+            '<p class="hint" style="margin:0 0 8px;"><strong>New sheets</strong></p><ul class="bonyad-ai-summary-newlist">' +
+            j.new_sheets_created.map(function (s) {
+              return '<li><a href="sheet.html?slug=' + encodeURIComponent(s.slug) + '">' + escapeHtml(s.label || s.slug) + '</a> <code>' + escapeHtml(s.slug) + '</code></li>';
+            }).join('') +
+            '</ul>';
+        } else {
+          newsEl.style.display = 'none';
+          newsEl.innerHTML = '';
+        }
+        overlay.style.display = 'flex';
+        overlay.setAttribute('aria-hidden', 'false');
+      }
+      function hideAiSummaryModal() {
+        var overlay = document.getElementById('ai-imp-modal');
+        if (!overlay) return;
+        overlay.style.display = 'none';
+        overlay.setAttribute('aria-hidden', 'true');
+      }
+      function showAiLoading() {
+        var el = document.getElementById('ai-imp-loading');
+        var btn = document.getElementById('ai-imp-submit');
+        if (el) {
+          el.style.display = 'flex';
+          el.setAttribute('aria-hidden', 'false');
+        }
+        if (btn) {
+          btn.disabled = true;
+          btn.setAttribute('aria-busy', 'true');
+        }
+      }
+      function hideAiLoading() {
+        var el = document.getElementById('ai-imp-loading');
+        var btn = document.getElementById('ai-imp-submit');
+        if (el) {
+          el.style.display = 'none';
+          el.setAttribute('aria-hidden', 'true');
+        }
+        if (btn) {
+          btn.disabled = false;
+          btn.removeAttribute('aria-busy');
+        }
+      }
+      function fetchJsonAiImport(url, opts) {
+        return fetch(url, opts).then(function (r) {
+          return r.text().then(function (text) {
+            var j = {};
+            try {
+              j = text ? JSON.parse(text) : {};
+            } catch (e) {
+              throw new Error(
+                (text && text.length < 280 ? text : 'Server returned non-JSON (HTTP ' + r.status + ').') ||
+                  'Invalid response'
+              );
+            }
+            if (!r.ok) {
+              throw new Error(j.error || 'Request failed (HTTP ' + r.status + ')');
+            }
+            return j;
+          });
+        });
+      }
+      function bindExcelDropZone(inputId, zoneId, chosenId) {
+        var input = document.getElementById(inputId);
+        var zone = document.getElementById(zoneId);
+        var chosen = document.getElementById(chosenId);
+        if (!input || !zone || !chosen) return;
+        function setChosen(name) {
+          if (name) {
+            zone.classList.add('has-file');
+            chosen.innerHTML = 'Selected: <strong>' + escapeHtml(name) + '</strong>';
+          } else {
+            zone.classList.remove('has-file');
+            chosen.textContent = 'No file selected yet';
+          }
+        }
+        input.addEventListener('change', function () {
+          var f = input.files && input.files[0];
+          setChosen(f ? f.name : '');
+        });
+        zone.addEventListener('dragover', function (e) {
+          e.preventDefault();
+          zone.classList.add('is-dragover');
+        });
+        zone.addEventListener('dragleave', function () {
+          zone.classList.remove('is-dragover');
+        });
+        zone.addEventListener('drop', function (e) {
+          e.preventDefault();
+          zone.classList.remove('is-dragover');
+          var dt = e.dataTransfer;
+          if (!dt || !dt.files || !dt.files.length) return;
+          var f = dt.files[0];
+          var n = (f.name || '').toLowerCase();
+          if (!n.endsWith('.xlsx') && !n.endsWith('.xls')) {
+            toast('Please drop an .xls or .xlsx file', 'error');
+            return;
+          }
+          try {
+            input.files = dt.files;
+          } catch (err) {
+            toast('Use Browse to select this file in your browser', 'error');
+            return;
+          }
+          setChosen(f.name);
+        });
+      }
+      bindExcelDropZone('imp-file', 'excel-file-zone', 'imp-file-chosen');
+      bindExcelDropZone('ai-imp-file', 'ai-excel-file-zone', 'ai-imp-file-chosen');
+      document.getElementById('imp-submit').onclick = function () {
+        var slug = document.getElementById('imp-slug').value;
+        var f = document.getElementById('imp-file').files[0];
+        var out = document.getElementById('imp-result');
+        if (!slug) { toast('Pick a sheet'); return; }
+        if (!f) { toast('Choose an Excel file'); return; }
+        var fd = new FormData();
+        fd.append('file', f);
+        out.style.display = 'none';
+        fetch('/api/bonyad/sheets/' + encodeURIComponent(slug) + '/issues/import-excel', {
+          method: 'POST',
+          body: fd,
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (!j.success) throw new Error(j.error || 'Import failed');
+            var lines = ['Imported ' + j.imported + ' issue(s).'];
+            if (j.worksheet) lines.push('Worksheet: ' + j.worksheet);
+            if (j.capped) lines.push('Note: spreadsheet had more than 2000 rows; only the first 2000 were processed.');
+            if (j.skipped && j.skipped.length) {
+              lines.push('Skipped rows:');
+              j.skipped.forEach(function (s) { lines.push('  Row ' + s.row + ': ' + s.reason); });
+            }
+            if (j.revert_batch_id) {
+              lines.push('');
+              lines.push('You can undo this import from this page (Undo last import) while this tab is open.');
+            }
+            out.textContent = lines.join('\n');
+            out.style.display = 'block';
+            if (j.revert_batch_id) {
+              writeLastImport({
+                slug: slug,
+                batch_id: j.revert_batch_id,
+                imported: j.imported,
+                worksheet: j.worksheet || null
+              });
+            }
+            updateRevertUi();
+            toast('Imported ' + j.imported);
+          })
+          .catch(function (e) { toast(e.message); });
+      };
+      document.getElementById('imp-revert-btn').onclick = function () {
+        var last = readLastImport();
+        var slug = document.getElementById('imp-slug').value;
+        if (!last || !last.batch_id || last.slug !== slug) {
+          toast('No reversible import for this sheet');
+          updateRevertUi();
+          return;
+        }
+        var n = last.imported != null ? last.imported : 'these';
+        if (!confirm('Delete ' + n + ' issue(s) from the last Excel import into "' + slug + '"? This cannot be undone.')) return;
+        fetch('/api/bonyad/sheets/' + encodeURIComponent(slug) + '/issues/revert-excel-import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ batch_id: last.batch_id })
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (!j.success) throw new Error(j.error || 'Revert failed');
+            writeLastImport(null);
+            updateRevertUi();
+            toast('Removed ' + j.deleted + ' issue(s)');
+          })
+          .catch(function (e) { toast(e.message); });
+      };
+      document.getElementById('ai-imp-modal-close').onclick = hideAiSummaryModal;
+      var aiModalBg = document.getElementById('ai-imp-modal');
+      if (aiModalBg) {
+        aiModalBg.addEventListener('click', function (e) {
+          if (e.target === aiModalBg) hideAiSummaryModal();
+        });
+      }
+      document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') return;
+        var m = document.getElementById('ai-imp-modal');
+        if (m && m.getAttribute('aria-hidden') === 'false') hideAiSummaryModal();
+      });
+      document.getElementById('ai-imp-submit').onclick = function () {
+        var k = key();
+        if (!k) {
+          toast('Save your Bonyad edit key above first, then try again.', 'error');
+          setAiImportResult('Save the edit key in the bar at the top of this page (same value as BONYAD_EDIT_SECRET on the server), then click “Save in browser”.', 'error');
+          return;
+        }
+        var f = document.getElementById('ai-imp-file').files[0];
+        if (!f) {
+          toast('Choose an Excel file (.xls or .xlsx)', 'error');
+          setAiImportResult('Select a spreadsheet using the upload area above, then click “Route with AI & import”.', 'error');
+          return;
+        }
+        setAiImportResult('', null);
+        var fd = new FormData();
+        fd.append('file', f);
+        fd.append('editKey', k);
+        showAiLoading();
+        fetchJsonAiImport('/api/bonyad/issues/import-excel-ai?editKey=' + encodeURIComponent(k), {
+          method: 'POST',
+          headers: { 'x-bonyad-edit-key': k },
+          body: fd,
+        })
+          .then(function (j) {
+            if (!j.success) throw new Error(j.error || 'Import failed');
+            if (j.revert_batch_id) {
+              writeSmartImport({ batch_id: j.revert_batch_id, imported: j.imported });
+            }
+            updateAiRevertUi();
+            loadSheets();
+            var lines = [
+              'Success: imported ' + j.imported + ' issue(s).',
+              j.worksheet ? 'Worksheet: ' + j.worksheet : '',
+              j.capped ? 'Note: row cap may have applied.' : '',
+            ];
+            if (j.skipped && j.skipped.length) {
+              lines.push('Skipped: ' + j.skipped.length + ' row(s).');
+            }
+            if (j.breakdown && j.breakdown.length) {
+              lines.push('By sheet:');
+              j.breakdown.forEach(function (row) {
+                lines.push('  • ' + (row.slug || '') + ': ' + row.count);
+              });
+            }
+            setAiImportResult(lines.filter(Boolean).join('\n'), 'success');
+            showAiSummaryModal(j);
+            toast('Imported ' + j.imported + ' — see summary popup', 'success');
+          })
+          .catch(function (e) {
+            var msg = (e && e.message) ? e.message : String(e);
+            setAiImportResult(msg + '\n\nCheck: edit key matches server BONYAD_EDIT_SECRET; OPENAI_API_KEY (or dashboard API key) is set; MySQL is running.', 'error');
+            toast(msg, 'error', 8000);
+          })
+          .finally(function () {
+            hideAiLoading();
+          });
+      };
+      document.getElementById('ai-imp-revert-btn').onclick = function () {
+        var last = readSmartImport();
+        var k = key();
+        if (!k) { toast('Save edit key first'); return; }
+        if (!last || !last.batch_id) {
+          toast('No AI import to undo');
+          updateAiRevertUi();
+          return;
+        }
+        if (!confirm('Remove all issues from the last AI import (' + (last.imported || '?') + ')?')) return;
+        fetch('/api/bonyad/issues/revert-smart-import', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-bonyad-edit-key': k,
+          },
+          body: JSON.stringify({ batch_id: last.batch_id, editKey: k }),
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (!j.success) throw new Error(j.error || 'Revert failed');
+            writeSmartImport(null);
+            updateAiRevertUi();
+            loadSheets();
+            toast('Removed ' + j.deleted + ' issue(s)');
+          })
+          .catch(function (e) { toast(e.message); });
+      };
+      document.getElementById('ns-submit').onclick = function () {
+        var k = key();
+        if (!k) { toast('Save edit key first'); return; }
+        var slug = document.getElementById('ns-slug').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+        var body = {
+          slug: slug,
+          label: document.getElementById('ns-label').value.trim() || slug,
+          platform_line: document.getElementById('ns-platform').value.trim() || null,
+          brief_title: document.getElementById('ns-title').value.trim() || 'Fix brief',
+          brief_subtitle: document.getElementById('ns-sub').value.trim() || null,
+          editKey: k,
+        };
+        if (!slug) { toast('Slug required'); return; }
+        fetch('/api/bonyad/sheets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-bonyad-edit-key': k },
+          body: JSON.stringify(body),
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (!j.success) throw new Error(j.error || 'Failed');
+            toast('Sheet created');
+            ['ns-slug','ns-label','ns-platform','ns-title','ns-sub'].forEach(function (id) { document.getElementById(id).value = ''; });
+            loadSheets();
+          })
+          .catch(function (e) { toast(e.message); });
+      };
+      loadSheets();
+
+      // ── Resolve user identity after key is saved ──────────────
+      async function resolveHubIdentity() {
+        var k = key();
+        if (!k) return;
+        try {
+          var res  = await fetch('/api/bonyad/me', { headers: { 'x-bonyad-edit-key': k } });
+          var data = await res.json();
+          if (data.success) {
+            var tag  = document.getElementById('hub-user-tag');
+            tag.textContent = data.user.name + ' (' + data.user.role + ')';
+            tag.style.display = 'inline';
+            if (data.user.role === 'admin') {
+              document.getElementById('nav-admin-link').style.display = 'inline';
+            }
+          }
+        } catch (e) {}
+      }
+      resolveHubIdentity();
+      document.getElementById('hub-save-key').addEventListener('click', function () {
+        setTimeout(resolveHubIdentity, 200);
+      });
+    })();
+  </script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="bonyad-notifications.js"></script>
+</body>
+</html>

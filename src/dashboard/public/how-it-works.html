@@ -1,0 +1,3024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nigents — About &amp; How it works</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #09080c;
+            --bg-secondary: #141116;
+            --bg-tertiary: #1a181f;
+            --bg-card: #141118;
+            --border: #2a2a35;
+            --border-light: #3a3a48;
+            --text-primary: #f0f0f5;
+            --text-secondary: #a0a0a8;
+            --text-muted: #6b6b78;
+            --accent-orange: #ff570a;
+            --accent-green: #19d59e;
+            --accent-purple: #a855f7;
+            --accent-blue: #3b82f6;
+            --accent-amber: #f59e0b;
+            --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+            --font-sans: 'Poppins', 'Sakkal Majalla', -apple-system, BlinkMacSystemFont, sans-serif;
+            --gradient-hero: linear-gradient(135deg, rgba(255, 87, 10, 0.15) 0%, rgba(168, 85, 247, 0.08) 50%, transparent 70%);
+            --radius: 12px;
+            --radius-lg: 16px;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255, 87, 10, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 87, 10, 0.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .wrap { position: relative; z-index: 1; }
+
+        /* Nav — match index landing */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 18px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, var(--bg-primary) 85%, transparent);
+            border-bottom: 1px solid rgba(42, 42, 53, 0.6);
+            backdrop-filter: blur(8px);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .nav-title {
+            font-size: 21px;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            color: var(--text-primary);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .nav-link {
+            padding: 8px 14px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: color 0.2s, background 0.2s;
+        }
+
+        .nav-link:hover { color: var(--text-primary); background: rgba(255, 255, 255, 0.05); }
+
+        .nav-link.active {
+            color: var(--accent-orange);
+            background: rgba(255, 87, 10, 0.12);
+        }
+
+        .soon-pill {
+            display: inline-block;
+            margin-left: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--bg-primary);
+            background: var(--accent-orange);
+            padding: 3px 9px;
+            border-radius: 999px;
+            vertical-align: middle;
+        }
+
+        .nav-cta {
+            padding: 10px 18px;
+            border: 1px solid var(--accent-orange);
+            color: var(--accent-orange);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .nav-cta:hover {
+            background: var(--accent-orange);
+            color: var(--bg-primary);
+        }
+
+        /* Mobile menu */
+        .nav-toggle {
+            display: none;
+            width: 44px;
+            height: 44px;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            cursor: pointer;
+            flex-shrink: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .nav-toggle:focus-visible {
+            outline: 2px solid var(--accent-orange);
+            outline-offset: 2px;
+        }
+
+        .nav-toggle-icon-open,
+        .nav-toggle-icon-close {
+            font-size: 22px;
+            line-height: 1;
+            font-weight: 600;
+        }
+
+        .nav-toggle-icon-close {
+            display: none;
+            font-size: 28px;
+        }
+
+        body.nav-open .nav-toggle-icon-open { display: none; }
+        body.nav-open .nav-toggle-icon-close { display: block; }
+
+        .nav-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 998;
+            backdrop-filter: blur(2px);
+        }
+
+        body.nav-open .nav-backdrop { display: block; }
+
+        body.nav-open {
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        /* Hero */
+        .hero {
+            padding: 110px 32px 64px;
+            max-width: 1280px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            align-items: center;
+        }
+
+        @media (max-width: 1024px) {
+            .hero { grid-template-columns: 1fr; padding-top: 100px; }
+        }
+
+        .tech-hero-inner {
+            padding: 8px 32px 64px;
+            max-width: 1280px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            align-items: center;
+        }
+
+        @media (max-width: 1024px) {
+            .tech-hero-inner { grid-template-columns: 1fr; padding-top: 16px; }
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            background: rgba(255, 87, 10, 0.12);
+            border: 1px solid rgba(255, 87, 10, 0.35);
+            color: var(--accent-orange);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .hero-badge span.dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulseDot 2s ease infinite;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .hero h1 {
+            font-size: clamp(32px, 4vw, 46px);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1.12;
+            margin-bottom: 16px;
+        }
+
+        .hero h1 em {
+            font-style: normal;
+            color: var(--accent-orange);
+        }
+
+        .hero-lead {
+            font-size: 16px;
+            color: var(--text-secondary);
+            max-width: 520px;
+            margin-bottom: 24px;
+            line-height: 1.65;
+        }
+
+        .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 12px 22px;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .btn-primary {
+            background: var(--accent-orange);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(255, 87, 10, 0.35);
+        }
+
+        .btn-primary:hover { transform: translateY(-2px); }
+
+        .btn-ghost {
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        .btn-ghost:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+
+        /* Code window + typing */
+        .code-window {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .code-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .code-tab {
+            margin-left: 12px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .code-body {
+            padding: 18px 20px 24px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            line-height: 1.65;
+            color: #c4c4ce;
+            min-height: 280px;
+            background: linear-gradient(180deg, #0c0b10 0%, var(--bg-primary) 100%);
+        }
+
+        .code-body .line-comment { color: #6b7280; }
+        .code-body .line-cmd { color: var(--accent-green); }
+        .code-body .line-out { color: #94a3b8; }
+        .code-body .line-rep { color: var(--accent-orange); }
+        .code-body .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--accent-orange);
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* Sections */
+        .section {
+            padding: 56px 32px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-head {
+            margin-bottom: 32px;
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent-orange);
+            margin-bottom: 10px;
+        }
+
+        .section-title {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            margin-bottom: 10px;
+        }
+
+        .section-desc {
+            font-size: 15px;
+            color: var(--text-secondary);
+            max-width: 720px;
+            line-height: 1.65;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+
+        .stat-card:hover {
+            border-color: rgba(255, 87, 10, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .stat-card .label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        .stat-card .hint {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        /* Architecture flow */
+        .arch-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            align-items: stretch;
+        }
+
+        .arch-node {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 14px;
+            text-align: center;
+            position: relative;
+            opacity: 0;
+            animation: fadeUp 0.6s ease forwards;
+        }
+
+        .arch-node:nth-child(1) { animation-delay: 0.05s; }
+        .arch-node:nth-child(2) { animation-delay: 0.12s; }
+        .arch-node:nth-child(3) { animation-delay: 0.19s; }
+        .arch-node:nth-child(4) { animation-delay: 0.26s; }
+        .arch-node:nth-child(5) { animation-delay: 0.33s; }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .arch-node .t {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .arch-node .n {
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .arch-node .s {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        .arch-row-2 {
+            margin-top: 14px;
+        }
+
+        .note {
+            margin-top: 20px;
+            padding: 16px 18px;
+            border-left: 3px solid var(--accent-orange);
+            background: rgba(255, 87, 10, 0.06);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Tables */
+        .table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            background: var(--bg-card);
+        }
+
+        table.data {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .data th, .data td {
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+
+        .data tr:last-child td { border-bottom: none; }
+
+        .data code {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--accent-green);
+        }
+
+        /* Pipeline steps */
+        .pipeline {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            position: relative;
+            padding-left: 24px;
+        }
+
+        .pipeline::before {
+            content: '';
+            position: absolute;
+            left: 7px;
+            top: 8px;
+            bottom: 8px;
+            width: 2px;
+            background: linear-gradient(180deg, var(--accent-orange), var(--accent-purple));
+            border-radius: 2px;
+            transform-origin: top;
+            animation: growPipe 1.2s ease-out forwards;
+        }
+
+        @keyframes growPipe {
+            from { transform: scaleY(0); }
+            to { transform: scaleY(1); }
+        }
+
+        .pipe-step {
+            position: relative;
+            padding: 20px 0 20px 20px;
+        }
+
+        .pipe-step::before {
+            content: '';
+            position: absolute;
+            left: -21px;
+            top: 26px;
+            width: 12px;
+            height: 12px;
+            background: var(--bg-primary);
+            border: 2px solid var(--accent-orange);
+            border-radius: 50%;
+        }
+
+        .pipe-step h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .pipe-step p, .pipe-step ul {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .pipe-step ul { margin: 8px 0 0 18px; }
+
+        .mock-box {
+            margin-top: 12px;
+            padding: 12px 14px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: #b8bcc8;
+            line-height: 1.55;
+        }
+
+        /* Mock chat */
+        .chat-mock {
+            max-width: 420px;
+            margin-top: 12px;
+        }
+
+        .chat-line {
+            margin-bottom: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.5;
+            animation: fadeUp 0.4s ease forwards;
+        }
+
+        .chat-line.user {
+            background: rgba(255, 87, 10, 0.15);
+            border: 1px solid rgba(255, 87, 10, 0.35);
+            margin-left: 24px;
+        }
+
+        .chat-line.bot {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            margin-right: 24px;
+        }
+
+        .chat-meta {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        /* Agent cards */
+        .agent-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 14px;
+        }
+
+        .agent-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            border-left: 3px solid var(--accent-orange);
+            transition: border-color 0.2s;
+        }
+
+        .agent-card:hover { border-left-color: var(--accent-purple); }
+
+        .agent-card h4 {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .agent-card p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Two col */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+
+        .card-dark {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 22px;
+        }
+
+        .card-dark h3 {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-dark h3::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: var(--accent-orange);
+            border-radius: 2px;
+        }
+
+        .card-dark p, .card-dark li {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .card-dark ul { margin: 8px 0 0 18px; }
+
+        /* Reveal on scroll */
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.55s ease, transform 0.55s ease;
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 40px 24px;
+            font-size: 12px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+        }
+
+        .footer a { color: var(--accent-orange); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+
+        /* About + features (merged from overview, no icons) */
+        .about-intro {
+            padding: 100px 32px 56px;
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .about-intro .badge {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent-orange);
+            margin-bottom: 16px;
+        }
+
+        .about-intro h1 {
+            font-size: clamp(30px, 4.5vw, 44px);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1.12;
+            margin-bottom: 18px;
+        }
+
+        .about-intro h1 em {
+            font-style: normal;
+            color: var(--accent-orange);
+        }
+
+        .about-intro .lead {
+            font-size: 17px;
+            color: var(--text-secondary);
+            line-height: 1.65;
+            margin-bottom: 28px;
+        }
+
+        .about-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .features-about {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .feature-card-about {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 22px;
+            transition: border-color 0.2s;
+        }
+
+        .feature-card-about:hover {
+            border-color: rgba(255, 87, 10, 0.45);
+        }
+
+        .feature-card-about .num {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--accent-orange);
+            margin-bottom: 10px;
+            letter-spacing: 0.08em;
+        }
+
+        .feature-card-about h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .feature-card-about p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.55;
+        }
+
+        .agent-showcase {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 14px;
+        }
+
+        .agent-showcase .card {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+        }
+
+        .agent-initial {
+            flex-shrink: 0;
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--accent-orange);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: 0.02em;
+        }
+
+        .agent-showcase .card h4 {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .agent-showcase .card .role {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.45;
+            margin-bottom: 6px;
+        }
+
+        .agent-showcase .card .model {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .cta-bar {
+            margin: 48px 32px;
+            padding: 36px 28px;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(255, 87, 10, 0.12) 0%, rgba(168, 85, 247, 0.06) 100%);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-bar h2 {
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .cta-bar p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        /* Interactive runtime flow (#flow-viz) */
+        #flow-viz { scroll-margin-top: 88px; }
+
+        .technical-block {
+            padding-top: 72px;
+        }
+
+        .flow-viz {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 32px 8px;
+        }
+
+        .flow-viz .section-head {
+            margin-bottom: 20px;
+        }
+
+        .flow-board {
+            position: relative;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .flow-board svg {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-height: min(420px, 70vh);
+        }
+
+        .flow-node-rect {
+            fill: var(--bg-secondary);
+            stroke: var(--border-light);
+            stroke-width: 1.5;
+            rx: 8;
+            transition: stroke 0.25s, filter 0.25s;
+        }
+
+        .flow-viz.visible .flow-node-rect {
+            animation: nodeGlow 5s ease-in-out infinite;
+        }
+
+        @keyframes nodeGlow {
+            0%, 100% { stroke: var(--border-light); }
+            50% { stroke: rgba(255, 87, 10, 0.45); }
+        }
+
+        .flow-node-text {
+            fill: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .flow-node-sub {
+            fill: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 9px;
+        }
+
+        .flow-path {
+            fill: none;
+            stroke: #3a3a48;
+            stroke-width: 1.5;
+            stroke-linecap: round;
+        }
+
+        .flow-path-active {
+            fill: none;
+            stroke: url(#flowGrad);
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-dasharray: 8 12;
+            animation: flowDash 1.2s linear infinite;
+        }
+
+        @keyframes flowDash {
+            to { stroke-dashoffset: -40; }
+        }
+
+        .flow-packet {
+            fill: var(--accent-orange);
+            filter: drop-shadow(0 0 4px rgba(255, 87, 10, 0.8));
+        }
+
+        .flow-legend {
+            margin-top: 14px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.55;
+            max-width: 720px;
+        }
+
+        .flow-legend code {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--accent-green);
+        }
+
+        .flow-replay {
+            margin-top: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent-orange);
+            background: rgba(255, 87, 10, 0.1);
+            border: 1px solid rgba(255, 87, 10, 0.35);
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: var(--font-sans);
+        }
+
+        .flow-replay:hover {
+            background: rgba(255, 87, 10, 0.18);
+        }
+
+        .flow-replay:focus {
+            outline: 2px solid var(--accent-orange);
+            outline-offset: 2px;
+        }
+
+        @media (max-width: 640px) {
+            .flow-board svg { max-height: 360px; }
+        }
+
+        /* Workflow Studio canvas (#workflow-studio) */
+        #workflow-studio { scroll-margin-top: 88px; }
+
+        .wf-studio .wf-canvas {
+            background: linear-gradient(180deg, rgba(20, 17, 24, 0.95) 0%, var(--bg-card) 100%);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px 16px 24px;
+            overflow-x: auto;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+        /* Let the stream panel extend below the graph card (avoids clipping the pop) */
+        #workflow-studio.wf-studio-graph-stream-open .wf-canvas {
+            overflow-y: visible;
+            overflow-x: auto;
+        }
+
+        .wf-studio .wf-canvas::before {
+            content: '';
+            position: absolute;
+            inset: 12px;
+            border-radius: 10px;
+            background-image:
+                radial-gradient(circle at center, rgba(255, 87, 10, 0.06) 0%, transparent 70%),
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 24px 24px, 24px 24px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Graph + activity LEDs + in-place stream panel on click */
+        .wf-graph-wrap {
+            position: relative;
+            width: 100%;
+            min-width: 720px;
+            aspect-ratio: 900 / 248;
+            max-height: min(420px, 62vh);
+            margin: 0 auto;
+            overflow: visible;
+        }
+        .wf-graph-wrap .wf-graph-svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            z-index: 1;
+        }
+        .wf-graph-huds {
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            pointer-events: none;
+        }
+        .wf-hud {
+            position: absolute;
+            transform: translate(-50%, calc(-100% - 2px));
+            pointer-events: auto;
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: rgba(12, 10, 18, 0.92);
+            border: 2px solid rgba(255, 87, 10, 0.45);
+            border-radius: 50%;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+            cursor: pointer;
+            transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .wf-hud:hover {
+            border-color: rgba(255, 87, 10, 0.75);
+            transform: translate(-50%, calc(-100% - 4px)) scale(1.06);
+        }
+        .wf-hud:focus-visible {
+            outline: 2px solid var(--accent-orange);
+            outline-offset: 2px;
+        }
+        .wf-hud-led {
+            display: block;
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff 0%, #ff9142 40%, #ff570a 100%);
+            box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.4), 0 0 10px rgba(255, 87, 10, 0.5);
+            pointer-events: none;
+        }
+        .wf-hud--hot {
+            border-color: rgba(25, 213, 158, 0.65);
+            box-shadow: 0 0 0 1px rgba(25, 213, 158, 0.35), 0 8px 28px rgba(25, 213, 158, 0.12);
+            animation: wf-hud-pulse 2.2s ease-in-out infinite;
+        }
+        .wf-hud--hot .wf-hud-led {
+            background: radial-gradient(circle at 30% 30%, #fff 0%, #6ee7b7 45%, #19d59e 100%);
+            box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35), 0 0 16px rgba(25, 213, 158, 0.85);
+        }
+        .wf-hud--selected {
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 0 2px rgba(255, 87, 10, 0.45), 0 8px 28px rgba(255, 87, 10, 0.2);
+        }
+        @keyframes wf-hud-pulse {
+            0%, 100% { box-shadow: 0 0 0 1px rgba(25, 213, 158, 0.25), 0 6px 20px rgba(0, 0, 0, 0.45); }
+            50% { box-shadow: 0 0 0 3px rgba(25, 213, 158, 0.45), 0 10px 32px rgba(25, 213, 158, 0.2); }
+        }
+        .wf-hud-status {
+            font-size: 8px;
+            font-weight: 600;
+            color: #a5b4fc;
+            line-height: 1.3;
+            margin-bottom: 4px;
+            word-break: break-word;
+        }
+        .wf-hud-code {
+            font-size: 7px;
+            line-height: 1.35;
+            color: #e2e8f0;
+            opacity: 0.92;
+            word-break: break-word;
+            max-height: 3.2em;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+        .wf-hud-code.wf-hud-code--shell {
+            color: #6ee7b7;
+        }
+
+        /* In-place stream panel — default BELOW anchor (avoids top clip); --above flips */
+        .wf-graph-inplace-stream {
+            --wf-inplace-x: 0px;
+            position: absolute;
+            z-index: 12;
+            width: min(360px, calc(100vw - 40px));
+            max-height: min(320px, 52vh);
+            transform: translate(calc(-50% + var(--wf-inplace-x)), 10px);
+            pointer-events: none;
+            box-sizing: border-box;
+        }
+        .wf-graph-inplace-stream.wf-graph-inplace-stream--above {
+            transform: translate(calc(-50% + var(--wf-inplace-x)), calc(-100% - 12px));
+        }
+        .wf-graph-inplace-stream:not([hidden]) {
+            pointer-events: auto;
+        }
+        .wf-graph-inplace-stream[hidden] {
+            display: none !important;
+        }
+        .wf-graph-inplace-stream-inner {
+            display: flex;
+            flex-direction: column;
+            max-height: min(300px, 50vh);
+            width: 100%;
+            background: linear-gradient(165deg, rgba(8, 6, 14, 0.98) 0%, rgba(16, 12, 22, 0.98) 100%);
+            border: 1px solid rgba(255, 87, 10, 0.5);
+            border-radius: 12px;
+            box-shadow:
+                0 16px 40px rgba(0, 0, 0, 0.55),
+                0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+                0 0 28px rgba(255, 87, 10, 0.15);
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(10px) scale(0.96);
+            animation: wf-inplace-pop 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        @keyframes wf-inplace-pop {
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .wf-graph-inplace-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.4);
+        }
+        .wf-graph-inplace-title {
+            font-family: var(--font-sans);
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--text-primary);
+            flex: 1;
+            min-width: 0;
+        }
+        .wf-graph-inplace-badge {
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .wf-graph-inplace-close {
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-muted);
+            font-size: 18px;
+            line-height: 1;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .wf-graph-inplace-close:hover {
+            background: rgba(255, 87, 10, 0.25);
+            color: var(--text-primary);
+        }
+        .wf-graph-inplace-body {
+            padding: 8px 10px 10px;
+            overflow: auto;
+            overflow-x: auto;
+            max-height: min(220px, 38vh);
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+        }
+        .wf-graph-inplace-row {
+            margin-bottom: 10px;
+        }
+        .wf-graph-inplace-row:last-child {
+            margin-bottom: 0;
+        }
+        .wf-graph-inplace-label {
+            display: block;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: rgba(255, 87, 10, 0.85);
+            margin-bottom: 4px;
+        }
+        .wf-graph-inplace-pre {
+            margin: 0;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-family: var(--font-mono);
+            font-size: clamp(8px, 1.9vw, 10px);
+            line-height: 1.45;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            min-height: 2.2em;
+            max-height: min(120px, 22vh);
+            overflow: auto;
+        }
+        .wf-graph-inplace-code {
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(255, 87, 10, 0.2);
+            color: #e2e8f0;
+        }
+        .wf-graph-inplace-shell {
+            background: rgba(25, 213, 158, 0.08);
+            border-left: 3px solid rgba(25, 213, 158, 0.55);
+            color: #a7f3d0;
+        }
+        .wf-graph-inplace-caret {
+            display: inline-block;
+            width: 7px;
+            height: 1.1em;
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            background: rgba(255, 87, 10, 0.9);
+            animation: wf-inplace-blink 0.85s step-end infinite;
+        }
+        .wf-graph-inplace-caret.wf-inplace-done {
+            animation: none;
+            opacity: 0;
+            width: 0;
+        }
+        @keyframes wf-inplace-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        .wf-graph-hit:hover {
+            fill: rgba(255, 87, 10, 0.12);
+        }
+
+        .wf-node-box {
+            fill: var(--bg-secondary);
+            stroke: var(--border-light);
+            stroke-width: 1.5;
+            opacity: 0;
+        }
+
+        .wf-studio.visible .wf-node-box {
+            animation: wfNodeIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .wf-studio.visible .wf-node-box.wf-d1 { animation-delay: 0.05s; }
+        .wf-studio.visible .wf-node-box.wf-d2 { animation-delay: 0.2s; }
+        .wf-studio.visible .wf-node-box.wf-d3 { animation-delay: 0.35s; }
+        .wf-studio.visible .wf-node-box.wf-d4 { animation-delay: 0.5s; }
+        .wf-studio.visible .wf-node-box.wf-d5 { animation-delay: 0.65s; }
+        .wf-studio.visible .wf-node-box.wf-d6 { animation-delay: 0.78s; }
+        .wf-studio.visible .wf-node-box.wf-d7 { animation-delay: 0.91s; }
+        .wf-studio.visible .wf-node-box.wf-d8 { animation-delay: 1.04s; }
+
+        @keyframes wfNodeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .wf-node-title {
+            fill: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 12px;
+            font-weight: 700;
+            opacity: 0;
+        }
+
+        .wf-studio.visible .wf-node-title {
+            animation: wfFadeIn 0.45s ease forwards;
+        }
+
+        .wf-studio.visible .wf-node-title.wf-d1 { animation-delay: 0.12s; }
+        .wf-studio.visible .wf-node-title.wf-d2 { animation-delay: 0.27s; }
+        .wf-studio.visible .wf-node-title.wf-d3 { animation-delay: 0.42s; }
+        .wf-studio.visible .wf-node-title.wf-d4 { animation-delay: 0.57s; }
+        .wf-studio.visible .wf-node-title.wf-d5 { animation-delay: 0.72s; }
+        .wf-studio.visible .wf-node-title.wf-d6 { animation-delay: 0.85s; }
+        .wf-studio.visible .wf-node-title.wf-d7 { animation-delay: 0.98s; }
+        .wf-studio.visible .wf-node-title.wf-d8 { animation-delay: 1.11s; }
+
+        .wf-node-sub {
+            fill: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 9px;
+            opacity: 0;
+        }
+
+        .wf-studio.visible .wf-node-sub {
+            animation: wfFadeIn 0.45s ease forwards;
+        }
+
+        .wf-studio.visible .wf-node-sub.wf-d1 { animation-delay: 0.18s; }
+        .wf-studio.visible .wf-node-sub.wf-d2 { animation-delay: 0.33s; }
+        .wf-studio.visible .wf-node-sub.wf-d3 { animation-delay: 0.48s; }
+        .wf-studio.visible .wf-node-sub.wf-d4 { animation-delay: 0.63s; }
+        .wf-studio.visible .wf-node-sub.wf-d5 { animation-delay: 0.78s; }
+        .wf-studio.visible .wf-node-sub.wf-d6 { animation-delay: 0.91s; }
+        .wf-studio.visible .wf-node-sub.wf-d7 { animation-delay: 1.04s; }
+        .wf-studio.visible .wf-node-sub.wf-d8 { animation-delay: 1.17s; }
+
+        @keyframes wfFadeIn {
+            to { opacity: 1; }
+        }
+
+        .wf-edge {
+            fill: none;
+            stroke: #3a3a48;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-dasharray: 200;
+            stroke-dashoffset: 200;
+        }
+
+        .wf-studio.visible .wf-edge {
+            animation: wfEdgeDraw 0.75s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .wf-studio.visible .wf-edge.wf-e1 { animation-delay: 0.7s; }
+        .wf-studio.visible .wf-edge.wf-e2 { animation-delay: 0.82s; }
+        .wf-studio.visible .wf-edge.wf-e3 { animation-delay: 0.94s; }
+        .wf-studio.visible .wf-edge.wf-e4 { animation-delay: 1.06s; }
+        .wf-studio.visible .wf-edge.wf-e5 { animation-delay: 1.18s; }
+        .wf-studio.visible .wf-edge.wf-e6 { animation-delay: 1.3s; }
+        .wf-studio.visible .wf-edge.wf-e7 { animation-delay: 1.42s; }
+        .wf-studio.visible .wf-edge.wf-e8 { animation-delay: 1.54s; }
+        .wf-studio.visible .wf-edge.wf-e9 { animation-delay: 1.66s; }
+
+        @keyframes wfEdgeDraw {
+            to { stroke-dashoffset: 0; }
+        }
+
+        .wf-edge-hot {
+            fill: none;
+            stroke: url(#wfGrad);
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-dasharray: 10 14;
+            opacity: 0;
+        }
+
+        .wf-studio.visible .wf-edge-hot.wf-e1 { animation: wfHotIn 0.4s ease forwards 2.15s, wfDash 1s linear infinite 2.45s; }
+        .wf-studio.visible .wf-edge-hot.wf-e2 { animation: wfHotIn 0.4s ease forwards 2.2s, wfDash 1s linear infinite 2.5s; }
+        .wf-studio.visible .wf-edge-hot.wf-e3 { animation: wfHotIn 0.4s ease forwards 2.25s, wfDash 1s linear infinite 2.55s; }
+        .wf-studio.visible .wf-edge-hot.wf-e4 { animation: wfHotIn 0.4s ease forwards 2.3s, wfDash 1s linear infinite 2.6s; }
+        .wf-studio.visible .wf-edge-hot.wf-e5 { animation: wfHotIn 0.4s ease forwards 2.35s, wfDash 1s linear infinite 2.65s; }
+        .wf-studio.visible .wf-edge-hot.wf-e6 { animation: wfHotIn 0.4s ease forwards 2.4s, wfDash 1s linear infinite 2.7s; }
+        .wf-studio.visible .wf-edge-hot.wf-e7 { animation: wfHotIn 0.4s ease forwards 2.45s, wfDash 1s linear infinite 2.75s; }
+        .wf-studio.visible .wf-edge-hot.wf-e8 { animation: wfHotIn 0.4s ease forwards 2.5s, wfDash 1s linear infinite 2.8s; }
+        .wf-studio.visible .wf-edge-hot.wf-e9 { animation: wfHotIn 0.4s ease forwards 2.55s, wfDash 1s linear infinite 2.85s; }
+
+        @keyframes wfHotIn {
+            to { opacity: 0.9; }
+        }
+
+        @keyframes wfDash {
+            to { stroke-dashoffset: -48; }
+        }
+
+        .wf-port {
+            fill: var(--accent-orange);
+            opacity: 0;
+        }
+
+        .wf-studio.visible .wf-port {
+            animation: wfFadeIn 0.35s ease forwards 1.85s;
+        }
+
+        .wf-cursor-ghost {
+            fill: rgba(255, 87, 10, 0.35);
+            stroke: var(--accent-orange);
+            stroke-width: 1.5;
+            filter: drop-shadow(0 0 6px rgba(255, 87, 10, 0.6));
+        }
+
+        .wf-caption {
+            margin-top: 18px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.65;
+            max-width: 820px;
+        }
+
+        .wf-caption strong { color: var(--text-primary); }
+
+        .wf-bullets {
+            margin-top: 14px;
+            display: grid;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            max-width: 820px;
+        }
+
+        .wf-bullets li {
+            list-style: none;
+            padding-left: 22px;
+            position: relative;
+        }
+
+        .wf-bullets li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 7px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-orange);
+            opacity: 0.85;
+        }
+
+        @media (max-width: 900px) {
+            .nav {
+                padding: 14px 16px;
+                padding-left: max(16px, env(safe-area-inset-left));
+                padding-right: max(16px, env(safe-area-inset-right));
+                flex-wrap: nowrap;
+            }
+
+            .nav-toggle { display: flex; }
+
+            .nav-links {
+                display: none;
+                position: fixed;
+                left: 0;
+                right: 0;
+                top: 0;
+                margin-top: 64px;
+                padding: 8px 16px 20px;
+                padding-bottom: max(20px, env(safe-area-inset-bottom));
+                flex-direction: column;
+                align-items: stretch;
+                gap: 2px;
+                background: var(--bg-primary);
+                border-bottom: 1px solid var(--border);
+                box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+                z-index: 1001;
+                max-height: min(75vh, calc(100vh - 64px));
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .nav-links .nav-link,
+            .nav-links .nav-cta {
+                padding: 12px 14px;
+                text-align: left;
+            }
+
+            body.nav-open .nav-links { display: flex; }
+        }
+
+        @media (max-width: 640px) {
+            .about-intro {
+                padding-left: max(16px, env(safe-area-inset-left));
+                padding-right: max(16px, env(safe-area-inset-right));
+            }
+
+            .section {
+                padding-left: max(16px, env(safe-area-inset-left));
+                padding-right: max(16px, env(safe-area-inset-right));
+            }
+
+            .wf-studio .wf-canvas {
+                padding: 12px 8px 16px;
+                margin-left: -4px;
+                margin-right: -4px;
+                border-radius: var(--radius);
+            }
+
+            .wf-canvas svg {
+                min-width: 560px;
+                max-height: min(380px, 55vh);
+            }
+
+            .wf-hud {
+                width: 26px;
+                height: 26px;
+                padding: 0;
+            }
+            .wf-hud-led {
+                width: 9px;
+                height: 9px;
+            }
+
+            .tech-hero-inner,
+            .hero {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+        }
+
+        /* Live demo windows (#workflow-live) */
+        .hiw-live-demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1100px;
+            margin: 0 auto 20px;
+        }
+        @media (max-width: 768px) {
+            .hiw-live-demo-grid { grid-template-columns: 1fr; }
+        }
+        .hiw-live-window {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        .hiw-live-label {
+            padding: 10px 14px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .hiw-tag {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: rgba(255, 87, 10, 0.15);
+            color: var(--accent-orange);
+            letter-spacing: 0.04em;
+        }
+        .hiw-live-pre {
+            margin: 0;
+            padding: 14px 16px 18px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            line-height: 1.55;
+            min-height: 120px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .hiw-live-pre-code {
+            color: #e2e8f0;
+            background: linear-gradient(180deg, #0f172a 0%, #0c1222 100%);
+        }
+        .hiw-live-pre-shell {
+            color: #a7f3d0;
+            background: linear-gradient(180deg, #042f2e 0%, #022c26 100%);
+        }
+        .hiw-stream-line { display: block; animation: hiw-fade-line 0.6s ease-out both; }
+        .hiw-stream-line:nth-child(2) { animation-delay: 0.15s; }
+        .hiw-stream-line:nth-child(3) { animation-delay: 0.35s; }
+        .hiw-dim { opacity: 0.65; }
+        .hiw-cursor-line::after {
+            content: '';
+            display: inline-block;
+            width: 7px;
+            height: 14px;
+            margin-left: 4px;
+            background: var(--accent-orange);
+            vertical-align: -2px;
+            animation: hiw-blink 1s step-end infinite;
+        }
+        @keyframes hiw-fade-line {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes hiw-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        .hiw-live-foot {
+            max-width: 1100px;
+            margin: 0 auto;
+            font-size: 14px;
+        }
+
+        /* Interactive workflow strip: chip above each agent (#workflow-live) */
+        .hiw-live-interactive {
+            max-width: 1100px;
+            margin: 0 auto 28px;
+        }
+        .hiw-live-hint {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: 0 0 18px;
+            line-height: 1.55;
+        }
+        .hiw-live-hint kbd {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
+        }
+        .hiw-live-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 6px 4px;
+            padding: 20px 12px 24px;
+            background:
+                radial-gradient(ellipse 80% 120% at 50% 100%, rgba(255, 87, 10, 0.08), transparent 55%),
+                linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-card) 100%);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+        }
+        .hiw-live-connector {
+            width: clamp(12px, 3vw, 28px);
+            height: 3px;
+            align-self: flex-end;
+            margin-bottom: 22px;
+            background: linear-gradient(90deg, rgba(255, 87, 10, 0.35), rgba(168, 85, 247, 0.35));
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+        .hiw-live-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            flex: 0 1 auto;
+            min-width: 88px;
+            max-width: 140px;
+        }
+        .hiw-live-chip {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            font-family: var(--font-mono);
+            font-size: 9px;
+            font-weight: 500;
+            line-height: 1.35;
+            color: #e2e8f0;
+            text-align: center;
+            background: rgba(15, 23, 42, 0.92);
+            border: 2px solid rgba(255, 255, 255, 0.12);
+            border-radius: 50%;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+            min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .hiw-live-led {
+            display: block;
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff 0%, #ff9142 40%, #ff570a 100%);
+            box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35), 0 0 10px rgba(255, 87, 10, 0.45);
+        }
+        .hiw-live-node--hot .hiw-live-chip {
+            border-color: rgba(255, 87, 10, 0.65);
+            box-shadow: 0 0 0 1px rgba(255, 87, 10, 0.25), 0 6px 20px rgba(255, 87, 10, 0.12);
+            animation: hiw-chip-pulse 2.2s ease-in-out infinite;
+        }
+        .hiw-live-node--hot .hiw-live-led {
+            background: radial-gradient(circle at 30% 30%, #fff 0%, #6ee7b7 45%, #19d59e 100%);
+            box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.3), 0 0 16px rgba(25, 213, 158, 0.75);
+        }
+        @keyframes hiw-chip-pulse {
+            0%, 100% { box-shadow: 0 0 0 1px rgba(255, 87, 10, 0.2), 0 4px 14px rgba(0, 0, 0, 0.35); }
+            50% { box-shadow: 0 0 0 2px rgba(255, 87, 10, 0.45), 0 8px 24px rgba(255, 87, 10, 0.18); }
+        }
+        .hiw-live-card {
+            width: 100%;
+            max-width: 132px;
+            padding: 10px 8px;
+            font-family: var(--font-sans);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-light);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .hiw-live-card:hover {
+            border-color: rgba(255, 87, 10, 0.5);
+            transform: translateY(-2px);
+        }
+        .hiw-live-card:focus-visible {
+            outline: 2px solid var(--accent-orange);
+            outline-offset: 2px;
+        }
+        .hiw-live-node--selected .hiw-live-card {
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 0 1px rgba(255, 87, 10, 0.35), 0 8px 28px rgba(255, 87, 10, 0.15);
+        }
+        .hiw-live-node[data-agent="orchestrator"] .hiw-live-card { border-left: 3px solid #a855f7; }
+        .hiw-live-node[data-agent="planner"] .hiw-live-card { border-left: 3px solid #6366f1; }
+        .hiw-live-node[data-agent="backend-dev"] .hiw-live-card { border-left: 3px solid #22c55e; }
+        .hiw-live-node[data-agent="qa-tester"] .hiw-live-card { border-left: 3px solid #eab308; }
+        .hiw-live-node[data-agent="code-reviewer"] .hiw-live-card { border-left: 3px solid #f97316; }
+
+        .hiw-live-detail-wrap {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        @media (max-width: 900px) {
+            .hiw-live-detail-wrap { grid-template-columns: 1fr; }
+        }
+        .hiw-live-detail-intro {
+            grid-column: 1 / -1;
+            font-size: 12px;
+            color: var(--accent-green);
+            margin: 0 0 4px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <nav class="nav">
+            <a href="/" class="nav-brand">
+                <span class="nav-title">Nigents</span>
+            </a>
+            <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+                <span class="nav-toggle-icon-open" aria-hidden="true">☰</span>
+                <span class="nav-toggle-icon-close" aria-hidden="true">×</span>
+            </button>
+            <div class="nav-links" id="nav-links" role="navigation" aria-label="Main">
+                <a href="#about" class="nav-link">About</a>
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#agents" class="nav-link">Agents</a>
+                <a href="#workflow-studio" class="nav-link">Workflow</a>
+                <a href="#workflow-live" class="nav-link">Live</a>
+                <a href="#flow-viz" class="nav-link">Flow</a>
+                <a href="/materials.html" class="nav-link">Free Materials</a>
+                <a href="/crazy-apps.html" class="nav-link">Crazy apps</a>
+                <a href="/opencode-kits.html" class="nav-link">OpenCode kits <span class="soon-pill">Soon</span></a>
+                <a href="/bonyad/" class="nav-link">Bonyad</a>
+                <a href="/login.html" class="nav-cta">Login</a>
+            </div>
+        </nav>
+        <div class="nav-backdrop" id="nav-backdrop" aria-hidden="true" hidden></div>
+
+        <section class="about-intro reveal" data-reveal id="about">
+            <p class="badge">Nigents</p>
+            <h1>Your AI <em>development team</em> for GitLab</h1>
+            <p class="lead">
+                Seven specialized agents plan, implement, test, and review on a dedicated task branch, then open a merge request to your default branch.
+                Control everything from Telegram or the dashboard — self-hosted on your infrastructure.
+            </p>
+            <div class="about-actions">
+                <a href="/login.html" class="btn btn-primary">Open dashboard</a>
+                <a href="#workflow-studio" class="btn btn-ghost">Workflow Studio</a>
+                <a href="#flow-viz" class="btn btn-ghost">Technical flow</a>
+                <a href="/crazy-apps.html" class="btn btn-ghost">Crazy apps</a>
+            </div>
+        </section>
+
+        <section class="section reveal" data-reveal id="features">
+            <div class="section-head">
+                <div class="section-label">Product</div>
+                <h2 class="section-title">What you get</h2>
+                <p class="section-desc">Core capabilities — no separate marketing site required.</p>
+            </div>
+            <div class="features-about">
+                <div class="feature-card-about">
+                    <div class="num">01</div>
+                    <h3>24/7 operation</h3>
+                    <p>Agents run on your server (e.g. PM2 on EC2). Queue tasks overnight and pick up merge requests when you are back.</p>
+                </div>
+                <div class="feature-card-about">
+                    <div class="num">02</div>
+                    <h3>Telegram control</h3>
+                    <p>Text and voice commands, per-user configuration, and status messages when work completes.</p>
+                </div>
+                <div class="feature-card-about">
+                    <div class="num">03</div>
+                    <h3>GitLab-native</h3>
+                    <p>Branches, commits, and MRs on the repository you select. Task branch → default branch merge requests.</p>
+                </div>
+                <div class="feature-card-about">
+                    <div class="num">04</div>
+                    <h3>Configurable models</h3>
+                    <p>Attach the LLM providers and models you trust. Dashboard and bot respect per-user keys when MySQL is enabled.</p>
+                </div>
+                <div class="feature-card-about">
+                    <div class="num">05</div>
+                    <h3>MCP tools</h3>
+                    <p>Filesystem, GitLab, search, and custom MCP servers extend what agents can do during planning and execution.</p>
+                </div>
+                <div class="feature-card-about">
+                    <div class="num">06</div>
+                    <h3>Live dashboard</h3>
+                    <p>Tasks, agents, charts, Workflow Studio, admin tools, and Socket.IO updates in the browser.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section reveal" data-reveal id="agents">
+            <div class="section-head">
+                <div class="section-label">The team</div>
+                <h2 class="section-title">Seven roles</h2>
+                <p class="section-desc">Each role is a separate agent in the pipeline. Model names are examples — yours depend on configuration.</p>
+            </div>
+            <div class="agent-showcase">
+                <div class="card">
+                    <div class="agent-initial">OR</div>
+                    <div>
+                        <h4>Orchestrator</h4>
+                        <p class="role">Routes commands, binds task.branch, creates the MR, coordinates the chain.</p>
+                        <p class="model">Model: configurable</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="agent-initial">PL</div>
+                    <div>
+                        <h4>Planner</h4>
+                        <p class="role">Reads repo structure via MCP or GitLab API; outputs steps and plan.branch.</p>
+                        <p class="model">Model: configurable</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="agent-initial">BE</div>
+                    <div>
+                        <h4>Backend Dev</h4>
+                        <p class="role">OpenHands sandbox or generated code plus repo-clone-push to plan.branch.</p>
+                        <p class="model">Model: configurable</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="agent-initial">FE</div>
+                    <div>
+                        <h4>Frontend Dev</h4>
+                        <p class="role">Frontend-only plans; clone, write UI files, push — no OpenHands path.</p>
+                        <p class="model">Model: configurable</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="agent-initial">QA</div>
+                    <div>
+                        <h4>QA Tester</h4>
+                        <p class="role">Runs tests in the sandbox when available; otherwise simulated or skipped.</p>
+                        <p class="model">Model: configurable</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="agent-initial">RV</div>
+                    <div>
+                        <h4>Code Reviewer</h4>
+                        <p class="role">Diff default vs task branch; quality and security checks.</p>
+                        <p class="model">Model: configurable</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="agent-initial">RP</div>
+                    <div>
+                        <h4>Reporter</h4>
+                        <p class="role">User-facing progress lines and the final MR link in Telegram.</p>
+                        <p class="model">Model: configurable</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section wf-studio reveal" data-reveal id="workflow-studio">
+            <div class="section-head">
+                <div class="section-label">Dashboard</div>
+                <h2 class="section-title">Workflow Studio — agents you wire yourself</h2>
+                <p class="section-desc">
+                    Design a <strong>graph</strong>, not a single line: branch Planner and Frontend in parallel, merge into Backend, add QA and Reviewer, then ship to GitLab. Drag nodes, draw edges between ports, save per project.
+                    <strong>AI draft</strong> can propose a layout from your repo tree; the same roles power <strong>meetings</strong> and production runs.
+                    <strong>Click an agent</strong> on the diagram (or its LED) to see a mock <strong>streamed</strong> code/shell panel <strong>on the graph</strong> — no jump down the page.
+                </p>
+            </div>
+            <div class="wf-canvas" role="presentation">
+                <p class="wf-graph-a11y visually-hidden">Workflow graph: Task to Orchestrator, split to Planner and Frontend, merge to Backend, QA, Reviewer, GitLab merge request. Click an agent rectangle or LED for an in-place streamed code and shell panel on the graph.</p>
+                <div class="wf-graph-wrap">
+                <svg class="wf-graph-svg" viewBox="0 0 900 248" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="wfGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#ff570a"/>
+                            <stop offset="100%" style="stop-color:#a855f7"/>
+                        </linearGradient>
+                        <marker id="wfArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                            <path d="M0,0 L8,4 L0,8 Z" fill="#5a5a68"/>
+                        </marker>
+                    </defs>
+                    <!-- Row 1: Task → Orchestrator -->
+                    <rect class="wf-node-box wf-d1" x="20" y="76" width="84" height="48" rx="10"/>
+                    <text class="wf-node-title wf-d1" x="62" y="100" text-anchor="middle">Task</text>
+                    <text class="wf-node-sub wf-d1" x="62" y="116" text-anchor="middle">Telegram / UI</text>
+                    <rect class="wf-node-box wf-d2" x="124" y="76" width="126" height="48" rx="10"/>
+                    <text class="wf-node-title wf-d2" x="187" y="100" text-anchor="middle">Orchestrator</text>
+                    <text class="wf-node-sub wf-d2" x="187" y="116" text-anchor="middle">split · merge · MR</text>
+                    <!-- Split: Planner (top) + Frontend (bottom) -->
+                    <rect class="wf-node-box wf-d3" x="300" y="28" width="96" height="46" rx="10"/>
+                    <text class="wf-node-title wf-d3" x="348" y="52" text-anchor="middle">Planner</text>
+                    <text class="wf-node-sub wf-d3" x="348" y="66" text-anchor="middle">plan + steps</text>
+                    <rect class="wf-node-box wf-d4" x="300" y="138" width="96" height="46" rx="10"/>
+                    <text class="wf-node-title wf-d4" x="348" y="162" text-anchor="middle">Frontend</text>
+                    <text class="wf-node-sub wf-d4" x="348" y="176" text-anchor="middle">UI + push</text>
+                    <!-- Merge + ship -->
+                    <rect class="wf-node-box wf-d5" x="448" y="84" width="122" height="52" rx="10"/>
+                    <text class="wf-node-title wf-d5" x="509" y="110" text-anchor="middle">Backend</text>
+                    <text class="wf-node-sub wf-d5" x="509" y="126" text-anchor="middle">API + branch</text>
+                    <rect class="wf-node-box wf-d6" x="458" y="168" width="92" height="44" rx="10"/>
+                    <text class="wf-node-title wf-d6" x="504" y="192" text-anchor="middle">QA</text>
+                    <text class="wf-node-sub wf-d6" x="504" y="206" text-anchor="middle">tests</text>
+                    <rect class="wf-node-box wf-d7" x="600" y="84" width="108" height="52" rx="10"/>
+                    <text class="wf-node-title wf-d7" x="654" y="110" text-anchor="middle">Reviewer</text>
+                    <text class="wf-node-sub wf-d7" x="654" y="126" text-anchor="middle">diff · security</text>
+                    <rect class="wf-node-box wf-d8" x="744" y="84" width="112" height="52" rx="10"/>
+                    <text class="wf-node-title wf-d8" x="800" y="110" text-anchor="middle">GitLab MR</text>
+                    <text class="wf-node-sub wf-d8" x="800" y="126" text-anchor="middle">merge</text>
+                    <!-- Edges (multi-line graph) -->
+                    <path class="wf-edge wf-e1" d="M 104 100 L 124 100" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge wf-e2" d="M 250 100 Q 278 52 300 51" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge wf-e3" d="M 250 100 Q 278 148 300 161" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge wf-e4" d="M 396 80 L 448 100" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge wf-e5" d="M 396 161 L 448 118" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge wf-e6" d="M 570 110 L 600 110" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge wf-e7" d="M 509 136 L 504 168" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge wf-e8" d="M 550 210 Q 585 118 600 110" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge wf-e9" d="M 708 110 L 744 110" marker-end="url(#wfArrow)"/>
+                    <path class="wf-edge-hot wf-e1" d="M 104 100 L 124 100"/>
+                    <path class="wf-edge-hot wf-e2" d="M 250 100 Q 278 52 300 51"/>
+                    <path class="wf-edge-hot wf-e3" d="M 250 100 Q 278 148 300 161"/>
+                    <path class="wf-edge-hot wf-e4" d="M 396 80 L 448 100"/>
+                    <path class="wf-edge-hot wf-e5" d="M 396 161 L 448 118"/>
+                    <path class="wf-edge-hot wf-e6" d="M 570 110 L 600 110"/>
+                    <path class="wf-edge-hot wf-e7" d="M 509 136 L 504 168"/>
+                    <path class="wf-edge-hot wf-e8" d="M 550 210 Q 585 118 600 110"/>
+                    <path class="wf-edge-hot wf-e9" d="M 708 110 L 744 110"/>
+                    <circle class="wf-port" cx="104" cy="100" r="3.5"/>
+                    <circle class="wf-port" cx="250" cy="100" r="3.5"/>
+                    <circle class="wf-port" cx="348" cy="74" r="3.5"/>
+                    <circle class="wf-port" cx="348" cy="138" r="3.5"/>
+                    <circle class="wf-port" cx="509" cy="84" r="3.5"/>
+                    <circle class="wf-port" cx="504" cy="168" r="3.5"/>
+                    <circle class="wf-port" cx="708" cy="110" r="3.5"/>
+                    <!-- Motion: main spine + branch (two dots) -->
+                    <path id="wf-drag-main" d="M 104 100 L 250 100 Q 278 52 348 51 L 396 80 L 448 100 L 570 110 L 600 110 L 708 110 L 800 110" fill="none" stroke="none"/>
+                    <path id="wf-drag-branch" d="M 250 100 Q 278 148 348 161 L 396 161 L 448 118 L 509 110" fill="none" stroke="none"/>
+                    <circle class="wf-cursor-ghost" r="7" fill="rgba(255,87,10,0.3)" stroke="#ff570a" stroke-width="1.5">
+                        <animateMotion dur="6s" repeatCount="indefinite" rotate="auto" calcMode="linear">
+                            <mpath xlink:href="#wf-drag-main"/>
+                        </animateMotion>
+                    </circle>
+                    <circle class="wf-cursor-ghost" r="6" fill="rgba(168,85,247,0.35)" stroke="#a855f7" stroke-width="1.5">
+                        <animateMotion dur="4.5s" repeatCount="indefinite" rotate="auto" calcMode="linear" begin="0.8s">
+                            <mpath xlink:href="#wf-drag-branch"/>
+                        </animateMotion>
+                    </circle>
+                    <!-- Click targets: same agents as edges / LEDs (in-place stream, no page scroll) -->
+                    <g class="wf-graph-hits" fill="rgba(255,87,10,0.04)" stroke="none" pointer-events="all">
+                        <rect class="wf-graph-hit" data-wf-map="task" x="18" y="74" width="88" height="52" rx="10" style="cursor:pointer"/>
+                        <rect class="wf-graph-hit" data-wf-map="orchestrator" x="122" y="74" width="130" height="52" rx="10" style="cursor:pointer"/>
+                        <rect class="wf-graph-hit" data-wf-map="planner" x="298" y="26" width="100" height="50" rx="10" style="cursor:pointer"/>
+                        <rect class="wf-graph-hit" data-wf-map="frontend-dev" x="298" y="136" width="100" height="50" rx="10" style="cursor:pointer"/>
+                        <rect class="wf-graph-hit" data-wf-map="backend-dev" x="446" y="82" width="126" height="56" rx="10" style="cursor:pointer"/>
+                        <rect class="wf-graph-hit" data-wf-map="qa-tester" x="456" y="166" width="96" height="48" rx="10" style="cursor:pointer"/>
+                        <rect class="wf-graph-hit" data-wf-map="code-reviewer" x="598" y="82" width="112" height="56" rx="10" style="cursor:pointer"/>
+                        <rect class="wf-graph-hit" data-wf-map="reporter" x="742" y="82" width="116" height="56" rx="10" style="cursor:pointer"/>
+                    </g>
+                </svg>
+                <div class="wf-graph-huds" id="wf-graph-huds" role="group" aria-label="Activity LED per node — click for stream detail">
+                    <button type="button" class="wf-hud" data-wf-map="task" data-wf-idx="0" style="left: 6.89%; top: 30.65%;" title="Task — click for stream">
+                        <span class="wf-hud-led" aria-hidden="true"></span>
+                        <span class="visually-hidden wf-hud-body">
+                            <span class="wf-hud-status" data-wf-hud-status>Task queued from Telegram</span>
+                            <span class="wf-hud-code" data-wf-hud-code>/task add: “auth middleware”</span>
+                        </span>
+                    </button>
+                    <button type="button" class="wf-hud" data-wf-map="orchestrator" data-wf-idx="1" style="left: 20.78%; top: 30.65%;" title="Orchestrator — click for stream">
+                        <span class="wf-hud-led" aria-hidden="true"></span>
+                        <span class="visually-hidden wf-hud-body">
+                            <span class="wf-hud-status" data-wf-hud-status>Orchestrator: routing…</span>
+                            <span class="wf-hud-code" data-wf-hud-code>bind plan.branch → nigents/task-…</span>
+                        </span>
+                    </button>
+                    <button type="button" class="wf-hud" data-wf-map="planner" data-wf-idx="2" style="left: 38.67%; top: 11.29%;" title="Planner — click for stream">
+                        <span class="wf-hud-led" aria-hidden="true"></span>
+                        <span class="visually-hidden wf-hud-body">
+                            <span class="wf-hud-status" data-wf-hud-status>Planner: drafting steps…</span>
+                            <span class="wf-hud-code" data-wf-hud-code>steps.json: backend + FE tasks</span>
+                        </span>
+                    </button>
+                    <button type="button" class="wf-hud" data-wf-map="frontend-dev" data-wf-idx="3" style="left: 38.67%; top: 55.65%;" title="Frontend — click for stream">
+                        <span class="wf-hud-led" aria-hidden="true"></span>
+                        <span class="visually-hidden wf-hud-body">
+                            <span class="wf-hud-status" data-wf-hud-status>frontend-dev: UI push…</span>
+                            <span class="wf-hud-code wf-hud-code--shell" data-wf-hud-code>$ git push origin nigents/task-…</span>
+                        </span>
+                    </button>
+                    <button type="button" class="wf-hud wf-hud--hot" data-wf-map="backend-dev" data-wf-idx="4" style="left: 56.56%; top: 33.87%;" title="Backend — active — click for stream">
+                        <span class="wf-hud-led" aria-hidden="true"></span>
+                        <span class="visually-hidden wf-hud-body">
+                            <span class="wf-hud-status" data-wf-hud-status>backend-dev: writing API…</span>
+                            <span class="wf-hud-code" data-wf-hud-code>export async function list() { … }</span>
+                        </span>
+                    </button>
+                    <button type="button" class="wf-hud" data-wf-map="qa-tester" data-wf-idx="5" style="left: 56%; top: 67.74%;" title="QA — click for stream">
+                        <span class="wf-hud-led" aria-hidden="true"></span>
+                        <span class="visually-hidden wf-hud-body">
+                            <span class="wf-hud-status" data-wf-hud-status>qa-tester: tests…</span>
+                            <span class="wf-hud-code wf-hud-code--shell" data-wf-hud-code>$ npm test -- --runInBand</span>
+                        </span>
+                    </button>
+                    <button type="button" class="wf-hud" data-wf-map="code-reviewer" data-wf-idx="6" style="left: 72.67%; top: 33.87%;" title="Reviewer — click for stream">
+                        <span class="wf-hud-led" aria-hidden="true"></span>
+                        <span class="visually-hidden wf-hud-body">
+                            <span class="wf-hud-status" data-wf-hud-status>Reviewer: diff main…task</span>
+                            <span class="wf-hud-code" data-wf-hud-code>comment: add pagination</span>
+                        </span>
+                    </button>
+                    <button type="button" class="wf-hud" data-wf-map="reporter" data-wf-idx="7" style="left: 88.89%; top: 33.87%;" title="GitLab MR — click for stream">
+                        <span class="wf-hud-led" aria-hidden="true"></span>
+                        <span class="visually-hidden wf-hud-body">
+                            <span class="wf-hud-status" data-wf-hud-status>Reporter: MR link…</span>
+                            <span class="wf-hud-code wf-hud-code--shell" data-wf-hud-code>MR !142 opened → Telegram</span>
+                        </span>
+                    </button>
+                </div>
+                <div id="wf-graph-inplace-stream" class="wf-graph-inplace-stream" hidden role="dialog" aria-modal="true" aria-labelledby="wf-graph-inplace-title">
+                    <div class="wf-graph-inplace-stream-inner">
+                        <div class="wf-graph-inplace-head">
+                            <span id="wf-graph-inplace-title" class="wf-graph-inplace-title">Agent</span>
+                            <span class="wf-graph-inplace-badge">Illustrative stream</span>
+                            <button type="button" class="wf-graph-inplace-close" aria-label="Close panel">&times;</button>
+                        </div>
+                        <div class="wf-graph-inplace-body">
+                            <div class="wf-graph-inplace-row">
+                                <span class="wf-graph-inplace-label">codeEdit</span>
+                                <pre id="wf-graph-inplace-code" class="wf-graph-inplace-pre wf-graph-inplace-code"></pre>
+                            </div>
+                            <div class="wf-graph-inplace-row">
+                                <span class="wf-graph-inplace-label">shell</span>
+                                <pre id="wf-graph-inplace-shell" class="wf-graph-inplace-pre wf-graph-inplace-shell"></pre>
+                            </div>
+                            <span class="wf-graph-inplace-caret" id="wf-graph-inplace-caret" aria-hidden="true"></span>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+            <p class="wf-caption">
+                <strong>Click any agent box</strong> on the graph (or its LED) to open a <strong>live-style stream panel in place</strong> — code and shell lines type in like a socket feed; the page does not jump. The <strong>LEDs</strong> show who is active; the <strong>row below</strong> mirrors the same mock data. In <strong>Workflow Studio</strong>, one node can feed <strong>many</strong> others: fork after Orchestrator, join at Backend, add QA and Reviewer on their own edges. Link a <strong>GitLab project</strong> so each graph stays with the repo. Optional: <strong>AI draft</strong>, <strong>team meeting</strong>, <strong>voice room</strong>.
+            </p>
+            <ul class="wf-bullets">
+                <li><strong>Branches &amp; merges</strong> — Parallel paths (e.g. Planner vs Frontend) reconnect where you draw the edge; data follows those edges at runtime.</li>
+                <li><strong>Persisted per repo</strong> — With MySQL, workflows are stored in <code>workflow_projects</code> (legacy <code>workflow-projects.json</code> is migrated on upgrade). On first dashboard start, a default graph is created for each GitLab project visible to your token.</li>
+                <li><strong>Live run</strong> — While a task runs (Telegram or dashboard), a <strong>pulsing LED</strong> marks the active agent on the canvas; <strong>click</strong> that card for the full stream. An optional combined log is available in the Live run panel.</li>
+                <li><strong>Same seven agents</strong> — Canvas roles match production; reorder by reconnecting, not just a single line.</li>
+            </ul>
+        </section>
+
+        <section class="section reveal" data-reveal id="workflow-live">
+            <div class="section-head">
+                <div class="section-label">Live &amp; data plane</div>
+                <h2 class="section-title">What you see when agents work</h2>
+                <p class="section-desc">
+                    The dashboard receives the same real-time events as the <strong>Live Monitor</strong>: <code>codeEdit</code> (optional <code>project</code> / <code>taskId</code> / <code>kind: shell</code>), <code>agentCommunication</code> (handoffs between agents), and <code>agentStatus</code> (which node is “thinking”). Wire edges on the canvas to express <strong>who passes output to whom</strong>; the orchestration layer uses that topology alongside the task plan.
+                </p>
+            </div>
+
+            <div class="hiw-live-interactive">
+                <p class="hiw-live-hint">
+                    <strong>Same data as the graph above:</strong> the <a href="#workflow-studio">Workflow Studio</a> uses <strong>activity LEDs</strong> on cards — <strong>click</strong> a card to read that agent’s stream. Below, each role has a small <strong>LED</strong> (not a wall of text); <strong>click</strong> the card to load <strong>sample streamed code</strong> and <strong>shell</strong> (<kbd>codeEdit</kbd> / <kbd>agentStatus</kbd>).
+                </p>
+                <div class="hiw-live-row" id="hiw-live-board" role="group" aria-label="Agent workflow with activity LEDs">
+                    <div class="hiw-live-node" data-agent="orchestrator">
+                        <div class="hiw-live-chip" data-hiw-chip title="Activity"><span class="hiw-live-led" aria-hidden="true"></span><span class="hiw-live-chip-text visually-hidden">Orchestrator: splitting task…</span></div>
+                        <button type="button" class="hiw-live-card" data-hiw-select="orchestrator">Orchestrator</button>
+                    </div>
+                    <span class="hiw-live-connector" aria-hidden="true"></span>
+                    <div class="hiw-live-node" data-agent="planner">
+                        <div class="hiw-live-chip" data-hiw-chip title="Activity"><span class="hiw-live-led" aria-hidden="true"></span><span class="hiw-live-chip-text visually-hidden">Planner: drafting steps…</span></div>
+                        <button type="button" class="hiw-live-card" data-hiw-select="planner">Planner</button>
+                    </div>
+                    <span class="hiw-live-connector" aria-hidden="true"></span>
+                    <div class="hiw-live-node hiw-live-node--hot" data-agent="backend-dev">
+                        <div class="hiw-live-chip" data-hiw-chip title="Active"><span class="hiw-live-led" aria-hidden="true"></span><span class="hiw-live-chip-text visually-hidden">backend-dev: write src/api/users.ts</span></div>
+                        <button type="button" class="hiw-live-card" data-hiw-select="backend-dev">Backend dev</button>
+                    </div>
+                    <span class="hiw-live-connector" aria-hidden="true"></span>
+                    <div class="hiw-live-node" data-agent="qa-tester">
+                        <div class="hiw-live-chip" data-hiw-chip title="Activity"><span class="hiw-live-led" aria-hidden="true"></span><span class="hiw-live-chip-text visually-hidden">qa-tester: npm test…</span></div>
+                        <button type="button" class="hiw-live-card" data-hiw-select="qa-tester">QA tester</button>
+                    </div>
+                    <span class="hiw-live-connector" aria-hidden="true"></span>
+                    <div class="hiw-live-node" data-agent="code-reviewer">
+                        <div class="hiw-live-chip" data-hiw-chip title="Activity"><span class="hiw-live-led" aria-hidden="true"></span><span class="hiw-live-chip-text visually-hidden">Reviewer: diff main…task</span></div>
+                        <button type="button" class="hiw-live-card" data-hiw-select="code-reviewer">Code reviewer</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hiw-live-detail-wrap" id="hiw-live-detail-wrap" aria-live="polite">
+                <p class="hiw-live-detail-intro" id="hiw-live-detail-intro">Selected: <strong id="hiw-detail-name">backend-dev</strong> — full streams for this role (same data as dashboard Socket.IO).</p>
+                <div class="hiw-live-window">
+                    <div class="hiw-live-label">Streamed code <span class="hiw-tag">codeEdit</span></div>
+                    <pre class="hiw-live-pre hiw-live-pre-code" id="hiw-demo-code"><span class="hiw-cursor-line">[backend-dev] write src/api/users.ts</span>
+<span class="hiw-stream-line">  export async function list() { ... }</span>
+<span class="hiw-stream-line hiw-dim">— chunk mirrored to dashboard as agents type</span></pre>
+                </div>
+                <div class="hiw-live-window">
+                    <div class="hiw-live-label">Streamed shell <span class="hiw-tag">kind: shell</span></div>
+                    <pre class="hiw-live-pre hiw-live-pre-shell" id="hiw-demo-shell"><span class="hiw-cursor-line">[qa-tester] $ npm test -- --runInBand</span>
+<span class="hiw-stream-line"> PASS  src/auth.spec.ts</span>
+<span class="hiw-stream-line hiw-dim">Tests: 4 passed</span></pre>
+                </div>
+            </div>
+
+            <p class="section-desc hiw-live-foot">
+                Link the workflow to <strong>group/repo</strong> and enable <strong>Focus linked repo</strong> to filter noise. Agents can include <code>project</code> on API posts so streams line up with the GitLab project you care about — the same task you started from Telegram or the task queue.
+            </p>
+        </section>
+
+        <div class="cta-bar reveal" data-reveal>
+            <h2>Ready to ship overnight?</h2>
+            <p>Log in to the dashboard to configure providers, GitLab, and Workflow Studio.</p>
+            <a href="/login.html" class="btn btn-primary">Launch dashboard</a>
+        </div>
+
+        <section class="technical-block" id="technical">
+        <div id="flow-viz" class="flow-viz reveal" data-reveal>
+            <div class="section-head">
+                <div class="section-label">Live map</div>
+                <h2 class="section-title">What talks to what</h2>
+                <p class="section-desc">Orange dots move along the paths on a loop. Solid lines: HTTP / APIs. Dashed: WebRTC to Jitsi (browser only). Two Node processes do not share memory.</p>
+            </div>
+            <div class="flow-board" role="img" aria-label="Architecture diagram: Telegram and browser connect to bot and server processes, which call LLM, GitLab, MySQL, OpenHands, and Jitsi">
+                <svg viewBox="0 0 840 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="flowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#ff570a"/>
+                            <stop offset="100%" style="stop-color:#a855f7"/>
+                        </linearGradient>
+                    </defs>
+                    <!-- Nodes (under edges) -->
+                    <rect class="flow-node-rect" x="15" y="58" width="98" height="38" rx="8"/>
+                    <text class="flow-node-text" x="64" y="78" text-anchor="middle">Telegram</text>
+                    <text class="flow-node-sub" x="64" y="90" text-anchor="middle">user</text>
+                    <rect class="flow-node-rect" x="175" y="58" width="108" height="38" rx="8"/>
+                    <text class="flow-node-text" x="229" y="78" text-anchor="middle">bot.js</text>
+                    <text class="flow-node-sub" x="229" y="90" text-anchor="middle">src/bot.js</text>
+                    <rect class="flow-node-rect" x="345" y="12" width="92" height="34" rx="8"/>
+                    <text class="flow-node-text" x="391" y="32" text-anchor="middle">LLM APIs</text>
+                    <rect class="flow-node-rect" x="488" y="92" width="118" height="46" rx="8"/>
+                    <text class="flow-node-text" x="547" y="114" text-anchor="middle">GitLab</text>
+                    <text class="flow-node-sub" x="547" y="128" text-anchor="middle">repos · MRs</text>
+                    <rect class="flow-node-rect" x="342" y="228" width="100" height="36" rx="8"/>
+                    <text class="flow-node-text" x="392" y="248" text-anchor="middle">MySQL</text>
+                    <rect class="flow-node-rect" x="15" y="192" width="98" height="38" rx="8"/>
+                    <text class="flow-node-text" x="64" y="212" text-anchor="middle">Browser</text>
+                    <rect class="flow-node-rect" x="168" y="192" width="118" height="38" rx="8"/>
+                    <text class="flow-node-text" x="227" y="212" text-anchor="middle">server.js</text>
+                    <text class="flow-node-sub" x="227" y="224" text-anchor="middle">Express + Socket.IO</text>
+                    <rect class="flow-node-rect" x="668" y="58" width="118" height="38" rx="8"/>
+                    <text class="flow-node-text" x="727" y="78" text-anchor="middle">OpenHands</text>
+                    <text class="flow-node-sub" x="727" y="90" text-anchor="middle">optional</text>
+                    <rect class="flow-node-rect" x="668" y="192" width="118" height="38" rx="8"/>
+                    <text class="flow-node-text" x="727" y="212" text-anchor="middle">Jitsi</text>
+                    <text class="flow-node-sub" x="727" y="224" text-anchor="middle">WebRTC</text>
+                    <!-- Edges -->
+                    <path class="flow-path" d="M 113 77 L 175 77"/>
+                    <path class="flow-path" d="M 283 77 Q 390 60 488 108"/>
+                    <path class="flow-path" d="M 391 50 L 391 82 Q 440 95 488 108"/>
+                    <path class="flow-path" d="M 230 96 L 230 228 L 345 246"/>
+                    <path class="flow-path" d="M 547 138 L 392 228"/>
+                    <path class="flow-path" d="M 113 211 L 168 211"/>
+                    <path class="flow-path" d="M 286 211 Q 390 175 488 125"/>
+                    <path class="flow-path" d="M 230 230 L 345 246"/>
+                    <path class="flow-path" d="M 283 77 L 668 77"/>
+                    <path class="flow-path" stroke-dasharray="6 6" d="M 113 195 Q 390 175 668 211"/>
+                    <path class="flow-path-active" d="M 113 77 L 175 77"/>
+                    <path class="flow-path-active" d="M 283 77 Q 390 60 488 108" opacity="0.85"/>
+                    <path class="flow-path-active" d="M 113 211 L 168 211"/>
+                    <path class="flow-path-active" d="M 286 211 Q 390 175 488 125" opacity="0.85"/>
+                    <!-- Moving packets (on top) -->
+                    <circle class="flow-packet" r="5" fill="#ff570a">
+                        <animateMotion dur="2.8s" repeatCount="indefinite" path="M 113 77 L 175 77"/>
+                    </circle>
+                    <circle class="flow-packet" r="4" fill="#ff570a" opacity="0.9">
+                        <animateMotion dur="3.2s" repeatCount="indefinite" path="M 283 77 Q 390 60 488 108"/>
+                    </circle>
+                    <circle class="flow-packet" r="4" fill="#a855f7" opacity="0.95">
+                        <animateMotion dur="2.4s" repeatCount="indefinite" path="M 391 50 L 391 82 Q 440 95 488 108"/>
+                    </circle>
+                    <circle class="flow-packet" r="4" fill="#ff570a">
+                        <animateMotion dur="3.6s" repeatCount="indefinite" path="M 230 96 L 230 228 L 345 246"/>
+                    </circle>
+                    <circle class="flow-packet" r="4" fill="#19d59e" opacity="0.9">
+                        <animateMotion dur="3s" repeatCount="indefinite" path="M 113 211 L 168 211"/>
+                    </circle>
+                    <circle class="flow-packet" r="4" fill="#19d59e">
+                        <animateMotion dur="3.4s" repeatCount="indefinite" path="M 286 211 Q 390 175 488 125"/>
+                    </circle>
+                    <circle class="flow-packet" r="3" fill="#94a3b8" opacity="0.85">
+                        <animateMotion dur="4s" repeatCount="indefinite" path="M 113 195 Q 390 175 668 211"/>
+                    </circle>
+                </svg>
+            </div>
+            <p class="flow-legend">
+                <strong style="color:var(--text-primary);">Top path:</strong> Telegram → bot → LLM / GitLab / MySQL; Backend Dev may use <code>OpenHands</code> for real git in a container.<br>
+                <strong style="color:var(--text-primary);">Bottom path:</strong> Browser → dashboard server → same GitLab &amp; MySQL; meeting page uses <code>Socket.IO</code> on this server and <code>Jitsi</code> for human audio (dashed).
+            </p>
+            <button type="button" class="flow-replay" id="flow-replay">Replay motion</button>
+        </div>
+
+        <div class="hero tech-hero-inner">
+            <div>
+                <div class="hero-badge"><span class="dot"></span> Product walkthrough</div>
+                <h1>From Telegram to <em>GitLab MR</em> — the full loop</h1>
+                <p class="hero-lead">
+                    Nigents runs two processes: <strong>Telegram bot</strong> (<code style="font-family:var(--font-mono);font-size:13px;color:var(--accent-green);">src/bot.js</code>)
+                    and the <strong>dashboard</strong> (<code style="font-family:var(--font-mono);font-size:13px;color:var(--accent-green);">src/dashboard/server.js</code>).
+                    Everything below mirrors the README: plan branch, implementers, OpenHands, Workflow Studio, and the voice meeting room.
+                </p>
+                <div class="hero-actions">
+                    <a href="/login.html" class="btn btn-primary">Open dashboard</a>
+                    <a href="https://gitlab.com/bonyad-tech/nigents/-/blob/main/README.md" class="btn btn-ghost" target="_blank" rel="noopener">README on GitLab</a>
+                    <a href="#about" class="btn btn-ghost">Back to About</a>
+                </div>
+            </div>
+            <div class="code-window">
+                <div class="code-head">
+                    <span class="code-tab">reporter.log — mock session</span>
+                </div>
+                <div class="code-body" id="typewriter" aria-live="polite"></div>
+            </div>
+        </div>
+        </section>
+
+        <!-- Stats mock -->
+        <section class="section reveal" data-reveal>
+            <div class="section-head">
+                <div class="section-label">At a glance</div>
+                <h2 class="section-title">What ships with the product</h2>
+                <p class="section-desc">Illustrative numbers — your deployment may vary by configuration.</p>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="label">Agent roles</div>
+                    <div class="value">7</div>
+                    <div class="hint">Orchestrator → Planner → Devs → QA → Reviewer → Reporter</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">MCP tools</div>
+                    <div class="value">38</div>
+                    <div class="hint">Standard + custom servers (filesystem, GitLab, etc.)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Git integration</div>
+                    <div class="value">1</div>
+                    <div class="hint">GitLab only — MR from task branch to default</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Processes (typical)</div>
+                    <div class="value">2</div>
+                    <div class="hint">Bot + dashboard (e.g. PM2 on EC2)</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Runtime -->
+        <section class="section reveal" data-reveal>
+            <div class="section-head">
+                <div class="section-label">Runtime map</div>
+                <h2 class="section-title">Same topology (detailed)</h2>
+                <p class="section-desc">No shared memory between bot and dashboard. Both use MySQL (when configured), GitLab API, and LLM providers. Meeting room uses Socket.IO on the dashboard server only.</p>
+            </div>
+            <div class="arch-grid">
+                <div class="arch-node"><div class="t">Client</div><div class="n">Telegram</div><div class="s">Long-poll API</div></div>
+                <div class="arch-node"><div class="t">Process</div><div class="n">bot.js</div><div class="s">/plan /approve voice</div></div>
+                <div class="arch-node"><div class="t">External</div><div class="n">GitLab</div><div class="s">Repos &amp; MRs</div></div>
+                <div class="arch-node"><div class="t">External</div><div class="n">LLM APIs</div><div class="s">OpenAI, Anthropic…</div></div>
+                <div class="arch-node"><div class="t">Data</div><div class="n">MySQL</div><div class="s">Tasks &amp; user_config</div></div>
+            </div>
+            <div class="arch-grid arch-row-2">
+                <div class="arch-node"><div class="t">Client</div><div class="n">Browser</div><div class="s">Dashboard + meeting</div></div>
+                <div class="arch-node"><div class="t">Process</div><div class="n">server.js</div><div class="s">Express + Socket.IO</div></div>
+                <div class="arch-node"><div class="t">Optional</div><div class="n">OpenHands</div><div class="s">Docker sandbox :3000</div></div>
+                <div class="arch-node"><div class="t">Voice</div><div class="n">Jitsi</div><div class="s">WebRTC (humans)</div></div>
+            </div>
+            <p class="note"><strong style="color:var(--text-primary);">Meeting room:</strong> <code>meeting-room.html?token=</code> — same token = same AI thread via <code>join-meeting</code> / <code>meeting-sync</code>. HTTPS + WebSocket proxy required in production (see repo <code>docs/EC2_NETWORK_MEETING.md</code>).</p>
+        </section>
+
+        <!-- URLs -->
+        <section class="section reveal" data-reveal>
+            <div class="section-head">
+                <div class="section-label">Entry points</div>
+                <h2 class="section-title">URLs &amp; surfaces</h2>
+            </div>
+            <div class="table-wrap">
+                <table class="data">
+                    <thead>
+                        <tr><th>Surface</th><th>Path / address</th><th>Purpose</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Telegram bot</td><td><code>api.telegram.org</code> (outbound)</td><td><code>/plan</code>, <code>/approve</code>, <code>/meeting</code>, voice, per-user config</td></tr>
+                        <tr><td>Dashboard</td><td><code>PUBLIC_DASHBOARD_URL</code> :4000</td><td>Login, tasks, agents, Workflow Studio, admin</td></tr>
+                        <tr><td>This page</td><td><code>/how-it-works.html</code></td><td>Public product flow (no login)</td></tr>
+                        <tr><td>Workflow Studio</td><td>Dashboard → sidebar</td><td>Canvas, AI draft, roundtable, shareable voice link</td></tr>
+                        <tr><td>Voice meeting</td><td><code>/meeting-room.html?token=…</code></td><td>Jitsi + shared AI roundtable (Socket.IO)</td></tr>
+                        <tr><td>OpenHands</td><td><code>OPENHANDS_URL</code></td><td>Clone, edit, test, push in container</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- End-to-end pipeline -->
+        <section class="section reveal" data-reveal>
+            <div class="section-head">
+                <div class="section-label">End-to-end</div>
+                <h2 class="section-title">Task flow: plan → MR</h2>
+                <p class="section-desc">All work stays on the <strong>selected GitLab repo</strong> and <strong>plan.branch</strong> (task branch). Mock values below show what a real run looks like.</p>
+            </div>
+            <div class="pipeline">
+                <div class="pipe-step">
+                    <h3>1 — Plan</h3>
+                    <p>User sends <code>/plan</code> with a task (text or voice). Bot may ask for <strong>project</strong>. Planner returns steps, file paths, <code>plan.branch</code>, and <code>primaryStack</code> (frontend / backend / fullstack).</p>
+                    <div class="mock-box">plan.branch = <span style="color:var(--accent-green);">nigents/task-202503171430</span><br>project = <span style="color:var(--accent-amber);">acme / web-app</span><br>primaryStack = backend</div>
+                </div>
+                <div class="pipe-step">
+                    <h3>2 — Approve</h3>
+                    <p>User sends <code>/approve</code>. Orchestrator sets <code>task.branch = plan.branch</code> and queues <strong>Backend Dev</strong> or <strong>Frontend Dev</strong> based on stack.</p>
+                </div>
+                <div class="pipe-step">
+                    <h3>3 — Implement</h3>
+                    <p><strong>Backend + OpenHands:</strong> clone in sandbox, <code>checkout -b plan.branch</code>, edit plan files, commit, push.<br>
+                    <strong>Without OpenHands / Frontend:</strong> generate code → <strong>repo-clone-push</strong> to same repo &amp; branch; fallback GitLab Commits API if needed.</p>
+                    <div class="mock-box">Reporter: Pushing branch nigents/task-202503171430 to GitLab…<br>→ <span style="color:var(--accent-green);">ok</span> (HTTP 201)</div>
+                </div>
+                <div class="pipe-step">
+                    <h3>4 — QA &amp; review</h3>
+                    <p>QA runs tests (OpenHands workspace or simulated). Code Reviewer loads <strong>diff: default ↔ task branch</strong> via GitLab compare API.</p>
+                </div>
+                <div class="pipe-step">
+                    <h3>5 — Merge request</h3>
+                    <p>Orchestrator creates MR: <strong>source</strong> = task branch, <strong>target</strong> = repo default (<code>main</code>). User receives the MR link in Telegram. Pipeline status refers to <strong>your app repo</strong>, not Nigents.</p>
+                    <div class="mock-box">MR !142<br>https://gitlab.com/acme/web-app/-/merge_requests/142</div>
+                </div>
+                <div class="pipe-step">
+                    <h3>Dashboard (logged in)</h3>
+                    <p>With MySQL enabled, tasks and agents load from the database — no stale in-memory lists. Socket.IO pushes live updates to the browser.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Mock telegram -->
+        <section class="section reveal" data-reveal>
+            <div class="section-head">
+                <div class="section-label">Example</div>
+                <h2 class="section-title">Telegram conversation (mock)</h2>
+            </div>
+            <div class="chat-mock">
+                <div class="chat-line user">
+                    <div class="chat-meta">You</div>
+                    /plan Add password reset email flow
+                </div>
+                <div class="chat-line bot">
+                    <div class="chat-meta">Planner</div>
+                    Branch <code style="font-size:12px;">nigents/task-202503171430</code> · 3 steps · files: <code style="font-size:11px;">src/auth/reset.ts</code> … Reply with /approve
+                </div>
+                <div class="chat-line user">
+                    <div class="chat-meta">You</div>
+                    /approve
+                </div>
+                <div class="chat-line bot">
+                    <div class="chat-meta">Reporter</div>
+                    MR ready: acme/web-app !142 (source → main)
+                </div>
+            </div>
+        </section>
+
+        <!-- Repo visibility table -->
+        <section class="section reveal" data-reveal>
+            <div class="section-head">
+                <div class="section-label">Data plane</div>
+                <h2 class="section-title">How each agent sees the repo</h2>
+            </div>
+            <div class="table-wrap">
+                <table class="data">
+                    <thead>
+                        <tr><th>Agent</th><th>Sees</th><th>Source</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Planner</td><td>File list, relevant paths, up to 5 file excerpts</td><td>MCP <code>list_directory</code> / <code>read_file</code> or GitLab API</td></tr>
+                        <tr><td>Backend (OpenHands)</td><td>Full clone under workspace</td><td><code>executeCommands</code> + <code>implementWithPrompt</code></td></tr>
+                        <tr><td>Backend (no OH)</td><td>Plan steps only → generated files</td><td>repo-clone-push temp clone</td></tr>
+                        <tr><td>Frontend Dev</td><td>Plan steps → generated UI files</td><td>repo-clone-push</td></tr>
+                        <tr><td>QA</td><td>Same workspace as OpenHands when present</td><td><code>npm test</code> etc. in workDir</td></tr>
+                        <tr><td>Code Reviewer</td><td>Git diff default ↔ task branch</td><td><code>getCompareDiff</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- OpenHands vs fallback -->
+        <section class="section reveal" data-reveal>
+            <div class="section-head">
+                <div class="section-label">Sandbox</div>
+                <h2 class="section-title">OpenHands vs fallback</h2>
+            </div>
+            <div class="grid-2">
+                <div class="card-dark">
+                    <h3>With OpenHands</h3>
+                    <p>HTTP service (often port 3000). Backend Dev runs real git, installs deps, edits files in <code>/workspace/&lt;project&gt;</code>, then pushes <code>plan.branch</code>.</p>
+                    <ul>
+                        <li><code>GET /health</code> — availability</li>
+                        <li><code>POST /api/execute</code> — shell commands</li>
+                        <li><code>POST /api/agent/run</code> — prompt + working_dir</li>
+                    </ul>
+                </div>
+                <div class="card-dark">
+                    <h3>Without OpenHands</h3>
+                    <p>AI-generated file contents are written into a fresh clone of the same GitLab repo, same branch name, then pushed. If clone fails, GitLab Commits API can still create branch content for review.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Workflow + meeting -->
+        <section class="section reveal" data-reveal>
+            <div class="section-head">
+                <div class="section-label">Dashboard</div>
+                <h2 class="section-title">Workflow Studio &amp; voice meeting</h2>
+            </div>
+            <div class="grid-2">
+                <div class="card-dark">
+                    <h3>Workflow Studio</h3>
+                    <p>Projects persist to MySQL <code>workflow_projects</code> when configured (else <code>data/workflow-projects.json</code>). Drag agents, wire ports, link <code>group/repo</code>, run AI draft from tree + README; <strong>Live run</strong> streams code/shell/events over Socket.IO.</p>
+                    <ul>
+                        <li><code>GET /api/gitlab/repos</code></li>
+                        <li><code>POST /api/workflow-projects/draft-from-repo</code></li>
+                        <li><code>POST /api/meeting/roundtable</code> — same engine as Telegram roundtable</li>
+                    </ul>
+                </div>
+                <div class="card-dark">
+                    <h3>Voice room</h3>
+                    <p><code>POST /api/meeting/sessions</code> (auth) issues a token. Browser opens Jitsi (people) + Socket.IO roundtable (AI). Events: <code>join-meeting</code>, <code>meeting-roundtable</code>, <code>meeting-sync</code>, <code>meeting-clear</code>.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- npm -->
+        <section class="section reveal" data-reveal>
+            <div class="section-head">
+                <div class="section-label">Stack</div>
+                <h2 class="section-title">npm dependencies (summary)</h2>
+            </div>
+            <div class="table-wrap">
+                <table class="data">
+                    <thead>
+                        <tr><th>Area</th><th>Packages</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Web</td><td><code>express</code>, <code>socket.io</code>, <code>cookie-parser</code></td></tr>
+                        <tr><td>AI</td><td><code>openai</code>, <code>@anthropic-ai/sdk</code>, <code>axios</code></td></tr>
+                        <tr><td>DB</td><td><code>mysql2</code></td></tr>
+                        <tr><td>Telegram</td><td><code>node-telegram-bot-api</code></td></tr>
+                        <tr><td>Git / Docker</td><td><code>simple-git</code>, <code>dockerode</code></td></tr>
+                        <tr><td>MCP</td><td><code>@modelcontextprotocol/sdk</code></td></tr>
+                        <tr><td>Utilities</td><td><code>uuid</code>, <code>dotenv</code>, <code>winston</code>, <code>node-cron</code>, <code>nodemailer</code>, <code>fs-extra</code>, <code>lodash</code>, <code>date-fns</code>, <code>form-data</code>, <code>gtts</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer class="footer">
+            Nigents — Night Agents for GitLab · <a href="https://gitlab.com/bonyad-tech/nigents/-/blob/main/README.md" target="_blank" rel="noopener">Full README</a> · Mock data for illustration
+        </footer>
+    </div>
+
+    <script>
+        (function () {
+            function esc(s) {
+                return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+
+            var el = document.getElementById('typewriter');
+            var lines = [
+                { cls: 'line-comment', text: '# Mock reporter stream (illustrative)' },
+                { cls: 'line-cmd', text: '$ git clone https://gitlab.com/acme/web-app.git && cd web-app' },
+                { cls: 'line-out', text: "Cloning into 'web-app'... done." },
+                { cls: 'line-cmd', text: '$ git checkout -b nigents/task-202503171430' },
+                { cls: 'line-out', text: "Switched to a new branch 'nigents/task-202503171430'" },
+                { cls: 'line-rep', text: '[reporter] Editing src/auth/reset.ts on branch nigents/task-202503171430...' },
+                { cls: 'line-rep', text: '[reporter] Pushing to GitLab... ok' },
+                { cls: 'line-out', text: '[orchestrator] MR !142 opened: main <- nigents/task-202503171430' }
+            ];
+
+            var acc = '';
+            var i = 0;
+
+            function typeLine() {
+                if (i >= lines.length) {
+                    el.innerHTML = acc + '<span class="cursor"></span>';
+                    return;
+                }
+                var line = lines[i];
+                var c = 0;
+                function typeChar() {
+                    if (c <= line.text.length) {
+                        var partial = esc(line.text.slice(0, c));
+                        var current = acc + (acc ? '<br>' : '') + '<span class="' + line.cls + '">' + partial + '</span>';
+                        el.innerHTML = current + '<span class="cursor"></span>';
+                        c++;
+                        setTimeout(typeChar, c < 4 ? 22 : 11);
+                    } else {
+                        acc += (acc ? '<br>' : '') + '<span class="' + line.cls + '">' + esc(line.text) + '</span>';
+                        i++;
+                        setTimeout(typeLine, 160);
+                    }
+                }
+                typeChar();
+            }
+
+            typeLine();
+
+            var replay = document.getElementById('flow-replay');
+            if (replay) {
+                replay.addEventListener('click', function () {
+                    document.querySelectorAll('.flow-board animateMotion').forEach(function (el) {
+                        try {
+                            el.beginElement();
+                        } catch (e) {}
+                    });
+                    var fv = document.getElementById('flow-viz');
+                    if (fv) {
+                        fv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
+            }
+
+            document.querySelectorAll('[data-reveal]').forEach(function (section) {
+                var io = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (e) {
+                        if (e.isIntersecting) {
+                            e.target.classList.add('visible');
+                            io.unobserve(e.target);
+                        }
+                    });
+                }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+                io.observe(section);
+            });
+
+            var nt = document.getElementById('nav-toggle');
+            var nb = document.getElementById('nav-backdrop');
+            if (nt && nb) {
+                function setNavOpen(open) {
+                    document.body.classList.toggle('nav-open', open);
+                    nb.hidden = !open;
+                    nb.setAttribute('aria-hidden', open ? 'false' : 'true');
+                    nt.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    nt.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+                }
+                nt.addEventListener('click', function () {
+                    setNavOpen(!document.body.classList.contains('nav-open'));
+                });
+                nb.addEventListener('click', function () { setNavOpen(false); });
+                document.querySelectorAll('#nav-links a').forEach(function (a) {
+                    a.addEventListener('click', function () { setNavOpen(false); });
+                });
+                window.addEventListener('resize', function () {
+                    if (window.innerWidth > 900) setNavOpen(false);
+                });
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape') setNavOpen(false);
+                });
+            }
+
+            /* Live & data plane — agent chips + click → stream detail (+ graph HUDs #workflow-studio) */
+            var HIW_AGENTS = {
+                task: {
+                    chip: 'Task: queued from Telegram',
+                    code: '[task] user message → orchestrator\n  "Add auth middleware to API"\n  taskId bound to plan.branch',
+                    shell: '[telegram] /task → bot forwards to dashboard Socket.IO'
+                },
+                orchestrator: {
+                    chip: 'Orchestrator: splitting task…',
+                    code: '[orchestrator] status: routing implementation\n  taskId: task-202503171430\n  next: planner → backend\n— same payload as agentStatus + task binding',
+                    shell: '[orchestrator] $ curl -s $DASHBOARD/api/tasks/task-202503171430 | jq .status\n"running"'
+                },
+                planner: {
+                    chip: 'Planner: drafting steps…',
+                    code: '[planner] write plan/steps.json\n  { "branch": "nigents/task-…", "steps": [ … ] }\n— streamed as codeEdit chunks',
+                    shell: '[planner] $ ls -la plan/\nsteps.json  schema.md'
+                },
+                'frontend-dev': {
+                    chip: 'frontend-dev: UI + push',
+                    code: '[frontend-dev] write src/components/Login.tsx\n  export function Login() { … }\n— codeEdit to dashboard',
+                    shell: '[frontend-dev] $ git push origin nigents/task-…\nCounting objects: 12, done.'
+                },
+                'backend-dev': {
+                    chip: 'backend-dev: write src/api/users.ts',
+                    code: '[backend-dev] write src/api/users.ts\n  export async function list() { ... }\n  export async function get(id: string) { ... }\n— chunk mirrored to dashboard as agents type',
+                    shell: '[backend-dev] $ npm run build 2>&1 | tail -n 5\n✓ compiled successfully'
+                },
+                'qa-tester': {
+                    chip: 'qa-tester: npm test…',
+                    code: '[qa-tester] read tests/auth.spec.ts\n  expect(user).toBeDefined();\n— file context in codeEdit',
+                    shell: '[qa-tester] $ npm test -- --runInBand\n PASS  src/auth.spec.ts\nTests: 4 passed'
+                },
+                'code-reviewer': {
+                    chip: 'Reviewer: diff main…task',
+                    code: '[code-reviewer] comment on src/api/users.ts\n  - consider pagination on list()\n— review notes as streamed text',
+                    shell: '[code-reviewer] $ git diff main...task --stat\n src/api/users.ts | 14 +++++----\n 1 file changed'
+                },
+                reporter: {
+                    chip: 'Reporter: MR link to user',
+                    code: '[reporter] MR !142 ready for review\n  url: https://gitlab.com/…/merge_requests/142',
+                    shell: '[reporter] Telegram: "✅ MR opened: …"\n— same channel as task start'
+                }
+            };
+            var HIW_ORDER = ['orchestrator', 'planner', 'backend-dev', 'qa-tester', 'code-reviewer'];
+            var HIW_CHIP_TICK = {
+                orchestrator: ['Orchestrator: splitting task…', 'Orchestrator: delegating to planner…', 'Orchestrator: watching branch…'],
+                planner: ['Planner: drafting steps…', 'Planner: resolving deps…', 'Planner: handoff → backend…'],
+                'backend-dev': ['backend-dev: write src/api/users.ts', 'backend-dev: pushing commits…', 'backend-dev: openapi sync…'],
+                'qa-tester': ['qa-tester: npm test…', 'qa-tester: fixing flake…', 'qa-tester: coverage ok…'],
+                'code-reviewer': ['Reviewer: diff main…task', 'Reviewer: security scan…', 'Reviewer: approve MR…']
+            };
+
+            /** Mini lines above nodes on the Workflow Studio SVG (#workflow-studio) */
+            var HIW_GRAPH_ORDER = ['task', 'orchestrator', 'planner', 'frontend-dev', 'backend-dev', 'qa-tester', 'code-reviewer', 'reporter'];
+            var WF_HUD_MINI = {
+                task: [
+                    { s: 'Task queued from Telegram', c: '/task add: “auth middleware”' },
+                    { s: 'Task: repo bound', c: 'plan.project → acme/web-app' }
+                ],
+                orchestrator: [
+                    { s: 'Orchestrator: routing…', c: 'bind plan.branch → task branch' },
+                    { s: 'Orchestrator: delegating…', c: 'next: planner + parallel FE' }
+                ],
+                planner: [
+                    { s: 'Planner: drafting steps…', c: 'steps.json: BE + FE tasks' },
+                    { s: 'Planner: MCP tree scan', c: 'read: package.json, src/**' }
+                ],
+                'frontend-dev': [
+                    { s: 'frontend-dev: UI push…', c: 'git push origin nigents/task-…', shell: true },
+                    { s: 'frontend-dev: components', c: 'export function Login() { … }' }
+                ],
+                'backend-dev': [
+                    { s: 'backend-dev: writing API…', c: 'export async function list() { … }' },
+                    { s: 'backend-dev: pushing…', c: 'commit: feat(api): users list' }
+                ],
+                'qa-tester': [
+                    { s: 'qa-tester: tests…', c: '$ npm test -- --runInBand', shell: true },
+                    { s: 'qa-tester: coverage', c: 'PASS src/auth.spec.ts' }
+                ],
+                'code-reviewer': [
+                    { s: 'Reviewer: diff main…task', c: 'comment: add pagination' },
+                    { s: 'Reviewer: security', c: 'no secrets in diff ✓' }
+                ],
+                reporter: [
+                    { s: 'Reporter: MR link…', c: 'MR !142 → Telegram', shell: true },
+                    { s: 'Reporter: notify user', c: '✅ Ready for review' }
+                ]
+            };
+            var hiwGraphTick = 3;
+
+            function hiwSyncGraphHuds(agentKey) {
+                document.querySelectorAll('.wf-hud').forEach(function (h) {
+                    var on = h.getAttribute('data-wf-map') === agentKey;
+                    h.classList.toggle('wf-hud--selected', on);
+                    h.setAttribute('aria-pressed', on ? 'true' : 'false');
+                });
+            }
+
+            function hiwGraphHudRotate() {
+                hiwGraphTick++;
+                var hotIdx = hiwGraphTick % HIW_GRAPH_ORDER.length;
+                var hotKey = HIW_GRAPH_ORDER[hotIdx];
+                HIW_GRAPH_ORDER.forEach(function (key) {
+                    var hud = document.querySelector('.wf-hud[data-wf-map="' + key + '"]');
+                    if (!hud) return;
+                    var lines = WF_HUD_MINI[key];
+                    if (!lines || !lines.length) return;
+                    var hot = key === hotKey;
+                    hud.classList.toggle('wf-hud--hot', hot);
+                    var st = hud.querySelector('[data-wf-hud-status]');
+                    var ce = hud.querySelector('[data-wf-hud-code]');
+                    if (!st || !ce) return;
+                    var li = hot ? lines[hiwGraphTick % lines.length] : lines[0];
+                    st.textContent = li.s;
+                    ce.textContent = li.c;
+                    ce.classList.toggle('wf-hud-code--shell', !!li.shell);
+                    hud.setAttribute('title', li.s + ' — click for full stream');
+                });
+            }
+
+            function hiwSetDetail(agentKey) {
+                var d = HIW_AGENTS[agentKey];
+                if (!d) return;
+                var codeEl = document.getElementById('hiw-demo-code');
+                var shellEl = document.getElementById('hiw-demo-shell');
+                var nameEl = document.getElementById('hiw-detail-name');
+                if (nameEl) nameEl.textContent = agentKey;
+                if (codeEl) codeEl.textContent = d.code;
+                if (shellEl) shellEl.textContent = d.shell;
+                document.querySelectorAll('.hiw-live-node').forEach(function (n) {
+                    var on = n.getAttribute('data-agent') === agentKey;
+                    n.classList.toggle('hiw-live-node--selected', on);
+                });
+                document.querySelectorAll('[data-hiw-select]').forEach(function (b) {
+                    var on = b.getAttribute('data-hiw-select') === agentKey;
+                    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+                });
+                hiwSyncGraphHuds(agentKey);
+            }
+
+            /* In-place graph stream (no scroll jump; typewriter = “socket” feel) */
+            var hiwInplaceTypeTimer = null;
+            /* l = node center X%; t = bottom edge Y% of node (panel opens below this point) */
+            var WF_INPLACE_POS = {
+                task: { l: 6.89, t: 50 },
+                orchestrator: { l: 20.78, t: 50 },
+                planner: { l: 38.67, t: 29.8 },
+                'frontend-dev': { l: 38.67, t: 74.2 },
+                'backend-dev': { l: 56.56, t: 54.8 },
+                'qa-tester': { l: 56, t: 85.5 },
+                'code-reviewer': { l: 72.67, t: 54.8 },
+                reporter: { l: 88.89, t: 54.8 }
+            };
+
+            function hiwClearInplaceType() {
+                if (hiwInplaceTypeTimer) {
+                    clearInterval(hiwInplaceTypeTimer);
+                    hiwInplaceTypeTimer = null;
+                }
+            }
+
+            function hiwSetGraphStreamWrapOpen(on) {
+                var sec = document.getElementById('workflow-studio');
+                if (sec) sec.classList.toggle('wf-studio-graph-stream-open', Boolean(on));
+            }
+
+            function hiwRepositionGraphInplace() {
+                var pop = document.getElementById('wf-graph-inplace-stream');
+                var wrap = document.querySelector('.wf-graph-wrap');
+                if (!pop || !wrap || pop.hidden) return;
+                pop.style.setProperty('--wf-inplace-x', '0px');
+                pop.classList.remove('wf-graph-inplace-stream--above');
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(function () {
+                        if (!pop || pop.hidden) return;
+                        var pad = 10;
+                        var pr = pop.getBoundingClientRect();
+                        var wr = wrap.getBoundingClientRect();
+                        if (pr.bottom > wr.bottom - pad) {
+                            pop.classList.add('wf-graph-inplace-stream--above');
+                        }
+                        pr = pop.getBoundingClientRect();
+                        if (pop.classList.contains('wf-graph-inplace-stream--above') && pr.top < wr.top + pad) {
+                            pop.classList.remove('wf-graph-inplace-stream--above');
+                        }
+                        pr = pop.getBoundingClientRect();
+                        var nx = 0;
+                        if (pr.right > window.innerWidth - pad) {
+                            nx += Math.round(window.innerWidth - pad - pr.right);
+                        }
+                        if (pr.left + nx < pad) {
+                            nx += Math.round(pad - (pr.left + nx));
+                        }
+                        pop.style.setProperty('--wf-inplace-x', nx + 'px');
+                    });
+                });
+            }
+
+            function hiwCloseGraphInplace() {
+                hiwClearInplaceType();
+                hiwSetGraphStreamWrapOpen(false);
+                var pop = document.getElementById('wf-graph-inplace-stream');
+                if (pop) {
+                    pop.hidden = true;
+                    pop.classList.remove('wf-graph-inplace-stream--above');
+                    pop.style.setProperty('--wf-inplace-x', '0px');
+                }
+                var ce = document.getElementById('wf-graph-inplace-code');
+                var se = document.getElementById('wf-graph-inplace-shell');
+                var caret = document.getElementById('wf-graph-inplace-caret');
+                if (ce) ce.textContent = '';
+                if (se) se.textContent = '';
+                if (caret) caret.classList.add('wf-inplace-done');
+            }
+
+            function hiwTypeInto(el, text, stepMs, done) {
+                if (!el) {
+                    if (done) done();
+                    return;
+                }
+                el.textContent = '';
+                var i = 0;
+                var t = String(text || '');
+                if (!t.length) {
+                    if (done) done();
+                    return;
+                }
+                hiwInplaceTypeTimer = setInterval(function () {
+                    if (i >= t.length) {
+                        hiwClearInplaceType();
+                        if (done) done();
+                        return;
+                    }
+                    el.textContent += t.charAt(i);
+                    i++;
+                }, stepMs || 5);
+            }
+
+            function hiwOpenGraphInplace(agentKey) {
+                var d = HIW_AGENTS[agentKey];
+                if (!d) return;
+                hiwClearInplaceType();
+                var pop = document.getElementById('wf-graph-inplace-stream');
+                var pos = WF_INPLACE_POS[agentKey];
+                var title = document.getElementById('wf-graph-inplace-title');
+                var codeEl = document.getElementById('wf-graph-inplace-code');
+                var shellEl = document.getElementById('wf-graph-inplace-shell');
+                var caret = document.getElementById('wf-graph-inplace-caret');
+                var inner = pop && pop.querySelector('.wf-graph-inplace-stream-inner');
+                if (!pop || !codeEl || !shellEl) return;
+                if (pos) {
+                    pop.style.left = pos.l + '%';
+                    pop.style.top = pos.t + '%';
+                }
+                if (title) title.textContent = agentKey + ' — streaming';
+                if (caret) caret.classList.remove('wf-inplace-done');
+                codeEl.textContent = '';
+                shellEl.textContent = '';
+                hiwSetGraphStreamWrapOpen(true);
+                pop.hidden = false;
+                if (inner) {
+                    inner.style.animation = 'none';
+                    void inner.offsetWidth;
+                    inner.style.animation = '';
+                }
+                hiwRepositionGraphInplace();
+                hiwTypeInto(codeEl, d.code, 5, function () {
+                    hiwTypeInto(shellEl, d.shell, 4, function () {
+                        if (caret) caret.classList.add('wf-inplace-done');
+                        hiwRepositionGraphInplace();
+                    });
+                });
+            }
+
+            function hiwPickAgentOnGraph(agentKey) {
+                hiwSetDetail(agentKey);
+                hiwOpenGraphInplace(agentKey);
+            }
+
+            document.querySelectorAll('[data-hiw-select]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    hiwSetDetail(btn.getAttribute('data-hiw-select'));
+                });
+            });
+
+            document.querySelectorAll('.wf-graph-hit').forEach(function (hit) {
+                hit.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var k = hit.getAttribute('data-wf-map');
+                    if (k) hiwPickAgentOnGraph(k);
+                });
+            });
+
+            document.querySelectorAll('.wf-hud[data-wf-map]').forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var k = btn.getAttribute('data-wf-map');
+                    if (k) hiwPickAgentOnGraph(k);
+                });
+            });
+
+            var wfInplaceClose = document.querySelector('.wf-graph-inplace-close');
+            if (wfInplaceClose) {
+                wfInplaceClose.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    hiwCloseGraphInplace();
+                });
+            }
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key !== 'Escape') return;
+                var pop = document.getElementById('wf-graph-inplace-stream');
+                if (pop && !pop.hidden) {
+                    e.preventDefault();
+                    hiwCloseGraphInplace();
+                }
+            });
+
+            var hiwInplaceResizeTimer;
+            window.addEventListener('resize', function () {
+                clearTimeout(hiwInplaceResizeTimer);
+                hiwInplaceResizeTimer = setTimeout(function () {
+                    var pop = document.getElementById('wf-graph-inplace-stream');
+                    if (pop && !pop.hidden) hiwRepositionGraphInplace();
+                }, 100);
+            });
+
+            hiwSetDetail('backend-dev');
+            setInterval(hiwGraphHudRotate, 4800);
+
+            var hiwHotIdx = 2;
+            var hiwChipRot = 0;
+            setInterval(function () {
+                hiwHotIdx = (hiwHotIdx + 1) % HIW_ORDER.length;
+                hiwChipRot++;
+                HIW_ORDER.forEach(function (aid) {
+                    var node = document.querySelector('.hiw-live-node[data-agent="' + aid + '"]');
+                    if (!node) return;
+                    var hot = aid === HIW_ORDER[hiwHotIdx];
+                    node.classList.toggle('hiw-live-node--hot', hot);
+                    var chipText = node.querySelector('.hiw-live-chip-text');
+                    if (!chipText) return;
+                    var lines = HIW_CHIP_TICK[aid];
+                    var label = hot && lines && lines.length ? lines[hiwChipRot % lines.length] : HIW_AGENTS[aid].chip;
+                    chipText.textContent = label;
+                    node.setAttribute('aria-label', label + ' — click card for stream');
+                });
+            }, 4800);
+        })();
+    </script>
+</body>
+</html>

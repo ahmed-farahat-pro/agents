@@ -1,20 +1,27 @@
 #!/usr/bin/env node
 /**
- * 🦉 NightOwl - Health Check Script
+ * 🦉 Nigents - Health Check Script
  * Tests all API connections and configurations
  */
 
 require('dotenv').config();
 
-const chalk = require('chalk');
+// ANSI colors (no extra dependency)
+const c = {
+  green: (s) => `\x1b[32m${s}\x1b[0m`,
+  red: (s) => `\x1b[31m${s}\x1b[0m`,
+  yellow: (s) => `\x1b[33m${s}\x1b[0m`,
+  blue: (s) => `\x1b[34m${s}\x1b[0m`,
+  boldCyan: (s) => `\x1b[1m\x1b[36m${s}\x1b[0m`,
+  boldMagenta: (s) => `\x1b[1m\x1b[35m${s}\x1b[0m`,
+};
 
-// Helper for colored output
 const log = {
-  success: (msg) => console.log(chalk.green('✅'), msg),
-  error: (msg) => console.log(chalk.red('❌'), msg),
-  warning: (msg) => console.log(chalk.yellow('⚠️'), msg),
-  info: (msg) => console.log(chalk.blue('ℹ️'), msg),
-  section: (msg) => console.log(chalk.bold.cyan('\n' + msg)),
+  success: (msg) => console.log(c.green('✅'), msg),
+  error: (msg) => console.log(c.red('❌'), msg),
+  warning: (msg) => console.log(c.yellow('⚠️'), msg),
+  info: (msg) => console.log(c.blue('ℹ️'), msg),
+  section: (msg) => console.log(c.boldCyan('\n' + msg)),
 };
 
 async function checkTelegram() {
@@ -47,31 +54,20 @@ async function checkTelegram() {
   }
 }
 
-async function checkClaude() {
-  log.section('Claude API (Anthropic)');
+async function checkAIProvider() {
+  log.section('AI provider (custom model)');
   try {
-    const { Anthropic } = require('@anthropic-ai/sdk');
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    
-    if (!apiKey) {
-      log.error('ANTHROPIC_API_KEY not set');
+    const aiClient = require('../src/utils/ai-client');
+    const status = aiClient.getAPIKeysStatus();
+    if (!status.ready || status.ready.length === 0) {
+      log.error('No custom AI model configured (add one in dashboard)');
       return false;
     }
-
-    const anthropic = new Anthropic({ apiKey });
-    
-    // Test with a simple completion
-    const response = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 50,
-      messages: [{ role: 'user', content: 'Say "NightOwl is ready"' }],
-    });
-
-    log.success('Claude API connected');
-    log.info(`Response: "${response.content[0].text.substring(0, 50)}..."`);
+    log.success(`AI provider ready: ${status.ready.map(p => p.key).join(', ')}`);
+    status.ready.forEach(p => log.info(`  ${p.key}: ${p.model || 'default'}`));
     return true;
   } catch (error) {
-    log.error(`Claude API failed: ${error.message}`);
+    log.error(`AI provider check failed: ${error.message}`);
     return false;
   }
 }
@@ -136,21 +132,31 @@ async function checkGitLab() {
 
 async function checkOpenHands() {
   log.section('OpenHands');
+  const openhandsUrl = process.env.OPENHANDS_URL || 'http://localhost:3000';
+  const isExplicit = process.env.OPENHANDS_URL && process.env.OPENHANDS_URL !== 'http://localhost:3000';
+
   try {
     const openhands = require('../src/tools/openhands');
     const result = await openhands.healthCheck();
-    
+
     if (result.available) {
       log.success('OpenHands is available');
       return true;
-    } else {
-      log.warning(`OpenHands not available: ${result.error}`);
-      log.info('OpenHands is optional and runs on EC2');
-      return true; // Not a failure
     }
+    // Optional: no warning when using default URL (nothing running on 3000 is expected)
+    if (isExplicit) {
+      log.warning(`OpenHands not reachable at ${openhandsUrl}: ${result.error}`);
+      log.info('Backend Dev will use AI fallback. Start OpenHands if you need sandbox execution.');
+    } else {
+      log.info('OpenHands not running (optional). Backend Dev uses AI fallback. Set OPENHANDS_URL and run the service to enable sandbox.');
+    }
+    return true; // Not a failure
   } catch (error) {
-    log.warning(`OpenHands check failed: ${error.message}`);
-    log.info('OpenHands is optional and runs on EC2');
+    if (isExplicit) {
+      log.warning(`OpenHands check failed: ${error.message}`);
+    } else {
+      log.info('OpenHands not running (optional). Backend Dev uses AI fallback.');
+    }
     return true;
   }
 }
@@ -182,11 +188,11 @@ async function checkConfig() {
 }
 
 async function main() {
-  console.log(chalk.bold.magenta('\n🦉 NightOwl Health Check\n'));
+  console.log(c.boldMagenta('\n🦉 Nigents Health Check\n'));
   
   const results = {
     telegram: await checkTelegram(),
-    claude: await checkClaude(),
+    ai: await checkAIProvider(),
     openai: await checkOpenAI(),
     gitlab: await checkGitLab(),
     openhands: await checkOpenHands(),
@@ -199,15 +205,15 @@ async function main() {
   const total = Object.keys(results).length;
   
   if (passed === total) {
-    console.log(chalk.green(`\n✅ All checks passed! NightOwl is ready to fly.\n`));
+    console.log(c.green('\n✅ All checks passed! Nigents is ready to fly.\n'));
     process.exit(0);
   } else {
-    console.log(chalk.yellow(`\n⚠️  ${passed}/${total} checks passed. Some features may not work.\n`));
+    console.log(c.yellow(`\n⚠️  ${passed}/${total} checks passed. Some features may not work.\n`));
     process.exit(1);
   }
 }
 
 main().catch(error => {
-  console.error(chalk.red('Health check failed:'), error);
+  console.error(c.red('Health check failed:'), error);
   process.exit(1);
 });

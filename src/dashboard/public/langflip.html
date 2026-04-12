@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="LangFlip — instant Arabic ↔ English keyboard fix for macOS. Triple-tap ⌘ to flip mistyped text without retyping." />
+    <title>LangFlip — Instant Keyboard Fix for Mac</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #09080c;
+            --bg-secondary: #141116;
+            --bg-card: #111111;
+            --border: #2a2a35;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            --accent-orange: #ff570a;
+            --accent-green: #19d59e;
+            --accent-flip: #818cf8;        /* LangFlip indigo */
+            --accent-flip-dim: rgba(129, 140, 248, 0.12);
+            --accent-flip-border: rgba(129, 140, 248, 0.35);
+            --font-mono: 'IBM Plex Mono', monospace;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* Grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(129, 140, 248, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(129, 140, 248, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Scroll-reveal */
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.7s var(--ease-out-expo), transform 0.7s var(--ease-out-expo);
+        }
+        .reveal.in-view { opacity: 1; transform: translateY(0); }
+        .reveal-delay-1 { transition-delay: 0.08s; }
+        .reveal-delay-2 { transition-delay: 0.16s; }
+        .reveal-delay-3 { transition-delay: 0.24s; }
+        .reveal-delay-4 { transition-delay: 0.32s; }
+        .reveal-delay-5 { transition-delay: 0.40s; }
+
+        /* ── NAV ────────────────────────────────────────── */
+        .nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 1000;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, var(--bg-primary) 0%, transparent 100%);
+            transition: background 0.4s ease, backdrop-filter 0.4s ease, padding 0.4s ease;
+        }
+
+        .nav.scrolled {
+            background: rgba(9, 8, 12, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding-top: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(129, 140, 248, 0.08);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .nav-logo {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-orange);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 20px;
+            font-family: var(--font-mono);
+            color: var(--bg-primary);
+            transition: transform 0.2s var(--ease-out-quart), box-shadow 0.2s ease;
+        }
+
+        .nav-brand:hover .nav-logo {
+            transform: scale(1.08) rotate(-3deg);
+            box-shadow: 0 0 20px rgba(255, 87, 10, 0.4);
+        }
+
+        .nav-title {
+            font-family: var(--font-sans);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s ease;
+            position: relative;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px; left: 0; right: 0;
+            height: 1px;
+            background: var(--accent-flip);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.2s var(--ease-out-quart);
+        }
+
+        .nav-link:hover { color: var(--text-primary); }
+        .nav-link:hover::after { transform: scaleX(1); }
+
+        .soon-pill {
+            display: inline-block;
+            margin-left: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--bg-primary);
+            background: var(--accent-orange);
+            padding: 3px 9px;
+            border-radius: 999px;
+            vertical-align: middle;
+        }
+
+        .nav-cta {
+            padding: 10px 20px;
+            border: 1px solid var(--accent-orange);
+            color: var(--accent-orange);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s, color 0.2s, transform 0.2s var(--ease-out-quart), box-shadow 0.2s;
+        }
+
+        .nav-cta:hover {
+            background: var(--accent-orange);
+            color: var(--bg-primary);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(255, 87, 10, 0.3);
+        }
+
+        .nav-toggle {
+            display: none;
+            width: 44px; height: 44px;
+            align-items: center; justify-content: center;
+            margin-left: auto;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .nav-toggle:hover {
+            background: rgba(129, 140, 248, 0.1);
+            border-color: rgba(129, 140, 248, 0.4);
+        }
+
+        .nav-toggle-icon-close { display: none; font-size: 28px; }
+        body.nav-open .nav-toggle-icon-open { display: none; }
+        body.nav-open .nav-toggle-icon-close { display: block; }
+
+        .nav-backdrop {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 998;
+            backdrop-filter: blur(2px);
+        }
+        body.nav-open .nav-backdrop { display: block; }
+        body.nav-open { overflow: hidden; }
+
+        @media (max-width: 900px) {
+            .nav-toggle { display: flex; }
+            .nav-links {
+                display: none;
+                position: fixed;
+                top: 0; left: 0; right: 0;
+                margin-top: 72px;
+                padding: 12px 20px max(24px, env(safe-area-inset-bottom));
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0;
+                background: var(--bg-primary);
+                border-bottom: 1px solid var(--border);
+                box-shadow: 0 16px 48px rgba(0,0,0,0.45);
+                z-index: 1001;
+                max-height: min(70vh, calc(100vh - 72px));
+                overflow-y: auto;
+            }
+            .nav-links .nav-link,
+            .nav-links .nav-cta {
+                padding: 14px 12px;
+                border-radius: 8px;
+                text-align: left;
+            }
+            .nav-link::after { display: none; }
+            body.nav-open .nav-links { display: flex; }
+        }
+
+        /* ── HERO ───────────────────────────────────────── */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 140px 32px 80px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Radial glow */
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 500px;
+            background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(129, 140, 248, 0.1) 0%, transparent 65%);
+            pointer-events: none;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 18px;
+            background: var(--accent-flip-dim);
+            border: 1px solid var(--accent-flip-border);
+            color: var(--accent-flip);
+            font-size: 13px;
+            font-weight: 600;
+            font-family: var(--font-mono);
+            margin-bottom: 32px;
+            letter-spacing: 0.04em;
+            opacity: 0;
+            transform: translateY(16px);
+            animation: fade-up 0.6s var(--ease-out-expo) 0.1s forwards;
+        }
+
+        .badge-dot {
+            width: 7px; height: 7px;
+            background: var(--accent-flip);
+            border-radius: 50%;
+            animation: blink 2s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        @keyframes fade-up {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero-icon-wrap {
+            position: relative;
+            width: 96px; height: 96px;
+            margin: 0 auto 32px;
+            opacity: 0;
+            transform: translateY(20px) scale(0.92);
+            animation: icon-in 0.7s var(--ease-out-expo) 0.15s forwards;
+        }
+
+        @keyframes icon-in {
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .hero-icon {
+            width: 96px; height: 96px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--accent-flip-border);
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Flip animation inside icon */
+        .hero-icon-inner {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent-flip);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            line-height: 1;
+        }
+
+        .flip-arrow {
+            font-size: 22px;
+            color: var(--accent-flip);
+            animation: flip-pulse 2.4s ease-in-out infinite;
+        }
+
+        @keyframes flip-pulse {
+            0%, 100% { transform: scaleX(1); opacity: 1; }
+            40% { transform: scaleX(-1); opacity: 0.5; }
+            50% { transform: scaleX(-1); opacity: 1; }
+        }
+
+        /* Glow ring */
+        .hero-icon::after {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: 23px;
+            background: linear-gradient(135deg, var(--accent-flip), transparent, var(--accent-flip));
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: -1;
+        }
+
+        .hero-icon-wrap:hover .hero-icon::after { opacity: 0.3; }
+        .hero-icon-wrap:hover .hero-icon { transform: scale(1.04); transition: transform 0.3s var(--ease-out-quart); }
+
+        .hero-title {
+            font-family: var(--font-sans);
+            font-size: clamp(38px, 5.5vw, 68px);
+            font-weight: 800;
+            line-height: 1.08;
+            letter-spacing: -0.03em;
+            margin-bottom: 20px;
+            max-width: 800px;
+            opacity: 0;
+            transform: translateY(22px);
+            animation: fade-up 0.7s var(--ease-out-expo) 0.25s forwards;
+        }
+
+        .hero-title .flip-word {
+            color: var(--accent-flip);
+            display: inline-block;
+            animation: word-flip 3.5s ease-in-out infinite;
+        }
+
+        @keyframes word-flip {
+            0%, 35% { transform: scaleX(1); }
+            40% { transform: scaleX(-0.1); }
+            45%, 80% { transform: scaleX(1); color: var(--accent-green); }
+            85% { transform: scaleX(-0.1); }
+            90%, 100% { transform: scaleX(1); color: var(--accent-flip); }
+        }
+
+        .hero-subtitle {
+            font-size: clamp(16px, 2vw, 19px);
+            color: var(--text-secondary);
+            max-width: 560px;
+            margin: 0 auto 40px;
+            line-height: 1.65;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fade-up 0.7s var(--ease-out-expo) 0.36s forwards;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fade-up 0.7s var(--ease-out-expo) 0.47s forwards;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 28px;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: background 0.2s, color 0.2s, border-color 0.2s,
+                        transform 0.2s var(--ease-out-quart), box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: var(--accent-flip);
+            color: var(--bg-primary);
+            border: 1px solid var(--accent-flip);
+        }
+
+        .btn-primary:hover {
+            background: #a5b4fc;
+            border-color: #a5b4fc;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(129, 140, 248, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-flip);
+            color: var(--accent-flip);
+            transform: translateY(-2px);
+        }
+
+        .hero-meta {
+            margin-top: 20px;
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            opacity: 0;
+            transform: translateY(16px);
+            animation: fade-up 0.7s var(--ease-out-expo) 0.58s forwards;
+        }
+
+        /* ── DEMO BOX ───────────────────────────────────── */
+        .demo-section {
+            position: relative;
+            z-index: 1;
+            padding: 0 32px 100px;
+        }
+
+        .demo-box {
+            max-width: 640px;
+            margin: 0 auto;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.08),
+                        0 24px 60px rgba(0,0,0,0.6);
+            transition: box-shadow 0.4s ease;
+        }
+
+        .demo-box:hover {
+            box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.2),
+                        0 28px 70px rgba(0,0,0,0.7);
+        }
+
+        .demo-header {
+            display: flex;
+            align-items: center;
+            padding: 12px 18px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            gap: 10px;
+        }
+
+        .demo-dots { display: flex; gap: 7px; }
+        .demo-dot {
+            width: 11px; height: 11px;
+            border-radius: 50%;
+        }
+        .demo-dot.r { background: #ff5f56; }
+        .demo-dot.y { background: #ffbd2e; }
+        .demo-dot.g { background: #27c93f; }
+
+        .demo-title-bar {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-muted);
+            flex: 1;
+            text-align: center;
+        }
+
+        .demo-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-family: var(--font-mono);
+            color: var(--accent-flip);
+        }
+
+        .demo-status-dot {
+            width: 6px; height: 6px;
+            background: var(--accent-flip);
+            border-radius: 50%;
+            animation: blink 1.2s ease-in-out infinite;
+        }
+
+        .demo-body {
+            padding: 32px;
+            text-align: center;
+        }
+
+        .demo-label {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        .demo-before {
+            font-family: var(--font-mono);
+            font-size: 22px;
+            color: var(--text-secondary);
+            min-height: 36px;
+            margin-bottom: 16px;
+            transition: opacity 0.3s;
+        }
+
+        .demo-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            margin: 16px 0;
+        }
+
+        .cmd-key {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px; height: 38px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-bottom-width: 3px;
+            border-radius: 8px;
+            font-size: 16px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            transition: border-color 0.15s, color 0.15s, background 0.15s,
+                        transform 0.1s ease, box-shadow 0.15s;
+        }
+
+        .cmd-key.active {
+            border-color: var(--accent-flip);
+            color: var(--accent-flip);
+            background: var(--accent-flip-dim);
+            transform: translateY(2px);
+            box-shadow: 0 0 12px rgba(129, 140, 248, 0.3);
+        }
+
+        .demo-after {
+            font-family: 'Geeza Pro', 'Arial', var(--font-sans);
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--accent-flip);
+            min-height: 40px;
+            margin-top: 16px;
+            direction: rtl;
+            transition: opacity 0.4s ease;
+        }
+
+        /* ── SECTION GENERIC ────────────────────────────── */
+        .section {
+            position: relative;
+            z-index: 1;
+            padding: 100px 32px;
+        }
+
+        .section-inner {
+            max-width: 1060px;
+            margin: 0 auto;
+        }
+
+        .section-tag {
+            display: inline-block;
+            padding: 6px 12px;
+            background: var(--accent-flip-dim);
+            border: 1px solid var(--accent-flip-border);
+            color: var(--accent-flip);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-family: var(--font-sans);
+            font-size: clamp(26px, 3.5vw, 38px);
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 12px;
+        }
+
+        .section-sub {
+            font-size: clamp(14px, 1.5vw, 16px);
+            color: var(--text-secondary);
+            max-width: 560px;
+            margin-bottom: 56px;
+        }
+
+        /* ── FEATURES GRID ──────────────────────────────── */
+        .features-section {
+            border-top: 1px solid var(--border);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+            gap: 20px;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s ease,
+                        transform 0.3s var(--ease-out-quart),
+                        box-shadow 0.3s ease;
+        }
+
+        /* Shimmer sweep on hover */
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 60%; height: 100%;
+            background: linear-gradient(105deg, transparent 0%, rgba(129, 140, 248, 0.06) 50%, transparent 100%);
+            transition: left 0.5s var(--ease-out-expo);
+            pointer-events: none;
+        }
+
+        .feature-card:hover {
+            border-color: var(--accent-flip-border);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+        }
+
+        .feature-card:hover::before { left: 140%; }
+
+        .feature-card-top {
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-flip), var(--accent-green));
+            margin: -28px -28px 24px;
+        }
+
+        .feature-icon {
+            width: 46px; height: 46px;
+            background: var(--accent-flip-dim);
+            border: 1px solid var(--accent-flip-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--accent-flip);
+            margin-bottom: 16px;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .feature-card:hover .feature-icon {
+            background: rgba(129, 140, 248, 0.2);
+            border-color: rgba(129, 140, 248, 0.6);
+        }
+
+        .feature-title {
+            font-family: var(--font-sans);
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .feature-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* ── HOW IT WORKS ───────────────────────────────── */
+        .steps-section {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+            gap: 0;
+        }
+
+        .step-card {
+            padding: 36px 28px;
+            position: relative;
+            transition: background 0.3s ease;
+        }
+
+        .step-card:not(:last-child) {
+            border-right: 1px solid var(--border);
+        }
+
+        .step-card:hover { background: rgba(129, 140, 248, 0.03); }
+
+        .step-number {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--accent-flip);
+            letter-spacing: 0.08em;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .step-glyph {
+            font-size: 32px;
+            margin-bottom: 16px;
+            display: block;
+            transition: transform 0.3s var(--ease-out-quart);
+        }
+
+        .step-card:hover .step-glyph { transform: scale(1.15); }
+
+        .step-title {
+            font-family: var(--font-sans);
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .step-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.55;
+        }
+
+        /* Connector arrow overlay */
+        .step-card:not(:last-child)::after {
+            content: '→';
+            position: absolute;
+            right: -11px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            color: var(--accent-flip);
+            background: var(--bg-secondary);
+            padding: 4px 0;
+            z-index: 1;
+        }
+
+        /* ── KEY MAP ────────────────────────────────────── */
+        .keymap-section {
+            border-top: 1px solid var(--border);
+        }
+
+        .keymap-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr));
+            gap: 8px;
+        }
+
+        .key-pair {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            transition: border-color 0.2s ease, transform 0.2s var(--ease-out-quart);
+        }
+
+        .key-pair:hover {
+            border-color: var(--accent-flip-border);
+            transform: translateY(-2px);
+        }
+
+        .key-label {
+            font-family: var(--font-mono);
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .key-sep {
+            font-size: 14px;
+            color: var(--accent-flip);
+        }
+
+        .key-arabic {
+            font-size: 18px;
+            color: var(--accent-flip);
+            font-family: 'Geeza Pro', 'Arial', sans-serif;
+        }
+
+        /* ── COMPAT APPS ────────────────────────────────── */
+        .compat-section {
+            text-align: center;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .compat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 16px;
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        .compat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 20px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            transition: border-color 0.2s ease, transform 0.2s var(--ease-out-quart);
+        }
+
+        .compat-item:hover {
+            border-color: var(--accent-flip-border);
+            transform: translateY(-3px);
+        }
+
+        .compat-icon {
+            width: 44px; height: 44px;
+            background: var(--accent-flip-dim);
+            border: 1px solid var(--accent-flip-border);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--accent-flip);
+        }
+
+        .compat-name {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* ── CTA ────────────────────────────────────────── */
+        .cta-section {
+            text-align: center;
+            border-top: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 700px; height: 400px;
+            background: radial-gradient(ellipse, rgba(129, 140, 248, 0.07) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .cta-title {
+            font-family: var(--font-sans);
+            font-size: clamp(30px, 4vw, 48px);
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 14px;
+        }
+
+        .cta-sub {
+            font-size: clamp(14px, 1.5vw, 16px);
+            color: var(--text-secondary);
+            margin-bottom: 36px;
+        }
+
+        .cta-meta {
+            margin-top: 16px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* ── FOOTER ─────────────────────────────────────── */
+        .footer {
+            padding: 48px 32px;
+            border-top: 1px solid var(--border);
+            position: relative;
+            z-index: 1;
+        }
+
+        .footer-content {
+            max-width: 1060px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .footer-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .footer-logo {
+            width: 30px; height: 30px;
+            background: var(--accent-orange);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--bg-primary);
+        }
+
+        .footer-text { font-size: 13px; color: var(--text-muted); }
+
+        .footer-links {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .footer-link:hover { color: var(--accent-flip); }
+
+        /* ── RESPONSIVE ─────────────────────────────────── */
+        @media (max-width: 768px) {
+            .nav { padding: 16px max(16px, env(safe-area-inset-right)) 16px max(16px, env(safe-area-inset-left)); }
+
+            .hero { padding: 120px 20px 60px; min-height: auto; }
+
+            .hero-actions {
+                flex-direction: column;
+                align-items: center;
+                width: 100%;
+            }
+
+            .hero-actions .btn {
+                width: 100%;
+                max-width: 320px;
+                justify-content: center;
+            }
+
+            .demo-section { padding: 0 20px 80px; }
+
+            .section { padding: 72px 20px; }
+
+            .steps-grid { grid-template-columns: 1fr; }
+            .step-card:not(:last-child) { border-right: none; border-bottom: 1px solid var(--border); }
+            .step-card:not(:last-child)::after { display: none; }
+
+            .compat-grid { grid-template-columns: repeat(4, 1fr); }
+
+            .footer { padding: 40px 20px; }
+            .footer-content { flex-direction: column; text-align: center; }
+            .footer-links { justify-content: center; }
+        }
+
+        @media (max-width: 480px) {
+            .compat-grid { grid-template-columns: repeat(3, 1fr); }
+            .keymap-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+            .reveal { opacity: 1; transform: none; }
+            .hero-badge, .hero-icon-wrap, .hero-title, .hero-subtitle, .hero-actions, .hero-meta {
+                opacity: 1; transform: none; animation: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Nav -->
+    <nav class="nav" id="main-nav">
+        <a href="/" class="nav-brand">
+            <div class="nav-logo">N</div>
+            <span class="nav-title">Nigents</span>
+        </a>
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+            <span class="nav-toggle-icon-open" aria-hidden="true">☰</span>
+            <span class="nav-toggle-icon-close" aria-hidden="true">×</span>
+        </button>
+        <div class="nav-links" id="nav-links" role="navigation" aria-label="Main">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/how-it-works.html" class="nav-link">How it works</a>
+            <a href="/materials.html" class="nav-link">Free Materials</a>
+            <a href="/crazy-apps.html" class="nav-link">Crazy apps</a>
+            <a href="/opencode-kits.html" class="nav-link">OpenCode kits <span class="soon-pill">Soon</span></a>
+            <a href="/bonyad/" class="nav-link">Bonyad</a>
+            <a href="/login.html" class="nav-cta">Login →</a>
+        </div>
+    </nav>
+    <div class="nav-backdrop" id="nav-backdrop" aria-hidden="true" hidden></div>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-badge">
+            <span class="badge-dot"></span>
+            Arabic ↔ English · Triple-tap ⌘
+        </div>
+
+        <div class="hero-icon-wrap">
+            <div class="hero-icon">
+                <div class="hero-icon-inner">
+                    <span style="font-size:10px">AR</span>
+                    <span class="flip-arrow">⇄</span>
+                    <span style="font-size:10px">EN</span>
+                </div>
+            </div>
+        </div>
+
+        <h1 class="hero-title">
+            Stop retyping.<br>
+            <span class="flip-word">Just flip it.</span>
+        </h1>
+        <p class="hero-subtitle">
+            Typed a whole sentence in the wrong keyboard layout?
+            LangFlip converts mistyped Arabic or English text instantly —
+            no copy-paste, no retyping. Just triple-tap ⌘.
+        </p>
+        <div class="hero-actions">
+            <a href="/downloads/LangFlip-1.0.dmg" class="btn btn-primary" download>↓ Download DMG</a>
+            <a href="/crazy-apps.html" class="btn btn-secondary">← All Crazy Apps</a>
+        </div>
+        <p class="hero-meta">Free · v1.0 · macOS 14 Sonoma+ · Apple Silicon &amp; Intel · ~2 MB</p>
+    </section>
+
+    <!-- Demo -->
+    <div class="demo-section">
+        <div class="demo-box reveal">
+            <div class="demo-header">
+                <div class="demo-dots">
+                    <div class="demo-dot r"></div>
+                    <div class="demo-dot y"></div>
+                    <div class="demo-dot g"></div>
+                </div>
+                <div class="demo-title-bar">LangFlip — live demo</div>
+                <div class="demo-status">
+                    <span class="demo-status-dot"></span>
+                    running
+                </div>
+            </div>
+            <div class="demo-body">
+                <div class="demo-label">You typed in the wrong layout</div>
+                <div class="demo-before" id="demo-before">hghl hsjv</div>
+
+                <div class="demo-trigger">
+                    <span class="cmd-key" id="k1">⌘</span>
+                    <span class="cmd-key" id="k2">⌘</span>
+                    <span class="cmd-key" id="k3">⌘</span>
+                </div>
+
+                <div class="demo-label" style="margin-top:16px">LangFlip converts it</div>
+                <div class="demo-after" id="demo-after"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features -->
+    <section class="section features-section">
+        <div class="section-inner">
+            <div class="reveal">
+                <div class="section-tag">Why LangFlip</div>
+                <h2 class="section-title">Built for bilingual Mac users</h2>
+                <p class="section-sub">For anyone who switches between Arabic and English daily and loses seconds every time they type in the wrong layout.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card reveal">
+                    <div class="feature-card-top"></div>
+                    <div class="feature-icon">⌘³</div>
+                    <div class="feature-title">Triple-tap ⌘ trigger</div>
+                    <p class="feature-desc">No complex shortcuts to memorise. Tap Command three times and your text flips instantly.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-1">
+                    <div class="feature-card-top"></div>
+                    <div class="feature-icon">SFT</div>
+                    <div class="feature-title">Smart detection</div>
+                    <p class="feature-desc">Automatically detects whether your mistyped text should be Arabic or English and converts in the right direction.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-2">
+                    <div class="feature-card-top"></div>
+                    <div class="feature-icon">LCK</div>
+                    <div class="feature-title">Clipboard-safe</div>
+                    <p class="feature-desc">Uses the macOS Accessibility API to read and replace text directly. Your clipboard stays completely untouched.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-3">
+                    <div class="feature-card-top"></div>
+                    <div class="feature-icon">MB</div>
+                    <div class="feature-title">Menu bar app</div>
+                    <p class="feature-desc">Runs quietly in your menu bar. Zero window clutter. A brief checkmark confirms each flip.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-4">
+                    <div class="feature-card-top"></div>
+                    <div class="feature-icon">GLB</div>
+                    <div class="feature-title">Works everywhere</div>
+                    <p class="feature-desc">Chrome, Safari, VS Code, Notes, Slack, Excel — any macOS app with a text field.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-5">
+                    <div class="feature-card-top"></div>
+                    <div class="feature-icon">PVT</div>
+                    <div class="feature-title">Privacy first</div>
+                    <p class="feature-desc">No internet. No data collection. No accounts. Everything runs locally on your Mac.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="section steps-section">
+        <div class="section-inner">
+            <div class="reveal" style="text-align:center; margin-bottom:48px;">
+                <div class="section-tag">How it works</div>
+                <h2 class="section-title">Four steps, under a second</h2>
+                <p class="section-sub" style="margin: 0 auto;">From wrong layout to correct text without leaving the keyboard.</p>
+            </div>
+            <div class="steps-grid">
+                <div class="step-card reveal">
+                    <span class="step-number">01 ·· TYPE</span>
+                    <span class="step-glyph">⌨</span>
+                    <div class="step-title">You type normally</div>
+                    <p class="step-desc">Write a sentence, then notice you were on the wrong keyboard layout the whole time.</p>
+                </div>
+                <div class="step-card reveal reveal-delay-1">
+                    <span class="step-number">02 ·· TRIGGER</span>
+                    <span class="step-glyph">⌘⌘⌘</span>
+                    <div class="step-title">Triple-tap Command</div>
+                    <p class="step-desc">Tap ⌘ three times in quick succession. LangFlip detects the gesture system-wide.</p>
+                </div>
+                <div class="step-card reveal reveal-delay-2">
+                    <span class="step-number">03 ·· CONVERT</span>
+                    <span class="step-glyph">⇄</span>
+                    <div class="step-title">Text is flipped</div>
+                    <p class="step-desc">LangFlip reads the selected text, maps each key to its Arabic or English equivalent, and replaces it in-place.</p>
+                </div>
+                <div class="step-card reveal reveal-delay-3">
+                    <span class="step-number">04 ·· DONE</span>
+                    <span class="step-glyph">✓</span>
+                    <div class="step-title">Keep typing</div>
+                    <p class="step-desc">Your text is now in the correct language. A brief menu bar checkmark confirms the flip.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Key map -->
+    <section class="section keymap-section">
+        <div class="section-inner">
+            <div class="reveal">
+                <div class="section-tag">Key Mapping</div>
+                <h2 class="section-title">Physical position, not character name</h2>
+                <p class="section-sub">LangFlip maps keys by where they sit on the keyboard — so every flip is predictable.</p>
+            </div>
+            <div class="keymap-grid" id="keymap-grid"></div>
+        </div>
+    </section>
+
+    <!-- Compat -->
+    <section class="section compat-section">
+        <div class="section-inner">
+            <div class="reveal" style="text-align:center; margin-bottom:48px;">
+                <div class="section-tag">Compatibility</div>
+                <h2 class="section-title">Works with your favourite apps</h2>
+                <p class="section-sub" style="margin:0 auto;">Any macOS app with a text field — LangFlip hooks in via the Accessibility API.</p>
+            </div>
+            <div class="compat-grid reveal reveal-delay-1">
+                <div class="compat-item"><div class="compat-icon">CHR</div><div class="compat-name">Chrome</div></div>
+                <div class="compat-item"><div class="compat-icon">SAF</div><div class="compat-name">Safari</div></div>
+                <div class="compat-item"><div class="compat-icon">VSC</div><div class="compat-name">VS Code</div></div>
+                <div class="compat-item"><div class="compat-icon">NTS</div><div class="compat-name">Notes</div></div>
+                <div class="compat-item"><div class="compat-icon">XLS</div><div class="compat-name">Excel</div></div>
+                <div class="compat-item"><div class="compat-icon">SLK</div><div class="compat-name">Slack</div></div>
+                <div class="compat-item"><div class="compat-icon">WRD</div><div class="compat-name">Word</div></div>
+                <div class="compat-item"><div class="compat-icon">MLR</div><div class="compat-name">Mail</div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="section cta-section" id="download">
+        <div class="section-inner">
+            <h2 class="cta-title reveal">Ready to stop retyping?</h2>
+            <p class="cta-sub reveal reveal-delay-1">Download LangFlip and start flipping mistyped text in seconds.</p>
+            <div class="reveal reveal-delay-2">
+                <a href="/downloads/LangFlip-1.0.dmg" class="btn btn-primary" style="font-size:15px; padding:16px 36px;" download>↓ Download LangFlip 1.0</a>
+            </div>
+            <p class="cta-meta reveal reveal-delay-3">Free · macOS 14+ · Apple Silicon &amp; Intel · ~2 MB</p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <div class="footer-logo">N</div>
+                <span class="footer-text">LangFlip · A Nigents crazy app · © 2026</span>
+            </div>
+            <div class="footer-links">
+                <a href="/crazy-apps.html" class="footer-link">All apps</a>
+                <a href="/" class="footer-link">Nigents</a>
+                <a href="/login.html" class="footer-link">Login</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ── Nav: mobile toggle ────────────────────────────
+        (function () {
+            var toggle = document.getElementById('nav-toggle');
+            var backdrop = document.getElementById('nav-backdrop');
+            if (!toggle || !backdrop) return;
+            function setOpen(open) {
+                document.body.classList.toggle('nav-open', open);
+                backdrop.hidden = !open;
+                backdrop.setAttribute('aria-hidden', open ? 'false' : 'true');
+                toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+            }
+            toggle.addEventListener('click', function () {
+                setOpen(!document.body.classList.contains('nav-open'));
+            });
+            backdrop.addEventListener('click', function () { setOpen(false); });
+            document.querySelectorAll('#nav-links a').forEach(function (a) {
+                a.addEventListener('click', function () { setOpen(false); });
+            });
+            window.addEventListener('resize', function () {
+                if (window.innerWidth > 900) setOpen(false);
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') setOpen(false);
+            });
+        })();
+
+        // ── Nav: scrolled state ───────────────────────────
+        (function () {
+            var nav = document.getElementById('main-nav');
+            if (!nav) return;
+            function check() { nav.classList.toggle('scrolled', window.scrollY > 60); }
+            window.addEventListener('scroll', check, { passive: true });
+            check();
+        })();
+
+        // ── Scroll reveal ─────────────────────────────────
+        (function () {
+            if (!('IntersectionObserver' in window)) {
+                document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in-view'); });
+                return;
+            }
+            var io = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) { entry.target.classList.add('in-view'); io.unobserve(entry.target); }
+                });
+            }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+            document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+        })();
+
+        // ── Demo animation ────────────────────────────────
+        var pairs = [
+            { en: 'hghl hsjv', ar: 'اللا نسيب' },
+            { en: 'hgge', ar: 'اللة' },
+            { en: 'fvr,m', ar: 'بروزم' },
+            { en: 'fhm', ar: 'بهم' },
+        ];
+        var currentPair = 0;
+        var beforeEl = document.getElementById('demo-before');
+        var afterEl = document.getElementById('demo-after');
+        var keys = [document.getElementById('k1'), document.getElementById('k2'), document.getElementById('k3')];
+
+        function runDemo() {
+            var pair = pairs[currentPair % pairs.length];
+            beforeEl.textContent = pair.en;
+            afterEl.textContent = '';
+            keys.forEach(function (k) { k.classList.remove('active'); });
+
+            setTimeout(function () { keys[0].classList.add('active'); }, 500);
+            setTimeout(function () { keys[0].classList.remove('active'); keys[1].classList.add('active'); }, 800);
+            setTimeout(function () { keys[1].classList.remove('active'); keys[2].classList.add('active'); }, 1100);
+            setTimeout(function () {
+                keys[2].classList.remove('active');
+                afterEl.textContent = pair.ar;
+            }, 1500);
+
+            currentPair++;
+            setTimeout(runDemo, 4200);
+        }
+        runDemo();
+
+        // ── Key map grid ──────────────────────────────────
+        var keyMap = [
+            ['Q', '\u0636'], ['W', '\u0635'], ['E', '\u062B'], ['R', '\u0642'],
+            ['T', '\u0641'], ['Y', '\u063A'], ['U', '\u0639'], ['I', '\u0647'],
+            ['O', '\u062E'], ['P', '\u062D'], ['A', '\u0634'], ['S', '\u0633'],
+            ['D', '\u064A'], ['F', '\u0628'], ['G', '\u0644'], ['H', '\u0627'],
+            ['J', '\u0646'], ['K', '\u0645'], ['L', '\u0643'],
+        ];
+        var grid = document.getElementById('keymap-grid');
+        keyMap.forEach(function (pair) {
+            var div = document.createElement('div');
+            div.className = 'key-pair';
+            div.innerHTML =
+                '<span class="key-label">' + pair[0] + '</span>' +
+                '<span class="key-sep">⇄</span>' +
+                '<span class="key-arabic">' + pair[1] + '</span>';
+            grid.appendChild(div);
+        });
+    </script>
+</body>
+</html>

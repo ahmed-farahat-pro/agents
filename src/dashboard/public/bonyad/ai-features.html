@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bonyad — AI roadmap (editable) | Nigents</title>
+  <link rel="stylesheet" href="brief.css" />
+</head>
+<body class="bonyad-theme">
+  <div class="top-banner"></div>
+  <div class="hub-nav header-inner" style="padding-top:16px;padding-bottom:0;">
+    <a href="./">← Bonyad hub</a>
+    &nbsp;·&nbsp;
+    <a href="/">Nigents home</a>
+  </div>
+  <header class="header">
+    <div class="header-inner">
+      <h1 class="brief-title shimmer-title" style="font-size:1.65rem;margin-bottom:8px;"><span class="accent">AI roadmap</span> — editable</h1>
+      <p class="brief-subtitle" style="max-width:720px;">
+        Items are stored in MySQL (<code>bonyad_ai_roadmap</code>). Use the same <strong style="color:var(--accent-orange);">BONYAD_EDIT_SECRET</strong> as on fix briefs to add, edit, or remove entries.
+      </p>
+      <div class="edit-key-bar" style="margin-top:16px;">
+        <span><strong>Edit key</strong> — <code>BONYAD_EDIT_SECRET</code>:</span>
+        <input type="password" id="roadmap-edit-key" placeholder="Paste secret, then Save" autocomplete="off" />
+        <button type="button" id="roadmap-save-key">Save</button>
+      </div>
+    </div>
+  </header>
+  <main class="ai-features-page" id="roadmap-root">
+    <p class="load-err" id="roadmap-loading">Loading roadmap…</p>
+  </main>
+  <footer>
+    <div class="footer-logos">
+      <img src="assets/bonyad-cube-icon.svg" alt="Bonyad" style="width:36px;height:auto;" />
+      <div class="footer-n" aria-hidden="true">N</div>
+      <img src="assets/problem-x-logo.png" alt="Problem-X" />
+    </div>
+    <div class="footer-txt">Bonyad · Nigents · Problem-X · Consult Code Achieve</div>
+  </footer>
+  <div class="toast" id="toast"></div>
+  <script src="ai-roadmap.js"></script>
+</body>
+</html>

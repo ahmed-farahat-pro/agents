@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nigents — Voice meeting</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #050608;
+      --bg-elev: #0c0e14;
+      --card: rgba(18, 22, 32, 0.72);
+      --card-edge: rgba(255, 255, 255, 0.08);
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #f2f4f8;
+      --muted: #949db3;
+      --accent: #ff5c1a;
+      --accent-soft: rgba(255, 92, 26, 0.16);
+      --violet: #8b7cf8;
+      --green: #34d399;
+      --cyan: #22d3ee;
+      --radius: 18px;
+      --radius-sm: 12px;
+      --shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04);
+      --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: 'Poppins', 'Sakkal Majalla', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 15px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 90% 70% at 85% 15%, rgba(255, 92, 26, 0.18), transparent 42%),
+        radial-gradient(ellipse 70% 55% at 10% 90%, rgba(139, 124, 248, 0.14), transparent 40%),
+        radial-gradient(ellipse 50% 40% at 50% 50%, rgba(34, 211, 238, 0.05), transparent 55%),
+        linear-gradient(165deg, #030406 0%, var(--bg) 45%, #0a0c12 100%);
+      pointer-events: none;
+      z-index: 0;
+      animation: mr-bg-shift 18s ease-in-out infinite alternate;
+    }
+    @keyframes mr-bg-shift {
+      0% { filter: hue-rotate(0deg) saturate(1); }
+      100% { filter: hue-rotate(12deg) saturate(1.08); }
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .mr-shell {
+      position: relative;
+      z-index: 1;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 20px 32px;
+    }
+
+    .mr-header {
+      padding: 28px 0 22px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .mr-header-inner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 20px 32px;
+      justify-content: space-between;
+    }
+    .mr-brand {
+      flex: 1;
+      min-width: 280px;
+    }
+    .mr-kicker {
+      font-family: 'Poppins', 'Sakkal Majalla', sans-serif;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+    .mr-header h1 {
+      font-family: 'Poppins', 'Sakkal Majalla', sans-serif;
+      font-size: clamp(1.65rem, 3.2vw, 2.15rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0 0 12px;
+      line-height: 1.12;
+      background: linear-gradient(118deg, #fff 0%, #e2e6ef 45%, rgba(255, 180, 140, 0.95) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .mr-header p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+      max-width: 640px;
+      line-height: 1.55;
+    }
+    .mr-header p strong { color: #c5cad6; font-weight: 600; }
+
+    .mr-pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .mr-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 100px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+      background: var(--bg-elev);
+      color: var(--muted);
+    }
+    .mr-pill svg { opacity: 0.85; }
+    .mr-pill--live { border-color: rgba(34, 197, 94, 0.45); color: #86efac; background: rgba(34, 197, 94, 0.08); }
+    .mr-pill--ai { border-color: rgba(255, 87, 10, 0.45); color: #fdba8c; background: var(--accent-soft); }
+
+    .mr-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 22px;
+      margin-top: 28px;
+      align-items: stretch;
+    }
+    @media (max-width: 960px) { .mr-grid { grid-template-columns: 1fr; } }
+
+    .mr-panel {
+      position: relative;
+      background: var(--card);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 460px;
+      box-shadow: var(--shadow), var(--shadow-inset);
+    }
+    .mr-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(145deg, rgba(255, 92, 26, 0.35), transparent 40%, rgba(139, 124, 248, 0.25));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+      opacity: 0.65;
+    }
+    .mr-panel-hd {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      background: linear-gradient(90deg, rgba(255, 87, 10, 0.06) 0%, transparent 60%);
+    }
+    .mr-panel-hd--jitsi { background: linear-gradient(90deg, rgba(124, 108, 240, 0.08) 0%, transparent 55%); }
+    .mr-panel-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-edge);
+      color: var(--accent);
+    }
+    .mr-panel-icon svg { width: 20px; height: 20px; }
+    .mr-panel-hd h2 {
+      margin: 0;
+      font-family: 'Poppins', 'Sakkal Majalla', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #c5ccdc;
+    }
+    .mr-panel-hd span {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-top: 2px;
+      letter-spacing: 0.02em;
+      text-transform: none;
+    }
+
+    .mr-jitsi iframe {
+      width: 100%;
+      flex: 1;
+      min-height: 380px;
+      border: 0;
+      background: #030508;
+    }
+
+    .mr-ai {
+      padding: 16px 18px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+      min-height: 0;
+    }
+    .mr-hint {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.5;
+      margin: 0;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .mr-hint strong { color: #aeb6c8; }
+
+    .mr-name-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .mr-name-row label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .mr-name-row input {
+      flex: 1;
+      min-width: 140px;
+      max-width: 260px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-family: inherit;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .mr-name-row input:focus {
+      outline: none;
+      border-color: rgba(255, 87, 10, 0.5);
+      box-shadow: 0 0 0 3px rgba(255, 87, 10, 0.12);
+    }
+
+    .mr-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .mr-row label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .mr-row label:has(input:checked) {
+      border-color: rgba(255, 87, 10, 0.45);
+      background: var(--accent-soft);
+      color: #fdba8c;
+    }
+    .mr-row input { accent-color: var(--accent); }
+
+    input.mr-ctx {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-family: inherit;
+    }
+    input.mr-ctx:focus {
+      outline: none;
+      border-color: rgba(124, 108, 240, 0.45);
+      box-shadow: 0 0 0 3px rgba(124, 108, 240, 0.1);
+    }
+
+    .mr-chat {
+      flex: 1;
+      overflow-y: auto;
+      max-height: 300px;
+      min-height: 140px;
+      padding: 12px 14px;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(12, 14, 20, 0.9) 100%);
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.82rem;
+      line-height: 1.5;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 87, 10, 0.35) transparent;
+    }
+    .mr-chat::-webkit-scrollbar { width: 6px; }
+    .mr-chat::-webkit-scrollbar-thumb {
+      background: rgba(255, 87, 10, 0.35);
+      border-radius: 6px;
+    }
+
+    .mr-msg {
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      animation: mr-pop 0.35s ease-out;
+    }
+    @keyframes mr-pop {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .mr-msg-user {
+      background: linear-gradient(135deg, rgba(255, 87, 10, 0.18) 0%, rgba(255, 87, 10, 0.06) 100%);
+      border: 1px solid rgba(255, 87, 10, 0.25);
+      border-left: 3px solid var(--accent);
+    }
+    .mr-msg-user .mr-msg-from {
+      font-size: 0.65rem;
+      color: #ffb08a;
+      margin-bottom: 4px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .mr-msg-agent {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-left: 3px solid var(--violet);
+    }
+    .mr-msg-meta {
+      font-size: 0.62rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    #mr-busy {
+      color: #fbbf24;
+      font-weight: 600;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #mr-busy::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #fbbf24;
+      animation: mr-pulse 1s ease-in-out infinite;
+    }
+    @keyframes mr-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    textarea.mr-input {
+      width: 100%;
+      min-height: 76px;
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.88rem;
+      resize: vertical;
+      font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    textarea.mr-input:focus {
+      outline: none;
+      border-color: rgba(255, 87, 10, 0.45);
+    }
+    textarea.mr-input::placeholder { color: #5c6578; }
+
+    .mr-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .btn {
+      padding: 11px 18px;
+      border-radius: 10px;
+      border: none;
+      font-weight: 600;
+      font-size: 0.82rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.12s ease, box-shadow 0.15s, filter 0.15s;
+    }
+    .btn:active:not(:disabled) { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary {
+      background: linear-gradient(180deg, #ff6b24 0%, var(--accent) 100%);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(255, 87, 10, 0.35);
+    }
+    .btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); }
+    .btn-mic {
+      background: linear-gradient(180deg, #34d399 0%, var(--green) 100%);
+      color: #052e1a;
+      box-shadow: 0 4px 14px rgba(34, 197, 94, 0.25);
+    }
+    .btn-mic.recording {
+      background: linear-gradient(180deg, #f87171 0%, #dc2626 100%);
+      color: #fff;
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse { 50% { opacity: 0.88; } }
+    .btn-always {
+      background: linear-gradient(180deg, #8b85f5 0%, #6366f1 100%);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+    }
+    .btn-always.on {
+      background: linear-gradient(180deg, #4ade80 0%, #16a34a 100%);
+      box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35);
+    }
+
+    .mr-err {
+      position: relative;
+      z-index: 2;
+      color: #fecaca;
+      font-size: 0.88rem;
+      padding: 14px 20px;
+      margin: 16px auto 0;
+      max-width: 1440px;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      border-radius: var(--radius-sm);
+    }
+  </style>
+</head>
+<body>
+  <div class="mr-shell">
+    <header class="mr-header">
+      <div class="mr-header-inner">
+        <div class="mr-brand">
+          <div class="mr-kicker">Nigents · live session</div>
+          <h1>Voice meeting room</h1>
+          <p>
+            One <strong>shared link</strong> keeps humans in sync on video, while the <strong>AI roundtable</strong> answers in order on the same thread — type, speak, or use always-on listening.
+          </p>
+        </div>
+        <div class="mr-pill-row" aria-hidden="true">
+          <span class="mr-pill mr-pill--live">
+            <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;display:inline-block;"></span>
+            Jitsi
+          </span>
+          <span class="mr-pill mr-pill--ai">Roundtable</span>
+        </div>
+      </div>
+    </header>
+
+    <div id="mr-error" class="mr-err" style="display:none;"></div>
+
+    <div class="mr-grid" id="mr-root" style="display:none;">
+      <section class="mr-panel mr-jitsi">
+        <div class="mr-panel-hd mr-panel-hd--jitsi">
+          <div class="mr-panel-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l4-2v8l-4-2"/></svg>
+          </div>
+          <div>
+            <h2>Human voice</h2>
+            <span>Jitsi · camera, mic & screen</span>
+          </div>
+        </div>
+        <iframe id="mr-jitsi-frame" title="Jitsi" allow="camera; microphone; fullscreen; display-capture; autoplay"></iframe>
+      </section>
+
+      <section class="mr-panel">
+        <div class="mr-panel-hd">
+          <div class="mr-panel-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><path d="M5 19h14M8 17v2M12 17v2M16 17v2"/></svg>
+          </div>
+          <div>
+            <h2>AI team</h2>
+            <span>Shared thread · real-time sync</span>
+          </div>
+        </div>
+        <div class="mr-ai">
+          <p class="mr-hint">Same <code style="font-size:0.75em;opacity:0.9;">?token=</code> = same conversation for everyone. Agents answer <strong>each</strong> message in order. Use <strong>Always listen</strong> for hands‑free.</p>
+          <div class="mr-name-row">
+            <label for="mr-name">Your name</label>
+            <input type="text" id="mr-name" placeholder="e.g. Alex" maxlength="48" autocomplete="nickname" />
+          </div>
+          <div class="mr-row" id="mr-agents"></div>
+          <input type="text" class="mr-ctx" id="mr-context" placeholder="Project context (optional)" />
+          <div class="mr-chat" id="mr-chat"></div>
+          <div id="mr-busy" class="mr-hint" style="display:none;">Agents are replying…</div>
+          <textarea class="mr-input" id="mr-text" placeholder="Ask the team… (⌘/Ctrl + Enter to send)"></textarea>
+          <div class="mr-actions">
+            <button type="button" class="btn btn-primary" id="mr-send">Send to AI team</button>
+            <button type="button" class="btn btn-mic" id="mr-mic" title="Hold to speak">Hold to speak</button>
+            <button type="button" class="btn btn-always" id="mr-always" title="Continuous mic — pauses send a message">Always listen</button>
+            <button type="button" class="btn btn-secondary" id="mr-clear">Clear chat</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/meeting-live.js" defer></script>
+</body>
+</html>

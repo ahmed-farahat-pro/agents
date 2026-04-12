@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bonyad — Fix Brief | Nigents</title>
+  <link rel="stylesheet" href="brief.css" />
+</head>
+<body class="bonyad-theme">
+  <!-- Modal + flash first so viewport-fixed layering stays correct -->
+  <div id="bonyad-modal" class="bonyad-modal" aria-hidden="true">
+    <div class="bonyad-modal-scrim"></div>
+    <div class="bonyad-modal-panel" role="dialog" aria-modal="true" aria-labelledby="bonyad-modal-title">
+      <div class="bonyad-modal-accent" aria-hidden="true"></div>
+      <h3 id="bonyad-modal-title" class="bonyad-modal-title"></h3>
+      <p id="bonyad-modal-body" class="bonyad-modal-body"></p>
+      <div class="bonyad-modal-actions">
+        <button type="button" id="bonyad-modal-btn-cancel" class="bonyad-modal-btn secondary" style="display: none">Cancel</button>
+        <button type="button" id="bonyad-modal-btn-primary" class="bonyad-modal-btn primary">OK</button>
+      </div>
+    </div>
+  </div>
+  <div id="bonyad-flash" class="bonyad-flash" aria-live="polite" role="status">
+    <span class="bonyad-flash-icon" aria-hidden="true"></span>
+    <span class="bonyad-flash-text"></span>
+  </div>
+  <div class="top-banner"></div>
+  <nav class="hub-nav bonyad-sheet-topnav" aria-label="Bonyad section">
+    <a href="./">← Bonyad hub</a>
+    <span class="hub-nav-sep" aria-hidden="true">·</span>
+    <a href="ai-features.html">AI features</a>
+    <span class="hub-nav-sep" aria-hidden="true">·</span>
+    <a href="builds.html">Builds</a>
+    <span class="hub-nav-sep" aria-hidden="true">·</span>
+    <a href="designs.html">Designs</a>
+    <span class="hub-nav-sep" aria-hidden="true">·</span>
+    <a href="canvas.html">Canvas</a>
+    <span class="hub-nav-sep" aria-hidden="true">·</span>
+    <a href="/">Nigents</a>
+  </nav>
+  <header class="header">
+    <div class="header-inner">
+      <div class="logos-row">
+        <div class="logo-block bonyad-mark">
+          <img src="assets/bonyad-cube-icon.svg" alt="Bonyad" style="width:48px;height:auto;" />
+          <div>
+            <div class="vb-name bonyad-name-line" style="font-weight:800;color:#4D8EC5;">Bonyad</div>
+            <div class="vb-sub bonyad-sub-line"><img src="assets/bonyad-arabic-text.svg" alt="بُنياد" style="height:16px;width:auto;" /></div>
+          </div>
+        </div>
+        <div class="logo-divider">×</div>
+        <a href="/" class="logo-block" style="text-decoration:none;color:inherit;align-items:center;gap:10px;">
+          <div class="bonyad-orb" style="width:44px;height:44px;font-size:18px;animation:none;">N</div>
+          <span style="font-weight:800;font-size:18px;letter-spacing:-0.04em;">Nigents</span>
+        </a>
+        <div class="logo-divider">Partner</div>
+        <div class="logo-block problemx">
+          <img src="assets/problem-x-logo.png" alt="Problem-X" />
+        </div>
+      </div>
+      <div class="brief-title shimmer-title" id="brief-title">Loading…</div>
+      <div class="brief-subtitle" id="brief-subtitle"></div>
+      <div class="header-meta-row" id="header-meta"></div>
+      <div class="edit-key-bar">
+        <span><strong>Edit key</strong> — must match server <code>BONYAD_EDIT_SECRET</code> (see <code>.env</code> on the host):</span>
+        <input type="password" id="edit-key-input" placeholder="Paste secret, then Save" autocomplete="off" />
+        <button type="button" id="save-edit-key">Save</button>
+      </div>
+    </div>
+  </header>
+  <main class="main" id="brief-root"></main>
+  <footer>
+    <div class="footer-logos">
+      <div class="footer-n" aria-hidden="true">B</div>
+      <div class="footer-n" style="background:var(--accent-orange);" aria-hidden="true">N</div>
+      <img src="assets/problem-x-logo.png" alt="Problem-X" />
+    </div>
+    <div class="footer-txt">Bonyad — Developer fix briefs · Nigents · Problem-X · Consult Code Achieve</div>
+  </footer>
+  <script>
+    (function () {
+      var q = new URLSearchParams(location.search).get('slug');
+      var preset = typeof window.BONYAD_PRESET_SLUG === 'string' ? window.BONYAD_PRESET_SLUG : '';
+      if (!q && preset) {
+        history.replaceState(null, '', 'sheet.html?slug=' + encodeURIComponent(preset));
+      }
+    })();
+  </script>
+  <script src="brief.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="bonyad-notifications.js"></script>
+</body>
+</html>

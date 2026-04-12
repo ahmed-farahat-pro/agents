@@ -1,11 +1,18 @@
 /**
- * 🦉 NightOwl - Frontend Developer Agent
- * Writes React/React Native code with RTL support
+ * 🦉 Nigents - Frontend Developer Agent
+ * Writes React/React Native code with RTL support. Fetches repo, edits on task branch, pushes to GitLab.
  */
 
 const BaseAgent = require('./base-agent');
 const logger = require('../utils/logger');
-const openhands = require('../tools/openhands');
+const gitlab = require('../tools/gitlab');
+const { cloneEditAndPush } = require('../tools/repo-clone-push');
+const { getRepoTree, getStepFileContents } = require('../tools/repo-context');
+const {
+  parseGeneratedCodeToFiles: parseGeneratedFilesUtil,
+  docGenerationInstructions,
+  maxTokensForStepFiles,
+} = require('../utils/ai-file-parse');
 
 class FrontendDevAgent extends BaseAgent {
   constructor() {
@@ -13,17 +20,27 @@ class FrontendDevAgent extends BaseAgent {
     super(config);
   }
 
+  parseGeneratedCodeToFiles(generatedCode) {
+    return parseGeneratedFilesUtil(generatedCode);
+  }
+
   /**
-   * Implement frontend components
+   * Implement frontend: generate code, then clone repo and push to plan.branch (task branch).
+   * @param {Object} plan - Plan with steps, branch, project, title, description
+   * @param {Object} [context] - Optional { reporter } for progress
    */
-  async implement(plan) {
+  async implement(plan, context = {}) {
     this.setStatus('working', { task: 'implementing_frontend', plan: plan.title });
     this.currentTask = plan;
+    this._requestContext = context;
+    const reporter = context.reporter;
+    const gl = context.gitlab || gitlab;
+    const branch = plan.branch || `nigents/task-${Date.now()}`;
 
     try {
-      const frontendSteps = plan.steps.filter(step => 
-        step.files.some(f => 
-          f.match(/\.(jsx?|tsx?|css|scss|vue|html)$/i) ||
+      const frontendSteps = (plan.steps || []).filter(step =>
+        (step.files || []).some(f =>
+          /\.(jsx?|tsx?|css|scss|vue|html)$/i.test(f) ||
           f.includes('components/') ||
           f.includes('pages/')
         )
@@ -31,27 +48,58 @@ class FrontendDevAgent extends BaseAgent {
 
       const results = [];
       for (const step of frontendSteps) {
-        const result = await this.implementFrontendStep(step);
-        results.push(result);
-        
+        if (reporter && step.files && step.files.length > 0) {
+          await reporter.sendProgress(`📝 Editing \`${step.files.join(', ')}\` on branch \`${branch}\``);
+        }
+        const result = await this.implementFrontendStep(step, plan);
+        results.push({ ...result, files: step.files });
         this.emit('progress', {
           stage: 'frontend_coding',
           step: step.order,
-          message: `Created ${step.files.join(', ')}`,
+          message: `Created ${(step.files || []).join(', ')}`,
         });
       }
 
-      this.setStatus('done', { task: 'implementing_frontend' });
+      const generatedCode = results.filter(r => r.success && r.code).map(r => ({ code: r.code, files: r.files }));
+      const generatedFiles = this.parseGeneratedCodeToFiles(generatedCode);
+
+      let pushedToGit = false;
+      let compileCheckPassed = true;
+      if (generatedFiles.length > 0 && (plan.project || plan.projectId)) {
+        try {
+          const pushResult = await cloneEditAndPush(plan, generatedFiles, reporter, gl);
+          pushedToGit = true;
+          if (pushResult.compileCheckPassed === false) compileCheckPassed = false;
+        } catch (pushErr) {
+          logger.warn('[FrontendDev] Clone/edit/push failed:', pushErr.message);
+        }
+      }
+
+      this.setStatus('done', { task: 'implementing_frontend', branch: plan.branch });
+      const defaultBranch = await gl.getDefaultBranch(plan.project || plan.projectId).catch(() => 'main');
 
       return {
         success: true,
+        branch: plan.branch,
+        targetBranch: defaultBranch,
+        projectId: plan.project || plan.projectId,
+        fallbackMode: !pushedToGit && generatedFiles.length > 0,
+        pushedToGit,
+        compileCheckPassed,
+        generatedFiles: pushedToGit ? [] : generatedFiles,
         componentsCreated: results.length,
-        message: `Frontend implementation complete. ${results.length} components created/modified.`,
+        message: pushedToGit
+          ? (compileCheckPassed ? `Frontend complete: repo fetched, edited, and pushed to branch \`${plan.branch}\`.` : `Frontend complete (compile check failed - review before merge). Branch: \`${plan.branch}\`.`)
+          : `Frontend implementation complete. Branch: ${plan.branch}`,
       };
     } catch (error) {
       this.setStatus('error', { task: 'implementing_frontend', error: error.message });
+      logger.error('[FrontendDev] Implement failed:', error);
       return {
         success: false,
+        branch: plan.branch,
+        projectId: plan.project || plan.projectId,
+        compileCheckPassed: false,
         message: `Frontend implementation failed: ${error.message}`,
       };
     }
@@ -59,16 +107,49 @@ class FrontendDevAgent extends BaseAgent {
 
   /**
    * Implement a single frontend step
+   * @param {Object} step - Step with files, description
+   * @param {Object} [plan] - Plan with project, projectId (for repo context)
    */
-  async implementFrontendStep(step) {
-    const isReactNative = step.files.some(f => f.includes('.native.') || f.includes('mobile'));
+  async implementFrontendStep(step, plan = null) {
+    const gl = (this._requestContext && this._requestContext.gitlab) || gitlab;
+    let repoTree = '';
+    let fileContentsSection = '';
+    if (plan && (plan.project || plan.projectId)) {
+      try {
+        const project = plan.project || plan.projectId;
+        const ref = await gl.getDefaultBranch(project).catch(() => 'main');
+        repoTree = await getRepoTree(project, ref, gl);
+        const stepContents = await getStepFileContents(plan, step, ref, gl);
+        if (stepContents.length > 0) {
+          fileContentsSection = `
+CURRENT FILE CONTENTS (make minimal edits):
+${stepContents.map(f => `--- ${f.path} ---\n${f.content}`).join('\n\n')}
+
+MINIMAL EDIT: Make the smallest change that satisfies the step. For example, if the step is to change background color, only add or edit the relevant CSS variable or property; do not rewrite entire components or files. Preserve existing code and structure.
+`;
+        }
+      } catch (e) {
+        logger.warn('[FrontendDev] repo context failed:', e.message);
+      }
+    }
+
+    const isReactNative = step.files && step.files.some(f => f.includes('.native.') || f.includes('mobile'));
     const isRTL = true; // Always assume RTL for Arabic support
+    const files = step.files || [];
+    const isDocStep = files.some(f => /\.md$/i.test(f) || /readme/i.test(String(f || '')));
+    const hasCurrentContent = fileContentsSection.length > 0 && !isDocStep;
 
     const prompt = `
+${repoTree ? `REPO STRUCTURE (full folder):\n${repoTree}\n\n` : ''}
 Create/modify the following frontend files:
-${step.files.join('\n')}
+${files.join('\n')}
 
 Description: ${step.description}
+${isDocStep ? docGenerationInstructions(files) : ''}
+${fileContentsSection}
+
+${hasCurrentContent ? 'If the step is only a style/color change, only output the minimal CSS/JSX change. Output full file content for each modified file with only the minimal changes applied.' : ''}
+${isDocStep ? 'Output using the FILE + <<<NIGENTS_FILE_START>>> format above. Write a long, complete README.' : ''}
 
 ${isReactNative ? 'PLATFORM: React Native' : 'PLATFORM: React Web'}
 ${isRTL ? 'RTL SUPPORT: Required (Arabic interface)' : ''}
@@ -100,11 +181,14 @@ DARK MODE:
 - Use CSS variables or theme context
 - Ensure contrast ratios meet accessibility standards
 
-Include PropTypes or TypeScript interfaces.
+Include PropTypes or TypeScript interfaces where relevant.
 Add JSDoc comments for component documentation.
 `;
 
-    const result = await this.callClaude(prompt, { maxTokens: 4096 });
+    const result = await this.callClaude(prompt, {
+      maxTokens: maxTokensForStepFiles(files),
+      temperature: isDocStep ? 0.4 : 0.3,
+    });
     
     return {
       step: step.order,
@@ -207,6 +291,14 @@ Return the complete updated code.
 `;
 
     return this.callClaude(prompt);
+  }
+
+  /**
+   * Execute task - required by BaseAgent
+   */
+  async execute(task) {
+    const plan = task.plan || task;
+    return this.implement(plan, task.reporter ? { reporter: task.reporter } : {});
   }
 }
 

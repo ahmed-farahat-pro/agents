@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Nigents Crazy apps — experimental macOS utilities. AirSound, AppJealousy, Battery DNA, BreathBar, LangFlip, Break Alarm, MoodBoard, TiltDJ, and ThermalMap." />
+    <title>Crazy apps — Nigents</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #09080c;
+            --bg-secondary: #141116;
+            --border: #2a2a35;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            --accent-orange: #ff570a;
+            --accent-green: #19d59e;
+            --accent-heat: #ff3d5c;
+            --accent-volt: #2dd4bf;
+            --accent-breath: #67e8f9;
+            --accent-flip: #818cf8;
+            --accent-alarm: #f5921e;
+            --accent-mood: #a78bfa;
+            --accent-dj: #e879f9;
+            --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+            --font-sans: 'Poppins', 'Sakkal Majalla', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255, 87, 10, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 87, 10, 0.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, var(--bg-primary) 0%, transparent 100%);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .nav-logo {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-orange);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 20px;
+            color: var(--bg-primary);
+        }
+
+        .nav-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover { color: var(--text-primary); }
+
+        .nav-link.active {
+            color: var(--accent-orange);
+        }
+
+        .soon-pill {
+            display: inline-block;
+            margin-left: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--bg-primary);
+            background: var(--accent-orange);
+            padding: 3px 9px;
+            border-radius: 999px;
+            vertical-align: middle;
+        }
+
+        .nav-cta {
+            padding: 10px 20px;
+            border: 1px solid var(--accent-orange);
+            color: var(--accent-orange);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .nav-cta:hover {
+            background: var(--accent-orange);
+            color: var(--bg-primary);
+        }
+
+        .nav-toggle {
+            display: none;
+            width: 44px;
+            height: 44px;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .nav-toggle-icon-close { display: none; font-size: 28px; }
+        body.nav-open .nav-toggle-icon-open { display: none; }
+        body.nav-open .nav-toggle-icon-close { display: block; }
+        .nav-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 998;
+        }
+        body.nav-open .nav-backdrop { display: block; }
+        body.nav-open { overflow: hidden; }
+
+        @media (max-width: 900px) {
+            .nav-toggle { display: flex; }
+            .nav-links {
+                display: none;
+                position: fixed;
+                top: 72px;
+                left: 16px;
+                right: 16px;
+                flex-direction: column;
+                align-items: stretch;
+                background: var(--bg-secondary);
+                border: 1px solid var(--border);
+                padding: 12px;
+                z-index: 999;
+            }
+            body.nav-open .nav-links { display: flex; }
+        }
+
+        main {
+            position: relative;
+            z-index: 1;
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 120px 32px 72px;
+        }
+
+        .hub-badge {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--accent-green);
+            border: 1px solid rgba(25, 213, 158, 0.35);
+            padding: 8px 14px;
+            display: inline-block;
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 4.5vw, 2.85rem);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+            margin-bottom: 14px;
+        }
+
+        h1 .shimmer {
+            background: linear-gradient(
+                90deg,
+                var(--text-primary) 0%,
+                var(--text-primary) 38%,
+                var(--accent-orange) 52%,
+                var(--text-primary) 65%,
+                var(--text-primary) 100%
+            );
+            background-size: 200% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: textShimmer 4.5s linear infinite;
+        }
+
+        @keyframes textShimmer {
+            0% { background-position: 100% 50%; }
+            100% { background-position: -100% 50%; }
+        }
+
+        .lead {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            max-width: 48ch;
+            margin-bottom: 40px;
+        }
+
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .app-pick {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.25s, transform 0.25s;
+        }
+
+        .app-pick::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .app-pick:hover {
+            transform: translateY(-3px);
+            border-color: rgba(255, 87, 10, 0.45);
+        }
+
+        .app-pick.as::before {
+            background: linear-gradient(90deg, var(--accent-orange), var(--accent-green));
+        }
+
+        .app-pick.aj::before {
+            background: linear-gradient(90deg, var(--accent-orange), var(--accent-heat));
+        }
+
+        .app-pick.bd::before {
+            background: linear-gradient(90deg, var(--accent-volt), var(--accent-green));
+        }
+
+        .app-pick .icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .app-pick .icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            border-radius: 14px;
+        }
+
+        .app-pick.mb:hover {
+            border-color: rgba(167, 139, 250, 0.45);
+        }
+
+        .app-pick.td::before {
+            background: linear-gradient(90deg, var(--accent-dj), #a78bfa);
+        }
+
+        .app-pick.td .icon {
+            color: var(--accent-dj);
+            background: rgba(232, 121, 249, 0.1);
+            border-color: rgba(232, 121, 249, 0.35);
+        }
+
+        .app-pick.td:hover {
+            border-color: rgba(232, 121, 249, 0.45);
+        }
+
+        .app-pick.tm::before {
+            background: linear-gradient(90deg, var(--accent-heat), #2dd4bf);
+        }
+
+        .app-pick.tm .icon {
+            color: var(--accent-heat);
+            background: rgba(255, 61, 92, 0.1);
+            border: 1px solid rgba(255, 61, 92, 0.35);
+        }
+
+        .app-pick.tm:hover {
+            border-color: rgba(255, 61, 92, 0.45);
+        }
+
+        .app-pick h2 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .app-pick p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.55;
+            margin-bottom: 20px;
+        }
+
+        .app-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .app-actions a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: opacity 0.2s, transform 0.15s;
+        }
+
+        .app-actions a:active { transform: scale(0.98); }
+
+        .btn-landing {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-landing:hover {
+            border-color: var(--accent-orange);
+            color: var(--accent-orange);
+        }
+
+        .btn-dl {
+            background: var(--accent-orange);
+            color: var(--bg-primary);
+            border: 1px solid var(--accent-orange);
+        }
+
+        .btn-dl:hover { opacity: 0.92; }
+
+        .subtle-link {
+            margin-top: 40px;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .subtle-link a {
+            color: var(--accent-orange);
+            text-decoration: none;
+        }
+
+        .subtle-link a:hover { text-decoration: underline; }
+
+        @media (prefers-reduced-motion: reduce) {
+            h1 .shimmer { animation: none; color: var(--text-primary); -webkit-text-fill-color: var(--text-primary); }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <a href="/" class="nav-brand">
+            <div class="nav-logo">N</div>
+            <span class="nav-title">Nigents</span>
+        </a>
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+            <span class="nav-toggle-icon-open" aria-hidden="true">☰</span>
+            <span class="nav-toggle-icon-close" aria-hidden="true">×</span>
+        </button>
+        <div class="nav-links" id="nav-links" role="navigation" aria-label="Main">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/how-it-works.html" class="nav-link">How it works</a>
+            <a href="/materials.html" class="nav-link">Free Materials</a>
+            <a href="/crazy-apps.html" class="nav-link active">Crazy apps</a>
+            <a href="/opencode-kits.html" class="nav-link">OpenCode kits <span class="soon-pill">Soon</span></a>
+            <a href="/bonyad/" class="nav-link">Bonyad</a>
+            <a href="/login.html" class="nav-cta">Login →</a>
+        </div>
+    </nav>
+    <div class="nav-backdrop" id="nav-backdrop" aria-hidden="true" hidden></div>
+
+    <main>
+        <p class="hub-badge">macOS · Menu bar experiments</p>
+        <h1><span class="shimmer">Crazy apps</span></h1>
+        <p class="lead">Pick a utility below — each has its own landing page, story, and disk image. Experimental toys, not production infrastructure.</p>
+
+        <div class="app-grid">
+            <article class="app-pick as">
+                <div class="icon"><img src="/icons/airsound.png" alt="AirSound icon" loading="lazy"></div>
+                <h2>AirSound</h2>
+                <p>Tilt your MacBook and stereo pans with the motion sensor. Tight bounce loop and a silent center dead zone — best on headphones.</p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/airsound.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/AirSound-1.0.0.dmg" download>Download DMG</a>
+                </div>
+            </article>
+            <article class="app-pick aj">
+                <div class="icon"><img src="/icons/appjealousy.png" alt="AppJealousy icon" loading="lazy"></div>
+                <h2>AppJealousy</h2>
+                <p>Dock apps react when you ignore them. Adjustable jealousy timer, moods, and optional notifications — playful dock drama.</p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/appjealousy.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/AppJealousy-1.0.0.dmg" download>Download DMG</a>
+                </div>
+            </article>
+            <article class="app-pick bd">
+                <div class="icon"><img src="/icons/batterydna.png" alt="Battery DNA icon" loading="lazy"></div>
+                <h2>Battery DNA</h2>
+                <p>Menu bar battery clarity — charge state, cycles, and health context without diving into System Settings.</p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/batterydna.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/BatteryDNA-1.0.0.dmg" download>Download DMG</a>
+                </div>
+            </article>
+            <article class="app-pick bb">
+                <div class="icon"><img src="/icons/breathbar.png" alt="BreathBar icon" loading="lazy"></div>
+                <h2>BreathBar</h2>
+                <p>Guided breathing in the menu bar — box, 4-7-8, session rings, streaks, optional focus overlay and break reminders.</p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/breathbar.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/BreathBar-1.0.0.dmg" download>Download DMG</a>
+                </div>
+            </article>
+            <article class="app-pick lf">
+                <div class="icon"><img src="/icons/langflip.png" alt="LangFlip icon" loading="lazy"></div>
+                <h2>LangFlip</h2>
+                <p>Typed in the wrong keyboard layout? Triple-tap ⌘ to flip mistyped Arabic ↔ English text in-place — no retyping, clipboard untouched.</p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/langflip.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/LangFlip-1.0.dmg" download>Download DMG</a>
+                </div>
+            </article>
+            <article class="app-pick ba">
+                <div class="icon"><img src="/icons/breakalarm.png" alt="Break Alarm icon" loading="lazy"></div>
+                <h2>Break Alarm</h2>
+                <p>Know how long you've been grinding. Dims every screen, plays a chime, and says your coffee is brewing — so you actually stand up.</p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/breakalarm.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/BreakAlarm-1.0.0.dmg" download>Download DMG</a>
+                </div>
+            </article>
+            <article class="app-pick mb">
+                <div class="icon"><img src="/icons/moodboard.png" alt="MoodBoard icon" loading="lazy"></div>
+                <h2>MoodBoard</h2>
+                <p>Five mood modes — wallpaper shifts on every screen, a phrase streams out, then your media plays with a live wave animation. <span dir="rtl">اسمع دي هتعجبك</span></p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/moodboard.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/MoodBoard-1.0.0.dmg" download>Download DMG</a>
+                </div>
+            </article>
+            <article class="app-pick td">
+                <div class="icon"><img src="/icons/tiltdj.png" alt="TiltDJ icon" loading="lazy"></div>
+                <h2>TiltDJ</h2>
+                <p>Eight synth pads, stereo pan, 16-step pattern grid, audio import remix, waveform hot cues and voice drops — a groove box for your Mac desktop while you study.</p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/tiltdj.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/TiltDJ-Final.dmg" download>Download DMG</a>
+                </div>
+            </article>
+            <article class="app-pick tm">
+                <div class="icon"><img src="/icons/thermalmap.png" alt="ThermalMap icon" loading="lazy"></div>
+                <h2>ThermalMap</h2>
+                <p>Visualize your Mac's thermal state — CPU, GPU, Neural Engine, storage, battery, and chassis zones. Animated fan indicator and menu bar panel included.</p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/thermalmap.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/ThermalMap-1.1.1.dmg" download>Download DMG</a>
+                </div>
+            </article>
+            <article class="app-pick">
+                <div class="icon" style="background:#1a0808;display:flex;align-items:center;justify-content:center;">
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="48" height="48" rx="12" fill="#1e0808"/><rect x="8" y="14" width="32" height="20" rx="3" stroke="#ff4747" stroke-width="2"/><path d="M18 24l4 4 8-8" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <h2>Escape</h2>
+                <p>One hotkey and every window flips to VS Code and Terminal in under 100 ms — for the exact moment the manager walks in.</p>
+                <div class="app-actions">
+                    <a class="btn-landing" href="/escape.html">Open landing</a>
+                    <a class="btn-dl" href="/downloads/Escape-1.0.0.dmg" download>Download DMG</a>
+                </div>
+            </article>
+        </div>
+
+        <p class="subtle-link">These apps also appear on the <a href="/materials.html#crazy-apps">materials page</a> next to free PDF roadmaps.</p>
+    </main>
+
+    <script>
+        (function () {
+            var toggle = document.getElementById('nav-toggle');
+            var backdrop = document.getElementById('nav-backdrop');
+            if (!toggle) return;
+            function setOpen(open) {
+                document.body.classList.toggle('nav-open', open);
+                toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                if (backdrop) backdrop.hidden = !open;
+            }
+            toggle.addEventListener('click', function () {
+                setOpen(!document.body.classList.contains('nav-open'));
+            });
+            if (backdrop) backdrop.addEventListener('click', function () { setOpen(false); });
+            document.getElementById('nav-links').querySelectorAll('a').forEach(function (link) {
+                link.addEventListener('click', function () { setOpen(false); });
+            });
+        })();
+    </script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 /**
- * 🦉 NightOwl - PM2 Configuration
+ * 🦉 Nigents - PM2 Configuration
  * Process manager configuration for 24/7 operation
  */
 
@@ -11,7 +11,8 @@ module.exports = {
       instances: 1,
       exec_mode: 'fork',
       watch: false,
-      max_memory_restart: '1G',
+      max_memory_restart: '3G',
+      node_args: '--max-old-space-size=3072',
       env: {
         NODE_ENV: 'production',
       },
@@ -24,6 +25,9 @@ module.exports = {
       restart_delay: 5000,
       max_restarts: 10,
       min_uptime: '10s',
+      kill_timeout: 10000,
+      wait_ready: false,
+      listen_timeout: 10000,
     },
     {
       name: 'nightowl-dashboard',

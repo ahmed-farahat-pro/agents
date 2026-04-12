@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Break Alarm for macOS — desk timer, break reminders, full-screen dim, chime and voice cue. From Nigents Crazy apps." />
+    <title>Break Alarm — Crazy apps · Nigents</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #06050a;
+            --bg-secondary: #0e0c14;
+            --border: #1e1c2a;
+            --border-glow: rgba(245,146,30,.25);
+            --text-primary: #ffffff;
+            --text-secondary: #9090a8;
+            --text-muted: #55546a;
+            --accent-orange: #ff570a;
+            --accent-green: #19d59e;
+            --accent-alarm: #f5921e;
+            --accent-warm: #fbbf5c;
+            --accent-dim: rgba(245,146,30,.08);
+            --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+            --font-sans: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* ── CANVAS PARTICLE BG ── */
+        #particle-canvas {
+            position: fixed; inset: 0; z-index: 0;
+            pointer-events: none; opacity: .55;
+        }
+
+        /* ── SCANLINES ── */
+        body::after {
+            content: '';
+            position: fixed; inset: 0; z-index: 1;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,.18) 2px,
+                rgba(0,0,0,.18) 4px
+            );
+            pointer-events: none;
+        }
+
+        /* ── RADIAL GLOW ── */
+        .global-glow {
+            position: fixed; top: -20vh; left: 50%; transform: translateX(-50%);
+            width: 140vw; height: 80vh;
+            background: radial-gradient(ellipse at center, rgba(245,146,30,.12) 0%, transparent 70%);
+            pointer-events: none; z-index: 0;
+        }
+
+        /* ── NAV ── */
+        .nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            padding: 20px 40px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: linear-gradient(to bottom, rgba(6,5,10,.95) 0%, transparent 100%);
+            backdrop-filter: blur(4px);
+        }
+        .nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+        .nav-logo {
+            width: 40px; height: 40px; background: var(--accent-orange);
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 20px; color: var(--bg-primary);
+        }
+        .nav-title { font-size: 22px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px; }
+        .nav-links { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; justify-content: flex-end; }
+        .nav-link { color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+        .nav-link:hover { color: var(--text-primary); }
+        .nav-link.active { color: var(--accent-orange); }
+        .soon-pill {
+            display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 700;
+            letter-spacing: 0.08em; text-transform: uppercase; color: var(--bg-primary);
+            background: var(--accent-orange); padding: 3px 9px; border-radius: 999px; vertical-align: middle;
+        }
+        .nav-cta {
+            padding: 10px 20px; border: 1px solid var(--accent-orange);
+            color: var(--accent-orange); text-decoration: none; font-size: 14px; font-weight: 600; transition: all 0.2s;
+        }
+        .nav-cta:hover { background: var(--accent-orange); color: var(--bg-primary); }
+        .nav-toggle {
+            display: none; width: 44px; height: 44px; align-items: center; justify-content: center;
+            margin-left: auto; background: rgba(255,255,255,.06); border: 1px solid var(--border);
+            border-radius: 10px; color: var(--text-primary); cursor: pointer;
+        }
+        .nav-toggle-icon-close { display: none; font-size: 28px; }
+        body.nav-open .nav-toggle-icon-open { display: none; }
+        body.nav-open .nav-toggle-icon-close { display: block; }
+        .nav-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 998; }
+        body.nav-open .nav-backdrop { display: block; }
+        body.nav-open { overflow: hidden; }
+
+        @media (max-width: 900px) {
+            .nav-toggle { display: flex; }
+            .nav-links {
+                display: none; position: fixed; top: 72px; left: 16px; right: 16px;
+                flex-direction: column; align-items: stretch;
+                background: var(--bg-secondary); border: 1px solid var(--border); padding: 12px; z-index: 999;
+            }
+            body.nav-open .nav-links { display: flex; }
+        }
+
+        /* ── LAYOUT ── */
+        main {
+            position: relative; z-index: 2;
+            max-width: 940px; margin: 0 auto; padding: 120px 32px 80px;
+        }
+
+        /* ── BACK / BADGE ── */
+        .back-link {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 13px; color: var(--text-muted); text-decoration: none; margin-bottom: 24px;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: var(--accent-alarm); }
+        .app-badge {
+            font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+            letter-spacing: 0.14em; text-transform: uppercase;
+            color: var(--accent-alarm); border: 1px solid rgba(245,146,30,.3);
+            padding: 7px 14px; display: inline-block; margin-bottom: 22px;
+            background: rgba(245,146,30,.06);
+            animation: badge-pulse 3s ease-in-out infinite;
+        }
+        @keyframes badge-pulse {
+            0%,100% { border-color: rgba(245,146,30,.3); box-shadow: none; }
+            50% { border-color: rgba(245,146,30,.7); box-shadow: 0 0 18px rgba(245,146,30,.2); }
+        }
+
+        /* ── HERO GRID ── */
+        .hero-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 48px; align-items: center; margin-bottom: 80px;
+        }
+        @media (max-width: 760px) {
+            .hero-grid { grid-template-columns: 1fr; }
+        }
+
+        h1 {
+            font-size: clamp(2.4rem, 5vw, 3.6rem); font-weight: 800;
+            letter-spacing: -0.04em; line-height: 1.08; margin-bottom: 18px;
+        }
+        h1 .hi { color: var(--accent-alarm); }
+        .lead { font-size: 1rem; color: var(--text-secondary); max-width: 46ch; margin-bottom: 32px; line-height: 1.75; }
+
+        /* ── CTA ROW ── */
+        .cta-row { display: flex; flex-wrap: wrap; gap: 12px; }
+        .btn-dl {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 24px; font-size: 14px; font-weight: 700; text-decoration: none;
+            background: var(--accent-alarm); color: var(--bg-primary);
+            transition: opacity .2s, box-shadow .2s;
+            position: relative; overflow: hidden;
+        }
+        .btn-dl::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,.15) 0%, transparent 60%);
+        }
+        .btn-dl:hover { opacity: .9; box-shadow: 0 0 32px rgba(245,146,30,.5); }
+        .btn-sec {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 24px; font-size: 14px; font-weight: 600; text-decoration: none;
+            background: transparent; color: var(--text-primary);
+            border: 1px solid var(--border); transition: border-color .2s, color .2s, box-shadow .2s;
+        }
+        .btn-sec:hover { border-color: var(--accent-alarm); color: var(--accent-alarm); box-shadow: 0 0 20px rgba(245,146,30,.15); }
+
+        /* ═══════════════════════════════════════
+           MACBOOK MOCKUP
+        ═══════════════════════════════════════ */
+        .laptop-wrap {
+            display: flex; justify-content: center; align-items: center;
+            position: relative;
+        }
+
+        /* Ambient glow behind laptop */
+        .laptop-wrap::before {
+            content: '';
+            position: absolute; bottom: -10%; left: 50%; transform: translateX(-50%);
+            width: 90%; height: 60%;
+            background: radial-gradient(ellipse at center, rgba(245,146,30,.35) 0%, transparent 70%);
+            filter: blur(30px); z-index: 0;
+            animation: glow-pulse 2.4s ease-in-out infinite;
+        }
+        @keyframes glow-pulse {
+            0%,100% { opacity: .7; transform: translateX(-50%) scaleX(1); }
+            50% { opacity: 1; transform: translateX(-50%) scaleX(1.06); }
+        }
+
+        .macbook {
+            position: relative; z-index: 1;
+            width: 100%; max-width: 420px;
+            filter: drop-shadow(0 40px 60px rgba(0,0,0,.8));
+        }
+
+        /* Lid / screen */
+        .mac-lid {
+            background: linear-gradient(175deg, #2a2a2e 0%, #1a1a1e 100%);
+            border-radius: 14px 14px 0 0;
+            padding: 10px 10px 0;
+            border: 1.5px solid #3a3a3e;
+            border-bottom: none;
+            position: relative;
+        }
+        .mac-notch {
+            width: 80px; height: 12px; background: #111;
+            border-radius: 0 0 8px 8px;
+            margin: 0 auto 6px;
+        }
+        .mac-screen-outer {
+            background: #000; border-radius: 8px;
+            overflow: hidden; aspect-ratio: 16/10;
+            position: relative;
+            border: 1px solid #111;
+        }
+
+        /* ── BREAK ALARM SCREEN CONTENT ── */
+        .mac-screen {
+            width: 100%; height: 100%;
+            background: #0a0008;
+            position: relative; overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+
+        /* Fake macOS menu bar */
+        .mac-menubar {
+            height: 20px; background: rgba(0,0,0,.6);
+            backdrop-filter: blur(10px);
+            display: flex; align-items: center;
+            padding: 0 10px; gap: 6px; flex-shrink: 0;
+        }
+        .mac-menubar-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+        }
+        .dot-r { background: #ff5f57; }
+        .dot-y { background: #febc2e; }
+        .dot-g { background: #28c840; }
+        .mac-menubar-title {
+            font-family: var(--font-mono); font-size: 7px;
+            color: rgba(255,255,255,.5); margin-left: auto;
+        }
+
+        /* Break overlay (animated) */
+        .break-overlay {
+            flex: 1;
+            background: rgba(245,146,30,.88);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
+            animation: overlay-breathe 3s ease-in-out infinite;
+        }
+        @keyframes overlay-breathe {
+            0%,100% { background: rgba(245,146,30,.82); }
+            50% { background: rgba(245,146,30,.96); }
+        }
+
+        /* Vignette inside overlay */
+        .break-overlay::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,.45) 100%);
+            pointer-events: none;
+        }
+
+        /* Pulsing ring */
+        .ring-wrap {
+            position: relative; margin-bottom: 10px; z-index: 1;
+        }
+        .ring {
+            width: 72px; height: 72px; border-radius: 50%;
+            border: 3px solid rgba(255,255,255,.8);
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+        }
+        .ring::before, .ring::after {
+            content: ''; position: absolute; inset: -8px; border-radius: 50%;
+            border: 1.5px solid rgba(255,255,255,.35);
+            animation: ring-expand 2s ease-out infinite;
+        }
+        .ring::after { animation-delay: 1s; }
+        @keyframes ring-expand {
+            0% { transform: scale(1); opacity: .5; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+        .ring-icon {
+            font-size: 28px; line-height: 1;
+        }
+
+        .break-time {
+            font-family: var(--font-mono); font-size: 26px; font-weight: 600;
+            color: #fff; letter-spacing: 0.04em; z-index: 1;
+            text-shadow: 0 2px 12px rgba(0,0,0,.35);
+        }
+        .break-label {
+            font-family: var(--font-sans); font-size: 8px; font-weight: 700;
+            letter-spacing: 0.2em; text-transform: uppercase;
+            color: rgba(255,255,255,.7); margin-top: 4px; z-index: 1;
+        }
+        .break-msg {
+            font-family: var(--font-sans); font-size: 8px;
+            color: rgba(255,255,255,.85); margin-top: 12px; z-index: 1;
+            text-align: center; padding: 0 12px; line-height: 1.5;
+        }
+        .break-msg strong { color: #fff; font-weight: 700; }
+
+        /* Snooze button on screen */
+        .break-snooze {
+            margin-top: 10px; z-index: 1;
+            font-family: var(--font-mono); font-size: 7px;
+            color: rgba(255,255,255,.6); border: 1px solid rgba(255,255,255,.3);
+            padding: 3px 10px; border-radius: 4px; letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        /* Progress bar at bottom of screen */
+        .break-progress {
+            position: absolute; bottom: 0; left: 0;
+            height: 3px; background: rgba(255,255,255,.9);
+            border-radius: 0 2px 2px 0;
+            animation: progress-count 10s linear infinite;
+        }
+        @keyframes progress-count {
+            0% { width: 100%; }
+            100% { width: 0%; }
+        }
+
+        /* Bottom hinge */
+        .mac-hinge {
+            height: 4px; background: linear-gradient(to bottom, #222, #1a1a1e);
+            border-radius: 0 0 2px 2px;
+            border: 1px solid #333; border-top: none;
+            position: relative;
+        }
+        .mac-hinge::after {
+            content: '';
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 40%; height: 1px; background: rgba(245,146,30,.6);
+        }
+
+        /* Base / keyboard */
+        .mac-base {
+            background: linear-gradient(180deg, #222 0%, #1c1c1e 40%, #1a1a1c 100%);
+            border-radius: 0 0 12px 12px;
+            padding: 14px 20px 8px;
+            border: 1.5px solid #333; border-top: none;
+            position: relative; overflow: hidden;
+        }
+        /* keyboard rows */
+        .kb-rows { display: flex; flex-direction: column; gap: 4px; }
+        .kb-row { display: flex; gap: 3px; justify-content: center; }
+        .kb-key {
+            height: 8px;
+            background: #2c2c30;
+            border-radius: 2px;
+            border: 1px solid #3a3a3e;
+            flex: 1;
+        }
+        .kb-key.wide { flex: 2; }
+        .kb-key.space { flex: 6; }
+        .kb-key.lit { background: rgba(245,146,30,.2); border-color: rgba(245,146,30,.4); }
+
+        /* Trackpad */
+        .mac-trackpad {
+            width: 70px; height: 40px; background: #252526;
+            border: 1px solid #3a3a3e; border-radius: 6px;
+            margin: 8px auto 0;
+        }
+
+        /* Reflection under laptop */
+        .mac-reflection {
+            height: 30px;
+            background: linear-gradient(to bottom, rgba(245,146,30,.1) 0%, transparent 100%);
+            border-radius: 0 0 50% 50%;
+            margin: 0 20px;
+            filter: blur(4px);
+        }
+
+        /* ── ANIMATED COUNTER (big timer demo) ── */
+        .timer-demo {
+            margin: 60px 0;
+            text-align: center; position: relative;
+        }
+        .timer-demo::before {
+            content: '';
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            width: 300px; height: 120px;
+            background: radial-gradient(ellipse at center, rgba(245,146,30,.15) 0%, transparent 70%);
+            filter: blur(20px); z-index: 0; pointer-events: none;
+        }
+        .timer-track {
+            display: inline-flex; gap: 8px; align-items: center; position: relative; z-index: 1;
+        }
+        .timer-digit {
+            font-family: var(--font-mono); font-size: clamp(2.8rem, 6vw, 4.5rem); font-weight: 600;
+            color: var(--accent-alarm); letter-spacing: -0.02em;
+            background: var(--bg-secondary); border: 1px solid var(--border-glow);
+            padding: 10px 18px; border-radius: 10px;
+            box-shadow: 0 0 30px rgba(245,146,30,.18), inset 0 1px 0 rgba(255,255,255,.06);
+            min-width: 80px; text-align: center;
+        }
+        .timer-colon {
+            font-family: var(--font-mono); font-size: clamp(2rem, 4vw, 3rem);
+            color: var(--accent-alarm); opacity: .6;
+            animation: colon-blink 1s step-end infinite;
+        }
+        @keyframes colon-blink { 0%,100% { opacity: .6; } 50% { opacity: .1; } }
+        .timer-label {
+            font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+            letter-spacing: 0.2em; text-transform: uppercase;
+            color: var(--text-muted); margin-top: 12px;
+        }
+
+        /* ── SESSION BAR ── */
+        .session-bar {
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: 14px; padding: 22px 28px;
+            display: flex; align-items: center; gap: 24px;
+            margin: 0 0 60px; flex-wrap: wrap;
+        }
+        .session-bar-label {
+            font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em;
+            text-transform: uppercase; color: var(--text-muted); white-space: nowrap;
+        }
+        .session-progress-track {
+            flex: 1; min-width: 120px; height: 6px;
+            background: rgba(255,255,255,.06); border-radius: 99px;
+            position: relative; overflow: hidden;
+        }
+        .session-progress-fill {
+            height: 100%; border-radius: 99px;
+            background: linear-gradient(90deg, var(--accent-alarm), var(--accent-warm));
+            animation: fill-anim 8s ease-in-out infinite alternate;
+            box-shadow: 0 0 10px rgba(245,146,30,.5);
+        }
+        @keyframes fill-anim {
+            0% { width: 20%; }
+            100% { width: 82%; }
+        }
+        .session-stat {
+            font-family: var(--font-mono); font-size: 13px; font-weight: 600;
+            color: var(--accent-warm); white-space: nowrap;
+        }
+        .session-bar-badge {
+            font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+            letter-spacing: 0.1em; text-transform: uppercase;
+            background: rgba(245,146,30,.12); border: 1px solid rgba(245,146,30,.3);
+            color: var(--accent-alarm); padding: 4px 10px; border-radius: 6px;
+        }
+
+        /* ── DIVIDER ── */
+        .divider { height: 1px; background: var(--border); margin: 40px 0; }
+
+        /* ── FEATURE GRID ── */
+        .section-label {
+            font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+            letter-spacing: 0.18em; text-transform: uppercase;
+            color: var(--text-muted); margin-bottom: 20px;
+        }
+        .feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-bottom: 56px; }
+        .feat-card {
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: 14px; padding: 22px;
+            transition: border-color .3s, box-shadow .3s, transform .3s;
+            position: relative; overflow: hidden;
+        }
+        .feat-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(245,146,30,.35), transparent);
+            opacity: 0; transition: opacity .3s;
+        }
+        .feat-card:hover {
+            border-color: var(--border-glow);
+            box-shadow: 0 0 30px rgba(245,146,30,.12), 0 8px 32px rgba(0,0,0,.4);
+            transform: translateY(-3px);
+        }
+        .feat-card:hover::before { opacity: 1; }
+        .feat-card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .feat-icon {
+            width: 38px; height: 38px; border-radius: 10px;
+            background: rgba(245,146,30,.1); border: 1px solid rgba(245,146,30,.25);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            transition: background .3s, box-shadow .3s;
+        }
+        .feat-card:hover .feat-icon {
+            background: rgba(245,146,30,.18);
+            box-shadow: 0 0 16px rgba(245,146,30,.25);
+        }
+        .feat-icon svg { stroke: var(--accent-alarm); }
+        .feat-title { font-size: 15px; font-weight: 700; }
+        .feat-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+
+        /* ── SHORTCUT STRIP ── */
+        .shortcut-strip {
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: 14px; padding: 22px 28px;
+            display: flex; align-items: center; gap: 16px; margin-bottom: 56px; flex-wrap: wrap;
+            position: relative; overflow: hidden;
+        }
+        .shortcut-strip::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: radial-gradient(ellipse at 50% 150%, rgba(245,146,30,.06) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .shortcut-strip .label { font-size: 13px; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+        kbd {
+            display: inline-block; font-family: var(--font-mono); font-size: 13px;
+            font-weight: 700; color: var(--accent-warm); background: rgba(251,191,92,.1);
+            border: 1px solid rgba(251,191,92,.3); border-radius: 7px;
+            padding: 5px 11px; letter-spacing: 0.02em;
+            box-shadow: 0 2px 6px rgba(0,0,0,.3), 0 0 10px rgba(251,191,92,.1);
+        }
+        .shortcut-desc { font-size: 13px; color: var(--text-secondary); }
+
+        /* ── FOR WHO ── */
+        .who-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 56px; }
+        .who-item {
+            display: flex; gap: 14px; padding: 18px 20px;
+            background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px;
+            align-items: flex-start;
+            transition: border-color .3s, transform .25s;
+        }
+        .who-item:hover { border-color: var(--border-glow); transform: translateX(4px); }
+        .who-num {
+            font-family: var(--font-mono); font-size: 13px; font-weight: 600;
+            color: var(--accent-alarm); min-width: 26px; padding-top: 1px;
+        }
+        .who-text { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+
+        /* ── PRIVACY STRIP ── */
+        .privacy {
+            border-top: 1px solid var(--border); padding-top: 28px;
+            display: flex; gap: 28px; flex-wrap: wrap; margin-bottom: 48px;
+        }
+        .priv-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+        .priv-dot {
+            width: 6px; height: 6px; border-radius: 50%; background: var(--accent-green);
+            flex-shrink: 0; box-shadow: 0 0 8px rgba(25,213,158,.6);
+            animation: dot-pulse 2.5s ease-in-out infinite;
+        }
+        @keyframes dot-pulse {
+            0%,100% { box-shadow: 0 0 6px rgba(25,213,158,.5); }
+            50% { box-shadow: 0 0 14px rgba(25,213,158,.9); }
+        }
+
+        /* ── FOOTER ── */
+        footer {
+            border-top: 1px solid var(--border); padding-top: 24px;
+            font-size: 13px; color: var(--text-muted);
+            display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+        }
+        footer a { color: var(--accent-alarm); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        /* ── SCROLL REVEAL ── */
+        .reveal { opacity: 0; transform: translateY(28px); transition: opacity .6s ease, transform .6s ease; }
+        .reveal.visible { opacity: 1; transform: none; }
+        .reveal-delay-1 { transition-delay: .1s; }
+        .reveal-delay-2 { transition-delay: .2s; }
+        .reveal-delay-3 { transition-delay: .3s; }
+        .reveal-delay-4 { transition-delay: .4s; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 600px) {
+            main { padding: 100px 20px 60px; }
+            .nav { padding: 16px 20px; }
+            .cta-row { flex-direction: column; }
+            .timer-digit { font-size: 2.2rem; min-width: 58px; padding: 8px 12px; }
+            .session-bar { gap: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particle-canvas"></canvas>
+    <div class="global-glow" aria-hidden="true"></div>
+
+    <nav class="nav">
+        <a href="/" class="nav-brand">
+            <div class="nav-logo">N</div>
+            <span class="nav-title">Nigents</span>
+        </a>
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+            <span class="nav-toggle-icon-open" aria-hidden="true">☰</span>
+            <span class="nav-toggle-icon-close" aria-hidden="true">×</span>
+        </button>
+        <div class="nav-links" id="nav-links" role="navigation" aria-label="Main">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/how-it-works.html" class="nav-link">How it works</a>
+            <a href="/materials.html" class="nav-link">Free Materials</a>
+            <a href="/crazy-apps.html" class="nav-link active">Crazy apps</a>
+            <a href="/opencode-kits.html" class="nav-link">OpenCode kits <span class="soon-pill">Soon</span></a>
+            <a href="/bonyad/" class="nav-link">Bonyad</a>
+            <a href="/login.html" class="nav-cta">Login →</a>
+        </div>
+    </nav>
+    <div class="nav-backdrop" id="nav-backdrop" aria-hidden="true" hidden></div>
+
+    <main>
+        <a href="/crazy-apps.html" class="back-link">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="9,2 4,7 9,12"/></svg>
+            All crazy apps
+        </a>
+
+        <!-- ── HERO ── -->
+        <div class="hero-grid">
+            <div class="hero-text">
+                <p class="app-badge">macOS · wellness · v1.0.0</p>
+                <h1>Break<br><span class="hi">Alarm</span></h1>
+                <p class="lead">
+                    Know how long you've been grinding. When it's time,
+                    Break Alarm dims every screen, starts a countdown, plays a chime,
+                    and says your <strong style="color:var(--text-primary)">coffee is brewing</strong> —
+                    so you actually walk away.
+                </p>
+                <div class="cta-row">
+                    <a class="btn-dl" href="/downloads/BreakAlarm-1.0.0.dmg" download>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8,2 8,11"/><polyline points="4,7 8,11 12,7"/><line x1="2" y1="14" x2="14" y2="14"/></svg>
+                        Download DMG — free
+                    </a>
+                    <a class="btn-sec" href="/crazy-apps.html">← All apps</a>
+                </div>
+            </div>
+
+            <!-- ── MACBOOK MOCKUP ── -->
+            <div class="laptop-wrap">
+                <div class="macbook">
+                    <div class="mac-lid">
+                        <div class="mac-notch"></div>
+                        <div class="mac-screen-outer">
+                            <div class="mac-screen">
+                                <!-- Fake menu bar -->
+                                <div class="mac-menubar">
+                                    <div class="mac-menubar-dot dot-r"></div>
+                                    <div class="mac-menubar-dot dot-y"></div>
+                                    <div class="mac-menubar-dot dot-g"></div>
+                                    <div class="mac-menubar-title">Break Alarm · Active</div>
+                                </div>
+                                <!-- Break overlay -->
+                                <div class="break-overlay">
+                                    <div class="ring-wrap">
+                                        <div class="ring">
+                                            <span class="ring-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h10v7a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8z"/><path d="M14 9h1.5a2.5 2.5 0 0 1 0 5H14"/><line x1="7" y1="4" x2="7" y2="6"/><line x1="10" y1="3" x2="10" y2="6"/></svg></span>
+                                        </div>
+                                    </div>
+                                    <div class="break-time" id="screen-timer">05:00</div>
+                                    <div class="break-label">Break countdown</div>
+                                    <div class="break-msg">
+                                        <strong>Coffee is brewing.</strong><br>
+                                        Step away from the screen.
+                                    </div>
+                                    <div class="break-snooze">Snooze 5 min</div>
+                                    <div class="break-progress" id="break-progress"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mac-hinge"></div>
+                    <div class="mac-base">
+                        <div class="kb-rows">
+                            <div class="kb-row">
+                                <div class="kb-key lit"></div><div class="kb-key lit"></div><div class="kb-key lit"></div>
+                                <div class="kb-key"></div><div class="kb-key"></div><div class="kb-key lit"></div>
+                                <div class="kb-key"></div><div class="kb-key lit"></div><div class="kb-key"></div>
+                                <div class="kb-key"></div><div class="kb-key lit"></div><div class="kb-key"></div>
+                            </div>
+                            <div class="kb-row">
+                                <div class="kb-key wide"></div><div class="kb-key"></div><div class="kb-key"></div>
+                                <div class="kb-key"></div><div class="kb-key"></div><div class="kb-key"></div>
+                                <div class="kb-key"></div><div class="kb-key"></div><div class="kb-key"></div>
+                                <div class="kb-key wide"></div>
+                            </div>
+                            <div class="kb-row">
+                                <div class="kb-key wide"></div><div class="kb-key"></div><div class="kb-key"></div>
+                                <div class="kb-key"></div><div class="kb-key"></div><div class="kb-key"></div>
+                                <div class="kb-key"></div><div class="kb-key"></div><div class="kb-key wide"></div>
+                            </div>
+                            <div class="kb-row">
+                                <div class="kb-key wide"></div><div class="kb-key space"></div><div class="kb-key wide"></div>
+                            </div>
+                        </div>
+                        <div class="mac-trackpad"></div>
+                    </div>
+                    <div class="mac-reflection"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── LIVE TIMER DEMO ── -->
+        <div class="timer-demo reveal">
+            <div class="timer-track">
+                <div class="timer-digit" id="digit-h">02</div>
+                <div class="timer-colon">:</div>
+                <div class="timer-digit" id="digit-m">34</div>
+                <div class="timer-colon">:</div>
+                <div class="timer-digit" id="digit-s">00</div>
+            </div>
+            <div class="timer-label">Active desk time today</div>
+        </div>
+
+        <!-- ── SESSION BAR ── -->
+        <div class="session-bar reveal reveal-delay-1">
+            <div class="session-bar-label">Break in</div>
+            <div class="session-progress-track">
+                <div class="session-progress-fill"></div>
+            </div>
+            <div class="session-stat" id="session-stat">18 min</div>
+            <div class="session-bar-badge">Work · 45 min</div>
+        </div>
+
+        <!-- ── FEATURES ── -->
+        <div class="section-label reveal">What it does</div>
+        <div class="feat-grid">
+            <div class="feat-card reveal reveal-delay-1">
+                <div class="feat-card-top">
+                    <div class="feat-icon">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke-width="1.6"><circle cx="9" cy="9" r="7"/><polyline points="9,5 9,9 12,11"/></svg>
+                    </div>
+                    <div class="feat-title">Session & active time</div>
+                </div>
+                <div class="feat-desc">See app-open hours and idle-aware "active" streaks. A gentle banner nudges you after long sessions or a heavy workday.</div>
+            </div>
+            <div class="feat-card reveal reveal-delay-2">
+                <div class="feat-card-top">
+                    <div class="feat-icon">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke-width="1.6"><rect x="2" y="3" width="14" height="10" rx="2"/><line x1="2" y1="7" x2="16" y2="7"/><circle cx="9" cy="11" r="1.5"/></svg>
+                    </div>
+                    <div class="feat-title">Full-screen break ritual</div>
+                </div>
+                <div class="feat-desc">Dims all displays at once, starts a break countdown, plays a chime, and speaks a voice reminder — all local, no cloud.</div>
+            </div>
+            <div class="feat-card reveal reveal-delay-3">
+                <div class="feat-card-top">
+                    <div class="feat-icon">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke-width="1.6"><circle cx="9" cy="9" r="7"/><line x1="9" y1="4" x2="9" y2="9"/><line x1="9" y1="9" x2="13" y2="9"/></svg>
+                    </div>
+                    <div class="feat-title">Your rhythm, your rules</div>
+                </div>
+                <div class="feat-desc">Set work-before-break interval, break length, idle grace, and when banners appear. Snooze when you need five more minutes.</div>
+            </div>
+            <div class="feat-card reveal reveal-delay-4">
+                <div class="feat-card-top">
+                    <div class="feat-icon">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke-width="1.6"><path d="M4 13 Q4 7 9 7 Q14 7 14 11"/><path d="M6 13 Q6 10 9 10"/><ellipse cx="9" cy="14" rx="5" ry="2"/></svg>
+                    </div>
+                    <div class="feat-title">Coffee cue</div>
+                </div>
+                <div class="feat-desc">The spoken reminder says your coffee is brewing — a physical, believable cue that pulls you out of the chair instead of a badge you swipe away.</div>
+            </div>
+        </div>
+
+        <!-- ── SHORTCUT ── -->
+        <div class="shortcut-strip reveal">
+            <span class="label">Quick break:</span>
+            <span><kbd>⌘</kbd> + <kbd>⇧</kbd> + <kbd>B</kbd></span>
+            <span class="shortcut-desc">— triggers a break instantly from anywhere, anytime.</span>
+        </div>
+
+        <!-- ── WHO ── -->
+        <div class="section-label reveal">Who it's for</div>
+        <div class="who-list">
+            <div class="who-item reveal reveal-delay-1">
+                <span class="who-num">01</span>
+                <span class="who-text">Remote workers who lose track of time in deep focus and only notice hours have passed when their back hurts.</span>
+            </div>
+            <div class="who-item reveal reveal-delay-2">
+                <span class="who-num">02</span>
+                <span class="who-text">Anyone who wants a <em style="color:var(--text-primary)">physical</em> cue — dim screen + chime + voice — instead of a tiny notification they instantly swipe away.</span>
+            </div>
+            <div class="who-item reveal reveal-delay-3">
+                <span class="who-num">03</span>
+                <span class="who-text">People pairing strict work blocks with guilt-free coffee breaks — the ritual makes the break feel earned, not stolen.</span>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="privacy reveal">
+            <div class="priv-item"><div class="priv-dot"></div> No accounts</div>
+            <div class="priv-item"><div class="priv-dot"></div> No analytics</div>
+            <div class="priv-item"><div class="priv-dot"></div> No cloud — local speech</div>
+            <div class="priv-item"><div class="priv-dot"></div> No battery or SMC tools</div>
+            <div class="priv-item"><div class="priv-dot"></div> macOS 13+ · Apple Silicon &amp; Intel</div>
+        </div>
+
+        <footer>
+            <span>Break Alarm · Part of <a href="/crazy-apps.html">Nigents Crazy apps</a></span>
+            <span>Built with SwiftPM · MacAppsBundle · v1.0.0</span>
+        </footer>
+    </main>
+
+    <script>
+    /* ─── NAV TOGGLE ─── */
+    (function () {
+        var toggle = document.getElementById('nav-toggle');
+        var backdrop = document.getElementById('nav-backdrop');
+        if (!toggle) return;
+        function setOpen(open) {
+            document.body.classList.toggle('nav-open', open);
+            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (backdrop) backdrop.hidden = !open;
+        }
+        toggle.addEventListener('click', function () { setOpen(!document.body.classList.contains('nav-open')); });
+        if (backdrop) backdrop.addEventListener('click', function () { setOpen(false); });
+        document.getElementById('nav-links').querySelectorAll('a').forEach(function (link) {
+            link.addEventListener('click', function () { setOpen(false); });
+        });
+    })();
+
+    /* ─── PARTICLE CANVAS ─── */
+    (function () {
+        var canvas = document.getElementById('particle-canvas');
+        var ctx = canvas.getContext('2d');
+        var W, H;
+        var particles = [];
+        var ACCENT = [245, 146, 30];
+
+        function resize() {
+            W = canvas.width = window.innerWidth;
+            H = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function rand(min, max) { return Math.random() * (max - min) + min; }
+
+        function mkParticle() {
+            return {
+                x: rand(0, W), y: rand(0, H),
+                vx: rand(-0.15, 0.15), vy: rand(-0.3, -0.05),
+                r: rand(1, 3),
+                alpha: rand(0.1, 0.5),
+                decay: rand(0.0005, 0.0015)
+            };
+        }
+
+        for (var i = 0; i < 90; i++) particles.push(mkParticle());
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            particles.forEach(function (p) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(' + ACCENT[0] + ',' + ACCENT[1] + ',' + ACCENT[2] + ',' + p.alpha + ')';
+                ctx.fill();
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= p.decay;
+                if (p.alpha <= 0 || p.y < -10) {
+                    p.x = rand(0, W);
+                    p.y = H + 5;
+                    p.alpha = rand(0.1, 0.5);
+                    p.vy = rand(-0.3, -0.05);
+                }
+            });
+            requestAnimationFrame(draw);
+        }
+        draw();
+    })();
+
+    /* ─── MACBOOK SCREEN TIMER COUNTDOWN ─── */
+    (function () {
+        var el = document.getElementById('screen-timer');
+        if (!el) return;
+        var totalSec = 300; // 5:00
+        function tick() {
+            if (totalSec <= 0) { totalSec = 300; }
+            totalSec--;
+            var m = Math.floor(totalSec / 60);
+            var s = totalSec % 60;
+            el.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+        }
+        setInterval(tick, 1000);
+    })();
+
+    /* ─── BIG DESK TIMER (counts up) ─── */
+    (function () {
+        var h = document.getElementById('digit-h');
+        var m = document.getElementById('digit-m');
+        var s = document.getElementById('digit-s');
+        if (!h) return;
+        var start = new Date();
+        start.setHours(2); start.setMinutes(34); start.setSeconds(0);
+        var sec = 2 * 3600 + 34 * 60;
+        function tick() {
+            sec++;
+            var hh = Math.floor(sec / 3600);
+            var mm = Math.floor((sec % 3600) / 60);
+            var ss = sec % 60;
+            h.textContent = (hh < 10 ? '0' : '') + hh;
+            m.textContent = (mm < 10 ? '0' : '') + mm;
+            s.textContent = (ss < 10 ? '0' : '') + ss;
+        }
+        setInterval(tick, 1000);
+    })();
+
+    /* ─── SESSION COUNTDOWN ─── */
+    (function () {
+        var el = document.getElementById('session-stat');
+        if (!el) return;
+        var mins = 18;
+        var sec = mins * 60;
+        function tick() {
+            sec--;
+            if (sec < 0) sec = 45 * 60; // reset to 45 min after break
+            var m = Math.floor(sec / 60);
+            var s = sec % 60;
+            el.textContent = m > 0 ? m + ' min' : s + ' sec';
+        }
+        setInterval(tick, 1000);
+    })();
+
+    /* ─── SCROLL REVEAL ─── */
+    (function () {
+        var els = document.querySelectorAll('.reveal');
+        var io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (e) {
+                if (e.isIntersecting) {
+                    e.target.classList.add('visible');
+                    io.unobserve(e.target);
+                }
+            });
+        }, { threshold: 0.12 });
+        els.forEach(function (el) { io.observe(el); });
+    })();
+    </script>
+</body>
+</html>

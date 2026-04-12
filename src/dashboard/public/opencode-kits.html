@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="OpenCode + MCP setup kits — Coming soon. Quick Setup, Pro automation, Ultimate dev environment. From Nigents." />
+    <title>OpenCode setup kits — Coming soon · Nigents</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #09080c;
+            --bg-secondary: #141116;
+            --border: #2a2a35;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            --accent-orange: #ff570a;
+            --accent-green: #19d59e;
+            --accent-purple: #a78bfa;
+            --basic: #19d59e;
+            --pro: #ff570a;
+            --ultimate: #a78bfa;
+            --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+            --font-sans: 'Poppins', 'Sakkal Majalla', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255, 87, 10, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 87, 10, 0.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .orb {
+            position: fixed;
+            width: min(90vw, 420px);
+            height: min(90vw, 420px);
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 87, 10, 0.12) 0%, transparent 70%);
+            top: -120px;
+            right: -80px;
+            pointer-events: none;
+            z-index: 0;
+            animation: orbDrift 18s ease-in-out infinite;
+        }
+
+        .orb-2 {
+            bottom: -100px;
+            left: -100px;
+            top: auto;
+            right: auto;
+            background: radial-gradient(circle, rgba(25, 213, 158, 0.1) 0%, transparent 70%);
+            animation-delay: -9s;
+        }
+
+        @keyframes orbDrift {
+            0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.9; }
+            50% { transform: translate(-24px, 20px) scale(1.05); opacity: 1; }
+        }
+
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, var(--bg-primary) 0%, transparent 100%);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .nav-logo {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-orange);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 20px;
+            color: var(--bg-primary);
+        }
+
+        .nav-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover { color: var(--text-primary); }
+
+        .nav-link.active { color: var(--accent-orange); }
+
+        .soon-pill {
+            display: inline-block;
+            margin-left: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--bg-primary);
+            background: var(--accent-orange);
+            padding: 3px 9px;
+            border-radius: 999px;
+            vertical-align: middle;
+            animation: soonGlow 2.8s ease-in-out infinite;
+        }
+
+        @keyframes soonGlow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 87, 10, 0.45); }
+            50% { box-shadow: 0 0 16px 3px rgba(255, 87, 10, 0.2); }
+        }
+
+        .nav-cta {
+            padding: 10px 20px;
+            border: 1px solid var(--accent-orange);
+            color: var(--accent-orange);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .nav-cta:hover {
+            background: var(--accent-orange);
+            color: var(--bg-primary);
+        }
+
+        .nav-toggle {
+            display: none;
+            width: 44px;
+            height: 44px;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .nav-toggle-icon-close { display: none; font-size: 28px; }
+        body.nav-open .nav-toggle-icon-open { display: none; }
+        body.nav-open .nav-toggle-icon-close { display: block; }
+        .nav-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 998;
+        }
+        body.nav-open .nav-backdrop { display: block; }
+        body.nav-open { overflow: hidden; }
+
+        @media (max-width: 900px) {
+            .nav { padding: 16px 20px; }
+            .nav-toggle { display: flex; }
+            .nav-links {
+                display: none;
+                position: fixed;
+                top: 72px;
+                left: 16px;
+                right: 16px;
+                flex-direction: column;
+                align-items: stretch;
+                background: var(--bg-secondary);
+                border: 1px solid var(--border);
+                padding: 12px;
+                z-index: 999;
+                gap: 4px;
+            }
+            body.nav-open .nav-links { display: flex; }
+            .nav-links .nav-cta { text-align: center; }
+        }
+
+        main {
+            position: relative;
+            z-index: 1;
+            max-width: 1040px;
+            margin: 0 auto;
+            padding: 112px 24px 80px;
+        }
+
+        @media (min-width: 640px) {
+            main { padding: 120px 32px 96px; }
+        }
+
+        .hero-soon {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--accent-orange);
+            border: 1px solid rgba(255, 87, 10, 0.4);
+            padding: 10px 16px;
+            margin-bottom: 22px;
+            animation: heroBadge 3s ease-in-out infinite;
+        }
+
+        @keyframes heroBadge {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 87, 10, 0.25); }
+            50% { box-shadow: 0 0 28px 4px rgba(255, 87, 10, 0.12); }
+        }
+
+        .hero-soon .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-orange);
+            animation: dotPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes dotPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.85); }
+        }
+
+        h1 {
+            font-size: clamp(1.85rem, 5.5vw, 3.15rem);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1.08;
+            margin-bottom: 18px;
+        }
+
+        h1 .shimmer {
+            background: linear-gradient(
+                90deg,
+                var(--text-primary) 0%,
+                var(--text-primary) 35%,
+                var(--accent-orange) 50%,
+                var(--text-primary) 65%,
+                var(--text-primary) 100%
+            );
+            background-size: 200% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: textShimmer 5s linear infinite;
+        }
+
+        @keyframes textShimmer {
+            0% { background-position: 100% 50%; }
+            100% { background-position: -100% 50%; }
+        }
+
+        .hero-lead {
+            font-size: clamp(1rem, 2.8vw, 1.15rem);
+            color: var(--text-secondary);
+            max-width: 54ch;
+            margin-bottom: 32px;
+        }
+
+        .hero-lead strong { color: var(--text-primary); }
+
+        .cta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 56px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 22px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 0;
+            transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .btn:active { transform: scale(0.98); }
+
+        .btn-primary {
+            background: var(--accent-orange);
+            color: var(--bg-primary);
+            border-color: var(--accent-orange);
+            box-shadow: 0 8px 28px rgba(255, 87, 10, 0.28);
+            cursor: default;
+            opacity: 0.95;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-primary);
+            border-color: var(--border);
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--accent-orange);
+            color: var(--accent-orange);
+        }
+
+        .section {
+            margin-bottom: 64px;
+        }
+
+        .section-head {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent-green);
+            margin-bottom: 10px;
+        }
+
+        .section h2 {
+            font-size: clamp(1.35rem, 3.5vw, 1.65rem);
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 14px;
+        }
+
+        .section > p.lead {
+            color: var(--text-secondary);
+            max-width: 70ch;
+            margin-bottom: 24px;
+            font-size: 15px;
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(16px);
+            transition: opacity 0.55s ease, transform 0.55s ease;
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .pricing {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-top: 28px;
+        }
+
+        @media (min-width: 768px) {
+            .pricing {
+                grid-template-columns: repeat(3, 1fr);
+                align-items: stretch;
+            }
+        }
+
+        .price-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 26px 22px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.25s, transform 0.25s;
+        }
+
+        .price-card:hover {
+            border-color: rgba(255, 87, 10, 0.35);
+        }
+
+        .price-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .price-card.basic::before { background: linear-gradient(90deg, var(--basic), var(--accent-green)); }
+        .price-card.pro::before { background: linear-gradient(90deg, var(--accent-orange), #ff8f5c); }
+        .price-card.ultimate::before { background: linear-gradient(90deg, var(--ultimate), #7c3aed); }
+
+        .price-card.pro {
+            border-color: rgba(255, 87, 10, 0.45);
+            box-shadow: 0 20px 50px rgba(255, 87, 10, 0.08);
+        }
+
+        @media (min-width: 768px) {
+            .price-card.pro {
+                transform: scale(1.02);
+            }
+        }
+
+        @media (max-width: 767px) {
+            .pro-ribbon { display: none; }
+            .price-card.pro { transform: none; }
+        }
+
+        .price-tag {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .price-card.basic .price-tag { color: var(--basic); }
+        .price-card.pro .price-tag { color: var(--accent-orange); }
+        .price-card.ultimate .price-tag { color: var(--ultimate); }
+
+        .price-card h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .price-amount {
+            font-size: 1.85rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            margin-bottom: 6px;
+        }
+
+        .price-card ul {
+            margin-top: 16px;
+            padding-left: 1.15rem;
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.65;
+        }
+
+        .price-card ul li { margin-bottom: 8px; }
+
+        .pro-ribbon {
+            position: absolute;
+            top: 14px;
+            right: -32px;
+            background: var(--accent-orange);
+            color: var(--bg-primary);
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 6px 36px;
+            transform: rotate(38deg);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        @media (min-width: 640px) {
+            .grid-2 { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: border-color 0.2s;
+        }
+
+        .card:hover { border-color: rgba(255, 87, 10, 0.3); }
+
+        .card h3 {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .card p, .card li {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.55;
+        }
+
+        .card ul { margin-top: 8px; padding-left: 1.1rem; }
+
+        .steps {
+            counter-reset: step;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .step {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            padding: 18px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        .step::before {
+            counter-increment: step;
+            content: counter(step);
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 14px;
+            background: rgba(255, 87, 10, 0.15);
+            color: var(--accent-orange);
+            border-radius: 10px;
+        }
+
+        .mono {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--accent-green);
+            display: block;
+            margin-top: 10px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .mistakes {
+            border: 1px solid rgba(255, 61, 92, 0.35);
+            background: rgba(255, 61, 92, 0.06);
+            border-radius: 12px;
+            padding: 22px;
+        }
+
+        .mistakes h3 {
+            color: #ff6b8a;
+            font-size: 15px;
+            margin-bottom: 12px;
+        }
+
+        .mistakes ul {
+            color: var(--text-secondary);
+            font-size: 14px;
+            padding-left: 1.2rem;
+            line-height: 1.7;
+        }
+
+        footer {
+            border-top: 1px solid var(--border);
+            padding-top: 28px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        footer a {
+            color: var(--accent-orange);
+            text-decoration: none;
+        }
+
+        footer a:hover { text-decoration: underline; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .shimmer, h1 .shimmer { animation: none !important; -webkit-text-fill-color: var(--text-primary); color: var(--text-primary); }
+            .orb, .orb-2, .soon-pill, .hero-soon, .dot { animation: none !important; }
+            .reveal { opacity: 1; transform: none; transition: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="orb" aria-hidden="true"></div>
+    <div class="orb orb-2" aria-hidden="true"></div>
+
+    <nav class="nav">
+        <a href="/" class="nav-brand">
+            <div class="nav-logo">N</div>
+            <span class="nav-title">Nigents</span>
+        </a>
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+            <span class="nav-toggle-icon-open" aria-hidden="true">☰</span>
+            <span class="nav-toggle-icon-close" aria-hidden="true">×</span>
+        </button>
+        <div class="nav-links" id="nav-links" role="navigation" aria-label="Main">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/how-it-works.html" class="nav-link">How it works</a>
+            <a href="/materials.html" class="nav-link">Free Materials</a>
+            <a href="/crazy-apps.html" class="nav-link">Crazy apps</a>
+            <a href="/opencode-kits.html" class="nav-link active">OpenCode kits <span class="soon-pill">Soon</span></a>
+            <a href="/bonyad/" class="nav-link">Bonyad</a>
+            <a href="/login.html" class="nav-cta">Login →</a>
+        </div>
+    </nav>
+    <div class="nav-backdrop" id="nav-backdrop" aria-hidden="true" hidden></div>
+
+    <main>
+        <header class="reveal">
+            <div class="hero-soon"><span class="dot" aria-hidden="true"></span> Coming soon</div>
+            <h1><span class="shimmer">OpenCode + MCP</span> — set up in minutes, not weekends</h1>
+            <p class="hero-lead">
+                Three tiers to take someone from <strong>quick impulse buy</strong> to <strong>full dev environment</strong>.
+                You are not selling scripts — you are selling <strong>time saved</strong>, <strong>fewer errors</strong>, and <strong>confidence</strong>.
+            </p>
+            <div class="cta-row">
+                <span class="btn btn-primary" title="Not available yet">Join waitlist (soon)</span>
+                <a class="btn btn-ghost" href="#pricing">See pricing</a>
+                <a class="btn btn-ghost" href="/materials.html">Free materials</a>
+            </div>
+        </header>
+
+        <section class="section reveal" id="products">
+            <p class="section-head">Step 1 · Define the products</p>
+            <h2>Three clear offers</h2>
+            <p class="lead">One generator core; vary depth per plan. Preset packs (AI agent, browser automation, testing) remove decision fatigue.</p>
+
+            <div class="pricing" id="pricing">
+                <article class="price-card basic reveal">
+                    <p class="price-tag">Basic</p>
+                    <div class="price-amount">$9</div>
+                    <h3>Quick Setup Kit</h3>
+                    <p style="font-size:14px;color:var(--text-secondary);">Cheap entry → impulse buy.</p>
+                    <ul>
+                        <li>Generated <code style="color:var(--accent-green);">.sh</code> installer</li>
+                        <li>Simple PDF guide</li>
+                        <li>3–5 MCP options only</li>
+                    </ul>
+                </article>
+                <article class="price-card pro reveal">
+                    <span class="pro-ribbon">Main offer</span>
+                    <p class="price-tag">Pro</p>
+                    <div class="price-amount">$29</div>
+                    <h3>Full Automation Setup</h3>
+                    <p style="font-size:14px;color:var(--text-secondary);">Target: most of your revenue.</p>
+                    <ul>
+                        <li>Smart script — auto-detect, retries, logs</li>
+                        <li>Professional PDF (Notion-clean)</li>
+                        <li>Pre-selected MCP bundles + config generation</li>
+                        <li>Troubleshooting section</li>
+                    </ul>
+                </article>
+                <article class="price-card ultimate reveal">
+                    <p class="price-tag">Ultimate</p>
+                    <div class="price-amount">$49–79</div>
+                    <h3>AI Dev Environment Builder</h3>
+                    <p style="font-size:14px;color:var(--text-secondary);">High-trust buyers.</p>
+                    <ul>
+                        <li>Everything in Pro</li>
+                        <li>Docker + <code style="color:var(--accent-purple);">.env</code> templates</li>
+                        <li>Ready-to-run dev environment</li>
+                        <li>Updates path for future MCPs</li>
+                    </ul>
+                </article>
+            </div>
+        </section>
+
+        <section class="section reveal" id="build">
+            <p class="section-head">Step 2 · Build fast</p>
+            <h2>One engine, many outputs</h2>
+            <p class="lead">A single generator produces the shell script, config JSON, and PDF content — then you gate features by tier.</p>
+            <div class="grid-2" style="margin-top:20px">
+                <div class="card">
+                    <h3>Web UI (start simple)</h3>
+                    <p>Checkboxes for MCPs, Mac / Linux dropdown, one button: <strong>Generate setup</strong>. Upgrade to SaaS later with saved configs.</p>
+                </div>
+                <div class="card">
+                    <h3>Fail-proof script ideas</h3>
+                    <p>Node checks, brew fallback, npm registry fix, retry on flaky installs — your differentiator vs. copy-paste snippets.</p>
+                    <span class="mono">npm config set registry https://registry.npmjs.org/</span>
+                </div>
+                <div class="card">
+                    <h3>PDF delivery</h3>
+                    <p>Puppeteer or similar: Apple-docs spacing, clear sections — overview, what you picked, steps, troubleshooting.</p>
+                </div>
+                <div class="card">
+                    <h3>Copy-paste mode</h3>
+                    <p>For beginners: expose commands one-by-one, not only a monolithic <code>.sh</code>.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section reveal" id="stand-out">
+            <p class="section-head">Step 3 · Stand out</p>
+            <h2>Sell speed and outcomes</h2>
+            <p class="lead">Lead with “OpenCode + MCPs in ~2 minutes” — not “PDF + script.” Add preset packs, visual PDFs, and a short before/after demo.</p>
+            <div class="steps">
+                <div class="step">
+                    <div>
+                        <strong style="display:block;margin-bottom:6px;">Preset packs</strong>
+                        <span style="font-size:14px;color:var(--text-secondary);">AI Agent pack · Browser automation · Testing — fewer choices, higher conversion.</span>
+                    </div>
+                </div>
+                <div class="step">
+                    <div>
+                        <strong style="display:block;margin-bottom:6px;">Positioning</strong>
+                        <span style="font-size:14px;color:var(--text-secondary);">Frustration removal and confidence, not feature laundry lists.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section reveal" id="sell">
+            <p class="section-head">Steps 4–6 · Sell &amp; scale</p>
+            <h2>Landing, payments, first users</h2>
+            <p class="lead">Single landing: hero → problem → solution → demo video → pricing. Lemon Squeezy or Stripe at checkout; deliver <code>.sh</code> + PDF or a small dashboard.</p>
+            <div class="grid-2" style="margin-top:20px">
+                <div class="card">
+                    <h3>Where to post</h3>
+                    <ul>
+                        <li>Reddit: r/ChatGPT, r/LocalLLaMA, r/webdev</li>
+                        <li>X / Indie Hackers</li>
+                        <li>Offer free to first ~20 for testimonials</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>First 48 hours (example)</h3>
+                    <ul>
+                        <li>Day 1: MCP JSON + script generator + simple HTML UI</li>
+                        <li>Day 2: PDF pipeline + landing + screen recording</li>
+                        <li>Day 3: Launch + community posts</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="section reveal" id="mistakes">
+            <div class="mistakes">
+                <h3>Common mistakes to avoid</h3>
+                <ul>
+                    <li>Overcomplicating the UI before you have sales</li>
+                    <li>No presets — too much thinking for the buyer</li>
+                    <li>Weak PDF visual design (hurts perceived value)</li>
+                    <li>No short demo video</li>
+                    <li>Selling features instead of outcomes</li>
+                </ul>
+            </div>
+        </section>
+
+        <footer class="reveal">
+            <p><strong>OpenCode setup kits</strong> · Coming soon · <a href="/">Nigents</a> · <a href="/crazy-apps.html">Crazy apps</a> · <a href="/materials.html">Materials</a></p>
+            <p style="margin-top:12px">Want to build the generator next? Ship the playbook above, then iterate with real users.</p>
+        </footer>
+    </main>
+
+    <script>
+        (function () {
+            var toggle = document.getElementById('nav-toggle');
+            var backdrop = document.getElementById('nav-backdrop');
+            if (toggle) {
+                function setOpen(open) {
+                    document.body.classList.toggle('nav-open', open);
+                    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    if (backdrop) backdrop.hidden = !open;
+                }
+                toggle.addEventListener('click', function () {
+                    setOpen(!document.body.classList.contains('nav-open'));
+                });
+                if (backdrop) backdrop.addEventListener('click', function () { setOpen(false); });
+                var links = document.getElementById('nav-links');
+                if (links) links.querySelectorAll('a').forEach(function (link) {
+                    link.addEventListener('click', function () { setOpen(false); });
+                });
+            }
+
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                var observer = new IntersectionObserver(
+                    function (entries) {
+                        entries.forEach(function (e) {
+                            if (e.isIntersecting) e.target.classList.add('visible');
+                        });
+                    },
+                    { rootMargin: '0px 0px -40px 0px', threshold: 0.08 }
+                );
+                document.querySelectorAll('.reveal').forEach(function (el) { observer.observe(el); });
+            } else {
+                document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('visible'); });
+            }
+        })();
+    </script>
+</body>
+</html>

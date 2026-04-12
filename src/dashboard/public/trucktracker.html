@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TruckTracker — Live GPS fleet monitoring for transport vehicle owners. Track every truck, van, and heavy vehicle in real time from one dashboard." />
+    <title>TruckTracker — Fleet GPS Monitoring · Nigents</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary:    #080b0f;
+            --bg-secondary:  #0d1117;
+            --bg-card:       #0f1420;
+            --border:        #1e2d3d;
+            --border-bright: #2a4060;
+            --text-primary:  #e8f4ff;
+            --text-secondary:#7a9bbe;
+            --text-muted:    #3d5a73;
+            --accent-blue:   #0ea5e9;
+            --accent-green:  #10b981;
+            --accent-amber:  #f59e0b;
+            --accent-red:    #ef4444;
+            --glow-blue:     rgba(14,165,233,.18);
+            --glow-green:    rgba(16,185,129,.18);
+            --font-mono:     'IBM Plex Mono', monospace;
+            --font-sans:     'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* Grid background */
+        body::before {
+            content: '';
+            position: fixed; inset: 0; z-index: 0;
+            background-image:
+                linear-gradient(rgba(14,165,233,.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(14,165,233,.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+        }
+
+        /* ════════════════════════════════════
+           NAV
+        ════════════════════════════════════ */
+        .nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            padding: 18px 40px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: linear-gradient(to bottom, rgba(8,11,15,.95) 0%, transparent 100%);
+            backdrop-filter: blur(8px);
+        }
+        .nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+        .nav-logo {
+            width: 40px; height: 40px; background: var(--accent-blue);
+            border-radius: 9px; display: flex; align-items: center; justify-content: center;
+        }
+        .nav-logo svg { width: 22px; height: 22px; }
+        .nav-title { font-size: 20px; font-weight: 700; color: var(--text-primary); letter-spacing: -.5px; }
+        .nav-links { display: flex; align-items: center; gap: 24px; }
+        .nav-link {
+            color: var(--text-secondary); text-decoration: none; font-size: 14px;
+            font-weight: 500; transition: color .2s;
+        }
+        .nav-link:hover { color: var(--text-primary); }
+        .nav-cta {
+            padding: 9px 20px; border: 1px solid var(--accent-blue);
+            color: var(--accent-blue); text-decoration: none; font-size: 14px; font-weight: 600;
+            border-radius: 7px; transition: all .2s;
+        }
+        .nav-cta:hover { background: var(--accent-blue); color: #fff; }
+        .nav-toggle {
+            display: none; width: 42px; height: 42px;
+            align-items: center; justify-content: center;
+            background: rgba(255,255,255,.05); border: 1px solid var(--border);
+            border-radius: 9px; cursor: pointer; color: var(--text-primary); margin-left: auto;
+        }
+        .nav-toggle svg { width: 20px; height: 20px; }
+        .nav-close-icon { display: none; }
+        body.nav-open .nav-open-icon  { display: none; }
+        body.nav-open .nav-close-icon { display: block; }
+        .nav-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 998; }
+        body.nav-open .nav-backdrop { display: block; }
+        body.nav-open { overflow: hidden; }
+
+        @media (max-width: 880px) {
+            .nav { padding: 16px 20px; }
+            .nav-toggle { display: flex; }
+            .nav-links {
+                display: none; position: fixed; top: 68px; left: 12px; right: 12px;
+                flex-direction: column; align-items: stretch; gap: 4px;
+                background: #0d1117; border: 1px solid var(--border);
+                border-radius: 12px; padding: 10px; z-index: 999;
+            }
+            body.nav-open .nav-links { display: flex; }
+            .nav-link, .nav-cta {
+                padding: 10px 14px; border-radius: 7px;
+                text-align: left; border: none;
+            }
+            .nav-link:hover { background: rgba(255,255,255,.04); }
+        }
+
+        /* ════════════════════════════════════
+           MAIN
+        ════════════════════════════════════ */
+        main { position: relative; z-index: 1; max-width: 1140px; margin: 0 auto; padding: 110px 28px 80px; }
+
+        /* ════════════════════════════════════
+           HERO
+        ════════════════════════════════════ */
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 7px;
+            font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+            letter-spacing: .14em; text-transform: uppercase;
+            color: var(--accent-blue); border: 1px solid rgba(14,165,233,.35);
+            padding: 7px 13px; border-radius: 6px; margin-bottom: 22px;
+            animation: badgePulse 3.5s ease-in-out infinite;
+        }
+        .badge-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--accent-green);
+            animation: dotBlink 1.4s ease-in-out infinite;
+        }
+        @keyframes badgePulse {
+            0%,100% { box-shadow: 0 0 0 0 rgba(14,165,233,.18); }
+            50%      { box-shadow: 0 0 20px 2px rgba(14,165,233,.1); }
+        }
+        @keyframes dotBlink {
+            0%,100% { opacity: 1; transform: scale(1); }
+            50%      { opacity: .4; transform: scale(.7); }
+        }
+
+        .hero-title {
+            font-size: clamp(2rem, 5.5vw, 3.8rem); font-weight: 800;
+            letter-spacing: -.04em; line-height: 1.06; margin-bottom: 18px;
+        }
+        .hero-title .shimmer {
+            background: linear-gradient(90deg,
+                var(--text-primary) 0%, var(--text-primary) 36%,
+                var(--accent-blue) 50%,
+                var(--text-primary) 64%, var(--text-primary) 100%);
+            background-size: 220% 100%;
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            animation: shimmer 4.5s linear infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: 110% 50%; }
+            100% { background-position: -110% 50%; }
+        }
+        .hero-title em { font-style: normal; color: var(--accent-green); }
+
+        .hero-lead {
+            font-size: 1.1rem; color: var(--text-secondary); max-width: 54ch;
+            margin-bottom: 30px; line-height: 1.7;
+            animation: fadeUp .8s ease both;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 52px; }
+        .btn {
+            display: inline-flex; align-items: center; gap: 9px;
+            padding: 13px 24px; font-size: 14px; font-weight: 600;
+            text-decoration: none; border-radius: 8px; cursor: pointer;
+            transition: transform .15s, box-shadow .2s, background .2s;
+            border: none; font-family: var(--font-sans);
+        }
+        .btn:active { transform: scale(.98); }
+        .btn-primary {
+            background: var(--accent-blue); color: #fff;
+            box-shadow: 0 6px 28px rgba(14,165,233,.3);
+        }
+        .btn-primary:hover { box-shadow: 0 10px 36px rgba(14,165,233,.45); background: #38bdf8; }
+        .btn-ghost {
+            background: rgba(255,255,255,.04); color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        .btn-ghost:hover { border-color: var(--accent-blue); color: var(--accent-blue); background: rgba(14,165,233,.06); }
+
+        /* ════════════════════════════════════
+           LIVE MAP STAGE
+        ════════════════════════════════════ */
+        .stage {
+            margin: 0 0 64px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px; overflow: hidden;
+            box-shadow: 0 0 80px rgba(14,165,233,.06) inset, 0 24px 64px rgba(0,0,0,.5);
+        }
+        .stage-topbar {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 18px; background: rgba(0,0,0,.3);
+            border-bottom: 1px solid var(--border);
+        }
+        .topbar-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+        }
+        .topbar-title {
+            font-family: var(--font-mono); font-size: 11px;
+            color: var(--text-muted); letter-spacing: .08em; flex: 1;
+        }
+        .topbar-live {
+            display: flex; align-items: center; gap: 5px;
+            font-family: var(--font-mono); font-size: 10px;
+            color: var(--accent-green); letter-spacing: .1em;
+        }
+        .topbar-live-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--accent-green);
+            animation: dotBlink 1.2s ease-in-out infinite;
+        }
+
+        /* Map area */
+        .map-stage {
+            position: relative; height: 420px; overflow: hidden;
+            background: #060d14;
+        }
+
+        /* Road SVG — purely decorative */
+        .map-svg {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+        }
+
+        /* Vehicle pins */
+        .vpin {
+            position: absolute; transform: translate(-50%, -50%);
+            display: flex; flex-direction: column; align-items: center;
+            pointer-events: none; z-index: 10;
+        }
+        .vpin-circle {
+            width: 32px; height: 32px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            border: 2px solid var(--accent-blue);
+            background: rgba(14,165,233,.15);
+            box-shadow: 0 0 0 0 rgba(14,165,233,.4);
+        }
+        .vpin.active .vpin-circle {
+            animation: vping 2.2s ease-out infinite;
+        }
+        .vpin.stopped .vpin-circle {
+            border-color: var(--accent-amber);
+            background: rgba(245,158,11,.12);
+        }
+        .vpin.offline .vpin-circle {
+            border-color: var(--text-muted);
+            background: rgba(61,90,115,.12);
+        }
+        @keyframes vping {
+            0%   { box-shadow: 0 0 0 0 rgba(14,165,233,.45); }
+            60%  { box-shadow: 0 0 0 14px rgba(14,165,233,0); }
+            100% { box-shadow: 0 0 0 0 rgba(14,165,233,0); }
+        }
+        .vpin-label {
+            margin-top: 4px; background: rgba(8,11,15,.85);
+            border: 1px solid var(--border); border-radius: 5px;
+            padding: 2px 7px; font-size: 10px; font-family: var(--font-mono);
+            color: var(--text-secondary); white-space: nowrap;
+        }
+        .vpin.active .vpin-label { color: var(--accent-blue); border-color: rgba(14,165,233,.35); }
+
+        /* Moving truck — animated along a path */
+        .truck-mover {
+            position: absolute; z-index: 20;
+            animation: truckMove 12s linear infinite;
+        }
+        @keyframes truckMove {
+            0%   { left: 5%;  top: 68%; }
+            12%  { left: 18%; top: 62%; }
+            25%  { left: 32%; top: 52%; }
+            38%  { left: 48%; top: 44%; }
+            50%  { left: 60%; top: 38%; }
+            62%  { left: 72%; top: 30%; }
+            75%  { left: 80%; top: 22%; }
+            88%  { left: 87%; top: 30%; }
+            100% { left: 5%;  top: 68%; }
+        }
+        .truck-wrap {
+            transform: translate(-50%, -50%);
+            display: flex; flex-direction: column; align-items: center; gap: 3px;
+        }
+        .truck-svg-wrap {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: var(--accent-blue); border: 2px solid #fff;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 0 0 rgba(14,165,233,.6);
+            animation: truckPulse 1.8s ease-out infinite;
+        }
+        @keyframes truckPulse {
+            0%   { box-shadow: 0 0 0 0 rgba(14,165,233,.5); }
+            70%  { box-shadow: 0 0 0 10px rgba(14,165,233,0); }
+            100% { box-shadow: 0 0 0 0 rgba(14,165,233,0); }
+        }
+        .truck-label-live {
+            background: var(--accent-blue); color: #fff;
+            font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+            padding: 2px 8px; border-radius: 4px; letter-spacing: .06em;
+            white-space: nowrap;
+        }
+
+        /* Route trail */
+        .route-trail {
+            position: absolute; inset: 0; pointer-events: none; z-index: 5;
+        }
+
+        /* Info overlay bottom-left */
+        .map-overlay {
+            position: absolute; bottom: 14px; left: 14px; z-index: 30;
+            background: rgba(8,11,15,.88); border: 1px solid var(--border);
+            border-radius: 10px; padding: 12px 15px;
+            backdrop-filter: blur(10px); min-width: 180px;
+        }
+        .mo-row {
+            display: flex; align-items: center; justify-content: space-between;
+            font-size: 11.5px; padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,.05);
+        }
+        .mo-row:last-child { border-bottom: none; }
+        .mo-label { color: var(--text-muted); font-family: var(--font-mono); }
+        .mo-val   { color: var(--text-primary); font-family: var(--font-mono); font-weight: 600; }
+        .mo-val.green  { color: var(--accent-green); }
+        .mo-val.blue   { color: var(--accent-blue); }
+        .mo-val.amber  { color: var(--accent-amber); }
+
+        /* Speed HUD top-right */
+        .map-hud {
+            position: absolute; top: 14px; right: 14px; z-index: 30;
+            background: rgba(8,11,15,.88); border: 1px solid var(--border);
+            border-radius: 10px; padding: 10px 14px; text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        .hud-speed {
+            font-size: 26px; font-weight: 800; font-family: var(--font-mono);
+            color: var(--accent-blue); line-height: 1;
+            animation: speedAnim 3s ease-in-out infinite;
+        }
+        @keyframes speedAnim {
+            0%,100% { opacity: .8; }
+            50%      { opacity: 1; }
+        }
+        .hud-unit { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); letter-spacing: .08em; margin-top: 2px; }
+        .hud-label { font-size: 10px; color: var(--text-secondary); margin-top: 4px; }
+
+        /* Stage stats bar */
+        .stage-stats {
+            display: flex; flex-wrap: wrap; gap: 0;
+            border-top: 1px solid var(--border);
+        }
+        .stat-cell {
+            flex: 1; min-width: 120px; padding: 14px 20px;
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; gap: 3px;
+        }
+        .stat-cell:last-child { border-right: none; }
+        .stat-label { font-size: 10px; font-family: var(--font-mono); color: var(--text-muted); letter-spacing: .08em; text-transform: uppercase; }
+        .stat-value { font-size: 20px; font-weight: 700; font-family: var(--font-mono); }
+        .stat-value.blue  { color: var(--accent-blue); }
+        .stat-value.green { color: var(--accent-green); }
+        .stat-value.amber { color: var(--accent-amber); }
+        .stat-sub { font-size: 10px; color: var(--text-muted); }
+
+        /* ════════════════════════════════════
+           SECTIONS
+        ════════════════════════════════════ */
+        .section { margin-bottom: 72px; }
+        .section-badge {
+            font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+            letter-spacing: .14em; text-transform: uppercase; color: var(--accent-blue);
+            margin-bottom: 10px; display: block;
+        }
+        .section h2 {
+            font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 800;
+            letter-spacing: -.03em; margin-bottom: 10px;
+        }
+        .section p.lead {
+            color: var(--text-secondary); max-width: 60ch;
+            margin-bottom: 28px; font-size: .975rem;
+        }
+
+        /* Feature grid */
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+
+        .feat-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 14px; padding: 22px;
+            transition: border-color .2s, transform .2s;
+        }
+        .feat-card:hover { border-color: rgba(14,165,233,.35); transform: translateY(-3px); }
+        .feat-icon {
+            width: 42px; height: 42px; border-radius: 10px; margin-bottom: 14px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(14,165,233,.1); border: 1px solid rgba(14,165,233,.2);
+        }
+        .feat-icon.green { background: rgba(16,185,129,.1); border-color: rgba(16,185,129,.2); }
+        .feat-icon.amber { background: rgba(245,158,11,.1); border-color: rgba(245,158,11,.2); }
+        .feat-icon svg { width: 20px; height: 20px; }
+        .feat-card h3 { font-size: 14.5px; font-weight: 700; margin-bottom: 7px; }
+        .feat-card p  { font-size: 13.5px; color: var(--text-secondary); line-height: 1.55; }
+
+        /* How it works steps */
+        .steps { display: flex; flex-direction: column; gap: 0; }
+        .step {
+            display: flex; gap: 20px; padding: 20px 0;
+            border-bottom: 1px solid rgba(255,255,255,.04);
+        }
+        .step:last-child { border-bottom: none; }
+        .step-num {
+            flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%;
+            background: rgba(14,165,233,.12); border: 1px solid rgba(14,165,233,.3);
+            display: flex; align-items: center; justify-content: center;
+            font-family: var(--font-mono); font-size: 13px; font-weight: 700;
+            color: var(--accent-blue); margin-top: 2px;
+        }
+        .step-body h3 { font-size: 14.5px; font-weight: 700; margin-bottom: 5px; }
+        .step-body p  { font-size: 13.5px; color: var(--text-secondary); line-height: 1.55; }
+
+        /* Versions comparison */
+        .version-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+        .version-card {
+            border-radius: 14px; padding: 24px 22px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+        }
+        .version-card.featured {
+            border-color: rgba(14,165,233,.4);
+            background: linear-gradient(135deg, rgba(14,165,233,.07), rgba(8,11,15,1));
+            box-shadow: 0 0 40px rgba(14,165,233,.06);
+        }
+        .version-tag {
+            display: inline-block; font-size: 10px; font-family: var(--font-mono);
+            font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+            padding: 3px 10px; border-radius: 4px; margin-bottom: 12px;
+        }
+        .version-tag.standard { background: rgba(255,255,255,.07); color: var(--text-secondary); }
+        .version-tag.live     { background: rgba(14,165,233,.15); color: var(--accent-blue); }
+        .version-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+        .version-card p  { font-size: 13px; color: var(--text-secondary); line-height: 1.55; margin-bottom: 14px; }
+        .version-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+        .version-list li {
+            display: flex; align-items: flex-start; gap: 9px;
+            font-size: 13px; color: var(--text-secondary);
+        }
+        .vli-icon { flex-shrink: 0; margin-top: 2px; }
+
+        /* Pricing table */
+        .cost-table {
+            width: 100%; border-collapse: collapse;
+            font-size: 13.5px; border-radius: 12px; overflow: hidden;
+        }
+        .cost-table th {
+            background: rgba(14,165,233,.08); color: var(--accent-blue);
+            font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em;
+            text-transform: uppercase; padding: 11px 16px; text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        .cost-table td {
+            padding: 11px 16px; border-bottom: 1px solid rgba(255,255,255,.04);
+            color: var(--text-secondary);
+        }
+        .cost-table tr:last-child td { border-bottom: none; }
+        .cost-table td:first-child { color: var(--text-primary); font-weight: 500; }
+        .cost-table td.green { color: var(--accent-green); font-weight: 600; }
+        .cost-table td.blue  { color: var(--accent-blue);  font-weight: 600; }
+        .cost-table-wrap {
+            border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+            background: var(--bg-card);
+        }
+
+        /* Callout */
+        .callout {
+            background: rgba(14,165,233,.06); border-left: 3px solid var(--accent-blue);
+            border-radius: 0 10px 10px 0; padding: 14px 18px; margin: 24px 0;
+            font-size: 13px; color: var(--text-secondary); line-height: 1.65;
+        }
+        .callout strong { color: var(--accent-blue); }
+
+        /* Device callout */
+        .device-box {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 14px; padding: 22px; display: flex; gap: 18px;
+            align-items: flex-start; flex-wrap: wrap;
+        }
+        .device-icon {
+            flex-shrink: 0; width: 52px; height: 52px;
+            background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.25);
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+        }
+        .device-icon svg { width: 26px; height: 26px; }
+        .device-text h4 { font-size: 14px; font-weight: 700; margin-bottom: 5px; }
+        .device-text p  { font-size: 13px; color: var(--text-secondary); line-height: 1.55; }
+
+        /* CTA section */
+        .cta-section {
+            text-align: center; padding: 60px 28px;
+            background: linear-gradient(135deg, rgba(14,165,233,.07), rgba(16,185,129,.05));
+            border: 1px solid var(--border); border-radius: 20px; margin-bottom: 64px;
+        }
+        .cta-section h2 { font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 800; margin-bottom: 12px; }
+        .cta-section p  { color: var(--text-secondary); max-width: 50ch; margin: 0 auto 28px; font-size: .975rem; }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border); padding-top: 28px;
+            font-size: 13px; color: var(--text-muted); text-align: center;
+        }
+        footer a { color: var(--accent-blue); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        /* ════════════════════════════════════
+           RESPONSIVE
+        ════════════════════════════════════ */
+        @media (max-width: 640px) {
+            main { padding-top: 90px; padding-left: 16px; padding-right: 16px; }
+            .map-stage { height: 300px; }
+            .stat-cell { min-width: 90px; padding: 10px 12px; }
+            .stat-value { font-size: 16px; }
+            .map-overlay { font-size: 10px; }
+            .hud-speed { font-size: 20px; }
+            .truck-svg-wrap { width: 28px; height: 28px; }
+            .stage-topbar { padding: 10px 14px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .hero-title .shimmer { animation: none; color: var(--text-primary); -webkit-text-fill-color: var(--text-primary); }
+            .hero-badge, .badge-dot, .truck-mover, .truck-svg-wrap,
+            .vpin.active .vpin-circle, .hud-speed { animation: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── Nav ─────────────────────────────────────────────────────── -->
+<nav class="nav" role="navigation" aria-label="Main">
+    <a href="https://nigents.com/" class="nav-brand">
+        <div class="nav-logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>
+            </svg>
+        </div>
+        <span class="nav-title">Nigents</span>
+    </a>
+    <button type="button" class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
+        <svg class="nav-open-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <svg class="nav-close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="nav-links" id="navLinks">
+        <a href="https://nigents.com/" class="nav-link">Home</a>
+        <a href="https://nigents.com/how-it-works.html" class="nav-link">How it works</a>
+        <a href="https://nigents.com/crazy-apps.html" class="nav-link">Crazy apps</a>
+        <a href="https://nigents.com/materials.html" class="nav-link">Free materials</a>
+        <a href="https://nigents.com/login.html" class="nav-cta">Login →</a>
+    </div>
+</nav>
+<div class="nav-backdrop" id="navBackdrop" hidden aria-hidden="true"></div>
+
+<main>
+
+    <!-- ── Hero ──────────────────────────────────────────────────── -->
+    <header>
+        <div class="hero-badge"><span class="badge-dot"></span>Fleet GPS · Live Tracking · Arab World</div>
+        <h1 class="hero-title">
+            <span class="shimmer">TruckTracker</span><br>
+            Know where every vehicle <em>is right now</em>
+        </h1>
+        <p class="hero-lead">
+            A GPS monitoring platform for fleet owners. Add your trucks, vans, and heavy vehicles —
+            watch them move on a live map. See every trip, every kilometer, every stop, in one dashboard.
+        </p>
+        <div class="cta-row">
+            <a href="https://nigents.com/login.html" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Get Early Access
+            </a>
+            <a href="#how-it-works" class="btn btn-ghost">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                How it works
+            </a>
+            <a href="#pricing" class="btn btn-ghost">Cost breakdown</a>
+        </div>
+    </header>
+
+    <!-- ── Animated Live Map Stage ───────────────────────────────── -->
+    <div class="stage" aria-label="Animated fleet map demonstration" aria-hidden="true">
+        <div class="stage-topbar">
+            <span class="topbar-dot" style="background:#ef4444;"></span>
+            <span class="topbar-dot" style="background:#f59e0b;"></span>
+            <span class="topbar-dot" style="background:#22c55e;"></span>
+            <span class="topbar-title">nigents · trucktracker · fleet-dashboard</span>
+            <span class="topbar-live"><span class="topbar-live-dot"></span>LIVE</span>
+        </div>
+
+        <div class="map-stage" id="mapStage">
+            <!-- Roads SVG -->
+            <svg class="map-svg" viewBox="0 0 1000 420" preserveAspectRatio="xMidYMid slice">
+                <!-- Background blocks — city zones -->
+                <rect x="0" y="0" width="1000" height="420" fill="#06080e"/>
+                <rect x="60"  y="30"  width="110" height="70"  rx="4" fill="#0a0f1a" opacity=".9"/>
+                <rect x="200" y="80"  width="80"  height="50"  rx="4" fill="#0a0f1a" opacity=".9"/>
+                <rect x="320" y="20"  width="120" height="60"  rx="4" fill="#0a0f1a" opacity=".9"/>
+                <rect x="500" y="50"  width="90"  height="55"  rx="4" fill="#0a0f1a" opacity=".9"/>
+                <rect x="640" y="30"  width="100" height="65"  rx="4" fill="#0a0f1a" opacity=".9"/>
+                <rect x="800" y="20"  width="80"  height="50"  rx="4" fill="#0a0f1a" opacity=".9"/>
+                <rect x="100" y="260" width="120" height="70"  rx="4" fill="#0a0f1a" opacity=".9"/>
+                <rect x="280" y="300" width="90"  height="60"  rx="4" fill="#0a0f1a" opacity=".9"/>
+                <rect x="450" y="280" width="100" height="65"  rx="4" fill="#0a0f1a" opacity=".9"/>
+                <rect x="620" y="300" width="85"  height="55"  rx="4" fill="#0a0f1a" opacity=".9"/>
+                <rect x="760" y="260" width="110" height="70"  rx="4" fill="#0a0f1a" opacity=".9"/>
+
+                <!-- Main horizontal roads -->
+                <path d="M0 175 Q250 155 500 175 Q750 195 1000 160" stroke="#131c2e" stroke-width="18" fill="none"/>
+                <path d="M0 175 Q250 155 500 175 Q750 195 1000 160" stroke="#1a2840" stroke-width="10" fill="none"/>
+                <path d="M0 175 Q250 155 500 175 Q750 195 1000 160" stroke="#0ea5e9" stroke-width="1" fill="none" stroke-dasharray="12 8" opacity=".25"/>
+
+                <path d="M0 310 Q300 290 600 310 Q800 325 1000 300" stroke="#131c2e" stroke-width="14" fill="none"/>
+                <path d="M0 310 Q300 290 600 310 Q800 325 1000 300" stroke="#1a2840" stroke-width="7"  fill="none"/>
+
+                <!-- Vertical connector roads -->
+                <path d="M180 0 Q175 100 170 175 Q165 250 160 420" stroke="#131c2e" stroke-width="12" fill="none"/>
+                <path d="M180 0 Q175 100 170 175 Q165 250 160 420" stroke="#1a2840" stroke-width="6"  fill="none"/>
+
+                <path d="M430 0 Q435 100 430 175 Q425 270 420 420" stroke="#131c2e" stroke-width="12" fill="none"/>
+                <path d="M430 0 Q435 100 430 175 Q425 270 420 420" stroke="#1a2840" stroke-width="6"  fill="none"/>
+
+                <path d="M700 0 Q705 80 700 175 Q695 280 690 420" stroke="#131c2e" stroke-width="12" fill="none"/>
+                <path d="M700 0 Q705 80 700 175 Q695 280 690 420" stroke="#1a2840" stroke-width="6"  fill="none"/>
+
+                <!-- Route path (the one the main truck follows) — highlighted -->
+                <path d="M50 285 Q90 265 170 235 Q240 205 320 195 Q400 185 480 175 Q560 165 640 145 Q730 125 810 105 Q880 90 950 80"
+                    stroke="#0ea5e9" stroke-width="2.5" fill="none"
+                    stroke-dasharray="8 6" opacity=".5"/>
+
+                <!-- Subtle city block street lines -->
+                <line x1="0" y1="60"  x2="1000" y2="55"  stroke="#0f1820" stroke-width="4"/>
+                <line x1="0" y1="100" x2="1000" y2="95"  stroke="#0f1820" stroke-width="3"/>
+                <line x1="0" y1="380" x2="1000" y2="375" stroke="#0f1820" stroke-width="4"/>
+                <line x1="60"  y1="0" x2="65"  y2="420" stroke="#0f1820" stroke-width="4"/>
+                <line x1="300" y1="0" x2="305" y2="420" stroke="#0f1820" stroke-width="3"/>
+                <line x1="560" y1="0" x2="565" y2="420" stroke="#0f1820" stroke-width="4"/>
+                <line x1="820" y1="0" x2="825" y2="420" stroke="#0f1820" stroke-width="3"/>
+            </svg>
+
+            <!-- Static vehicle pins -->
+            <div class="vpin active" style="left:28%;top:62%;">
+                <div class="vpin-circle">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                </div>
+                <span class="vpin-label">TRK-04</span>
+            </div>
+
+            <div class="vpin active" style="left:55%;top:72%;">
+                <div class="vpin-circle">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                </div>
+                <span class="vpin-label">TRK-07</span>
+            </div>
+
+            <div class="vpin stopped" style="left:78%;top:60%;">
+                <div class="vpin-circle">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                </div>
+                <span class="vpin-label" style="color:#f59e0b;border-color:rgba(245,158,11,.35)">TRK-11 ⏸</span>
+            </div>
+
+            <div class="vpin offline" style="left:42%;top:35%;">
+                <div class="vpin-circle">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3d5a73" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                </div>
+                <span class="vpin-label">TRK-03</span>
+            </div>
+
+            <!-- Moving truck (main) -->
+            <div class="truck-mover" id="truckMover">
+                <div class="truck-wrap">
+                    <div class="truck-svg-wrap">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="1" y="3" width="15" height="13" rx="2"/>
+                            <path d="M16 8h4l3 3v5h-7V8z"/>
+                            <circle cx="5.5" cy="18.5" r="2.5"/>
+                            <circle cx="18.5" cy="18.5" r="2.5"/>
+                        </svg>
+                    </div>
+                    <span class="truck-label-live">TRK-01 · LIVE</span>
+                </div>
+            </div>
+
+            <!-- Info overlay -->
+            <div class="map-overlay">
+                <div class="mo-row"><span class="mo-label">Active</span><span class="mo-val green" id="moActive">8</span></div>
+                <div class="mo-row"><span class="mo-label">Stopped</span><span class="mo-val amber">2</span></div>
+                <div class="mo-row"><span class="mo-label">Offline</span><span class="mo-val">1</span></div>
+                <div class="mo-row"><span class="mo-label">Today km</span><span class="mo-val blue" id="moKm">847</span></div>
+            </div>
+
+            <!-- Speed HUD -->
+            <div class="map-hud">
+                <div class="hud-speed" id="hudSpeed">62</div>
+                <div class="hud-unit">KM / H</div>
+                <div class="hud-label">TRK-01</div>
+            </div>
+        </div>
+
+        <!-- Stats bar -->
+        <div class="stage-stats">
+            <div class="stat-cell">
+                <span class="stat-label">Vehicles</span>
+                <span class="stat-value blue">11</span>
+                <span class="stat-sub">in fleet</span>
+            </div>
+            <div class="stat-cell">
+                <span class="stat-label">Trips today</span>
+                <span class="stat-value green" id="statTrips">23</span>
+                <span class="stat-sub">completed</span>
+            </div>
+            <div class="stat-cell">
+                <span class="stat-label">Km today</span>
+                <span class="stat-value blue" id="statKm">1 284</span>
+                <span class="stat-sub">across fleet</span>
+            </div>
+            <div class="stat-cell">
+                <span class="stat-label">Alerts</span>
+                <span class="stat-value amber">1</span>
+                <span class="stat-sub">vehicle stopped</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Features ──────────────────────────────────────────────── -->
+    <section class="section" id="features">
+        <span class="section-badge">Platform features</span>
+        <h2>Everything a fleet owner needs</h2>
+        <p class="lead">Track the vehicle, not the driver. Your GPS hardware sends location — TruckTracker shows you everything.</p>
+        <div class="grid-3">
+            <div class="feat-card">
+                <div class="feat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+                    </svg>
+                </div>
+                <h3>Live map — all vehicles</h3>
+                <p>All your trucks shown as moving pins on one map. Exactly like Uber cars — you see them move, stop, and change direction in real time.</p>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon green">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                </div>
+                <h3>Automatic trip counting</h3>
+                <p>Every time a vehicle starts, drives, and stops — it counts as a trip. No manual input. See trip history per vehicle, per day, week, or month.</p>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3a1 1 0 0 0 .7 1.7H17M17 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0M9 17a2 2 0 1 0-4 0 2 2 0 0 0 4 0"/>
+                    </svg>
+                </div>
+                <h3>Kilometer tracking</h3>
+                <p>Total distance per vehicle: today, this week, this month, and all-time. See which vehicles are working hardest and plan maintenance accordingly.</p>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon amber">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                </div>
+                <h3>Unusual stop alerts</h3>
+                <p>When a vehicle sits idle for an unusual amount of time, you get an alert. Know before a problem becomes a crisis — delayed delivery, breakdown, or route deviation.</p>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                </div>
+                <h3>Fleet-wide dashboard</h3>
+                <p>One summary view: how many vehicles are moving, stopped, or offline right now. Total trips and kilometers across your whole fleet today.</p>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon green">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
+                    </svg>
+                </div>
+                <h3>Push notifications</h3>
+                <p>Get instant alerts on your phone when a vehicle stops unexpectedly, goes offline, or reaches a destination. Powered by Firebase — completely free to run.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Vehicle detail card ────────────────────────────────────── -->
+    <section class="section">
+        <span class="section-badge">Vehicle detail</span>
+        <h2>Click any pin — see the full picture</h2>
+        <p class="lead">Tap a vehicle pin on the map to open its detail card with everything you need to know at a glance.</p>
+        <div class="grid-2">
+            <div class="feat-card" style="border-color:rgba(14,165,233,.25)">
+                <h3 style="color:var(--accent-blue);font-family:var(--font-mono);font-size:13px;margin-bottom:14px;letter-spacing:.06em;">TRK-01 · UNIT DETAIL</h3>
+                <div style="display:flex;flex-direction:column;gap:9px;">
+                    <div style="display:flex;justify-content:space-between;font-size:13px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.05);">
+                        <span style="color:var(--text-muted)">Status</span>
+                        <span style="color:var(--accent-green);font-weight:600;display:flex;align-items:center;gap:5px;">
+                            <span style="width:7px;height:7px;border-radius:50%;background:var(--accent-green);animation:dotBlink 1.2s infinite;display:inline-block;"></span>Moving
+                        </span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:13px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.05);">
+                        <span style="color:var(--text-muted)">Current speed</span>
+                        <span style="color:var(--accent-blue);font-family:var(--font-mono);">62 km/h</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:13px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.05);">
+                        <span style="color:var(--text-muted)">Trips today</span>
+                        <span style="font-family:var(--font-mono);">3</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:13px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.05);">
+                        <span style="color:var(--text-muted)">Km today</span>
+                        <span style="font-family:var(--font-mono);">312 km</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:13px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.05);">
+                        <span style="color:var(--text-muted)">Km this month</span>
+                        <span style="font-family:var(--font-mono);">7,840 km</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:13px;">
+                        <span style="color:var(--text-muted)">Total km (all-time)</span>
+                        <span style="font-family:var(--font-mono);color:var(--accent-green);">124,360 km</span>
+                    </div>
+                </div>
+            </div>
+            <div class="feat-card">
+                <h3 style="margin-bottom:14px;">What you see per vehicle</h3>
+                <ul class="version-list">
+                    <li>
+                        <span class="vli-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+                        Live location on the map, updated continuously
+                    </li>
+                    <li>
+                        <span class="vli-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+                        Current speed and movement status
+                    </li>
+                    <li>
+                        <span class="vli-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+                        Number of trips completed today / this week / this month
+                    </li>
+                    <li>
+                        <span class="vli-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+                        Total kilometers driven across all time periods
+                    </li>
+                    <li>
+                        <span class="vli-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+                        Trip history with start/end points and distance
+                    </li>
+                    <li>
+                        <span class="vli-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+                        Alert history — unusual stops and offline events
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── How it works ───────────────────────────────────────────── -->
+    <section class="section" id="how-it-works">
+        <span class="section-badge">Setup</span>
+        <h2>Ready in three steps</h2>
+        <p class="lead">No apps to install on your trucks. The hardware does the work — you just watch the dashboard.</p>
+        <div class="feat-card" style="max-width:680px;">
+            <div class="steps">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div class="step-body">
+                        <h3>Install a GPS tracker in each vehicle</h3>
+                        <p>A small device plugs into your truck. It has a SIM card inside and starts transmitting location automatically. Hardware is purchased once by the fleet owner — available in Egypt for approximately 1,350–2,700 EGP per unit including installation.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div class="step-body">
+                        <h3>Register your fleet account and add vehicles</h3>
+                        <p>Create your owner account, add each vehicle's tracker ID, and give it a name. Your vehicles appear on the dashboard within minutes of adding them.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div class="step-body">
+                        <h3>Open the dashboard and watch your fleet</h3>
+                        <p>From any browser or phone, open TruckTracker and see all your vehicles. No installation, no complex setup — just a URL and your login.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hardware note -->
+        <div class="device-box" style="margin-top:20px;max-width:680px;">
+            <div class="device-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>
+                    <path d="M8.5 6.5a5 5 0 0 1 7 0"/>
+                    <path d="M6 4a8 8 0 0 1 12 0"/>
+                </svg>
+            </div>
+            <div class="device-text">
+                <h4>GPS tracker hardware — one-time cost, owner-purchased</h4>
+                <p>The platform tracks the vehicle, not the driver. Each vehicle owner buys and installs one GPS tracker. The device connects to mobile data via an internal SIM and sends location pings to TruckTracker automatically — no interaction needed from the driver.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Two versions ───────────────────────────────────────────── -->
+    <section class="section">
+        <span class="section-badge">Choose your version</span>
+        <h2>Standard refresh or fully live — your choice</h2>
+        <p class="lead">Both versions track every trip and kilometer. The difference is how often the map updates.</p>
+        <div class="version-grid">
+            <div class="version-card">
+                <span class="version-tag standard">Standard</span>
+                <h3>Refresh every few minutes</h3>
+                <p>Vehicle positions update every 2–5 minutes. Simpler infrastructure, lower operating cost. Ideal for most fleet owners who need visibility without the real-time requirement.</p>
+                <ul class="version-list">
+                    <li><span class="vli-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></span>All trip and km tracking features</li>
+                    <li><span class="vli-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></span>Stop alerts and notifications</li>
+                    <li><span class="vli-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></span>Lower infrastructure cost</li>
+                    <li><span class="vli-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></span>Positions refresh every 2–5 min</li>
+                </ul>
+            </div>
+            <div class="version-card featured">
+                <span class="version-tag live">Live Real-Time</span>
+                <h3>Continuous like Uber</h3>
+                <p>Vehicle pins move on the map in real time — exactly like how Uber shows its cars. Requires a persistent MQTT connection per vehicle. Richer experience for owners who monitor actively.</p>
+                <ul class="version-list">
+                    <li><span class="vli-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></span>Everything in Standard</li>
+                    <li><span class="vli-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></span>Pins move continuously on map</li>
+                    <li><span class="vli-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></span>MQTT persistent connection</li>
+                    <li><span class="vli-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></span>Sub-second location updates</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Cost breakdown ─────────────────────────────────────────── -->
+    <section class="section" id="pricing">
+        <span class="section-badge">Transparent cost breakdown</span>
+        <h2>What it costs to run TruckTracker</h2>
+        <p class="lead">Platform costs scale with fleet size — revenue from subscriptions grows faster than operating costs.</p>
+
+        <div class="cost-table-wrap" style="margin-bottom:20px;">
+            <table class="cost-table">
+                <thead>
+                    <tr>
+                        <th>Service</th>
+                        <th>What it covers</th>
+                        <th>Early launch cost</th>
+                        <th>At 500 vehicles</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Cloud server</td>
+                        <td>Receives GPS pings, runs the platform</td>
+                        <td class="green">400–600 EGP/mo</td>
+                        <td class="blue">800–1,200 EGP/mo</td>
+                    </tr>
+                    <tr>
+                        <td>Google Maps</td>
+                        <td>Map display + trip distance calculation</td>
+                        <td class="green">~750 EGP/mo<br><span style="font-size:11px;color:var(--text-muted);">100 vehicles · 1 trip/day</span></td>
+                        <td class="blue">~11,250 EGP/mo<br><span style="font-size:11px;color:var(--text-muted);">500 vehicles · 3 trips/day</span></td>
+                    </tr>
+                    <tr>
+                        <td>MQTT broker</td>
+                        <td>Receives continuous GPS pings from hardware</td>
+                        <td class="green">Free tier</td>
+                        <td class="blue">2,500–5,000 EGP/mo</td>
+                    </tr>
+                    <tr>
+                        <td>Push notifications</td>
+                        <td>Firebase Cloud Messaging — stop alerts</td>
+                        <td class="green">Free (unlimited)</td>
+                        <td class="green">Free (unlimited)</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:700;border-top:1px solid var(--border);">Total platform</td>
+                        <td style="border-top:1px solid var(--border);">All services combined</td>
+                        <td style="color:var(--accent-green);font-weight:700;border-top:1px solid var(--border);">400–3,000 EGP/mo</td>
+                        <td style="color:var(--accent-blue);font-weight:700;border-top:1px solid var(--border);">15,000–18,000 EGP/mo</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="callout">
+            <strong>GPS hardware is a one-time owner cost:</strong> Each fleet owner purchases their own tracker devices (1,350–2,700 EGP/unit including installation in Egypt). The device has an internal SIM card and begins sending location automatically. This cost does not recur — only the monthly platform subscription does.
+        </div>
+
+        <div class="callout" style="border-color:var(--accent-green);background:rgba(16,185,129,.06);">
+            <strong style="color:var(--accent-green);">Google Maps free tier:</strong> Google provides approximately 28,000 free map loads per month to every account before any charge. At early launch scale with a few hundred vehicles, the map display cost may be fully covered by this credit.
+        </div>
+    </section>
+
+    <!-- ── Who is it for ──────────────────────────────────────────── -->
+    <section class="section">
+        <span class="section-badge">Target market</span>
+        <h2>Built for fleet owners in Egypt and the Arab world</h2>
+        <p class="lead">Practical businesspeople who need clear visibility over their vehicles — without complexity or enterprise contracts.</p>
+        <div class="grid-3">
+            <div class="feat-card">
+                <div class="feat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+                    </svg>
+                </div>
+                <h3>Truck fleet owners</h3>
+                <p>5–200 heavy transport trucks operating between cities. Need to know where each vehicle is, how many runs it completed, and if anything is wrong.</p>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon green">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/><circle cx="12" cy="16" r="1"/>
+                    </svg>
+                </div>
+                <h3>Van and delivery fleets</h3>
+                <p>Courier companies, furniture delivery, medical supply chains. Multiple daily trips across urban routes — trip counting per vehicle matters most.</p>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon amber">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 20h.01M7 20v-4"/><path d="M12 20V10"/><path d="M17 20V4"/><path d="M22 20v-8"/>
+                    </svg>
+                </div>
+                <h3>Heavy equipment owners</h3>
+                <p>Construction companies, agricultural machinery, tankers. Large high-value assets that move between sites — location and idle-time alerts are critical.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── CTA ────────────────────────────────────────────────────── -->
+    <div class="cta-section">
+        <h2>Ready to see your fleet on the map?</h2>
+        <p>Register for early access. We will reach out to walk you through setup — from choosing the right GPS hardware to getting your first vehicle live on the dashboard.</p>
+        <div class="cta-row" style="justify-content:center;">
+            <a href="https://nigents.com/login.html" class="btn btn-primary" style="font-size:15px;padding:14px 28px;">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Request early access
+            </a>
+            <a href="https://nigents.com/" class="btn btn-ghost">Back to Nigents</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>
+            <strong>TruckTracker</strong> ·
+            <a href="https://nigents.com/">Nigents</a> ·
+            <a href="https://nigents.com/crazy-apps.html">Crazy apps</a> ·
+            <a href="https://nigents.com/materials.html">Free materials</a>
+        </p>
+    </footer>
+
+</main>
+
+<script>
+/* ── Nav toggle ──────────────────────────────────────── */
+(function () {
+    var toggle   = document.getElementById('navToggle');
+    var backdrop = document.getElementById('navBackdrop');
+    if (!toggle) return;
+    function setOpen(open) {
+        document.body.classList.toggle('nav-open', open);
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (backdrop) backdrop.hidden = !open;
+    }
+    toggle.addEventListener('click', function () { setOpen(!document.body.classList.contains('nav-open')); });
+    if (backdrop) backdrop.addEventListener('click', function () { setOpen(false); });
+    document.getElementById('navLinks').querySelectorAll('a').forEach(function (a) {
+        a.addEventListener('click', function () { setOpen(false); });
+    });
+})();
+
+/* ── Animate live numbers ────────────────────────────── */
+(function () {
+    function rand(lo, hi) { return Math.round(lo + Math.random() * (hi - lo)); }
+    function fmtKm(n) {
+        return n >= 1000 ? Math.floor(n/100)/10 + ' ' + (n%1000).toString().padStart(3,'0') : String(n);
+    }
+
+    var hudSpeed  = document.getElementById('hudSpeed');
+    var moKm      = document.getElementById('moKm');
+    var statTrips = document.getElementById('statTrips');
+    var statKm    = document.getElementById('statKm');
+
+    // Speed flicker
+    if (hudSpeed) {
+        setInterval(function () {
+            hudSpeed.textContent = rand(48, 84);
+        }, 1800 + Math.random() * 800);
+    }
+
+    // Overlay km
+    var baseKm = 847;
+    if (moKm) {
+        setInterval(function () {
+            baseKm += rand(1, 4);
+            moKm.textContent = baseKm;
+        }, 4000);
+    }
+
+    // Stat counters
+    var trips = 23, fleetKm = 1284;
+    if (statTrips) {
+        setInterval(function () {
+            if (Math.random() > 0.65) {
+                trips += 1;
+                statTrips.textContent = trips;
+            }
+        }, 7000);
+    }
+    if (statKm) {
+        setInterval(function () {
+            fleetKm += rand(2, 8);
+            statKm.textContent = fleetKm.toLocaleString('en');
+        }, 3500);
+    }
+})();
+</script>
+</body>
+</html>

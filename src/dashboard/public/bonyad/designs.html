@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bonyad Designs — UI/UX Figma Viewer</title>
+  <link rel="stylesheet" href="brief.css">
+  <style>
+    .designs-wrap { max-width: 1100px; margin: 0 auto; padding: clamp(16px,4vw,40px) var(--gutter); }
+    .key-row {
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 24px;
+    }
+    .key-row input {
+      flex: 1; min-width: 180px; background: var(--bg-primary); border: 1px solid var(--border);
+      color: var(--text-primary); border-radius: 8px; padding: 7px 11px; font-size: 13px;
+      font-family: var(--mono);
+    }
+    .key-row input:focus { outline: none; border-color: var(--accent-orange); }
+    /* Platform tabs */
+    .plat-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 24px; }
+    .plat-tab {
+      padding: 7px 16px; border-radius: 9px; border: 1px solid var(--border);
+      background: none; color: var(--text-secondary); font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all .18s;
+    }
+    .plat-tab:hover  { border-color: var(--accent-orange); color: var(--accent-orange); }
+    .plat-tab.active { background: var(--accent-orange); border-color: var(--accent-orange); color: #08070b; }
+    /* Add design form */
+    .add-card {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px 22px; margin-bottom: 28px;
+      display: none;
+    }
+    .add-card.show { display: block; }
+    .add-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 14px; }
+    .form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+    .form-row .fg { flex: 1; min-width: 160px; }
+    .form-row label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin-bottom: 5px; }
+    .form-row input, .form-row select, .form-row textarea {
+      width: 100%; background: var(--bg-primary); border: 1px solid var(--border);
+      color: var(--text-primary); border-radius: 8px; padding: 8px 11px; font-size: 13px;
+      font-family: inherit;
+    }
+    .form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+      outline: none; border-color: var(--accent-orange);
+    }
+    /* Design grid */
+    .designs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .design-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      transition: border-color .2s, transform .2s, box-shadow .2s; cursor: pointer;
+      display: flex; flex-direction: column;
+    }
+    .design-card:hover { border-color: rgba(255,107,26,.45); transform: translateY(-3px); box-shadow: var(--shadow-sm); }
+    .design-thumb {
+      height: 160px; background: linear-gradient(135deg, #1a1720 0%, #0f0d14 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 48px; flex-shrink: 0; position: relative; overflow: hidden;
+    }
+    .design-thumb::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(to bottom, transparent 60%, rgba(8,7,11,.6));
+    }
+    .design-thumb iframe {
+      width: 100%; height: 100%; border: none; pointer-events: none;
+      transform: scale(0.5); transform-origin: top left;
+      width: 200%; height: 200%;
+    }
+    .design-body { padding: 14px 16px; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .design-title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+    .design-plat  { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--accent-orange); }
+    .design-ver   { font-size: 11px; color: var(--text-muted); }
+    .design-desc  { font-size: 12px; color: var(--text-secondary); margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .design-foot  { display: flex; gap: 8px; margin-top: auto; padding-top: 10px; }
+    .view-btn {
+      flex: 1; padding: 8px; border-radius: 8px; border: none;
+      background: var(--accent-orange-dim); color: var(--accent-orange);
+      font-size: 12px; font-weight: 700; cursor: pointer; transition: background .15s;
+    }
+    .view-btn:hover { background: rgba(255,107,26,.22); }
+    .del-btn-sm {
+      padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+      background: none; color: var(--text-muted); font-size: 13px; cursor: pointer;
+      transition: all .15s;
+    }
+    .del-btn-sm:hover { border-color: var(--danger); color: var(--danger); }
+    /* Figma Viewer Modal */
+    .figma-modal {
+      position: fixed; inset: 0; z-index: 10000;
+      display: none; flex-direction: column;
+      background: rgba(0,0,0,.92); backdrop-filter: blur(10px);
+    }
+    .figma-modal.open { display: flex; }
+    .figma-modal-head {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 20px; border-bottom: 1px solid var(--border);
+      flex-shrink: 0; background: var(--bg-elevated);
+    }
+    .figma-modal-head h2 { font-size: 15px; font-weight: 700; flex: 1; }
+    .figma-meta { font-size: 12px; color: var(--text-muted); }
+    .figma-close {
+      padding: 8px 16px; border-radius: 9px; border: 1px solid var(--border);
+      background: none; color: var(--text-secondary); font-size: 13px; cursor: pointer;
+      transition: all .15s;
+    }
+    .figma-close:hover { border-color: var(--danger); color: var(--danger); }
+    .figma-frame-wrap { flex: 1; position: relative; }
+    .figma-frame-wrap iframe {
+      position: absolute; inset: 0; width: 100%; height: 100%; border: none;
+    }
+    .figma-loading {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted); font-size: 14px; flex-direction: column; gap: 12px;
+    }
+    .figma-spinner {
+      width: 32px; height: 32px; border: 3px solid var(--border);
+      border-top-color: var(--accent-orange); border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .open-figma-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 14px; border-radius: 9px;
+      border: 1px solid var(--border); background: none;
+      color: var(--text-secondary); font-size: 12px; text-decoration: none;
+      transition: all .15s;
+    }
+    .open-figma-link:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 14px; }
+    .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+  </style>
+</head>
+<body class="bonyad-theme">
+  <div class="top-banner"></div>
+  <nav class="hub-nav bonyad-sheet-topnav" aria-label="Bonyad section">
+    <a href="./">← Bonyad hub</a>
+    <span class="hub-nav-sep" aria-hidden="true">·</span>
+    <a href="builds.html">Builds</a>
+    <span class="hub-nav-sep" aria-hidden="true">·</span>
+    <a href="admin.html">Admin</a>
+    <span class="hub-nav-sep" aria-hidden="true">·</span>
+    <a href="canvas.html">Canvas</a>
+    <span class="hub-nav-sep" aria-hidden="true">·</span>
+    <a href="/">Nigents</a>
+  </nav>
+  <div class="designs-wrap">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;flex-wrap:wrap;">
+      <h1 style="font-size:clamp(20px,4vw,26px);font-weight:800;flex:1;">UI/UX Designs</h1>
+    </div>
+
+    <!-- Key row -->
+    <div class="key-row">
+      <span style="font-size:12px;font-weight:700;color:var(--text-muted);white-space:nowrap;">Your Key</span>
+      <input type="password" id="edit-key" placeholder="Paste your Bonyad key to add designs" autocomplete="off" />
+      <button class="add-btn" id="key-save" style="padding:7px 16px;font-size:13px;">Use</button>
+    </div>
+
+    <!-- Platform filter -->
+    <div class="plat-tabs">
+      <button class="plat-tab active" data-plat="">All Platforms</button>
+      <button class="plat-tab" data-plat="android">Android</button>
+      <button class="plat-tab" data-plat="ios">iOS</button>
+      <button class="plat-tab" data-plat="web">Web</button>
+      <button class="plat-tab" data-plat="backend">Backend</button>
+    </div>
+
+    <!-- Add design form (shown after key) -->
+    <div class="add-card" id="add-card">
+      <h3>Add Figma Design</h3>
+      <div class="form-row">
+        <div class="fg" style="flex:2;">
+          <label>Title</label>
+          <input type="text" id="d-title" placeholder="e.g. Login Screen — v3" />
+        </div>
+        <div class="fg">
+          <label>Platform</label>
+          <select id="d-platform">
+            <option value="">General</option>
+            <option value="android">Android</option>
+            <option value="ios">iOS</option>
+            <option value="web">Web</option>
+            <option value="backend">Backend</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Version</label>
+          <input type="text" id="d-version" placeholder="v1.0" />
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:10px;">
+        <div class="fg" style="flex:3;">
+          <label>Figma Share URL</label>
+          <input type="url" id="d-figma-url" placeholder="https://www.figma.com/design/AbCdEf1234/My-Screen?node-id=0-1" />
+          <div style="margin-top:6px;padding:8px 10px;background:rgba(255,107,26,.07);border:1px solid rgba(255,107,26,.2);border-radius:6px;font-size:11px;color:var(--text-muted);line-height:1.6;">
+            <strong style="color:var(--accent-orange);">How to get the link:</strong>
+            In Figma open your file → click <strong>Share</strong> (top right) →
+            set access to <strong>"Anyone with the link → can view"</strong> →
+            click <strong>Copy link</strong> and paste it here.
+            <br>Supports: <code style="color:var(--text-secondary)">figma.com/design/…</code> · <code style="color:var(--text-secondary)">figma.com/file/…</code> · <code style="color:var(--text-secondary)">figma.com/proto/…</code>
+          </div>
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:10px;">
+        <div class="fg" style="flex:3;">
+          <label>Description (optional)</label>
+          <textarea id="d-desc" rows="2" placeholder="Briefly describe this design screen…" style="resize:vertical;"></textarea>
+        </div>
+      </div>
+      <div style="margin-top:14px;">
+        <button class="add-btn" id="add-design-btn" style="padding:10px 22px;">Add Design</button>
+      </div>
+    </div>
+
+    <!-- Designs grid -->
+    <div id="designs-container">
+      <div class="empty-state">Loading designs…</div>
+    </div>
+  </div>
+
+  <!-- Figma Viewer Modal -->
+  <div class="figma-modal" id="figma-modal">
+    <div class="figma-modal-head">
+      <h2 id="modal-title">Design</h2>
+      <span class="figma-meta" id="modal-meta"></span>
+      <a id="modal-open-link" href="#" target="_blank" rel="noopener" class="open-figma-link">Open in Figma</a>
+      <button class="figma-close" id="figma-close">Close</button>
+    </div>
+    <div class="figma-frame-wrap">
+      <div class="figma-loading" id="figma-loading">
+        <div class="figma-spinner"></div>
+        <span>Loading design…</span>
+      </div>
+      <iframe id="figma-iframe" title="Figma Design"
+        allow="fullscreen; clipboard-write; clipboard-read"
+        onload="document.getElementById('figma-loading').style.display='none'"></iframe>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="bonyad-notifications.js"></script>
+  <script>
+    'use strict';
+
+    /* ── Key ──────────────────────────────────────────────────── */
+    const keyInput = document.getElementById('edit-key');
+    const storedK  = localStorage.getItem('bonyad_edit_key') || '';
+    if (storedK) keyInput.value = storedK;
+    function getKey() { return keyInput.value.trim(); }
+
+    document.getElementById('key-save').addEventListener('click', () => {
+      const k = getKey();
+      if (k) {
+        localStorage.setItem('bonyad_edit_key', k);
+        document.getElementById('add-card').classList.add('show');
+        loadDesigns(activePlat);
+      }
+    });
+    if (storedK) document.getElementById('add-card').classList.add('show');
+
+    /* ── Platform filter ──────────────────────────────────────── */
+    let activePlat = '';
+    document.querySelectorAll('.plat-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.plat-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activePlat = btn.dataset.plat;
+        if (activePlat) document.getElementById('d-platform').value = activePlat;
+        loadDesigns(activePlat);
+      });
+    });
+
+    /* ── Add design ───────────────────────────────────────────── */
+    document.getElementById('add-design-btn').addEventListener('click', async () => {
+      const title   = document.getElementById('d-title').value.trim();
+      const figmaUrl = document.getElementById('d-figma-url').value.trim();
+      if (!title)    { alert('Title is required'); return; }
+      if (!figmaUrl) { alert('Figma URL is required'); return; }
+      try {
+        const res = await fetch('/api/bonyad/designs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-bonyad-edit-key': getKey() },
+          body: JSON.stringify({
+            title,
+            platform:    document.getElementById('d-platform').value,
+            figma_url:   figmaUrl,
+            description: document.getElementById('d-desc').value.trim(),
+            version:     document.getElementById('d-version').value.trim(),
+            editKey:     getKey(),
+          }),
+        });
+        const data = await res.json();
+        if (!data.success) { alert(data.error || 'Failed'); return; }
+        ['d-title','d-figma-url','d-desc','d-version'].forEach(id => { document.getElementById(id).value = ''; });
+        loadDesigns(activePlat);
+      } catch (e) { alert(e.message); }
+    });
+
+    /* ── Load designs ─────────────────────────────────────────── */
+    async function loadDesigns(plat) {
+      const container = document.getElementById('designs-container');
+      container.innerHTML = '<div class="empty-state">Loading…</div>';
+      try {
+        const url  = plat ? `/api/bonyad/designs?platform=${plat}` : '/api/bonyad/designs';
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (!data.success) { container.innerHTML = `<div class="empty-state" style="color:var(--danger)">${esc(data.error)}</div>`; return; }
+        if (!data.designs.length) {
+          container.innerHTML = '<div class="empty-state">No designs yet — add the first Figma link above</div>';
+          return;
+        }
+        // Populate cache so openDesign() doesn't need to re-fetch
+        _designsCache = data.designs;
+        container.innerHTML = `<div class="designs-grid">${data.designs.map(designCard).join('')}</div>`;
+      } catch (e) {
+        container.innerHTML = `<div class="empty-state" style="color:var(--danger)">Error: ${esc(e.message)}</div>`;
+      }
+    }
+
+    function designCard(d) {
+      return `
+        <div class="design-card" onclick="openDesign(${d.id})">
+          <div class="design-thumb">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,107,26,0.4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="position:relative;z-index:1;">
+              <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
+            </svg>
+          </div>
+          <div class="design-body">
+            ${d.platform ? `<div class="design-plat">${esc(d.platform)}</div>` : ''}
+            <div class="design-title">${esc(d.title)}</div>
+            ${d.version ? `<div class="design-ver">Version ${esc(d.version)}</div>` : ''}
+            ${d.description ? `<div class="design-desc">${esc(d.description)}</div>` : ''}
+            <div class="design-foot">
+              <button class="view-btn" onclick="event.stopPropagation();openDesign(${d.id})">View Design</button>
+              <button class="del-btn-sm" title="Delete design" onclick="event.stopPropagation();deleteDesign(${d.id},'${esc(d.title)}')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ── Open design in modal ─────────────────────────────────── */
+    let _designsCache = [];
+
+    async function openDesign(id) {
+      // Ensure cache is populated
+      if (!_designsCache.length) {
+        const res  = await fetch('/api/bonyad/designs');
+        const data = await res.json();
+        _designsCache = data.designs || [];
+      }
+      const d = _designsCache.find(x => x.id === id);
+      if (!d) return;
+
+      document.getElementById('modal-title').textContent = d.title;
+      document.getElementById('modal-meta').textContent  =
+        [d.platform, d.version ? 'v' + d.version : ''].filter(Boolean).join(' · ');
+      document.getElementById('modal-open-link').href    = d.figma_url;
+
+      // Show modal first (paint frame), then load iframe after a tick to avoid freezing
+      const embedUrl = buildFigmaEmbed(d.figma_url);
+      const iframe   = document.getElementById('figma-iframe');
+      iframe.removeAttribute('src');   // detach without triggering onload
+      document.getElementById('figma-loading').style.display = 'flex';
+      document.getElementById('figma-modal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+      // Defer src to let the modal render first, then start loading Figma
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          iframe.src = embedUrl;
+        });
+      });
+    }
+
+    function buildFigmaEmbed(url) {
+      if (!url) return '';
+
+      // Already an embed.figma.com URL — return as-is
+      if (url.includes('embed.figma.com')) return url;
+
+      // Old-style embed URL — migrate to new domain
+      if (url.includes('figma.com/embed')) {
+        return url.replace('www.figma.com/embed', 'embed.figma.com/design')
+                  .replace('figma.com/embed', 'embed.figma.com/design');
+      }
+
+      // Extract path from figma.com URL and build embed.figma.com URL
+      // Supports: /design/, /file/, /proto/
+      try {
+        const u = new URL(url);
+        if (u.hostname === 'www.figma.com' || u.hostname === 'figma.com') {
+          // /design/ID/name  →  embed.figma.com/design/ID/name
+          // /file/ID/name    →  embed.figma.com/design/ID/name
+          // /proto/ID/name   →  embed.figma.com/proto/ID/name
+          const pathType = u.pathname.startsWith('/proto/') ? 'proto' : 'design';
+          const newPath   = u.pathname.replace(/^\/(design|file|proto)\//, `/${pathType}/`);
+          const nodeId    = u.searchParams.get('node-id');
+          const nodeParam = nodeId ? `&node-id=${encodeURIComponent(nodeId)}` : '';
+          return `https://embed.figma.com${newPath}?embed-host=bonyad&footer=false${nodeParam}`;
+        }
+      } catch (_) {}
+
+      // Fallback — wrap the full URL the old way
+      return `https://www.figma.com/embed?embed_host=bonyad&url=${encodeURIComponent(url)}`;
+    }
+
+    document.getElementById('figma-close').addEventListener('click', closeModal);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    function closeModal() {
+      document.getElementById('figma-modal').classList.remove('open');
+      document.getElementById('figma-iframe').src = '';
+      document.body.style.overflow = '';
+    }
+
+    /* ── Delete ───────────────────────────────────────────────── */
+    async function deleteDesign(id, title) {
+      if (!confirm(`Delete "${title}"?`)) return;
+      try {
+        const res  = await fetch(`/api/bonyad/designs/${id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', 'x-bonyad-edit-key': getKey() },
+          body: JSON.stringify({ editKey: getKey() }),
+        });
+        const data = await res.json();
+        if (!data.success) { alert(data.error || 'Failed'); return; }
+        _designsCache = _designsCache.filter(x => x.id !== id);
+        loadDesigns(activePlat);
+      } catch (e) { alert(e.message); }
+    }
+
+    /* ── Helpers ──────────────────────────────────────────────── */
+    function esc(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    /* ── Boot ─────────────────────────────────────────────────── */
+    loadDesigns('');
+  </script>
+</body>
+</html>

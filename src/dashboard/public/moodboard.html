@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MoodBoard — macOS menu bar app. Five mood modes, per-mode wallpaper, streamed text, animated sound-wave overlay, and your media queue. Part of Nigents Crazy apps." />
+    <title>MoodBoard — moods, wallpapers &amp; media · Nigents</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #09080c;
+            --bg-secondary: #141116;
+            --border: #2a2a35;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            --accent-purple: #a78bfa;
+            --accent-blue: #38bdf8;
+            --accent-teal: #2dd4bf;
+            --accent-orange: #ff570a;
+            --accent-green: #19d59e;
+            --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+            --font-sans: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* ── GRID BG ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(167, 139, 250, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(167, 139, 250, 0.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── AMBIENT GLOW ── */
+        .ambient {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse 70% 45% at 20% -5%, rgba(167, 139, 250, 0.18) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 40% at 90% 50%, rgba(56, 189, 248, 0.12) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 30% at 50% 110%, rgba(45, 212, 191, 0.1) 0%, transparent 70%);
+            animation: ambientShift 12s ease-in-out infinite alternate;
+        }
+        @keyframes ambientShift {
+            0%   { opacity: 1; transform: scale(1); }
+            50%  { opacity: 0.7; transform: scale(1.04); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* ── PARTICLE CANVAS ── */
+        #particle-canvas {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.55;
+        }
+
+        /* ── NAV ── */
+        .nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 1000;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, var(--bg-primary) 0%, transparent 100%);
+        }
+        .nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+        .nav-logo {
+            width: 40px; height: 40px;
+            background: var(--accent-orange);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 20px;
+            color: var(--bg-primary);
+        }
+        .nav-title { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+        .nav-links { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; justify-content: flex-end; }
+        .nav-link { color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+        .nav-link:hover { color: var(--text-primary); }
+        .nav-link.active { color: var(--accent-orange); }
+        .soon-pill {
+            display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 700;
+            letter-spacing: 0.08em; text-transform: uppercase;
+            color: var(--bg-primary); background: var(--accent-orange);
+            padding: 3px 9px; border-radius: 999px; vertical-align: middle;
+        }
+        .nav-cta {
+            padding: 10px 20px; border: 1px solid var(--accent-orange);
+            color: var(--accent-orange); text-decoration: none;
+            font-size: 14px; font-weight: 600; transition: all 0.2s;
+        }
+        .nav-cta:hover { background: var(--accent-orange); color: var(--bg-primary); }
+        .nav-toggle {
+            display: none; width: 44px; height: 44px;
+            align-items: center; justify-content: center;
+            margin-left: auto; background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border); border-radius: 10px;
+            color: var(--text-primary); cursor: pointer;
+        }
+        .nav-toggle-icon-close { display: none; font-size: 28px; }
+        body.nav-open .nav-toggle-icon-open { display: none; }
+        body.nav-open .nav-toggle-icon-close { display: block; }
+        .nav-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 998; }
+        body.nav-open .nav-backdrop { display: block; }
+        body.nav-open { overflow: hidden; }
+        @media (max-width: 900px) {
+            .nav-toggle { display: flex; }
+            .nav-links {
+                display: none; position: fixed; top: 72px; left: 16px; right: 16px;
+                flex-direction: column; align-items: stretch;
+                background: var(--bg-secondary); border: 1px solid var(--border);
+                padding: 12px; z-index: 999;
+            }
+            body.nav-open .nav-links { display: flex; }
+        }
+
+        /* ── MAIN ── */
+        main {
+            position: relative; z-index: 1;
+            max-width: 960px; margin: 0 auto;
+            padding: 120px 32px 80px;
+        }
+
+        /* ── HERO ── */
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-family: var(--font-mono); font-size: 11px;
+            font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+            color: var(--accent-purple);
+            border: 1px solid rgba(167, 139, 250, 0.35);
+            padding: 8px 14px; margin-bottom: 24px;
+        }
+        .hero-badge-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--accent-purple);
+            animation: dotPulse 1.8s ease-in-out infinite;
+        }
+        @keyframes dotPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.7); }
+        }
+
+        h1 {
+            font-size: clamp(2.4rem, 5vw, 3.4rem);
+            font-weight: 800; letter-spacing: -0.04em;
+            line-height: 1.08; margin-bottom: 16px;
+        }
+        h1 .shimmer {
+            background: linear-gradient(90deg,
+                #fff 0%, #fff 25%,
+                var(--accent-purple) 40%,
+                var(--accent-blue) 55%,
+                #fff 70%, #fff 100%
+            );
+            background-size: 200% 100%;
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent;
+            animation: shimmer 5s linear infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: 100% 50%; }
+            100% { background-position: -100% 50%; }
+        }
+        h1 .arabic-title {
+            display: block; font-size: 0.55em; font-weight: 700;
+            color: var(--accent-teal); letter-spacing: 0.02em;
+            margin-top: 4px; direction: rtl; text-align: left;
+            font-family: 'Sakkal Majalla', 'Cairo', sans-serif;
+        }
+
+        .lead {
+            font-size: 1.05rem; color: var(--text-secondary);
+            max-width: 52ch; margin-bottom: 36px; line-height: 1.75;
+        }
+
+        /* ── HERO ACTIONS ── */
+        .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 64px; }
+        .btn-dl-hero {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 26px; background: var(--accent-purple);
+            color: var(--bg-primary); font-size: 14px; font-weight: 700;
+            text-decoration: none; transition: all 0.2s; border: 1px solid var(--accent-purple);
+        }
+        .btn-dl-hero:hover { background: #c4b5fd; border-color: #c4b5fd; transform: translateY(-2px); }
+        .btn-landing-hero {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 26px; background: transparent;
+            color: var(--text-primary); font-size: 14px; font-weight: 600;
+            text-decoration: none; border: 1px solid var(--border); transition: all 0.2s;
+        }
+        .btn-landing-hero:hover { border-color: var(--accent-purple); color: var(--accent-purple); }
+
+        /* ── MOCKUP ── */
+        .mockup-wrap {
+            position: relative;
+            width: 100%; max-width: 700px;
+            margin: 0 auto 72px;
+        }
+        .mac-frame {
+            background: #1a1624;
+            border: 1px solid #3a3450;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow:
+                0 0 0 1px rgba(167,139,250,0.15),
+                0 40px 80px rgba(0,0,0,0.7),
+                0 0 60px rgba(167,139,250,0.1);
+        }
+        .mac-titlebar {
+            background: #221e30; height: 32px;
+            display: flex; align-items: center; padding: 0 14px; gap: 8px;
+            border-bottom: 1px solid #3a3450;
+        }
+        .mac-dot { width: 11px; height: 11px; border-radius: 50%; }
+        .mac-dot.red { background: #ff5f57; }
+        .mac-dot.yellow { background: #febc2e; }
+        .mac-dot.green { background: #28c840; }
+        .mac-screen {
+            background: #0a0812;
+            min-height: 320px;
+            display: flex; align-items: center; justify-content: center;
+            position: relative; overflow: hidden; padding: 24px;
+        }
+
+        /* Mood overlay sim */
+        .mood-overlay {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 20px; padding: 32px;
+        }
+
+        /* Shifting mood bg */
+        .mood-bg {
+            position: absolute; inset: 0;
+            background: radial-gradient(ellipse 80% 60% at 50% 40%,
+                rgba(167,139,250,0.25) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 20% 80%,
+                rgba(56,189,248,0.15) 0%, transparent 60%);
+            animation: moodBgShift 6s ease-in-out infinite alternate;
+        }
+        @keyframes moodBgShift {
+            0%   { background: radial-gradient(ellipse 80% 60% at 50% 30%, rgba(167,139,250,0.3) 0%, transparent 65%), radial-gradient(ellipse 50% 40% at 80% 80%, rgba(56,189,248,0.15) 0%, transparent 65%); }
+            33%  { background: radial-gradient(ellipse 70% 55% at 30% 50%, rgba(45,212,191,0.25) 0%, transparent 65%), radial-gradient(ellipse 60% 40% at 70% 20%, rgba(167,139,250,0.2) 0%, transparent 65%); }
+            66%  { background: radial-gradient(ellipse 80% 60% at 60% 60%, rgba(56,189,248,0.25) 0%, transparent 65%), radial-gradient(ellipse 50% 45% at 10% 30%, rgba(45,212,191,0.15) 0%, transparent 65%); }
+            100% { background: radial-gradient(ellipse 75% 55% at 50% 40%, rgba(250,204,21,0.2) 0%, transparent 65%), radial-gradient(ellipse 60% 50% at 80% 70%, rgba(167,139,250,0.2) 0%, transparent 65%); }
+        }
+
+        /* Scanlines */
+        .mac-screen::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px);
+            pointer-events: none; z-index: 10;
+        }
+
+        .mood-label {
+            font-family: var(--font-mono); font-size: 10px;
+            letter-spacing: 0.2em; text-transform: uppercase;
+            color: rgba(167,139,250,0.7);
+            position: relative; z-index: 2;
+            animation: moodLabelFade 6s ease-in-out infinite;
+        }
+        @keyframes moodLabelFade {
+            0%, 100% { content: ''; opacity: 1; }
+        }
+
+        .streaming-text {
+            font-size: clamp(1.1rem, 3vw, 1.7rem);
+            font-weight: 700; color: #fff;
+            text-align: center; position: relative; z-index: 2;
+            font-family: 'Sakkal Majalla','Cairo',sans-serif;
+            direction: rtl;
+            text-shadow: 0 0 30px rgba(167,139,250,0.6);
+            letter-spacing: 0.01em;
+            min-height: 2.2em; display: flex; align-items: center; justify-content: center;
+        }
+        .cursor-blink {
+            display: inline-block; width: 2px; height: 1.1em;
+            background: var(--accent-purple); margin-right: 4px;
+            animation: cursorBlink 0.9s step-end infinite;
+            vertical-align: middle;
+        }
+        @keyframes cursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* wave bars */
+        .wave-container {
+            display: flex; align-items: flex-end; gap: 3px;
+            height: 44px; position: relative; z-index: 2;
+        }
+        .wave-bar {
+            width: 4px; border-radius: 2px;
+            background: linear-gradient(180deg, var(--accent-purple), var(--accent-blue));
+            animation: waveBar 1s ease-in-out infinite;
+        }
+        .wave-bar:nth-child(odd)  { animation-duration: 0.85s; }
+        .wave-bar:nth-child(3n)   { animation-duration: 1.15s; }
+        .wave-bar:nth-child(5n)   { animation-duration: 0.7s; }
+        @keyframes waveBar {
+            0%, 100% { height: 6px; opacity: 0.4; }
+            50%       { height: 38px; opacity: 1; }
+        }
+
+        /* progress bar */
+        .progress-track {
+            width: 100%; max-width: 280px; height: 4px;
+            background: rgba(255,255,255,0.1); border-radius: 2px;
+            position: relative; z-index: 2; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; border-radius: 2px;
+            background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue));
+            animation: progressAnim 6s linear infinite;
+        }
+        @keyframes progressAnim {
+            0% { width: 0%; } 100% { width: 100%; }
+        }
+        .progress-time {
+            font-family: var(--font-mono); font-size: 10px;
+            color: rgba(255,255,255,0.4); position: relative; z-index: 2;
+        }
+
+        /* mood pills */
+        .mood-pills {
+            display: flex; gap: 6px; position: relative; z-index: 2; flex-wrap: wrap; justify-content: center;
+        }
+        .mood-pill {
+            font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+            text-transform: uppercase; padding: 4px 10px; border-radius: 99px;
+            border: 1px solid; cursor: default;
+            transition: all 0.3s;
+        }
+        .mood-pill.comfort  { color: #fb923c; border-color: rgba(251,146,60,0.4); background: rgba(251,146,60,0.08); }
+        .mood-pill.calm     { color: #4ade80; border-color: rgba(74,222,128,0.4); background: rgba(74,222,128,0.08); }
+        .mood-pill.focus    { color: var(--accent-blue); border-color: rgba(56,189,248,0.4); background: rgba(56,189,248,0.08); }
+        .mood-pill.lift     { color: #facc15; border-color: rgba(250,204,21,0.4); background: rgba(250,204,21,0.08); }
+        .mood-pill.heartbreak { color: var(--accent-purple); border-color: rgba(167,139,250,0.4); background: rgba(167,139,250,0.1); }
+        .mood-pill.active   { box-shadow: 0 0 10px currentColor; }
+
+        /* ── FEATURE GRID ── */
+        .section-label {
+            font-family: var(--font-mono); font-size: 11px;
+            font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+            color: var(--text-muted); margin-bottom: 12px;
+        }
+        h2 {
+            font-size: clamp(1.6rem, 3vw, 2rem);
+            font-weight: 700; letter-spacing: -0.03em; margin-bottom: 32px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px; margin-bottom: 60px;
+        }
+        .feat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 14px; padding: 26px;
+            position: relative; overflow: hidden;
+            transition: border-color 0.25s, transform 0.25s;
+            opacity: 0; transform: translateY(24px);
+            transition: opacity 0.5s ease, transform 0.5s ease, border-color 0.25s;
+        }
+        .feat-card.visible { opacity: 1; transform: translateY(0); }
+        .feat-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue));
+        }
+        .feat-card:hover { border-color: rgba(167,139,250,0.4); transform: translateY(-3px); }
+        .feat-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+        .feat-card p { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.6; }
+
+        /* ── MOOD TABLE ── */
+        .modes-section { margin-bottom: 60px; }
+        .modes-card {
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: 14px; overflow: hidden;
+        }
+        .modes-table {
+            width: 100%; border-collapse: collapse; font-size: 0.875rem;
+        }
+        .modes-table th {
+            padding: 14px 20px; text-align: left; font-size: 0.7rem;
+            font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+            color: var(--text-muted); background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid var(--border);
+        }
+        .modes-table td {
+            padding: 16px 20px; border-bottom: 1px solid rgba(42,42,53,0.6);
+            color: var(--text-secondary); vertical-align: middle;
+        }
+        .modes-table tr:last-child td { border-bottom: none; }
+        .modes-table tr:hover td { background: rgba(167,139,250,0.04); }
+        .mode-name {
+            display: flex; align-items: center; gap: 10px;
+            font-weight: 700; color: var(--text-primary);
+        }
+        .mode-dot {
+            width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+        }
+        .rtl-text { direction: rtl; font-family: 'Sakkal Majalla','Cairo',sans-serif; color: var(--text-primary); }
+
+        /* ── ARABIC CUE ── */
+        .cue-section {
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: 14px; padding: 32px;
+            text-align: center; margin-bottom: 60px;
+            position: relative; overflow: hidden;
+        }
+        .cue-section::before {
+            content: ''; position: absolute; inset: -1px;
+            background: linear-gradient(135deg, rgba(167,139,250,0.2), rgba(56,189,248,0.1), rgba(45,212,191,0.15));
+            border-radius: 14px; z-index: 0;
+            animation: cueBorderPulse 4s ease-in-out infinite alternate;
+        }
+        @keyframes cueBorderPulse {
+            0%   { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .cue-inner { position: relative; z-index: 1; }
+        .cue-section-label {
+            font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em;
+            text-transform: uppercase; color: var(--accent-purple);
+            margin-bottom: 16px; display: block;
+        }
+        .cue-arabic {
+            font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 700;
+            direction: rtl; color: #fff;
+            font-family: 'Sakkal Majalla','Cairo',sans-serif;
+            text-shadow: 0 0 40px rgba(167,139,250,0.5), 0 0 80px rgba(56,189,248,0.2);
+            letter-spacing: 0.02em; line-height: 1.5;
+            animation: cueGlow 3s ease-in-out infinite alternate;
+        }
+        @keyframes cueGlow {
+            0%   { text-shadow: 0 0 20px rgba(167,139,250,0.4), 0 0 60px rgba(56,189,248,0.15); }
+            100% { text-shadow: 0 0 40px rgba(167,139,250,0.7), 0 0 100px rgba(56,189,248,0.3); }
+        }
+        .cue-sub { font-size: 0.85rem; color: var(--text-muted); margin-top: 12px; }
+
+        /* ── FLOW STEPS ── */
+        .flow-section { margin-bottom: 60px; }
+        .flow-steps { display: flex; flex-direction: column; gap: 0; }
+        .flow-step {
+            display: flex; gap: 20px; align-items: flex-start;
+            padding: 20px 0; border-bottom: 1px solid rgba(42,42,53,0.5);
+            opacity: 0; transform: translateX(-16px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .flow-step:last-child { border-bottom: none; }
+        .flow-step.visible { opacity: 1; transform: translateX(0); }
+        .step-num {
+            width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+            border: 1px solid rgba(167,139,250,0.35);
+            background: rgba(167,139,250,0.08);
+            display: flex; align-items: center; justify-content: center;
+            font-family: var(--font-mono); font-size: 13px; font-weight: 700;
+            color: var(--accent-purple);
+        }
+        .step-body h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+        .step-body p { font-size: 0.85rem; color: var(--text-secondary); }
+
+        /* ── DOWNLOAD CARD ── */
+        .dl-card {
+            background: linear-gradient(135deg, rgba(167,139,250,0.1) 0%, rgba(56,189,248,0.06) 100%);
+            border: 1px solid rgba(167,139,250,0.3);
+            border-radius: 14px; padding: 36px; text-align: center; margin-bottom: 60px;
+            position: relative; overflow: hidden;
+        }
+        .dl-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue), var(--accent-teal));
+            animation: dlBarShift 4s linear infinite;
+            background-size: 200% 100%;
+        }
+        @keyframes dlBarShift {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+        .dl-card h3 { font-size: 1.4rem; font-weight: 700; margin-bottom: 8px; }
+        .dl-card p { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 24px; }
+        .dl-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+        /* ── FOOTER ── */
+        footer {
+            position: relative; z-index: 1;
+            text-align: center; padding: 32px;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted); font-size: 13px;
+        }
+        footer a { color: var(--accent-purple); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 640px) {
+            main { padding: 100px 20px 60px; }
+            .feature-grid { grid-template-columns: 1fr; }
+            .modes-table th, .modes-table td { padding: 12px 14px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation: none !important; transition: none !important; }
+            .feat-card, .flow-step { opacity: 1 !important; transform: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particle-canvas"></canvas>
+    <div class="ambient" aria-hidden="true"></div>
+
+    <!-- NAV -->
+    <nav class="nav">
+        <a href="/" class="nav-brand">
+            <div class="nav-logo">N</div>
+            <span class="nav-title">Nigents</span>
+        </a>
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+            <span class="nav-toggle-icon-open" aria-hidden="true">☰</span>
+            <span class="nav-toggle-icon-close" aria-hidden="true">×</span>
+        </button>
+        <div class="nav-links" id="nav-links" role="navigation" aria-label="Main">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/how-it-works.html" class="nav-link">How it works</a>
+            <a href="/materials.html" class="nav-link">Free Materials</a>
+            <a href="/crazy-apps.html" class="nav-link active">Crazy apps</a>
+            <a href="/opencode-kits.html" class="nav-link">OpenCode kits <span class="soon-pill">Soon</span></a>
+            <a href="/bonyad/" class="nav-link">Bonyad</a>
+            <a href="/login.html" class="nav-cta">Login →</a>
+        </div>
+    </nav>
+    <div class="nav-backdrop" id="nav-backdrop" aria-hidden="true" hidden></div>
+
+    <main>
+        <!-- ── HERO ── -->
+        <div class="hero-badge">
+            <span class="hero-badge-dot"></span>
+            macOS · menu bar · five moods
+        </div>
+        <h1>
+            <span class="shimmer">MoodBoard</span>
+            <span class="arabic-title">صاحبتي سابتني ياسطا</span>
+        </h1>
+        <p class="lead">
+            Match your Mac to how you feel right now. Pick a mood — the wallpaper changes on every screen, a phrase streams out in front of you, then your media plays with a live wave animation. No robot voices. No cloud.
+        </p>
+        <div class="hero-actions">
+            <a class="btn-dl-hero" href="/downloads/MoodBoard-1.0.0.dmg" download>
+                ↓ Download DMG <span style="font-weight:400;opacity:.7;font-size:12px">v1.0.0 · macOS</span>
+            </a>
+            <a class="btn-landing-hero" href="/crazy-apps.html">← All Crazy apps</a>
+        </div>
+
+        <!-- ── MOCKUP ── -->
+        <div class="mockup-wrap">
+            <div class="mac-frame">
+                <div class="mac-titlebar">
+                    <div class="mac-dot red"></div>
+                    <div class="mac-dot yellow"></div>
+                    <div class="mac-dot green"></div>
+                </div>
+                <div class="mac-screen">
+                    <div class="mood-bg"></div>
+                    <div class="mood-overlay">
+                        <div class="mood-label" id="moodLabel">MOOD · FOCUS</div>
+                        <div class="mood-pills">
+                            <span class="mood-pill comfort">Comfort</span>
+                            <span class="mood-pill calm">Calm</span>
+                            <span class="mood-pill focus active" id="activePill">Focus</span>
+                            <span class="mood-pill lift">Lift</span>
+                            <span class="mood-pill heartbreak">صاحبتي</span>
+                        </div>
+                        <div class="streaming-text" id="streamingText" aria-live="polite">
+                            <span class="cursor-blink"></span>
+                        </div>
+                        <div class="wave-container" id="waveContainer">
+                            <div class="wave-bar" style="height:8px; animation-delay:0s"></div>
+                            <div class="wave-bar" style="height:22px; animation-delay:.1s"></div>
+                            <div class="wave-bar" style="height:14px; animation-delay:.2s"></div>
+                            <div class="wave-bar" style="height:34px; animation-delay:.05s"></div>
+                            <div class="wave-bar" style="height:10px; animation-delay:.25s"></div>
+                            <div class="wave-bar" style="height:28px; animation-delay:.15s"></div>
+                            <div class="wave-bar" style="height:18px; animation-delay:.3s"></div>
+                            <div class="wave-bar" style="height:38px; animation-delay:.08s"></div>
+                            <div class="wave-bar" style="height:12px; animation-delay:.22s"></div>
+                            <div class="wave-bar" style="height:30px; animation-delay:.18s"></div>
+                            <div class="wave-bar" style="height:8px; animation-delay:.35s"></div>
+                            <div class="wave-bar" style="height:24px; animation-delay:.12s"></div>
+                            <div class="wave-bar" style="height:16px; animation-delay:.28s"></div>
+                            <div class="wave-bar" style="height:36px; animation-delay:.06s"></div>
+                            <div class="wave-bar" style="height:10px; animation-delay:.4s"></div>
+                            <div class="wave-bar" style="height:26px; animation-delay:.16s"></div>
+                            <div class="wave-bar" style="height:20px; animation-delay:.32s"></div>
+                            <div class="wave-bar" style="height:32px; animation-delay:.09s"></div>
+                        </div>
+                        <div class="progress-track" style="width:280px">
+                            <div class="progress-fill"></div>
+                        </div>
+                        <div class="progress-time" id="progressTime">0:34 / 3:47</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── FEATURES ── -->
+        <p class="section-label">What's inside</p>
+        <h2>Five moods. One ritual.</h2>
+        <div class="feature-grid">
+            <div class="feat-card">
+                <h3>Wallpaper per mood</h3>
+                <p>Pick any photo from disk or fall back to a mood-tinted gradient. Running a mode applies the wallpaper to <strong>every connected display</strong> immediately.</p>
+            </div>
+            <div class="feat-card">
+                <h3>Your media queue</h3>
+                <p>Add MP4, MOV, MP3, M4A, M4B — they play one after another. Duration is read from the file. Broken files are skipped. Video plays on the main display only for stability.</p>
+            </div>
+            <div class="feat-card">
+                <h3>Streamed text</h3>
+                <p>A phrase types itself out letter by letter over the overlay. You edit the text per mode. Arabic phrases display with full right-to-left layout.</p>
+            </div>
+            <div class="feat-card">
+                <h3>Live wave animation</h3>
+                <p>Audio-only tracks (MP3, M4B…) get an animated sound-wave overlay that tracks with playback position. Visual feedback without video.</p>
+            </div>
+            <div class="feat-card">
+                <h3>Time readout</h3>
+                <p>Elapsed / total time and a progress capsule for each track. When the last item finishes, the overlay closes itself. Or tap <strong>Dismiss now</strong> anytime.</p>
+            </div>
+            <div class="feat-card">
+                <h3>Private, local</h3>
+                <p>File paths stored with macOS bookmarks on your machine. No accounts, no analytics, nothing uploaded. MoodBoard doesn't touch your battery or SMC.</p>
+            </div>
+        </div>
+
+        <!-- ── ARABIC CUE ── -->
+        <div class="cue-section">
+            <div class="cue-inner">
+                <span class="cue-section-label">On-screen cue during playback</span>
+                <div class="cue-arabic">اسمع دي هتعجبك</div>
+                <p class="cue-sub">Streams letter-by-letter in the overlay before your media starts. Edit it per mode.</p>
+            </div>
+        </div>
+
+        <!-- ── MOOD TABLE ── -->
+        <div class="modes-section">
+            <p class="section-label">The five modes</p>
+            <h2>Pick your mood</h2>
+            <div class="modes-card">
+                <table class="modes-table">
+                    <thead>
+                        <tr>
+                            <th>Mode</th>
+                            <th>Default vibe</th>
+                            <th>Media</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><div class="mode-name"><span class="mode-dot" style="background:#fb923c"></span>Comfort</div></td>
+                            <td><span class="rtl-text">معلش ياسطا</span></td>
+                            <td>Add your own or skip — auto-closes after text.</td>
+                        </tr>
+                        <tr>
+                            <td><div class="mode-name"><span class="mode-dot" style="background:#4ade80"></span>Calm</div></td>
+                            <td>Soft greens, minimal overlay</td>
+                            <td>Optional queue.</td>
+                        </tr>
+                        <tr>
+                            <td><div class="mode-name"><span class="mode-dot" style="background:#38bdf8"></span>Focus</div></td>
+                            <td>Cool blues, sharp edges</td>
+                            <td>Optional queue.</td>
+                        </tr>
+                        <tr>
+                            <td><div class="mode-name"><span class="mode-dot" style="background:#facc15"></span>Lift</div></td>
+                            <td>Warm amber tones</td>
+                            <td>Optional queue.</td>
+                        </tr>
+                        <tr>
+                            <td><div class="mode-name"><span class="mode-dot" style="background:#a78bfa"></span><span class="rtl-text">صاحبتي سابتني ياسطا</span></div></td>
+                            <td>Full phrase as the title</td>
+                            <td>Ships with <code>10_Sebt_Faragh_Kibeer.mp3</code> when list is empty — add files to replace.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── FLOW ── -->
+        <div class="flow-section">
+            <p class="section-label">How it works</p>
+            <h2>One tap to shift the room</h2>
+            <div class="flow-steps">
+                <div class="flow-step">
+                    <div class="step-num">01</div>
+                    <div class="step-body">
+                        <h4>Open MoodBoard from the menu bar</h4>
+                        <p>Tiny icon in your menu bar. Click to open the control panel — pick a mode.</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-num">02</div>
+                    <div class="step-body">
+                        <h4>Set wallpaper + media per mode</h4>
+                        <p>Drag a photo or pick from disk. Add MP4/MP3 files to the queue for that mode. Edit the streamed phrase.</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-num">03</div>
+                    <div class="step-body">
+                        <h4>Tap Run mode</h4>
+                        <p>Wallpaper updates on all screens. The dim overlay opens. Your phrase types itself out.</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-num">04</div>
+                    <div class="step-body">
+                        <h4>Media plays with time + waves</h4>
+                        <p>Queue plays in order. Live elapsed/total timer. Wave animation for audio tracks. Video on main display.</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-num">05</div>
+                    <div class="step-body">
+                        <h4>Overlay closes when done (or you dismiss it)</h4>
+                        <p>Last item finishes → overlay closes on its own. Or hit <strong>Dismiss now</strong> to close early.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── DOWNLOAD ── -->
+        <div class="dl-card">
+            <h3>MoodBoard v1.0.0</h3>
+            <p>macOS · unsigned · local testing only · part of MacAppsBundle</p>
+            <div class="dl-actions">
+                <a class="btn-dl-hero" href="/downloads/MoodBoard-1.0.0.dmg" download>
+                    ↓ Download DMG
+                </a>
+                <a class="btn-landing-hero" href="/crazy-apps.html">← All Crazy apps</a>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>MoodBoard is part of <a href="/crazy-apps.html">Nigents Crazy apps</a> — experimental macOS utilities.</p>
+        <p style="margin-top:8px">Mount the DMG → drag MoodBoard.app to Applications. For distribution, sign &amp; notarize with your Developer ID.</p>
+    </footer>
+
+    <script>
+    // ── PARTICLES ──
+    (function () {
+        var canvas = document.getElementById('particle-canvas');
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        var W, H, particles = [];
+        var COLORS = ['167,139,250', '56,189,248', '45,212,191', '250,204,21', '251,146,60'];
+
+        function resize() {
+            W = canvas.width = window.innerWidth;
+            H = canvas.height = window.innerHeight;
+        }
+
+        function mkParticle() {
+            return {
+                x: Math.random() * W,
+                y: H + 10,
+                vy: -(0.3 + Math.random() * 0.7),
+                vx: (Math.random() - 0.5) * 0.4,
+                r: 1 + Math.random() * 2.5,
+                color: COLORS[Math.floor(Math.random() * COLORS.length)],
+                alpha: 0,
+                life: 0,
+                maxLife: 180 + Math.random() * 180
+            };
+        }
+
+        resize();
+        for (var i = 0; i < 55; i++) {
+            var p = mkParticle();
+            p.y = Math.random() * H;
+            p.life = Math.random() * p.maxLife;
+            particles.push(p);
+        }
+        window.addEventListener('resize', resize);
+
+        function tick() {
+            ctx.clearRect(0, 0, W, H);
+            if (particles.length < 55) particles.push(mkParticle());
+            for (var i = particles.length - 1; i >= 0; i--) {
+                var p = particles[i];
+                p.life++;
+                p.x += p.vx; p.y += p.vy;
+                var t = p.life / p.maxLife;
+                p.alpha = t < 0.15 ? t / 0.15 : t > 0.75 ? (1 - t) / 0.25 : 1;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(' + p.color + ',' + (p.alpha * 0.55) + ')';
+                ctx.fill();
+                if (p.life >= p.maxLife || p.y < -10) particles.splice(i, 1);
+            }
+            requestAnimationFrame(tick);
+        }
+        tick();
+    })();
+
+    // ── MOOD SWITCHER ──
+    (function () {
+        var moods = [
+            { id: 'comfort',    label: 'MOOD · COMFORT',    phrase: 'معلش ياسطا',               color: '#fb923c' },
+            { id: 'calm',       label: 'MOOD · CALM',       phrase: 'خد نفسك...',               color: '#4ade80' },
+            { id: 'focus',      label: 'MOOD · FOCUS',      phrase: 'ركز يسطا',                 color: '#38bdf8' },
+            { id: 'lift',       label: 'MOOD · LIFT',       phrase: 'قوم قوم قوم!',             color: '#facc15' },
+            { id: 'heartbreak', label: 'MOOD · صاحبتي',     phrase: 'اسمع دي هتعجبك',           color: '#a78bfa' }
+        ];
+        var moodIndex = 2;
+        var streamInterval, moodInterval;
+        var streamEl = document.getElementById('streamingText');
+        var labelEl  = document.getElementById('moodLabel');
+        var pills    = document.querySelectorAll('.mood-pill');
+        var timeEl   = document.getElementById('progressTime');
+        var timeSec  = 34, totalSec = 227;
+        var timeInterval;
+
+        function setMoodWaveColor(color) {
+            var bars = document.querySelectorAll('.wave-bar');
+            bars.forEach(function (b) {
+                b.style.background = 'linear-gradient(180deg, ' + color + ', rgba(56,189,248,0.6))';
+            });
+        }
+
+        function streamPhrase(phrase) {
+            if (streamInterval) clearInterval(streamInterval);
+            streamEl.innerHTML = '<span class="cursor-blink"></span>';
+            var i = 0;
+            streamInterval = setInterval(function () {
+                if (i >= phrase.length) { clearInterval(streamInterval); return; }
+                streamEl.innerHTML = phrase.slice(0, i + 1) + '<span class="cursor-blink"></span>';
+                i++;
+            }, 90);
+        }
+
+        function switchMood(idx) {
+            moodIndex = idx;
+            var m = moods[moodIndex];
+            labelEl.textContent = m.label;
+            pills.forEach(function (p, pi) {
+                p.classList.toggle('active', pi === moodIndex);
+            });
+            setMoodWaveColor(m.color);
+            streamPhrase(m.phrase);
+        }
+
+        // advance mood every 5s
+        moodInterval = setInterval(function () {
+            switchMood((moodIndex + 1) % moods.length);
+        }, 5000);
+        switchMood(2);
+
+        // fake time counter
+        timeInterval = setInterval(function () {
+            timeSec += 1;
+            if (timeSec >= totalSec) { timeSec = 0; totalSec = 150 + Math.floor(Math.random() * 200); }
+            var es = timeSec % 60, em = Math.floor(timeSec / 60);
+            var ts = totalSec % 60, tm = Math.floor(totalSec / 60);
+            timeEl.textContent = em + ':' + (es < 10 ? '0' : '') + es + ' / ' + tm + ':' + (ts < 10 ? '0' : '') + ts;
+        }, 1000);
+    })();
+
+    // ── SCROLL REVEAL ──
+    (function () {
+        var items = document.querySelectorAll('.feat-card, .flow-step');
+        if (!window.IntersectionObserver) {
+            items.forEach(function (el) { el.classList.add('visible'); });
+            return;
+        }
+        var obs = new IntersectionObserver(function (entries) {
+            entries.forEach(function (e) {
+                if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }
+            });
+        }, { threshold: 0.12 });
+        items.forEach(function (el) { obs.observe(el); });
+    })();
+
+    // ── NAV TOGGLE ──
+    (function () {
+        var toggle = document.getElementById('nav-toggle');
+        var backdrop = document.getElementById('nav-backdrop');
+        if (!toggle) return;
+        function setOpen(open) {
+            document.body.classList.toggle('nav-open', open);
+            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (backdrop) backdrop.hidden = !open;
+        }
+        toggle.addEventListener('click', function () { setOpen(!document.body.classList.contains('nav-open')); });
+        if (backdrop) backdrop.addEventListener('click', function () { setOpen(false); });
+        document.getElementById('nav-links').querySelectorAll('a').forEach(function (link) {
+            link.addEventListener('click', function () { setOpen(false); });
+        });
+    })();
+    </script>
+</body>
+</html>

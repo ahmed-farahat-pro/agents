@@ -1,11 +1,12 @@
 /**
- * 🦉 NightOwl - QA Tester Agent
+ * 🦉 Nigents - QA Tester Agent
  * Writes and runs tests
  */
 
 const BaseAgent = require('./base-agent');
 const logger = require('../utils/logger');
 const openhands = require('../tools/openhands');
+const aiClient = require('../utils/ai-client');
 
 class QATesterAgent extends BaseAgent {
   constructor() {
@@ -90,8 +91,23 @@ Respond with test file content in this format:
 }
 `;
 
-    const result = await this.callClaude(prompt, { maxTokens: 4096 });
-    
+    this.setStatus('working', { task: 'calling_ai', provider: this.provider });
+    let result;
+    try {
+      result = await this.callAI(prompt, { maxTokens: 4096 });
+    } catch (firstError) {
+      logger.warn('[QA] Primary provider failed, trying enabled fallbacks:', firstError.message);
+      try {
+        result = await aiClient.callWithFallback(prompt, {
+          maxTokens: 4096,
+          systemMessage: this.systemMessage,
+        });
+      } catch (fallbackError) {
+        logger.warn('[QA] All providers failed:', fallbackError.message);
+        result = { success: false, error: fallbackError.message };
+      }
+    }
+
     if (!result.success) {
       logger.warn('[QA] Failed to generate tests:', result.error);
       return [];
@@ -256,6 +272,13 @@ Return a validation report.
 `;
 
     return this.callClaude(prompt);
+  }
+
+  /**
+   * Execute task - required by BaseAgent
+   */
+  async execute(task) {
+    return this.runTests(task);
   }
 }
 

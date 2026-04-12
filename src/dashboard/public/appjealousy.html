@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AppJealousy — Dock apps react when you ignore them. Adjustable jealousy timer for macOS. From Nigents Crazy apps." />
+    <title>AppJealousy — Crazy apps · Nigents</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #09080c;
+            --bg-secondary: #141116;
+            --border: #2a2a35;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            --accent-orange: #ff570a;
+            --accent-green: #19d59e;
+            --accent-heat: #ff3d5c;
+            --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+            --font-sans: 'Poppins', 'Sakkal Majalla', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255, 87, 10, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 87, 10, 0.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .glow-orb {
+            position: fixed;
+            width: min(520px, 90vw);
+            height: min(520px, 90vw);
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 87, 10, 0.09) 0%, transparent 65%);
+            top: -12%;
+            right: -8%;
+            pointer-events: none;
+            z-index: 0;
+            animation: orbDrift 18s ease-in-out infinite;
+        }
+
+        @keyframes orbDrift {
+            0%, 100% { transform: translate(0, 0) scale(1); opacity: 1; }
+            50% { transform: translate(-40px, 30px) scale(1.08); opacity: 0.85; }
+        }
+
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, var(--bg-primary) 0%, transparent 100%);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .nav-logo {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-orange);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 20px;
+            color: var(--bg-primary);
+        }
+
+        .nav-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover { color: var(--text-primary); }
+
+        .nav-link.active {
+            color: var(--accent-orange);
+        }
+
+        .soon-pill {
+            display: inline-block;
+            margin-left: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--bg-primary);
+            background: var(--accent-orange);
+            padding: 3px 9px;
+            border-radius: 999px;
+            vertical-align: middle;
+        }
+
+        .nav-cta {
+            padding: 10px 20px;
+            border: 1px solid var(--accent-orange);
+            color: var(--accent-orange);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .nav-cta:hover {
+            background: var(--accent-orange);
+            color: var(--bg-primary);
+        }
+
+        .nav-toggle {
+            display: none;
+            width: 44px;
+            height: 44px;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .nav-toggle-icon-close { display: none; font-size: 28px; }
+        body.nav-open .nav-toggle-icon-open { display: none; }
+        body.nav-open .nav-toggle-icon-close { display: block; }
+        .nav-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 998;
+        }
+        body.nav-open .nav-backdrop { display: block; }
+        body.nav-open { overflow: hidden; }
+
+        @media (max-width: 900px) {
+            .nav-toggle { display: flex; }
+            .nav-links {
+                display: none;
+                position: fixed;
+                top: 72px;
+                left: 16px;
+                right: 16px;
+                flex-direction: column;
+                align-items: stretch;
+                background: var(--bg-secondary);
+                border: 1px solid var(--border);
+                padding: 12px;
+                z-index: 999;
+            }
+            body.nav-open .nav-links { display: flex; }
+        }
+
+        main {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 120px 32px 80px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--accent-orange);
+            border: 1px solid rgba(255, 87, 10, 0.35);
+            padding: 8px 14px;
+            margin-bottom: 20px;
+        }
+
+        .hero-badge .pulse-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-heat);
+            box-shadow: 0 0 12px var(--accent-heat);
+            animation: dotPulse 1.4s ease-in-out infinite;
+        }
+
+        @keyframes dotPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.35); opacity: 0.75; }
+        }
+
+        .hero-title {
+            font-size: clamp(2.2rem, 5vw, 3.35rem);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1.08;
+            margin-bottom: 16px;
+        }
+
+        .hero-title .shimmer {
+            background: linear-gradient(
+                90deg,
+                var(--text-primary) 0%,
+                var(--text-primary) 35%,
+                var(--accent-orange) 50%,
+                var(--accent-heat) 55%,
+                var(--text-primary) 70%,
+                var(--text-primary) 100%
+            );
+            background-size: 220% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: textShimmer 5s linear infinite;
+        }
+
+        @keyframes textShimmer {
+            0% { background-position: 120% 50%; }
+            100% { background-position: -120% 50%; }
+        }
+
+        .hero-title em {
+            font-style: normal;
+            color: var(--accent-orange);
+        }
+
+        .hero-lead {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 54ch;
+            margin-bottom: 28px;
+            animation: fadeUp 0.75s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .cta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 44px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 0;
+            transition: transform 0.15s, box-shadow 0.2s;
+        }
+
+        .btn:active { transform: scale(0.98); }
+
+        .btn-primary {
+            background: var(--accent-orange);
+            color: var(--bg-primary);
+            border: 1px solid var(--accent-orange);
+            box-shadow: 0 8px 32px rgba(255, 87, 10, 0.28);
+            animation: btnGlow 3.2s ease-in-out infinite;
+        }
+
+        @keyframes btnGlow {
+            0%, 100% { box-shadow: 0 8px 32px rgba(255, 87, 10, 0.28); }
+            50% { box-shadow: 0 10px 40px rgba(255, 61, 92, 0.22), 0 8px 32px rgba(255, 87, 10, 0.2); }
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 12px 44px rgba(255, 87, 10, 0.4);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--accent-orange);
+            color: var(--accent-orange);
+        }
+
+        /* Dock drama stage */
+        .stage {
+            margin: 28px 0 52px;
+            padding: 36px 24px 40px;
+            background: linear-gradient(168deg, rgba(20, 17, 22, 0.96) 0%, rgba(9, 8, 12, 0.99) 100%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .stage-label {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .dock-wrap {
+            display: flex;
+            justify-content: center;
+        }
+
+        .dock {
+            display: flex;
+            align-items: flex-end;
+            gap: 14px;
+            padding: 18px 28px 14px;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 20px 50px rgba(0, 0, 0, 0.4);
+        }
+
+        .dock-app {
+            width: 48px;
+            height: 48px;
+            border-radius: 11px;
+            background: linear-gradient(145deg, #2a2830, #1a181f);
+            border: 1px solid var(--border);
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .dock-app::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 10px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        }
+
+        .dock-app.focus {
+            border-color: rgba(255, 87, 10, 0.55);
+            box-shadow: 0 0 0 2px rgba(255, 87, 10, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .dock-app.jealous {
+            animation: jealousShake 0.55s ease-in-out infinite;
+            border-color: rgba(255, 61, 92, 0.45);
+        }
+
+        .dock-app.jealous:nth-child(1) { animation-delay: 0s; }
+        .dock-app.jealous:nth-child(2) { animation-delay: 0.08s; }
+        .dock-app.jealous:nth-child(4) { animation-delay: 0.16s; }
+        .dock-app.jealous:nth-child(5) { animation-delay: 0.24s; }
+        .dock-app.jealous:nth-child(6) { animation-delay: 0.32s; }
+
+        @keyframes jealousShake {
+            0%, 100% { transform: translate(0, 0) rotate(0); }
+            25% { transform: translate(-2px, 1px) rotate(-2deg); }
+            75% { transform: translate(2px, -1px) rotate(2deg); }
+        }
+
+        .timer-bar {
+            max-width: 420px;
+            margin: 28px auto 0;
+        }
+
+        .timer-bar-top {
+            display: flex;
+            justify-content: space-between;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .timer-track {
+            height: 6px;
+            border-radius: 99px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .timer-fill {
+            height: 100%;
+            width: 35%;
+            border-radius: 99px;
+            background: linear-gradient(90deg, var(--accent-orange), var(--accent-heat));
+            animation: timerSweep 4s ease-in-out infinite;
+        }
+
+        @keyframes timerSweep {
+            0%, 100% { width: 12%; margin-left: 0; }
+            50% { width: 88%; margin-left: 0; }
+        }
+
+        .section {
+            margin-bottom: 52px;
+        }
+
+        .section h2 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .section p.lead {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            max-width: 65ch;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 22px;
+            transition: border-color 0.2s;
+        }
+
+        .card:hover {
+            border-color: rgba(255, 87, 10, 0.35);
+        }
+
+        .card h3 {
+            font-size: 15px;
+            margin-bottom: 8px;
+        }
+
+        .card p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.55;
+        }
+
+        .mood-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .mood-chip {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 8px 14px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.03);
+            animation: chipFloat 4s ease-in-out infinite;
+        }
+
+        .mood-chip:nth-child(2) { animation-delay: 0.5s; }
+        .mood-chip:nth-child(3) { animation-delay: 1s; }
+        .mood-chip:nth-child(4) { animation-delay: 1.5s; }
+
+        @keyframes chipFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+
+        .download-panel {
+            background: rgba(255, 87, 10, 0.08);
+            border: 1px solid rgba(255, 87, 10, 0.35);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .download-panel ul {
+            margin: 12px 0 0 1.2rem;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .mono {
+            font-family: var(--font-mono);
+            font-size: 0.9em;
+            color: var(--accent-green);
+        }
+
+        footer {
+            border-top: 1px solid var(--border);
+            padding-top: 24px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        footer a {
+            color: var(--accent-orange);
+            text-decoration: none;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .glow-orb, .hero-badge .pulse-dot, .hero-title .shimmer, .btn-primary,
+            .dock-app.jealous, .timer-fill, .mood-chip { animation: none; }
+            .timer-fill { width: 55%; }
+        }
+
+        @media (max-width: 640px) {
+            .nav { padding: 16px 20px; }
+            main { padding-top: 100px; }
+            .dock { gap: 10px; padding: 14px 18px 12px; }
+            .dock-app { width: 40px; height: 40px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="glow-orb" aria-hidden="true"></div>
+    <nav class="nav">
+        <a href="/" class="nav-brand">
+            <div class="nav-logo">N</div>
+            <span class="nav-title">Nigents</span>
+        </a>
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+            <span class="nav-toggle-icon-open" aria-hidden="true">☰</span>
+            <span class="nav-toggle-icon-close" aria-hidden="true">×</span>
+        </button>
+        <div class="nav-links" id="nav-links" role="navigation" aria-label="Main">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/how-it-works.html" class="nav-link">How it works</a>
+            <a href="/materials.html" class="nav-link">Free Materials</a>
+            <a href="/crazy-apps.html" class="nav-link">Crazy apps</a>
+            <a href="/opencode-kits.html" class="nav-link">OpenCode kits <span class="soon-pill">Soon</span></a>
+            <a href="/bonyad/" class="nav-link">Bonyad</a>
+            <a href="/login.html" class="nav-cta">Login →</a>
+        </div>
+    </nav>
+    <div class="nav-backdrop" id="nav-backdrop" aria-hidden="true" hidden></div>
+
+    <main>
+        <header>
+            <p class="hero-badge"><span class="pulse-dot" aria-hidden="true"></span> macOS · Menu bar</p>
+            <h1 class="hero-title"><span class="shimmer">AppJealousy</span> — <em>dock</em> drama, on a timer</h1>
+            <p class="hero-lead">
+                Pinned <strong>Dock</strong> apps remember how long you’ve ignored them. Stay in one app too long and the others get… <strong>emotional</strong>.
+                Tune <strong>“jealous after N seconds”</strong> (default 10s) and watch the mood strip climb from calm to chaos — playful UI, not analytics.
+            </p>
+            <div class="cta-row">
+                <a class="btn btn-primary" href="/downloads/AppJealousy-1.0.0.dmg" download>Download AppJealousy DMG</a>
+                <a class="btn btn-ghost" href="/crazy-apps.html">All crazy apps</a>
+                <a class="btn btn-ghost" href="#features">Features</a>
+            </div>
+        </header>
+
+        <div class="stage" aria-hidden="true">
+            <p class="stage-label">Live metaphor · Safari in focus, neighbors restless</p>
+            <div class="dock-wrap">
+                <div class="dock" role="presentation">
+                    <div class="dock-app jealous" title="Neglected"></div>
+                    <div class="dock-app jealous" title="Neglected"></div>
+                    <div class="dock-app focus" title="Frontmost"></div>
+                    <div class="dock-app jealous" title="Neglected"></div>
+                    <div class="dock-app jealous" title="Neglected"></div>
+                    <div class="dock-app jealous" title="Neglected"></div>
+                </div>
+            </div>
+            <div class="timer-bar">
+                <div class="timer-bar-top">
+                    <span>Jealousy threshold</span>
+                    <span>3s — 180s</span>
+                </div>
+                <div class="timer-track">
+                    <div class="timer-fill"></div>
+                </div>
+            </div>
+        </div>
+
+        <section class="section" id="features">
+            <h2>What it does</h2>
+            <p class="lead">
+                Reads apps in your <strong>Dock</strong>, watches the <strong>frontmost</strong> app, and nudges each icon’s mood from calm to jealous based on time spent elsewhere.
+            </p>
+            <div class="grid-3">
+                <div class="card">
+                    <h3>Dock + extras</h3>
+                    <p>Every pinned Dock app, plus any bundle you add with <strong>Add app to track</strong> (pick a <span class="mono">.app</span>).</p>
+                </div>
+                <div class="card">
+                    <h3>Slider &amp; persistence</h3>
+                    <p><strong>Jealous after N s</strong> — 3 to 180 seconds. Your choice survives relaunch.</p>
+                </div>
+                <div class="card">
+                    <h3>Notifications</h3>
+                    <p>Optional banners when an app feels neglected. Allow alerts in <strong>System Settings → Notifications → AppJealousy</strong>.</p>
+                </div>
+            </div>
+            <div class="mood-strip">
+                <span class="mood-chip">loved</span>
+                <span class="mood-chip">meh</span>
+                <span class="mood-chip">jealous</span>
+                <span class="mood-chip">full drama</span>
+            </div>
+            <p class="lead" style="margin-top:24px;margin-bottom:0;font-size:14px">
+                <strong>Cheer / remove:</strong> Use the in-app actions to soothe jealous icons or drop <em>added</em> trackers from the list.
+            </p>
+        </section>
+
+        <section class="section" id="download">
+            <h2>Install</h2>
+            <div class="download-panel">
+                <p class="lead" style="margin-bottom:0">Open the DMG, drag <span class="mono">AppJealousy.app</span> into <strong>Applications</strong>, then launch from the menu bar.</p>
+                <ul>
+                    <li>If Gatekeeper blocks the download, try <span class="mono">xattr -cr ~/Downloads/AppJealousy-1.0.0.dmg</span> and open again.</li>
+                    <li>Rebuild locally with your bundle script: <span class="mono">bash Scripts/package-appjealousy-dmg.sh</span> (MacAppsBundle).</li>
+                </ul>
+                <div class="cta-row" style="margin-top:20px;margin-bottom:0">
+                    <a class="btn btn-primary" href="/downloads/AppJealousy-1.0.0.dmg" download>Download AppJealousy-1.0.0.dmg</a>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p><strong>AppJealousy</strong> · <a href="/crazy-apps.html">Crazy apps</a> · <a href="/materials.html">Free materials</a> · <a href="/">Nigents</a> · Playful UI, not real app analytics.</p>
+        </footer>
+    </main>
+
+    <script>
+        (function () {
+            var toggle = document.getElementById('nav-toggle');
+            var backdrop = document.getElementById('nav-backdrop');
+            if (!toggle) return;
+            function setOpen(open) {
+                document.body.classList.toggle('nav-open', open);
+                toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                if (backdrop) backdrop.hidden = !open;
+            }
+            toggle.addEventListener('click', function () {
+                setOpen(!document.body.classList.contains('nav-open'));
+            });
+            if (backdrop) backdrop.addEventListener('click', function () { setOpen(false); });
+            document.getElementById('nav-links').querySelectorAll('a').forEach(function (link) {
+                link.addEventListener('click', function () { setOpen(false); });
+            });
+        })();
+    </script>
+</body>
+</html>

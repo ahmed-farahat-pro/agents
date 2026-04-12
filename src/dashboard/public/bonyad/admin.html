@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bonyad Admin — User Management &amp; Activity</title>
+  <link rel="stylesheet" href="brief.css">
+  <style>
+    .admin-wrap { max-width: 1100px; margin: 0 auto; padding: clamp(16px,4vw,40px) var(--gutter); }
+    .admin-tabs { display: flex; gap: 4px; margin-bottom: 28px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+    .admin-tab {
+      padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+      border: none; background: none; color: var(--text-secondary);
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+      transition: color .2s, border-color .2s;
+    }
+    .admin-tab.active { color: var(--accent-orange); border-bottom-color: var(--accent-orange); }
+    .admin-pane { display: none; }
+    .admin-pane.active { display: block; }
+    /* key bar */
+    .key-bar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: 28px;
+    }
+    .key-bar input {
+      flex: 1; min-width: 200px; background: var(--bg-primary); border: 1px solid var(--border);
+      color: var(--text-primary); border-radius: 8px; padding: 8px 12px; font-size: 13px;
+      font-family: var(--mono);
+    }
+    .key-bar input:focus { outline: none; border-color: var(--accent-orange); }
+    /* table */
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th {
+      text-align: left; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .06em;
+      color: var(--text-muted); padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table td {
+      padding: 11px 12px; font-size: 13px; border-bottom: 1px solid rgba(46,46,58,.5);
+      vertical-align: middle;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: rgba(255,255,255,.02); }
+    .role-badge {
+      display: inline-block; padding: 3px 9px; border-radius: 6px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    }
+    .role-admin    { background: rgba(255,107,26,.15); color: var(--accent-orange); }
+    .role-developer{ background: rgba(94,179,255,.12); color: var(--blue-accent); }
+    .role-designer { background: rgba(167,139,250,.12); color: #a78bfa; }
+    .role-tester   { background: rgba(46,230,184,.12);  color: var(--accent-green); }
+    .key-preview { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+    .action-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+    .btn-xs {
+      padding: 5px 10px; font-size: 11px; font-weight: 600; border-radius: 7px;
+      border: 1px solid var(--border); background: none; cursor: pointer;
+      color: var(--text-secondary); transition: all .15s;
+    }
+    .btn-xs:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+    .btn-xs.danger:hover { border-color: var(--danger); color: var(--danger); }
+    .btn-xs.success:hover { border-color: var(--accent-green); color: var(--accent-green); }
+    /* create user form */
+    .create-card {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 22px 24px; margin-bottom: 24px;
+    }
+    .create-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 16px; color: var(--text-primary); }
+    .form-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+    .form-row .fg { flex: 1; min-width: 180px; }
+    .form-row label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .05em; }
+    .form-row input, .form-row select {
+      width: 100%; background: var(--bg-primary); border: 1px solid var(--border);
+      color: var(--text-primary); border-radius: 8px; padding: 9px 12px; font-size: 13px;
+    }
+    .form-row input:focus, .form-row select:focus { outline: none; border-color: var(--accent-orange); }
+    .key-reveal {
+      background: var(--bg-primary); border: 1px solid var(--accent-orange);
+      border-radius: var(--radius-sm); padding: 16px 18px; margin-top: 16px;
+      display: none;
+    }
+    .key-reveal.show { display: block; }
+    .key-reveal p { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+    .key-reveal .key-val {
+      font-family: var(--mono); font-size: 14px; color: var(--accent-orange);
+      word-break: break-all;
+    }
+    .key-warn { font-size: 11px; color: var(--warning); margin-top: 8px; }
+    /* activity */
+    .activity-filters {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+    }
+    .activity-filters input, .activity-filters select {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      color: var(--text-primary); border-radius: 8px; padding: 7px 11px; font-size: 12px;
+      min-width: 130px;
+    }
+    .activity-filters input:focus, .activity-filters select:focus { outline: none; border-color: var(--accent-orange); }
+    .action-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 6px;
+      font-size: 10px; font-weight: 700; letter-spacing: .04em;
+      font-family: var(--mono);
+    }
+    .action-issue\.created,.action-issue\.created   { background: rgba(255,107,26,.12); color: var(--accent-orange); }
+    .action-issue\.deleted  { background: rgba(248,113,113,.12); color: var(--danger); }
+    .action-issue\.status\.done { background: rgba(46,230,184,.12); color: var(--accent-green); }
+    .action-default         { background: rgba(168,168,179,.1); color: var(--text-secondary); }
+    .pagination { display: flex; gap: 8px; align-items: center; margin-top: 16px; font-size: 13px; color: var(--text-muted); }
+    .pagination button {
+      padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border);
+      background: none; color: var(--text-secondary); font-size: 12px; cursor: pointer;
+    }
+    .pagination button:hover:not(:disabled) { border-color: var(--accent-orange); color: var(--accent-orange); }
+    .pagination button:disabled { opacity: .35; cursor: default; }
+    .section-table-wrap {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden; overflow-x: auto;
+    }
+    .empty-msg { text-align: center; padding: 40px; color: var(--text-muted); font-size: 13px; }
+    .active-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .active-dot.on  { background: var(--accent-green); }
+    .active-dot.off { background: var(--text-muted); }
+    .copy-icon { cursor: pointer; font-size: 14px; opacity: .7; transition: opacity .15s; }
+    .copy-icon:hover { opacity: 1; }
+  </style>
+</head>
+<body class="bonyad-theme">
+  <div class="top-banner"></div>
+  <nav class="hub-nav bonyad-sheet-topnav" aria-label="Bonyad section">
+    <a href="./">← Bonyad hub</a>
+    <span class="hub-nav-sep" aria-hidden="true">·</span>
+    <a href="builds.html">Builds</a>
+    <span class="hub-nav-sep" aria-hidden="true">·</span>
+    <a href="designs.html">Designs</a>
+    <span class="hub-nav-sep" aria-hidden="true">·</span>
+    <a href="canvas.html">Canvas</a>
+    <span class="hub-nav-sep" aria-hidden="true">·</span>
+    <a href="/">Nigents</a>
+  </nav>
+  <div class="admin-wrap">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:32px;flex-wrap:wrap;">
+      <h1 style="font-size:clamp(20px,4vw,26px);font-weight:800;flex:1;">
+        Admin Dashboard
+      </h1>
+      <span id="admin-user-tag" style="font-size:12px;color:var(--text-muted);"></span>
+    </div>
+
+    <!-- Key Bar -->
+    <div class="key-bar">
+      <label for="admin-key" style="font-size:12px;font-weight:700;color:var(--text-muted);white-space:nowrap;">Admin Key</label>
+      <input type="password" id="admin-key" placeholder="Paste BONYAD_ADMIN_KEY" autocomplete="off" />
+      <button class="add-btn" id="admin-key-save" style="padding:8px 16px;font-size:13px;">Connect</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-tab="users">Users</button>
+      <button class="admin-tab" data-tab="activity">Activity Log</button>
+    </div>
+
+    <!-- Users pane -->
+    <div class="admin-pane active" id="pane-users">
+      <div class="create-card">
+        <h3>Create New User</h3>
+        <div class="form-row">
+          <div class="fg">
+            <label>Full Name</label>
+            <input type="text" id="new-name" placeholder="e.g. Ahmed Al-Rashid" />
+          </div>
+          <div class="fg">
+            <label>Role</label>
+            <select id="new-role">
+              <option value="developer">Developer</option>
+              <option value="designer">Designer</option>
+              <option value="tester">Tester</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button class="add-btn" id="create-user-btn" style="padding:9px 20px;">Create User</button>
+          </div>
+        </div>
+        <div class="key-reveal" id="key-reveal">
+          <p>New API key — copy it now, it won't be shown again:</p>
+          <div class="key-val" id="new-key-val"></div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button class="add-btn" id="copy-new-key" style="padding:6px 14px;font-size:12px;">Copy key</button>
+          </div>
+          <p class="key-warn">Note: Share this key only with the developer. Store it securely.</p>
+        </div>
+      </div>
+
+      <div class="section-table-wrap">
+        <table class="data-table" id="users-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Key preview</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody">
+            <tr><td colspan="6" class="empty-msg">Enter admin key above to load users</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Activity pane -->
+    <div class="admin-pane" id="pane-activity">
+      <div class="activity-filters">
+        <select id="af-sheet">
+          <option value="">All sheets</option>
+          <option value="android">Android</option>
+          <option value="ios">iOS</option>
+          <option value="web">Web</option>
+          <option value="backend">Backend</option>
+        </select>
+        <select id="af-action">
+          <option value="">All actions</option>
+          <option value="issue.created">Issue created</option>
+          <option value="issue.deleted">Issue deleted</option>
+          <option value="issue.status.done">Marked done</option>
+          <option value="issue.status.in_progress">Started</option>
+          <option value="issue.updated">Issue updated</option>
+          <option value="build.uploaded">Build uploaded</option>
+          <option value="design.added">Design added</option>
+        </select>
+        <input type="date" id="af-from" placeholder="From date" />
+        <input type="date" id="af-to"   placeholder="To date" />
+        <button class="add-btn" id="af-apply" style="padding:7px 16px;font-size:12px;">Apply</button>
+        <button class="add-btn secondary" id="af-reset" style="padding:7px 16px;font-size:12px;">Reset</button>
+      </div>
+
+      <div class="section-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date &amp; Time</th>
+              <th>User</th>
+              <th>Role</th>
+              <th>Action</th>
+              <th>Entity</th>
+              <th>Sheet</th>
+            </tr>
+          </thead>
+          <tbody id="activity-tbody">
+            <tr><td colspan="6" class="empty-msg">Enter admin key above to load activity</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="activity-pagination"></div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="bonyad-notifications.js"></script>
+  <script>
+    'use strict';
+
+    /* ── Key management ─────────────────────────────────────────── */
+    const keyInput = document.getElementById('admin-key');
+    const saveBtn  = document.getElementById('admin-key-save');
+    const stored   = localStorage.getItem('bonyad_edit_key') || '';
+    if (stored) keyInput.value = stored;
+
+    function getKey() { return keyInput.value.trim(); }
+
+    saveBtn.addEventListener('click', () => {
+      const k = getKey();
+      if (!k) return;
+      localStorage.setItem('bonyad_edit_key', k);
+      loadUsers();
+      loadActivity();
+      resolveIdentity();
+    });
+
+    keyInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') saveBtn.click();
+    });
+
+    /* ── Identity ───────────────────────────────────────────────── */
+    async function resolveIdentity() {
+      try {
+        const res  = await fetch('/api/bonyad/me', { headers: { 'x-bonyad-edit-key': getKey() } });
+        const data = await res.json();
+        if (data.success) {
+          const tag = document.getElementById('admin-user-tag');
+          tag.textContent = `${data.user.name} (${data.user.role})`;
+          if (data.user.role !== 'admin') {
+            tag.style.color = 'var(--danger)';
+            tag.textContent += ' — admin access required';
+          }
+        }
+      } catch {}
+    }
+
+    /* ── Tabs ───────────────────────────────────────────────────── */
+    document.querySelectorAll('.admin-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.admin-pane').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`pane-${btn.dataset.tab}`).classList.add('active');
+      });
+    });
+
+    /* ── Users ──────────────────────────────────────────────────── */
+    async function loadUsers() {
+      const tbody = document.getElementById('users-tbody');
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">Loading…</td></tr>';
+      try {
+        const res  = await fetch('/api/bonyad/admin/users', { headers: { 'x-bonyad-edit-key': getKey() } });
+        const data = await res.json();
+        if (!data.success) {
+          tbody.innerHTML = `<tr><td colspan="6" class="empty-msg" style="color:var(--danger)">${esc(data.error || 'Failed')}</td></tr>`;
+          return;
+        }
+        if (!data.users.length) {
+          tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">No users yet — create one above</td></tr>';
+          return;
+        }
+        tbody.innerHTML = data.users.map(u => `
+          <tr>
+            <td><strong>${esc(u.name)}</strong></td>
+            <td><span class="role-badge role-${u.role}">${u.role}</span></td>
+            <td><span class="key-preview">${esc(u.key_preview || '—')}</span></td>
+            <td>
+              <span class="active-dot ${u.is_active ? 'on' : 'off'}"></span>
+              ${u.is_active ? 'Active' : 'Inactive'}
+            </td>
+            <td style="color:var(--text-muted);font-size:12px;">${fmtDate(u.created_at)}</td>
+            <td>
+              <div class="action-btns">
+                <button class="btn-xs success" onclick="rotateKey(${u.id}, '${esc(u.name)}')">Rotate key</button>
+                <button class="btn-xs" onclick="toggleActive(${u.id}, ${u.is_active})">${u.is_active ? 'Deactivate' : 'Activate'}</button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-msg" style="color:var(--danger)">Error: ${esc(e.message)}</td></tr>`;
+      }
+    }
+
+    /* Create user */
+    document.getElementById('create-user-btn').addEventListener('click', async () => {
+      const name = document.getElementById('new-name').value.trim();
+      const role = document.getElementById('new-role').value;
+      if (!name) { alert('Name is required'); return; }
+      try {
+        const res  = await fetch('/api/bonyad/admin/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-bonyad-edit-key': getKey() },
+          body: JSON.stringify({ name, role, editKey: getKey() }),
+        });
+        const data = await res.json();
+        if (!data.success) { alert(data.error || 'Failed'); return; }
+        document.getElementById('new-name').value = '';
+        const reveal = document.getElementById('key-reveal');
+        reveal.classList.add('show');
+        document.getElementById('new-key-val').textContent = data.user.api_key;
+        loadUsers();
+      } catch (e) { alert(e.message); }
+    });
+
+    document.getElementById('copy-new-key').addEventListener('click', () => {
+      const val = document.getElementById('new-key-val').textContent;
+      navigator.clipboard.writeText(val).then(() => {
+        document.getElementById('copy-new-key').textContent = 'Copied!';
+        setTimeout(() => { document.getElementById('copy-new-key').textContent = 'Copy key'; }, 2000);
+      });
+    });
+
+    async function rotateKey(id, name) {
+      if (!confirm(`Rotate API key for ${name}? Their current key will stop working immediately.`)) return;
+      try {
+        const res  = await fetch(`/api/bonyad/admin/users/${id}/rotate-key`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-bonyad-edit-key': getKey() },
+          body: JSON.stringify({ editKey: getKey() }),
+        });
+        const data = await res.json();
+        if (!data.success) { alert(data.error || 'Failed'); return; }
+        // Show new key in a prompt (easiest UX for admin)
+        prompt(`New key for ${name} (copy now, won't be shown again):`, data.api_key);
+        loadUsers();
+      } catch (e) { alert(e.message); }
+    }
+
+    async function toggleActive(id, currentlyActive) {
+      const is_active = currentlyActive ? 0 : 1;
+      try {
+        await fetch(`/api/bonyad/admin/users/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'x-bonyad-edit-key': getKey() },
+          body: JSON.stringify({ is_active, editKey: getKey() }),
+        });
+        loadUsers();
+      } catch (e) { alert(e.message); }
+    }
+
+    /* ── Activity ───────────────────────────────────────────────── */
+    let actPage = 1;
+    let actTotal = 0;
+    const ACT_LIMIT = 50;
+
+    async function loadActivity(page) {
+      page = page || actPage;
+      const tbody = document.getElementById('activity-tbody');
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">Loading…</td></tr>';
+
+      const params = new URLSearchParams({ page, limit: ACT_LIMIT });
+      const sheet  = document.getElementById('af-sheet').value;
+      const action = document.getElementById('af-action').value;
+      const from   = document.getElementById('af-from').value;
+      const to     = document.getElementById('af-to').value;
+      if (sheet)  params.set('sheet_slug', sheet);
+      if (action) params.set('action', action);
+      if (from)   params.set('date_from', from);
+      if (to)     params.set('date_to', to);
+
+      try {
+        const res  = await fetch(`/api/bonyad/admin/activity?${params}`, {
+          headers: { 'x-bonyad-edit-key': getKey() },
+        });
+        const data = await res.json();
+        if (!data.success) {
+          tbody.innerHTML = `<tr><td colspan="6" class="empty-msg" style="color:var(--danger)">${esc(data.error || 'Failed')}</td></tr>`;
+          return;
+        }
+        actTotal = data.total || 0;
+        actPage  = page;
+        if (!data.rows.length) {
+          tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">No activity found</td></tr>';
+          renderPagination();
+          return;
+        }
+        tbody.innerHTML = data.rows.map(r => `
+          <tr>
+            <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${fmtDateFull(r.created_at)}</td>
+            <td><strong>${esc(r.user_name || '—')}</strong></td>
+            <td style="font-size:12px;color:var(--text-muted);">${r.user_role || '—'}</td>
+            <td><span class="action-badge ${actionClass(r.action)}">${esc(r.action)}</span></td>
+            <td style="font-size:12px;" title="${esc(r.entity_title || '')}">
+              ${r.entity_title ? esc(r.entity_title.substring(0,60)) + (r.entity_title.length > 60 ? '…' : '') : '—'}
+            </td>
+            <td style="font-size:12px;color:var(--text-muted);">${r.sheet_slug || '—'}</td>
+          </tr>
+        `).join('');
+        renderPagination();
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-msg" style="color:var(--danger)">Error: ${esc(e.message)}</td></tr>`;
+      }
+    }
+
+    function renderPagination() {
+      const el    = document.getElementById('activity-pagination');
+      const pages = Math.ceil(actTotal / ACT_LIMIT);
+      el.innerHTML = `
+        <button onclick="loadActivity(${actPage - 1})" ${actPage <= 1 ? 'disabled' : ''}>← Prev</button>
+        <span>Page ${actPage} of ${pages || 1} &nbsp;·&nbsp; ${actTotal} total</span>
+        <button onclick="loadActivity(${actPage + 1})" ${actPage >= pages ? 'disabled' : ''}>Next →</button>
+      `;
+    }
+
+    document.getElementById('af-apply').addEventListener('click', () => loadActivity(1));
+    document.getElementById('af-reset').addEventListener('click', () => {
+      ['af-sheet','af-action','af-from','af-to'].forEach(id => { document.getElementById(id).value = ''; });
+      loadActivity(1);
+    });
+
+    /* ── Helpers ────────────────────────────────────────────────── */
+    function esc(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function fmtDate(iso) {
+      if (!iso) return '—';
+      return new Date(iso).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    }
+    function fmtDateFull(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      return d.toLocaleDateString('en-GB', { day:'2-digit', month:'short' }) + ' ' +
+             d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+    }
+    function actionClass(action) {
+      if (!action) return 'action-default';
+      if (action.includes('delete')) return 'action-issue\\.deleted';
+      if (action.includes('done'))   return 'action-issue\\.status\\.done';
+      if (action.includes('creat'))  return 'action-issue\\.created';
+      return 'action-default';
+    }
+
+    /* ── Boot ───────────────────────────────────────────────────── */
+    if (stored) {
+      resolveIdentity();
+      loadUsers();
+      loadActivity(1);
+    }
+  </script>
+</body>
+</html>
